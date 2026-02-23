@@ -37,8 +37,9 @@ dependencies {
             [group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: jacksonversion,transitive: false],
 
     )
-   
 
+
+    api group: 'com.bbossgroups', name: 'bboss-core-entity', version: BBOSS_VERSION
 }
 
  

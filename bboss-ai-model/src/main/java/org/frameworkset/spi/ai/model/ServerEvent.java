@@ -30,7 +30,7 @@ import java.util.Map;
  */
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ServerEvent extends MultimodalGeneration{
+public class ServerEvent extends MultimodalGeneration implements AIEvent{
     public static final int DATA = 0;
     public static final int ERROR = 1;
 
