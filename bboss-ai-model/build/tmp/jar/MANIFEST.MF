@@ -1,8 +1,0 @@
-Manifest-Version: 1.0
-Implementation: 6.5.3
-Specification-Version: 6.5.3
-Implementation-Vendor: bbossgroups
-Implementation-ProductID: bboss-ai-model
-Compile-Timestamp: 2026-02-23 10:16:12
-Compile-User: biaoping.yin
-

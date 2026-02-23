@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"org.frameworkset.spi.ai"},{"l":"org.frameworkset.spi.ai.adapter"},{"l":"org.frameworkset.spi.ai.material"},{"l":"org.frameworkset.spi.ai.model"},{"l":"org.frameworkset.spi.ai.util"},{"l":"org.frameworkset.spi.reactor"},{"l":"所有程序包","u":"allpackages-index.html"}];updateSearchResults();
