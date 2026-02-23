@@ -1,0 +1,18 @@
+{
+  "id": "ccf32be6-ad2f-4658-963a-fc3c22346e6b",
+  "object": "chat.completion.chunk",
+  "created": 1761725211,
+  "model": "deepseek-reasoner",
+  "system_fingerprint": "fp_ffc7281d48_prod0820_fp8_kvcache",
+  "choices": [
+    {
+      "index": 0,
+      "delta": {
+        "content": null,
+        "reasoning_content": "在",
+        "logprobs": null,
+        "finish_reason": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.bbossgroups",
+    "module": "bboss-ai",
+    "version": "6.5.3",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.3"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 8,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "com.bbossgroups",
+          "module": "bboss-http5",
+          "version": {
+            "requires": "6.5.3"
+          }
+        },
+        {
+          "group": "io.projectreactor",
+          "module": "reactor-core",
+          "version": {
+            "requires": "3.8.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "bboss-ai-6.5.3.jar",
+          "url": "bboss-ai-6.5.3.jar",
+          "size": 104007,
+          "sha512": "1ef9a0d5129eb5e2e24128a6c4f7d6223afc7c60fe7545a7cb7af84e39566915d87e2cc00cb87402fc769b227f7251abea52ef923b05d10fecd0acaa33c85db2",
+          "sha256": "bbd97d95557370b526648c73bb37060f14f16222db2e568529a725e162dd2382",
+          "sha1": "7c4d6ce995876fdceba79513f29189aea70bdbbc",
+          "md5": "8a3319db41436402303958f8b1baea76"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 8,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "com.bbossgroups",
+          "module": "bboss-http5",
+          "version": {
+            "requires": "6.5.3"
+          }
+        },
+        {
+          "group": "io.projectreactor",
+          "module": "reactor-core",
+          "version": {
+            "requires": "3.8.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "bboss-ai-6.5.3.jar",
+          "url": "bboss-ai-6.5.3.jar",
+          "size": 104007,
+          "sha512": "1ef9a0d5129eb5e2e24128a6c4f7d6223afc7c60fe7545a7cb7af84e39566915d87e2cc00cb87402fc769b227f7251abea52ef923b05d10fecd0acaa33c85db2",
+          "sha256": "bbd97d95557370b526648c73bb37060f14f16222db2e568529a725e162dd2382",
+          "sha1": "7c4d6ce995876fdceba79513f29189aea70bdbbc",
+          "md5": "8a3319db41436402303958f8b1baea76"
+        }
+      ]
+    }
+  ]
+}

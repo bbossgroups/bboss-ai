@@ -1,0 +1,3 @@
+rootProject.name='bboss-ai'
+include 'bboss-ai-model'
+include 'bboss-ai'

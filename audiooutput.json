@@ -1,0 +1,34 @@
+{
+  "output": {
+    "choices": [
+      {
+        "message": {
+          "annotations": [
+            {
+              "type": "audio_info",
+              "language": "zh",
+              "emotion": "neutral"
+            }
+          ],
+          "content": [
+            {
+              "text": "欢迎与"
+            }
+          ],
+          "role": "assistant"
+        },
+        "finish_reason": "null"
+      }
+    ]
+  },
+  "usage": {
+    "output_tokens_details": {
+      "text_tokens": 6
+    },
+    "input_tokens_details": {
+      "text_tokens": 16
+    },
+    "seconds": 1
+  },
+  "request_id": "e84128d5-4bae-4e7e-91ab-6fb33504d2e3"
+}

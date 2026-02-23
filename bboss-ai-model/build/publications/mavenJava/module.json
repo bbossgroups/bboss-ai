@@ -1,0 +1,60 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.bbossgroups",
+    "module": "bboss-ai-model",
+    "version": "6.5.3",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.14.3"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 8,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "bboss-ai-model-6.5.3.jar",
+          "url": "bboss-ai-model-6.5.3.jar",
+          "size": 12231,
+          "sha512": "473ac628c5bcd19c1033a84f5ab07a3f519326f85316eb5d917e3072963f71c6106478391d6e4f0f4c508856169586b36a83dbca93a3caf31ecd6440c0359cd8",
+          "sha256": "e964c326b75d398f256f483bad06f3151e5884a91a4c8b51dc1edda3b6eb7cdb",
+          "sha1": "3e1472ecef995cad358a23083eafc9f3a5f5a138",
+          "md5": "4b342f81842fa94c00c1a07579eef4ad"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 8,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "bboss-ai-model-6.5.3.jar",
+          "url": "bboss-ai-model-6.5.3.jar",
+          "size": 12231,
+          "sha512": "473ac628c5bcd19c1033a84f5ab07a3f519326f85316eb5d917e3072963f71c6106478391d6e4f0f4c508856169586b36a83dbca93a3caf31ecd6440c0359cd8",
+          "sha256": "e964c326b75d398f256f483bad06f3151e5884a91a4c8b51dc1edda3b6eb7cdb",
+          "sha1": "3e1472ecef995cad358a23083eafc9f3a5f5a138",
+          "md5": "4b342f81842fa94c00c1a07579eef4ad"
+        }
+      ]
+    }
+  ]
+}
