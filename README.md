@@ -1,4 +1,4 @@
-包含两个模块：基于httpclient5 and httpcore5的轻量级bboss ai开发客户端和bboss httpproxy微服务框架
+包含两个模块：轻量级bboss ai agent开发客户端
 
 # todo
 1. 九天生图下载

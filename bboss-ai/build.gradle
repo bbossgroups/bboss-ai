@@ -26,6 +26,7 @@ sourceSets {
 
 
 dependencies {
+    api project(":bboss-ai-model")
     api group: 'com.bbossgroups', name: 'bboss-http5', version: BBOSS_HTTP5_VERSION
     api group: 'io.projectreactor', name: 'reactor-core', version: reactor
 }

@@ -18,7 +18,6 @@ package org.frameworkset.spi.ai.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.tools.MCPToolsRegist;
-import org.frameworkset.spi.ai.tools.ToolKit;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.ArrayList;
@@ -147,7 +146,7 @@ public class AgentMessage<T extends AgentMessage> {
 
     public T addHeader(String key,String value){
         if(headers == null){
-            headers = new java.util.LinkedHashMap<>();
+            headers = new LinkedHashMap<>();
         }
         headers.put(key, value);
         return (T)this;
@@ -197,7 +196,7 @@ public class AgentMessage<T extends AgentMessage> {
 
     public T addParameter(String key,Object value){
         if(parameters == null){
-            parameters = new java.util.LinkedHashMap<>();
+            parameters = new LinkedHashMap<>();
         }
         parameters.put(key, value);
         return (T)this;
@@ -213,7 +212,7 @@ public class AgentMessage<T extends AgentMessage> {
     public T addMapParameter(String mapKey,String key,Object value){
         Map data = null;
         if(parameters == null){
-            parameters = new java.util.LinkedHashMap<>();
+            parameters = new LinkedHashMap<>();
             data = new LinkedHashMap();
             parameters.put(mapKey,data);
         }
