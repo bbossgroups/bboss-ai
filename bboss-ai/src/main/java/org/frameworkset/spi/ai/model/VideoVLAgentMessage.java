@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.model;
  */
 
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -49,7 +50,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         stream = (Boolean)parameters.get("stream");
         aiChatRequestType = agentAdapter.getAIVideoParserRequestType();
         agentMessage = parameters;
-        streamDataBuilder = new StreamDataBuilder() {
+        streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
             public StreamData build(AgentAdapter agentAdapter, String line) {
                 return agentAdapter.parseVideoParserStreamContentFromData(this,line);
@@ -81,6 +82,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         chatObject.setSseHeaderSetFunction(sseHeaderSetFunction);
         chatObject.setMessage(agentMessage);
         chatObject.setStream(stream);
+        chatObject.setAgentMessage(this);
         chatObject.setCompletionsUrl(this.getVideoVLCompletionsUrl());
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);

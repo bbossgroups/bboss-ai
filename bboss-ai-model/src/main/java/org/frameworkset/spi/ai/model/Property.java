@@ -16,7 +16,9 @@ package org.frameworkset.spi.ai.model;
  */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,6 +35,14 @@ public class Property {
     private String description;
     private String format;
     private String pattern;
+
+
+    @JsonProperty("enum")
+    private List<String> enumValue;
+
+
+    @JsonProperty("default")
+    private Object defaultValue;
     private Map<String,Property> properties;
 
     public Property() {
@@ -96,4 +106,20 @@ public class Property {
     public void setPattern(String pattern) {
         this.pattern = pattern;
     }
+
+    public List<String> getEnumValue() {
+        return enumValue;
+    }
+
+    public void setEnumValue(List<String> enumValue) {
+        this.enumValue = enumValue;
+    }
+    public Object getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(Object defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
 }

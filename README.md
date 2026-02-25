@@ -1,7 +1,5 @@
 包含两个模块：轻量级bboss ai agent开发客户端
 
-# todo
-1. 九天生图下载
 # 版本构建方法
 
 gradle clean publishToMavenLocal

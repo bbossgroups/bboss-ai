@@ -18,6 +18,8 @@ package org.frameworkset.spi.reactor;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.model.ChatObject;
+import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import reactor.core.publisher.FluxSink;
 
@@ -37,7 +39,7 @@ public interface StreamDataHandler<T> {
      *                      在接口方法实现中，在发送消息时，需检测是否为true，如果为true，需设置标记为false，同时将ServerEvent的first标记设置为true
      * @return
      */
-    boolean handle(String line, FluxSink<T> sink, BooleanWrapperInf firstEventTag);
+    boolean handle(String line, FluxSink<T> sink, BooleanWrapperInf firstEventTag,FluxSinkStatus fluxSinkStatus);
     /**
      * 处理异常，如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
      * @param throwable 异常

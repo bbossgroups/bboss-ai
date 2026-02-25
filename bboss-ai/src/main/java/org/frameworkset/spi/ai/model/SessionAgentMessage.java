@@ -78,7 +78,17 @@ public class SessionAgentMessage<T extends SessionAgentMessage> extends AgentMes
         return addSessionMessage(assistantMessage);
     }
 
-    
+    public T addAssistantSessionMessage(StreamData streamData){
+        if(sessionMemory == null){
+            return (T)this;
+        }
+        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(streamData);
+
+        return addSessionMessage(assistantMessage);
+    }
+
+
+
     @Deprecated
     /**
      * 添加会话消息

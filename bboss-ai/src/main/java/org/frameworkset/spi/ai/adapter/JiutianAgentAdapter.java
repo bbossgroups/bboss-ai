@@ -19,6 +19,7 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.material.JiutianGenFileDownload;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
+import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -280,7 +281,7 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
  
 
     @Override
-    public StreamData parseImageParserStreamContentFromData(StreamDataBuilder streamDataBuilder, String data){
+    public StreamData parseImageParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder, String data){
         return AIResponseUtil.parseJiutianImageParserStreamContentFromData(streamDataBuilder,data);
     }
     

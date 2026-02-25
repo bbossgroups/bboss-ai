@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.util;
 
 import org.frameworkset.spi.ai.model.ImageAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.StreamData;
 import org.frameworkset.spi.ai.model.VideoAgentMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -280,6 +281,14 @@ public class MessageBuilder {
         return buildMessage(ROLE_ASSISTANT,    serverEvent);
     }
 
+    public static Map<String,Object> buildAssistantMessage(StreamData streamData){
+
+
+        return buildMessage(ROLE_ASSISTANT,    streamData);
+    }
+
+    
+
     public static Map<String,Object> buildMessage(String role,String message){
 
         Map<String, Object> userMessage = new HashMap<>();
@@ -303,6 +312,23 @@ public class MessageBuilder {
             userMessage.put("tool_calls",serverEvent.getToolCalls());
         return userMessage;
     }
+
+    public static Map<String,Object> buildMessage(String role,StreamData streamData){
+
+        Map<String, Object> userMessage = new HashMap<>();
+        userMessage.put("role", role);
+        if(streamData.getContent() != null) {
+            userMessage.put("content", streamData.getContent());
+        }
+        if(streamData.getReasoningContent() != null){
+            userMessage.put("reasoning_content", streamData.getReasoningContent());
+        }
+        if(streamData.getToolCalls() != null)
+            userMessage.put("tool_calls",streamData.getToolCalls());
+        return userMessage;
+    }
+
+    
 
     
 

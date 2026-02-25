@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.util;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
@@ -24,11 +25,8 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.material.DownImageBase64HttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownFileHttpClientResponseHandler;
-import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.reactor.FluxSinkStatus;
-import org.frameworkset.spi.reactor.ReactorCallException;
-import org.frameworkset.spi.reactor.StreamDataHandler;
+import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.proxy.BBossEntityUtils;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
@@ -36,9 +34,7 @@ import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
 import reactor.core.publisher.FluxSink;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author biaoping.yin
@@ -99,7 +95,7 @@ public class AIResponseUtil {
         }
         String error = SimpleStringUtil.exceptionToString(throwable);
         sink.next(error);
-        sink.complete();
+//        sink.complete();
         return true;
 
     }
@@ -123,7 +119,7 @@ public class AIResponseUtil {
 
         serverEvent.setDone( true);
         sink.next(serverEvent);
-        sink.complete();
+//        sink.complete();
         return true;
 
     }
@@ -348,7 +344,7 @@ public class AIResponseUtil {
      * @param data
      * @return
      */
-    public static StreamData parseStreamContentFromData(StreamDataBuilder streamDataBuilder,String data) {
+    public static StreamData parseStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data) {
         try {
             Map map = SimpleStringUtil.json2Object(data,Map.class);
             Object choices_ = map.get("choices");
@@ -365,7 +361,12 @@ public class AIResponseUtil {
  
                                String reasoning_content = (String) delta.get("reasoning_content");
                                String content = (String) delta.get("content");
-                               if (SimpleStringUtil.isNotEmpty(reasoning_content)) {
+                               Object tool_call = delta.get("tool_calls");
+                               if(tool_call != null){
+                                   return streamDataBuilder.functionToolsChunk((List<Map>) tool_call, finishReason);
+                               }
+                                
+                               else if (SimpleStringUtil.isNotEmpty(reasoning_content)) {
                                    return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason);
                                } else {
                                    return new StreamData(ServerEvent.CONTENT, content, finishReason);
@@ -387,31 +388,35 @@ public class AIResponseUtil {
                            }
                        }
                        else{
-                           Map message = (Map) choice.get("message");
-                           if(message != null){
-                               StreamData streamData = streamDataBuilder.functionTools( message,finishReason);
-                               if(streamData != null) {
-                                   String reasoning_content = (String) message.get("reasoning_content");
-                                   if(reasoning_content == null) {
-                                       return streamData
-                                               .setContent((String) message.get("content"))
-                                               .setRole((String) message.get("role"));
-                                   }
-                                   else{
-                                       return streamData 
-                                               .setContent((String) message.get("content"))
-                                               .setReasoningContent(reasoning_content)
-                                               .setRole((String) message.get("role"));
-                                   }
-                               }
-                               else{
-                                   if(logger.isDebugEnabled())
-                                        logger.debug("choice message tool_calls null: {}",data);
-                               }
+                           Map delta = (Map) choice.get("delta");
+                           if (delta != null) {
+                               return new StreamData( (List<FunctionTool>)null,(List<Map>)null, finishReason);
                            }
                            else {
-                               if (logger.isDebugEnabled())
-                                   logger.debug("choice message null: {}", data);
+                               Map message = (Map) choice.get("message");
+                               if (message != null) {
+                                   StreamData streamData = streamDataBuilder.functionTools((List<Map>) message.get("tool_calls"), finishReason);
+                                   if (streamData != null) {
+                                       String reasoning_content = (String) message.get("reasoning_content");
+                                       if (reasoning_content == null) {
+                                           return streamData
+                                                   .setContent((String) message.get("content"))
+                                                   .setRole((String) message.get("role"));
+                                       } else {
+                                           return streamData
+                                                   .setContent((String) message.get("content"))
+                                                   .setReasoningContent(reasoning_content)
+                                                   .setRole((String) message.get("role"));
+                                       }
+                                   } else {
+                                       if (logger.isDebugEnabled())
+                                           logger.debug("choice message tool_calls null: {}", data);
+                                   }
+
+                               } else {
+                                   if (logger.isDebugEnabled())
+                                       logger.debug("choice message null: {}", data);
+                               }
                            }
                        }
                     }
@@ -540,7 +545,7 @@ public class AIResponseUtil {
         return null;
     }
 
-    private static <T> void processStreamResponse(ClassicHttpResponse response, FluxSink<T> sink, StreamDataHandler<T> streamDataHandler) throws IOException {
+    private static <T> void processStreamResponse(ClassicHttpResponse response, FluxSink<T> sink, BaseStreamDataHandler<T> streamDataHandler) throws IOException {
 
         FluxSinkStatus fluxSinkStatus = null;
         try  {
@@ -553,8 +558,60 @@ public class AIResponseUtil {
 //                fluxSinkStatus.cancel();
 //                // 执行清理工作
 //            });
+//            final FluxSinkStatus fluxSinkStatus_ = fluxSinkStatus;
+            // 添加处置监听器
+//            sink.onDispose(() -> {
+//                // 当 sink 被处置时执行（包括正常完成、错误和取消）
+//                if(logger.isDebugEnabled()) {
+//                    logger.debug("Sink disposed");
+//                }
+//                fluxSinkStatus_.dispose();
+//                // 执行清理工作
+//                fluxSinkStatus_.releaseResources();
+//
+//            });
+            String line;
+            boolean needBreak = false;
+            BooleanWrapperInf firstEventTag = new NoSynBooleanWrapper(true);
+            while (!sink.isCancelled() && (line = fluxSinkStatus.readLine()) != null ) {
+                if(fluxSinkStatus.isDispose()){
+                    break;
+                }
+                needBreak = streamDataHandler.handle(line, sink,   firstEventTag,fluxSinkStatus);
+                if(needBreak ){
+                    
+                    break;
+                }
+
+
+            }
+            if(!needBreak){
+
+                BaseStreamDataBuilder streamDataBuilder = (BaseStreamDataBuilder)streamDataHandler.getStreamDataBuilder();
+                if(streamDataBuilder.getToolCallsStreamData() ==  null) {
+                    streamDataHandler.handle(streamDataHandler.getDoneData(), sink,   firstEventTag,fluxSinkStatus);
+                     
+                }
+            }
+        }
+        finally {
+            fluxSinkStatus.releaseResources();
+        }
+    }
+
+    private static void processStreamResponse(ClassicHttpResponse response, FluxSink<String> sink, CommonStreamDataHandler<String> streamDataHandler) throws IOException {
+
+        FluxSinkStatus fluxSinkStatus = null;
+        try  {
+            fluxSinkStatus = new FluxSinkStatus(response,streamDataHandler.getHttpUriRequestBase());
+//            // 添加取消监听器
+//            sink.onCancel(() -> {
+//                // 当订阅被取消时执行
+//                logger.info("Subscription cancelled");
+//                fluxSinkStatus.cancel();
+//                // 执行清理工作
+//            });
             final FluxSinkStatus fluxSinkStatus_ = fluxSinkStatus;
-            AgentAdapter agentAdapter = streamDataHandler.getAgentAdapter();
             // 添加处置监听器
             sink.onDispose(() -> {
                 // 当 sink 被处置时执行（包括正常完成、错误和取消）
@@ -567,25 +624,19 @@ public class AIResponseUtil {
 
             });
             String line;
-            boolean needBreak = false;
-            BooleanWrapperInf firstEventTag = new NoSynBooleanWrapper(true);
+            StringBuilder eventData = new StringBuilder();
+            String currentEventType = "";
             while (!sink.isCancelled() && (line = fluxSinkStatus.readLine()) != null ) {
                 if(fluxSinkStatus.isDispose()){
                     break;
                 }
-                needBreak = streamDataHandler.handle(line, sink,   firstEventTag);
-                if(needBreak){
-                    sink.complete();
-                    break;
-                }
+                sink.next(line);
+               
 
 
             }
-            if(!needBreak){
- 
-                streamDataHandler.handle(streamDataHandler.getDoneData(), sink,   firstEventTag);
-                sink.complete();
-            }
+            sink.complete();
+             
         }
         finally {
             fluxSinkStatus.releaseResources();
@@ -628,10 +679,40 @@ public class AIResponseUtil {
         int status = response.getCode();
 
         if (org.frameworkset.spi.remote.http.ResponseUtil.isHttpStatusOK( status)) {
-            processStreamResponse(response, sink,streamDataHandler);
+            processStreamResponse(response, sink,(BaseStreamDataHandler<T>) streamDataHandler);
         } else {
             HttpEntity entity = response.getEntity();
             String data = SimpleStringUtil.object2jsonPretty(streamDataHandler.getChatObject().getMessage());
+            if (entity != null ) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(new StringBuilder().append("Request url:").append(url).append(",status:").append(status).toString());
+                }
+                throw new ReactorCallException(new StringBuilder().append("Request url:")
+                        .append(url).append(",error,").append("status=")
+                        .append(status).append(":")
+                        .append(EntityUtils.toString(entity))
+                        .append(",\r\n use message:").append( data).toString());
+//                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString()));
+            }
+            else {
+                throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status)
+                        .append(",\r\n use message:").append( data).toString());
+//                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString()));
+            }
+        }
+    }
+
+    public static void handleStreamResponse(String url, ClassicHttpResponse response,
+                                                FluxSink<String> sink,String message,CommonStreamDataHandler<String> streamDataHandler)
+            throws IOException, ParseException {
+
+        int status = response.getCode();
+
+        if (org.frameworkset.spi.remote.http.ResponseUtil.isHttpStatusOK( status)) {
+            processStreamResponse(response, sink,streamDataHandler );
+        } else {
+            HttpEntity entity = response.getEntity();
+            String data = message;
             if (entity != null ) {
                 if (logger.isDebugEnabled()) {
                     logger.debug(new StringBuilder().append("Request url:").append(url).append(",status:").append(status).toString());
@@ -704,7 +785,7 @@ public class AIResponseUtil {
                 serverEvent.setFinishReason(content.getFinishReason());
                 
                 serverEvent.setType(ServerEvent.DATA);
-                serverEvent.setFunctionTools(content.getFunctions());
+                serverEvent.setFunctionTools(content.getFunctionTools());
                 serverEvent.setToolCalls(content.getToolCalls());
                 serverEvent.setContentType(content.getType());
                 serverEvent.setRole(content.getRole());
@@ -730,8 +811,8 @@ public class AIResponseUtil {
      */
     public static boolean handleServerEventData(AgentAdapter agentAdapter, 
                                                 boolean stream, String line, FluxSink<ServerEvent> sink, 
-                                                BooleanWrapperInf firstEventTag, 
-                                                StreamDataBuilder streamDataBuilder){
+                                                BooleanWrapperInf firstEventTag,
+                                                BaseStreamDataBuilder streamDataBuilder, FluxSinkStatus fluxSinkStatus){
         if(logger.isDebugEnabled()){
             logger.debug("line: " + line);
         }
@@ -765,62 +846,102 @@ public class AIResponseUtil {
                 }
                 serverEvent.setType(ServerEvent.DATA);
                 serverEvent.setDone(true);
+          
                 sink.next(serverEvent);
                 return true;
             }
             StreamData content = streamDataBuilder.build(agentAdapter,data);
             if (content != null) {
                 if( !content.isEmpty()) {
-                    ServerEvent serverEvent = new ServerEvent();
-                    if (firstEventTag.get()) {
-                        firstEventTag.set(false);
-                        serverEvent.setFirst(true);
-                    }
-                    serverEvent.setFunctionTools(content.getFunctions());
-                    serverEvent.setToolCalls(content.getToolCalls());
-                    serverEvent.setFinishReason(content.getFinishReason());
-                    if(!content.isDone()) {
-                        serverEvent.setData(content.getContent());
-                    }
-                   
-                    String url = content.getUrl();
-                    serverEvent.setGenUrl(url);
-                    serverEvent.setType(ServerEvent.DATA);
-                    
-                    serverEvent.setContentType(content.getType());
-                    serverEvent.setDone(content.isDone());
-
-                    serverEvent.setRole(content.getRole());
-                    serverEvent.setContent(content.getContent());
-                    serverEvent.setReasoningContent(content.getReasoningContent());
-                    sink.next(serverEvent);
+                    buildServerEvent(   firstEventTag,  content,
+                            streamDataBuilder,  agentAdapter,  sink);
                     return content.isDone();
                 }
-                else if(content.getFinishReason() != null && content.getFinishReason().length() > 0){
-                    ServerEvent serverEvent = new ServerEvent();
-                    if (firstEventTag.get()) {
-                        firstEventTag.set(false);
-                        serverEvent.setFirst(true);
+                else if(content.isToolCalls()){
+                   
+                    if(content.isBuildToolCallsFinished()){
+                        //构建完整的toolCalls对象
+                        buildServerEvent(   firstEventTag,  streamDataBuilder.getToolCallsStreamData(),
+                                  streamDataBuilder,  agentAdapter,  sink);
+                        return content.isDone();
                     }
-                    serverEvent.setFunctionTools(content.getFunctions());
-                    serverEvent.setToolCalls(content.getToolCalls());
-                    serverEvent.setGenUrl(content.getUrl());
-                    serverEvent.setFinishReason(content.getFinishReason());
-                    serverEvent.setType(ServerEvent.DATA);
-                    serverEvent.setContentType(content.getType());
-                    serverEvent.setDone(content.isDone());
-
-                    serverEvent.setRole(content.getRole());
-                    serverEvent.setContent(content.getContent());
-                    serverEvent.setReasoningContent(content.getReasoningContent());
-                    streamDataBuilder.handleServerEvent(agentAdapter,serverEvent);
-                    sink.next(serverEvent);
+                    else{
+                        streamDataBuilder.appendToolCallsStreamData( content);
+                    }
+                }
+                else if(content.getFinishReason() != null && content.getFinishReason().length() > 0){
+                    buildServerEvent(   firstEventTag,  content,
+                              streamDataBuilder,  agentAdapter,  sink);
                     return content.isDone();
                 }
             }
         }
 
         return false;
+    }
+
+    /**
+     * {"choices":[{"delta":{"content":null,"reasoning_content":null,"tool_calls":[{"index":0,"id":"","type":"function","function":{"arguments":"{\"params\": "}}]},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1771930232,"system_fingerprint":null,"model":"qwen3.5-plus","id":"chatcmpl-be905ede-8111-989a-948f-97b3f9c2c440"}
+   
+     * data: {"choices":[{"delta":{"content":null,"reasoning_content":null,"tool_calls":[{"index":0,"id":"","type":"function","function":{"arguments":"{\"subuser"}}]},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,
+     * "created":1771930232,"system_fingerprint":null,"model":"qwen3.5-plus","id":"chatcmpl-be905ede-8111-989a-948f-97b3f9c2c440"}
+     * @param content
+     * @return
+     */
+    private static void buildToolCalls(BaseStreamDataBuilder streamDataBuilder,StreamData content,ServerEvent serverEvent){
+        List<Map> toolCalls = new ArrayList<>();
+        Map firstToolCall = content.getToolCallsChunk();
+        StreamData streamDataChunk = null;
+        StringBuilder argumentsBuilder = new StringBuilder();
+        FunctionTool functionTool = streamDataBuilder.functionTool(argumentsBuilder,firstToolCall);
+        List<StreamData> _tools = content.getToolCallsStreamDatas();
+        
+        for(int i = 0; i < _tools.size(); i++){
+            streamDataChunk = _tools.get(i);            
+            streamDataBuilder.appendArguments(argumentsBuilder,streamDataChunk.getToolCallsChunk());
+             
+        }
+        String arguments = argumentsBuilder.toString();
+        Map function = (Map)firstToolCall.get("function");
+        function.put("arguments", arguments);
+        functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
+        toolCalls.add(firstToolCall);
+        List<FunctionTool> functionTools = new ArrayList<>();
+        functionTools.add(functionTool);
+        serverEvent.setToolCalls(toolCalls);
+        content.setToolCalls(toolCalls);
+        serverEvent.setFunctionTools(functionTools);
+        content.setFunctionTools(functionTools);
+        
+    }
+    private static void buildServerEvent( BooleanWrapperInf firstEventTag,StreamData content,
+                                                 BaseStreamDataBuilder streamDataBuilder,AgentAdapter agentAdapter,FluxSink<ServerEvent> sink)
+    {
+        ServerEvent serverEvent = new ServerEvent();
+        if (firstEventTag.get()) {
+            firstEventTag.set(false);
+            serverEvent.setFirst(true);
+        }
+        if(content.isToolCalls()){
+            buildToolCalls(  streamDataBuilder,  content,  serverEvent);
+        }
+        else {
+            serverEvent.setFunctionTools(content.getFunctionTools());
+            serverEvent.setToolCalls(content.getToolCalls());
+        }
+        serverEvent.setData(content.getContent());
+        serverEvent.setGenUrl(content.getUrl());
+        serverEvent.setFinishReason(content.getFinishReason());
+        serverEvent.setType(ServerEvent.DATA);
+        serverEvent.setContentType(content.getType());
+        serverEvent.setDone(content.isDone());
+
+        serverEvent.setRole(content.getRole());
+        serverEvent.setContent(content.getContent());
+        serverEvent.setReasoningContent(content.getReasoningContent());
+        streamDataBuilder.handleServerEvent(agentAdapter,serverEvent);
+        sink.next(serverEvent);
+        
     }
 
 }

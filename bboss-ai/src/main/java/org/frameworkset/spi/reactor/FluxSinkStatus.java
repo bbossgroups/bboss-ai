@@ -37,7 +37,6 @@ public class FluxSinkStatus {
     private ClassicHttpResponse response;
     private AtomicBoolean isCancelled = new AtomicBoolean(false);
     private AtomicBoolean isDispose = new AtomicBoolean(false);
-    
     private AtomicBoolean releaseResources = new AtomicBoolean(false);
     
     public FluxSinkStatus(ClassicHttpResponse response,HttpUriRequestBase httpUriRequestBase) throws IOException {
@@ -68,7 +67,9 @@ public class FluxSinkStatus {
         if(httpUriRequestBase !=  null){
             
             try {
-                httpUriRequestBase.abort();
+                
+                    httpUriRequestBase.abort();
+                
             } catch (Exception e) {
 //                    throw new RuntimeException(e);
             }
@@ -118,4 +119,5 @@ public class FluxSinkStatus {
         return isDispose.get();
     }
 
+ 
 }

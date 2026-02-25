@@ -18,7 +18,6 @@ package org.frameworkset.spi.ai.model;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
-import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.io.File;
 import java.util.Map;
@@ -30,6 +29,7 @@ import java.util.Map;
 public class ChatObject {
     private boolean isStream;
     private Object message;
+    private AgentMessage agentMessage;
     private String aiChatRequestType = AIConstants.AI_CHAT_REQUEST_BODY_JSON;
     private SSEHeaderSetFunction sseHeaderSetFunction;
     private StreamDataBuilder streamDataBuilder;
@@ -106,5 +106,13 @@ public class ChatObject {
 
     public void setFiles(Map<String, File> files) {
         this.files = files;
+    }
+
+    public AgentMessage getAgentMessage() {
+        return agentMessage;
+    }
+
+    public void setAgentMessage(AgentMessage agentMessage) {
+        this.agentMessage = agentMessage;
     }
 }

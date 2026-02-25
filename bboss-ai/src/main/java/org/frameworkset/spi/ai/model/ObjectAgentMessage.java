@@ -38,6 +38,7 @@ public class ObjectAgentMessage extends AgentMessage<ObjectAgentMessage>{
         StreamDataBuilder streamDataBuilder = null;   
         chatObject.setSseHeaderSetFunction(sseHeaderSetFunction);
         chatObject.setMessage(agentMessage);
+        chatObject.setAgentMessage(this);
         chatObject.setStream(stream);
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);

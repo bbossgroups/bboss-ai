@@ -61,7 +61,6 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     
     private List<FunctionTool> functionTools;
 
-   
 
     /**
      * 原始工具调用数据：工具调用列表
@@ -270,5 +269,9 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     public boolean finished(){
         return finishReason != null && finishReason.toLowerCase().equals("stop");
     }
-    
+
+    public boolean isToolCallsType() {
+        return contentType == TOOL_CALLS;
+    }
+ 
 }

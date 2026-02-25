@@ -26,7 +26,7 @@ import java.util.List;
  * @author biaoping.yin
  * @Date 2026/2/22
  */
-public interface MCPToolsRegist {
+public interface ToolsRegist {
     List<FunctionToolDefine> registTools();
     FunctionCall getFunctionCall(String functionName);
 

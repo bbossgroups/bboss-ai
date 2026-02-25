@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.material.GenFileDownload;
+import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -72,7 +73,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         aiChatRequestType = agentAdapter.getAIChatRequestType();
         agentMessage = parameters;
         sseHeaderSetFunction = agentAdapter.getAudioGenSSEHeaderSetFunction();
-        streamDataBuilder = new StreamDataBuilder() {
+        streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
             public StreamData build(AgentAdapter agentAdapter, String line) {
                 return agentAdapter.parseAudioGenStreamContentFromData(line);
@@ -110,6 +111,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         chatObject.setCompletionsUrl(this.getGenAudioCompletionsUrl());
         chatObject.setSseHeaderSetFunction(sseHeaderSetFunction);
         chatObject.setMessage(agentMessage);
+        chatObject.setAgentMessage(this);
         chatObject.setStream(stream);
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);

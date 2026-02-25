@@ -107,7 +107,7 @@ public class AIAgent {
 
         audioSTTAgentMessage.init();
         if(audioSTTAgentMessage.getTools() != null && audioSTTAgentMessage.getTools().size() > 0){
-            return AIAgentUtil.streamChatCompletionEventWithTool(maasName,audioSTTAgentMessage);
+            return AIAgentUtil.streamChatCompletionEventWithTool(maasName,audioSTTAgentMessage,true);
         }
         return AIAgentUtil.streamChatCompletionEvent(maasName, audioSTTAgentMessage);
     }
@@ -121,7 +121,7 @@ public class AIAgent {
 
         imageVLAgentMessage.init();
         if(imageVLAgentMessage.getTools() != null && imageVLAgentMessage.getTools().size() > 0){
-            return AIAgentUtil.streamChatCompletionEventWithTool(maasName,imageVLAgentMessage);
+            return AIAgentUtil.streamChatCompletionEventWithTool(maasName,imageVLAgentMessage,true);
         }
         return AIAgentUtil.streamChatCompletionEvent(maasName, imageVLAgentMessage);
     }
@@ -144,7 +144,7 @@ public class AIAgent {
 
         videoVLAgentMessage.init();
         if(videoVLAgentMessage.getTools() != null && videoVLAgentMessage.getTools().size() > 0) {
-            return AIAgentUtil.streamChatCompletionEventWithTool(maasName, videoVLAgentMessage);
+            return AIAgentUtil.streamChatCompletionEventWithTool(maasName, videoVLAgentMessage,true);
         }
 
         return AIAgentUtil.streamChatCompletionEvent(maasName, videoVLAgentMessage);
@@ -161,9 +161,17 @@ public class AIAgent {
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage){
+    
+        return streamChat(  maasName,     chatAgentMessage,true);
+    }
+
+    /**
+     * 实现流式智能问答功能,在指定的数据源上执行
+     */
+    public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage,boolean toolStream){
         chatAgentMessage.init();
         if(chatAgentMessage.getTools() != null && chatAgentMessage.getTools().size() > 0) {
-            return AIAgentUtil.streamChatCompletionEventWithTool(maasName, chatAgentMessage);
+            return AIAgentUtil.streamChatCompletionEventWithTool(maasName, chatAgentMessage,toolStream);
         }
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage);
     }

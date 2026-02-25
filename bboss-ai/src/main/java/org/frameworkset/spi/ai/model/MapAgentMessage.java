@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.model;
  */
 
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -38,7 +39,7 @@ public class MapAgentMessage extends AgentMessage<MapAgentMessage>{
         String aiChatRequestType = null;
         StreamDataBuilder streamDataBuilder = null;
         Boolean stream = (Boolean)agentMessage.get("stream");
-        streamDataBuilder = new StreamDataBuilder() {
+        streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
             public StreamData build(AgentAdapter agentAdapter, String line) {
                 return agentAdapter.parseStreamContentFromData(this,line);
@@ -71,6 +72,7 @@ public class MapAgentMessage extends AgentMessage<MapAgentMessage>{
         }
         chatObject.setSseHeaderSetFunction(sseHeaderSetFunction);
         chatObject.setMessage(agentMessage);
+        chatObject.setAgentMessage(this);
         chatObject.setStream(stream);
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);

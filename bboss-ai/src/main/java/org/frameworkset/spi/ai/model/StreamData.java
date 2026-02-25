@@ -30,7 +30,7 @@ public class StreamData {
     /**
      * 解析后工具调用数据：工具调用列表
      */
-    private List<FunctionTool> functions;
+    private List<FunctionTool> functionTools;
 
 
 
@@ -38,6 +38,8 @@ public class StreamData {
      * 原始工具调用数据：工具调用列表
      */
     private List<Map> toolCalls;
+
+    private boolean buildToolCallsFinished;
     private  String finishReason;
     private boolean done;
     private String url;
@@ -53,7 +55,8 @@ public class StreamData {
 
 
     private String reasoningContent;
-    
+    private Map toolCallsChunk;
+    private List<StreamData> toolCallsStreamDatas;
     public StreamData(){
     }
     public StreamData(int type, String data, String url,String finishReason){
@@ -70,12 +73,19 @@ public class StreamData {
      
     }
 
-    public StreamData(List<FunctionTool> functions, List<Map> toolCalls, String finishReason){
+    public StreamData(List<FunctionTool> functionTools, List<Map> toolCalls, String finishReason){
         this.type = ServerEvent.TOOL_CALLS;
-        this.functions = functions;
+        this.functionTools = functionTools;
         this.finishReason = finishReason;
  
         this.toolCalls = toolCalls;
+        this.buildToolCallsFinished = true;
+    }
+
+    public StreamData(Map toolCallsChunk , String finishReason){
+        this.type = ServerEvent.TOOL_CALLS;
+        this.finishReason = finishReason;
+        this.toolCallsChunk = toolCallsChunk; 
     }
 
     public StreamData(int type, String data, String url, String finishReason,boolean done){
@@ -97,6 +107,12 @@ public class StreamData {
     public StreamData setRole(String role) {
         this.role = role;
         return this;
+    }
+    public boolean isToolCalls(){
+        return type == ServerEvent.TOOL_CALLS;
+    }
+    public boolean isBuildToolCallsFinished() {
+        return buildToolCallsFinished;
     }
 
     public StreamData setContent(String content) {
@@ -149,8 +165,12 @@ public class StreamData {
 		return url;
 	}
 
-    public List<FunctionTool> getFunctions() {
-        return functions;
+    public void setFunctionTools(List<FunctionTool> functionTools) {
+        this.functionTools = functionTools;
+    }
+
+    public List<FunctionTool> getFunctionTools() {
+        return functionTools;
     }
 
     public List<Map> getToolCalls() {
@@ -160,5 +180,24 @@ public class StreamData {
     public StreamData setToolCalls(List<Map> toolCalls) {
         this.toolCalls = toolCalls;
         return this;
+    }
+
+    public List<StreamData> getToolCallsStreamDatas() {
+        return toolCallsStreamDatas;
+    }
+
+    public void appendToolCallsStreamData(StreamData streamData) {
+        if(toolCallsStreamDatas == null){
+            toolCallsStreamDatas = new java.util.ArrayList<>();
+        }
+        toolCallsStreamDatas.add(streamData);
+    }
+
+    public Map getToolCallsChunk() {
+        return toolCallsChunk;
+    }
+
+    public void setToolCallsChunk(Map toolCallsChunk) {
+        this.toolCallsChunk = toolCallsChunk;
     }
 }

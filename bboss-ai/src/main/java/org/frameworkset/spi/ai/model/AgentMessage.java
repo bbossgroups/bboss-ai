@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.tools.MCPToolsRegist;
+import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class AgentMessage<T extends AgentMessage> {
     private Map<String,FunctionCall> toolCalls;
 
     @JsonIgnore
-    private MCPToolsRegist mcpToolsRegist;
+    private ToolsRegist toolsRegist;
     /**
      * 默认角色提示词工程
      */
@@ -268,14 +268,14 @@ public class AgentMessage<T extends AgentMessage> {
             return;
         init = true;
         
-        if(this.mcpToolsRegist != null ){
-            List<FunctionToolDefine> functionToolDefines = this.mcpToolsRegist.registTools();
+        if(this.toolsRegist != null ){
+            List<FunctionToolDefine> functionToolDefines = this.toolsRegist.registTools();
             if(functionToolDefines != null && functionToolDefines.size() > 0){
                 FunctionCall functionCall = null;
                 for(FunctionToolDefine functionToolDefine:functionToolDefines){
                     functionCall = functionToolDefine.getFunctionCall();
                     if(functionCall == null){
-                        functionCall = mcpToolsRegist.getFunctionCall(functionToolDefine.getFunction().getName());
+                        functionCall = toolsRegist.getFunctionCall(functionToolDefine.getFunction().getName());
                         if(functionCall != null){
                             functionToolDefine.setFunctionCall(functionCall);
                         }
@@ -323,8 +323,8 @@ public class AgentMessage<T extends AgentMessage> {
         return toolCalls.get(toolName);
     }
 
-    public T setMcpToolsRegist(MCPToolsRegist mcpToolsRegist) {
-        this.mcpToolsRegist = mcpToolsRegist;
+    public T setToolsRegist(ToolsRegist toolsRegist) {
+        this.toolsRegist = toolsRegist;
         return (T)this;
     }
 }

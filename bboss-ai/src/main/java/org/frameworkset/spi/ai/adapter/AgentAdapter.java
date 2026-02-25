@@ -20,11 +20,8 @@ import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.material.GenMaterialFileDownload;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.ai.util.AIResponseUtil;
+import org.frameworkset.spi.ai.util.*;
 import org.frameworkset.spi.ai.material.GenFileDownload;
-import org.frameworkset.spi.ai.util.AudioDataBuilder;
-import org.frameworkset.spi.ai.util.MessageBuilder;
-import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
@@ -244,7 +241,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param data
      * @return
      */
-    public StreamData parseStreamContentFromData(StreamDataBuilder streamDataBuilder,String data){
+    public StreamData parseStreamContentFromData(BaseStreamDataBuilder streamDataBuilder, String data){
         return AIResponseUtil.parseStreamContentFromData(streamDataBuilder,data);
     }
 
@@ -254,11 +251,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param data
      * @return
      */
-    public StreamData parseImageParserStreamContentFromData(StreamDataBuilder streamDataBuilder,String data){
+    public StreamData parseImageParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data){
         return AIResponseUtil.parseStreamContentFromData(streamDataBuilder,data);
     }
 
-    public StreamData parseVideoParserStreamContentFromData(StreamDataBuilder streamDataBuilder,String data){
+    public StreamData parseVideoParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data){
         return AIResponseUtil.parseStreamContentFromData(streamDataBuilder,data);
     }
 
