@@ -781,7 +781,9 @@ public class AIResponseUtil {
             if (content != null) {
 
                 serverEvent = new ServerEvent();
-
+          
+                serverEvent.setData(content.getContent());
+                serverEvent.setGenUrl(content.getUrl());
                 serverEvent.setFinishReason(content.getFinishReason());
                 
                 serverEvent.setType(ServerEvent.DATA);
