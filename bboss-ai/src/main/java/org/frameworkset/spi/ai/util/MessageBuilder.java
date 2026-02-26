@@ -281,10 +281,10 @@ public class MessageBuilder {
         return buildMessage(ROLE_ASSISTANT,    serverEvent);
     }
 
-    public static Map<String,Object> buildAssistantMessage(StreamData streamData){
+    public static Map<String,Object> buildAssistantMessage(BaseStreamDataBuilder baseStreamDataBuilder){
 
 
-        return buildMessage(ROLE_ASSISTANT,    streamData);
+        return buildMessage(ROLE_ASSISTANT,      baseStreamDataBuilder);
     }
 
     
@@ -313,15 +313,21 @@ public class MessageBuilder {
         return userMessage;
     }
 
-    public static Map<String,Object> buildMessage(String role,StreamData streamData){
-
+    public static Map<String,Object> buildMessage(String role,BaseStreamDataBuilder baseStreamDataBuilder){
+        StreamData streamData = baseStreamDataBuilder.getToolCallsStreamData();
         Map<String, Object> userMessage = new HashMap<>();
         userMessage.put("role", role);
         if(streamData.getContent() != null) {
             userMessage.put("content", streamData.getContent());
         }
+        else if(baseStreamDataBuilder.getToolCallContentStreamData() != null){
+            userMessage.put("content", baseStreamDataBuilder.getToolCallContentStreamData());
+        }
         if(streamData.getReasoningContent() != null){
             userMessage.put("reasoning_content", streamData.getReasoningContent());
+        }
+        else if(baseStreamDataBuilder.getToolCallThinkingStreamData() != null){
+            userMessage.put("reasoning_content", baseStreamDataBuilder.getToolCallThinkingStreamData());
         }
         if(streamData.getToolCalls() != null)
             userMessage.put("tool_calls",streamData.getToolCalls());

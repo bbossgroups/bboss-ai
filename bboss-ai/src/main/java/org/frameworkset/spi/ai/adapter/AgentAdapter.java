@@ -397,8 +397,35 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 requestMap.put("max_tokens", toolAgentMessage.getMaxTokens());
             }
         }
+        buildThinking(  toolAgentMessage, requestMap);
 //        buildTools(toolAgentMessage, requestMap);
         return requestMap;
+    }
+    
+    protected void buildThinking(ChatAgentMessage chatAgentMessage,Map<String, Object> requestMap){
+        Map parameters = chatAgentMessage.getParameters();
+        Boolean thinking = chatAgentMessage.getThinking();
+        if(thinking != null){
+            if(parameters != null) {
+                if (!parameters.containsKey("thinking")) {
+                    Map data =  new LinkedHashMap();
+                    data.put("type", thinking?"enabled":"disabled");
+                    requestMap.put("thinking", data);
+                }
+            }
+            else{
+//                chatAgentMessage.addMapParameter("thinking", "type", "enabled");//kimi-k2.5禁用思维模式,启用：enabled
+                Map data =  new LinkedHashMap();
+                data.put("type", thinking?"enabled":"disabled");
+                requestMap.put("thinking", data);
+            }
+        }
+        else{
+            chatAgentMessage.setThinking(this.getDefaultThinking());
+        }
+        
+        
+        
     }
     /**
      * 构建智能问答请求参数
@@ -471,7 +498,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 requestMap.put("max_tokens", chatAgentMessage.getMaxTokens());
             }
         }
-
+        buildThinking(  chatAgentMessage, requestMap);
         buildTools(chatAgentMessage, requestMap);
         return requestMap;
     }
@@ -659,5 +686,24 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return null;
     }
 
-  
+
+    public Boolean getDefaultThinking() {
+        return false;
+    }
+
+    public Boolean getCustomThinking(Map parameters) {
+        Map thinking = (Map)parameters.get("thinking");
+        if(thinking != null){
+            String type = (String)thinking.get("type");
+            if(type != null ){
+                if(type.equals("enabled")) {
+                    return true;
+                }
+                else{
+                    return false;
+                }
+            }
+        }
+        return null;
+    }
 }

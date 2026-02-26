@@ -1,5 +1,5 @@
-包含两个模块：轻量级bboss ai agent开发客户端
-
+轻量级bboss ai agent开发客户端
+mvc flux服务检查和测试
 # 版本构建方法
 
 gradle clean publishToMavenLocal

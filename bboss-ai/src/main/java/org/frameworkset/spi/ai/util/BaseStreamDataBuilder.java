@@ -32,11 +32,60 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
      * stream模式下工具识别对象
      */
     private StreamData toolCallsStreamData;
+    /**
+     * stream模式下思考工具识别过程对象
+     */
+    private StringBuilder toolCallThinkingStreamData;
+
+    /**
+     * stream模式下工具识别过程对象
+     */
+    private StringBuilder toolCallContentStreamData;
 
     public StreamData getToolCallsStreamData() {
         return toolCallsStreamData;
     }
- 
+    public void appendToolCallThinkingStreamData(StreamData streamData){
+       String thinkContent = null;
+        String content = null;
+        if(streamData.isReasoning()){
+            
+            if(streamData.getContent() != null){
+                thinkContent = streamData.getContent();
+                 
+            }
+        }
+        else if(streamData.getReasoningContent() != null){
+            thinkContent = streamData.getReasoningContent() ;
+        }
+        else if(streamData.isContent()   && streamData.getContent() != null){
+            content = streamData.getContent() ;
+        }
+        if(thinkContent != null){
+            if(toolCallThinkingStreamData == null)
+                toolCallThinkingStreamData = new StringBuilder();
+            toolCallThinkingStreamData.append(thinkContent);
+        }
+        if(content != null){
+            if(toolCallContentStreamData == null)
+                toolCallContentStreamData = new StringBuilder();
+            toolCallContentStreamData.append(content);
+        }
+       
+    }
+    public String getToolCallThinkingStreamData() {
+        if(toolCallThinkingStreamData != null) {
+            return toolCallThinkingStreamData.toString();
+        }
+        return null;
+    }
+    
+    public String getToolCallContentStreamData() {
+        if(toolCallContentStreamData != null) {
+            return toolCallContentStreamData.toString();
+        }
+        return null;
+    }
  
     public void appendToolCallsStreamData(StreamData streamData){
         if(toolCallsStreamData == null)

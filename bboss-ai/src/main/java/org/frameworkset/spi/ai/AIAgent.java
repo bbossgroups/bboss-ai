@@ -106,9 +106,7 @@ public class AIAgent {
     public Flux<ServerEvent> streamAudioParser(String maasName,  AudioSTTAgentMessage audioSTTAgentMessage){
 
         audioSTTAgentMessage.init();
-        if(audioSTTAgentMessage.getTools() != null && audioSTTAgentMessage.getTools().size() > 0){
-            return AIAgentUtil.streamChatCompletionEventWithTool(maasName,audioSTTAgentMessage,true);
-        }
+
         return AIAgentUtil.streamChatCompletionEvent(maasName, audioSTTAgentMessage);
     }
     /**
@@ -120,9 +118,7 @@ public class AIAgent {
     public Flux<ServerEvent> streamImageParser(String maasName,   ImageVLAgentMessage imageVLAgentMessage){
 
         imageVLAgentMessage.init();
-        if(imageVLAgentMessage.getTools() != null && imageVLAgentMessage.getTools().size() > 0){
-            return AIAgentUtil.streamChatCompletionEventWithTool(maasName,imageVLAgentMessage,true);
-        }
+   
         return AIAgentUtil.streamChatCompletionEvent(maasName, imageVLAgentMessage);
     }
     /**
@@ -143,9 +139,6 @@ public class AIAgent {
     public Flux<ServerEvent> streamVideoParser(String maasName,   VideoVLAgentMessage videoVLAgentMessage){
 
         videoVLAgentMessage.init();
-        if(videoVLAgentMessage.getTools() != null && videoVLAgentMessage.getTools().size() > 0) {
-            return AIAgentUtil.streamChatCompletionEventWithTool(maasName, videoVLAgentMessage,true);
-        }
 
         return AIAgentUtil.streamChatCompletionEvent(maasName, videoVLAgentMessage);
     }
@@ -170,9 +163,7 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage,boolean toolStream){
         chatAgentMessage.init();
-        if(chatAgentMessage.getTools() != null && chatAgentMessage.getTools().size() > 0) {
-            return AIAgentUtil.streamChatCompletionEventWithTool(maasName, chatAgentMessage,toolStream);
-        }
+
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage);
     }
 

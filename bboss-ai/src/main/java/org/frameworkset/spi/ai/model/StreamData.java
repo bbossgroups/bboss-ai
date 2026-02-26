@@ -200,4 +200,12 @@ public class StreamData {
     public void setToolCallsChunk(Map toolCallsChunk) {
         this.toolCallsChunk = toolCallsChunk;
     }
+
+    public boolean isReasoning() {
+        return type == ServerEvent.REASONING_CONTENT;
+    }
+
+    public boolean isContent() {
+        return type == ServerEvent.CONTENT;
+    }
 }

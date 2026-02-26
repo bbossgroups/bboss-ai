@@ -31,6 +31,7 @@ import java.util.Map;
  */
 public class AgentMessage<T extends AgentMessage> {
 
+    private Boolean thinking;
     /**
      * 提示词工程
      */
@@ -317,6 +318,10 @@ public class AgentMessage<T extends AgentMessage> {
         }
     }
     
+    public boolean isToolThinkingMessage(){
+        return this.tools != null && tools.size() > 0 ;
+    }
+    
     public FunctionCall getFunctionCall(String toolName){
         if(toolCalls == null)
             return null;
@@ -325,6 +330,15 @@ public class AgentMessage<T extends AgentMessage> {
 
     public T setToolsRegist(ToolsRegist toolsRegist) {
         this.toolsRegist = toolsRegist;
+        return (T)this;
+    }
+
+    public Boolean getThinking() {
+        return thinking;
+    }
+
+    public T setThinking(Boolean thinking) {
+        this.thinking = thinking;
         return (T)this;
     }
 }

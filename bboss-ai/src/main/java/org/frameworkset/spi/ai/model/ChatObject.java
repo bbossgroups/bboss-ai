@@ -27,7 +27,11 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class ChatObject {
-    private boolean isStream;
+    private boolean stream;
+
+
+
+    private boolean thinking;
     private Object message;
     private AgentMessage agentMessage;
     private String aiChatRequestType = AIConstants.AI_CHAT_REQUEST_BODY_JSON;
@@ -77,11 +81,11 @@ public class ChatObject {
     }
 
     public boolean isStream() {
-        return isStream;
+        return stream;
     }
 
     public void setStream(boolean stream) {
-        isStream = stream;
+        this.stream = stream;
     }
 
     public Object getMessage() {
@@ -114,5 +118,13 @@ public class ChatObject {
 
     public void setAgentMessage(AgentMessage agentMessage) {
         this.agentMessage = agentMessage;
+    }
+
+    public boolean isThinking() {
+        return thinking;
+    }
+
+    public void setThinking(boolean thinking) {
+        this.thinking = thinking;
     }
 }

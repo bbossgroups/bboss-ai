@@ -42,6 +42,10 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
     public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
         return "/api/paas/v4/images/generations";
     }
+    @Override
+    public Boolean getDefaultThinking() {
+        return true;
+    }
 
     @Override
     /**

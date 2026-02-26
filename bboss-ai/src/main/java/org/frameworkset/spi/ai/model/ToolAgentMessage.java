@@ -15,12 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
-import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.util.MessageBuilder;
-import org.frameworkset.spi.ai.util.StreamDataBuilder;
-import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
-import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +32,7 @@ public class ToolAgentMessage extends ChatAgentMessage{
         this.functionTools = functionTools;
     }
 
+    
     public List<FunctionTool> getFunctionTools() {
         return functionTools;
     }
@@ -84,6 +80,11 @@ public class ToolAgentMessage extends ChatAgentMessage{
     }
 
     @Override
+    public Boolean getThinking() {
+        return chatAgentMessage.getThinking();
+    }
+
+    @Override
     public Integer getMaxTokens() {
         return chatAgentMessage.getMaxTokens();
     }
@@ -127,5 +128,9 @@ public class ToolAgentMessage extends ChatAgentMessage{
     @Override
     public void init() {
 //        super.init();
+    }
+    @Override
+    public boolean isToolThinkingMessage(){
+        return false ;
     }
 }

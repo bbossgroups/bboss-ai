@@ -857,6 +857,9 @@ public class AIResponseUtil {
                 if( !content.isEmpty()) {
                     buildServerEvent(   firstEventTag,  content,
                             streamDataBuilder,  agentAdapter,  sink);
+                    if(content.isContent() || content.isReasoning()){
+                        streamDataBuilder.appendToolCallThinkingStreamData(content);
+                    }
                     return content.isDone();
                 }
                 else if(content.isToolCalls()){
@@ -871,6 +874,7 @@ public class AIResponseUtil {
                         streamDataBuilder.appendToolCallsStreamData( content);
                     }
                 }
+                
                 else if(content.getFinishReason() != null && content.getFinishReason().length() > 0){
                     buildServerEvent(   firstEventTag,  content,
                               streamDataBuilder,  agentAdapter,  sink);
@@ -898,7 +902,7 @@ public class AIResponseUtil {
         FunctionTool functionTool = streamDataBuilder.functionTool(argumentsBuilder,firstToolCall);
         List<StreamData> _tools = content.getToolCallsStreamDatas();
         
-        for(int i = 0; i < _tools.size(); i++){
+        for(int i = 0; _tools != null && i < _tools.size(); i++){
             streamDataChunk = _tools.get(i);            
             streamDataBuilder.appendArguments(argumentsBuilder,streamDataChunk.getToolCallsChunk());
              

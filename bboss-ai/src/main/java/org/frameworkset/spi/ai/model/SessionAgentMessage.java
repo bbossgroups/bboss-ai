@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 
 import java.util.List;
@@ -78,11 +79,12 @@ public class SessionAgentMessage<T extends SessionAgentMessage> extends AgentMes
         return addSessionMessage(assistantMessage);
     }
 
-    public T addAssistantSessionMessage(StreamData streamData){
+    public T addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder){
         if(sessionMemory == null){
             return (T)this;
         }
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(streamData);
+        
+        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(  baseStreamDataBuilder);
 
         return addSessionMessage(assistantMessage);
     }
