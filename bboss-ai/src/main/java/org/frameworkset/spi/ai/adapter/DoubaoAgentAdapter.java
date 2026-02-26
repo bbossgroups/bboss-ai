@@ -246,4 +246,8 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
  
         return result;
     }
+    @Override    
+    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+        return "/api/v3/chat/completions";
+    }
 }
