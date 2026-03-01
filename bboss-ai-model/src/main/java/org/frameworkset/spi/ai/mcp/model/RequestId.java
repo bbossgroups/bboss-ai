@@ -21,9 +21,18 @@ package org.frameworkset.spi.ai.mcp.model;
  */
 public class RequestId {
 	private long reqNo;
+	/**
+	 * 获取下一个请求编号
+	 * 线程安全的方法，用于生成递增的请求ID，当编号达到Long.MAX_VALUE时自动重置为0
+	 * @return 当前请求编号，返回后编号自动递增
+	 */
 	public synchronized long nextReqNo(){
+        if(reqNo == Long.MAX_VALUE){
+            reqNo = 0;
+        }
 		return reqNo ++;
 	}
+
 	
 	
 }

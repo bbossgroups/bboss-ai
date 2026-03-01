@@ -121,13 +121,26 @@ public class McpClientTest {
 //        initGaotie();
 //        init();
         HttpRequestProxy.startHttpPools("mcpserver.properties");
-        MCPClient mcpClient = new MCPClient("gaotie");
-        mcpClient.init();
+//        MCPClient mcpClient = new MCPClient("gaotie");
+//        mcpClient.init();
+//
+//        McpListToolResponse tools = mcpClient.listTools();
+//		
+//		
+//		
+		
+//        logger.info("tools:{}", JsonUtil.object2json(tools));
 
-        McpListToolResponse tools = mcpClient.listTools();
-		
-		
-        logger.info("tools:{}", JsonUtil.object2json(tools));
+        MCPClient mcpClient1 = new MCPClient("aliyun");
+		mcpClient1.init();
+
+        McpListToolResponse tools1 = mcpClient1.listTools();		
+		 
+		logger.info("tools:{}", JsonUtil.object2json(tools1));
+
+        tools1 = mcpClient1.listTools();
+
+        logger.info("tools:{}", JsonUtil.object2json(tools1));
 		
     }
 

@@ -15,26 +15,17 @@ package org.frameworkset.spi.ai.mcp;
  * limitations under the License.
  */
 
-import com.frameworkset.util.JsonUtil;
-import com.frameworkset.util.ValueObjectUtil;
-import org.frameworkset.bulk.CommonBulkRetryHandler;
 import org.frameworkset.spi.ai.mcp.model.*;
+import org.frameworkset.spi.ai.mcp.sse.SSEMcpCallHelper;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
-import org.frameworkset.spi.remote.http.HttpMethodName;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import org.frameworkset.spi.ai.mcp.sse.SSEMcpCallHelper;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
-import static java.lang.Thread.sleep;
 
 /**
  * @author biaoping.yin
@@ -47,7 +38,7 @@ public class MCPClient {
     private String messagePath;
 
     private long blockedWaitTimeout;
-    private int warnMultsRejects;
+    private int warnMultsRejects = 1000;
     private String bulkProcessorName = "SSEProcessor";
     private String bulkRejectMessage = "Reject sse";
 
@@ -64,6 +55,7 @@ public class MCPClient {
     private CountDownLatch countDownLatch = null;
     private final static Logger logger = LoggerFactory.getLogger(MCPClient.class);
 	private SSEMcpCallHelper sseMcpCallHelper;
+    private boolean sseStreamCompleted;
     public MCPClient(String mcpServer){
         this.mcpServer = mcpServer;
 		sseMcpCallHelper = new SSEMcpCallHelper();
@@ -80,7 +72,7 @@ public class MCPClient {
     public void init(){
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(this.mcpServer);
         ssePath = clientConfiguration.getExtendConfig("sseendpoint");
-        connect();
+        connect(false);
     }
     public void destory(){
         if(this.fluxDisposable != null){
@@ -100,39 +92,78 @@ public class MCPClient {
             sseMcpCallHelper.destory();
         }
     }
-    private void connect(){
+    private Object reconnectedLock = new Object();
+
+    /**
+     * 某些情况下，MCP服务器可能会断开连接，需要重新连接
+     */
+    private void reconnected(){
+        if(!sseStreamCompleted){
+            return;
+        }
+        synchronized (reconnectedLock){
+            if(!sseStreamCompleted){
+                return;
+            }
+            if(fluxDisposable != null) {
+                this.fluxDisposable.dispose();
+            }
+            this.messagePath = null;
+            this.fluxDisposable = null;
+            this.start.interrupt();
+            try {
+                this.start.join();
+            } catch (InterruptedException e) {
+                
+            }
+            this.sseMcpCallHelper.clearCalls();
+            connect(true);
+            sseStreamCompleted = false;
+        }
+    }
+    private void setsseStreamCompleted(){
+        synchronized (reconnectedLock){
+            sseStreamCompleted = true;
+        }
+		start.interrupt();
+    }
+    private void connect(boolean reconnected){
         countDownLatch = new CountDownLatch(1);
         start = new Thread(new Runnable() {
             @Override
             public void run() {
                 Flux<String> flux = AIAgentUtil.mcpSSE(mcpServer,ssePath);
                
-                Disposable disposable = flux.doOnSubscribe(subscription -> logger.info("开始订阅mcp..."))
+                Disposable disposable = flux.doOnSubscribe(subscription -> logger.info("{} 开始订阅mcp by {}",mcpServer,reconnected?"reconnected":"connect"))
                         .doOnNext(chunk -> {
-                            handlSSEEvent(chunk);
+                            handlSSEEvent(chunk,reconnected);
 
                         }) //打印流式调用返回的问题答案片段
                         .doOnComplete(() -> {
-                            logger.info("SSE订阅流完成");
+
+                            setsseStreamCompleted();
+                            logger.info("{} SSE订阅流完成", mcpServer);
 
                         })
                         .doOnError(error -> {
-                            logger.error("SSE订阅流异常",error);
+                            setsseStreamCompleted();
+                            logger.error(mcpServer+" SSE订阅流异常",error);
+                            
 
                         })
                         .subscribe();
                 try {
-                    
+                    MCPClient.this.fluxDisposable = disposable;
                      
                     synchronized (this) {
                         wait();
                     }
-                        
+                    logger.info("{} SSE订阅流关闭啦。", mcpServer);    
                      
                 } catch (InterruptedException e) {
-
+                    logger.info("{} SSE订阅流关闭啦。", mcpServer);
                 }
-                MCPClient.this.fluxDisposable = disposable;
+                
             }
         });
         start.start();
@@ -141,7 +172,7 @@ public class MCPClient {
             initialization();
             notificationsInitialized();
         } catch (InterruptedException e) {
-            logger.error("MCPClient initialization interrupted", e);
+            logger.error("MCPClient "+mcpServer+" initialization interrupted", e);
         }
 
     }
@@ -151,7 +182,7 @@ public class MCPClient {
      * data:/api/v1/mcps/amap-maps/message?sessionId=2e60ceea-5419-4935-9eb4-d8766be8677a
      * @param event
      */
-    private void handlSSEEvent(String event){
+    private void handlSSEEvent(String event, boolean reconnected){
 //        if(event.startsWith("endpoint:")){
 //            logger.info(event);
 //        }
@@ -161,8 +192,14 @@ public class MCPClient {
                 messagePath = event.substring(5).trim();
                 String session = messagePath.substring(messagePath.indexOf("?")+1);
                 sessionId = session.substring(session.indexOf("=")+1);
-                logger.info("Mcp server {} connected:{},sessionId:{}",mcpServer,messagePath,sessionId);
-                sseMcpCallHelper.init(this);
+                if(!reconnected) {
+                    sseMcpCallHelper.init(this);
+                    logger.info("Mcp server {} connected:{},sessionId:{}", mcpServer, messagePath, sessionId);
+                }
+                else{
+                    logger.info("Mcp server {} reconnected:{},sessionId:{}", mcpServer, messagePath, sessionId);
+                }
+               
                 countDownLatch.countDown();
             }
 			else{
@@ -184,6 +221,7 @@ public class MCPClient {
     private RequestId requestId = new RequestId();
 	
     public McpListToolResponse listTools(){
+        reconnected();
 //        String listTools = """
 //                {
 //                  "jsonrpc": "2.0",
@@ -194,6 +232,7 @@ public class MCPClient {
 		McpListToolRequest mcpToolRequest = new McpListToolRequest();
 		mcpToolRequest.setId(this.requestId.nextReqNo());
 		McpListToolResponse mcpListToolResponse = this.sseMcpCallHelper.listTools(this, mcpToolRequest);
+//        this.sseStreamCompleted = true;
 		return mcpListToolResponse;
 //        String listTools = "";
 //        Map<String,String> headers = new LinkedHashMap<>();
@@ -236,7 +275,7 @@ public class MCPClient {
 		notificationsInitialized.setMethod("notifications/initialized");
         String data = HttpRequestProxy.sendJsonBody(mcpServer,notificationsInitialized,messagePath,String.class);
          if(logger.isDebugEnabled()) {
-             logger.debug("notificationsInitialized:{}", data);
+             logger.debug("{} notificationsInitialized:{}",mcpServer, data);
          }
 		return data;
     }

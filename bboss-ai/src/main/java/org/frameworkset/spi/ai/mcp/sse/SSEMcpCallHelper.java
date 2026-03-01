@@ -23,6 +23,7 @@ import org.frameworkset.util.concurrent.ThreadPoolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -45,13 +46,25 @@ public class SSEMcpCallHelper {
 		if(executor != null){
 			executor.shutdown();
 		}
+		clearCalls();
+	}
+	
+	public void clearCalls(){
+		Iterator<Map.Entry<String, McpCallObject>> iterator = mcpCallObjects.entrySet().iterator();
+		while (iterator.hasNext()) {
+			Map.Entry<String, McpCallObject> entry = iterator.next();
+			McpCallObject mcpCallObject = entry.getValue();
+			mcpCallObject.setException(new McpCallException("MCP call destoried"));
+			mcpCallObject.countDown();
+		}
+		mcpCallObjects.clear();
 	}
 	
 	public McpInitializedToolResponse initializationCall(MCPClient mcpClient , McpInitializedToolRequest mcpInitializedToolRequest){
 		McpCallObject<McpInitializedToolResponse> mcpCallObject = new McpCallObject<>(McpInitializedToolResponse.class);
 		mcpCallObject.setRequestId(mcpInitializedToolRequest.getId());
 		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
-		HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpInitializedToolRequest, mcpClient.getMessagePath(),String.class);
+		String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpInitializedToolRequest, mcpClient.getMessagePath(),String.class);
 		return handleResponse(mcpCallObject);	
 		
 		 
@@ -100,7 +113,7 @@ public class SSEMcpCallHelper {
 		McpCallObject<McpListToolResponse> mcpCallObject = new McpCallObject<>(McpListToolResponse.class);
 		mcpCallObject.setRequestId(mcpToolRequest.getId());
 		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
-		HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolRequest, mcpClient.getMessagePath(),String.class);
+        String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolRequest, mcpClient.getMessagePath(),String.class);
 		
 		return handleResponse(  mcpCallObject);
 	}

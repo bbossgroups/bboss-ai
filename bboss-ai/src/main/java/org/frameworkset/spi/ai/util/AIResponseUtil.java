@@ -561,18 +561,18 @@ public class AIResponseUtil {
 //                fluxSinkStatus.cancel();
 //                // 执行清理工作
 //            });
-//            final FluxSinkStatus fluxSinkStatus_ = fluxSinkStatus;
-            // 添加处置监听器
-//            sink.onDispose(() -> {
-//                // 当 sink 被处置时执行（包括正常完成、错误和取消）
-//                if(logger.isDebugEnabled()) {
-//                    logger.debug("Sink disposed");
-//                }
-//                fluxSinkStatus_.dispose();
-//                // 执行清理工作
-//                fluxSinkStatus_.releaseResources();
-//
-//            });
+            final FluxSinkStatus fluxSinkStatus_ = fluxSinkStatus;
+             //添加处置监听器
+            sink.onDispose(() -> {
+                // 当 sink 被处置时执行（包括正常完成、错误和取消）
+                if(logger.isDebugEnabled()) {
+                    logger.debug("Sink disposed");
+                }
+                fluxSinkStatus_.dispose();
+                // 执行清理工作
+                fluxSinkStatus_.releaseResources();
+
+            });
             String line;
             boolean needBreak = false;
             BooleanWrapperInf firstEventTag = new NoSynBooleanWrapper(true);
@@ -609,13 +609,25 @@ public class AIResponseUtil {
         FluxSinkStatus fluxSinkStatus = null;
         try  {
             fluxSinkStatus = new FluxSinkStatus(response,streamDataHandler.getHttpUriRequestBase());
-//            // 添加取消监听器
-//            sink.onCancel(() -> {
+            FluxSinkStatus _fluxSinkStatus = fluxSinkStatus;
+            // 添加取消监听器
+            sink
+//                    .onCancel(() -> {
 //                // 当订阅被取消时执行
-//                logger.info("Subscription cancelled");
-//                fluxSinkStatus.cancel();
+//                logger.info("Sink cancelled");
+//                _fluxSinkStatus.dispose();
+//                _fluxSinkStatus.releaseResources();
 //                // 执行清理工作
-//            });
+//            })
+                    .onDispose(() -> {
+                // 当 sink 被处置时执行（包括正常完成、错误和取消）
+                if(logger.isDebugEnabled()) {
+                    logger.debug("Sink disposed");
+                }
+                _fluxSinkStatus.dispose();
+                _fluxSinkStatus.releaseResources();
+                // 执行清理工作
+            });
 
             String line;
            

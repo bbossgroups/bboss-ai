@@ -633,12 +633,14 @@ public class AIAgentUtil {
 							}
 						};
 						
-//						Map header = new LinkedHashMap();
-//						
-//						header.put("Accept", "text/event-stream");
-//						header.put("Cache-Control", "no-cache");
+						Map header = new LinkedHashMap();
+
+						header.put("Accept", "text/event-stream");
+						header.put("Cache-Control", "no-cache");
+                        header.put("Connection", "keep-alive");
+                        
 						 
-						HttpRequestProxy.httpGet(clientConfiguration, url, responseHandler);
+						HttpRequestProxy.httpGet(clientConfiguration, url,header, responseHandler);
 						 
 
 //                        HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, url, header, responseHandler);
