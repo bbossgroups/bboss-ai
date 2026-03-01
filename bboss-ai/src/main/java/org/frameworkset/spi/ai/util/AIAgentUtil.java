@@ -24,12 +24,11 @@ import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
+import org.frameworkset.spi.ai.mcp.DataCollector;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.reactor.*;
-import org.frameworkset.spi.remote.http.BaseURLResponseHandler;
-import org.frameworkset.spi.remote.http.ClientConfiguration;
-import org.frameworkset.spi.remote.http.HttpRequestProxy;
-import org.frameworkset.spi.remote.http.ResponseStatus;
+import org.frameworkset.spi.remote.http.*;
+import org.frameworkset.util.annotations.HttpMethod;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
 import org.slf4j.Logger;
@@ -426,11 +425,13 @@ public class AIAgentUtil {
 
     private static <T> Flux<T> buildFlux(ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler) {
         return Flux.<T>create(sink -> {
-                    Object data = null;
+            Object data = null;
+            try {
+                   
                     Object message = chatObject.getMessage();
 
                     BaseStreamDataBuilder baseStreamDataBuilder = (BaseStreamDataBuilder) streamDataHandler.getStreamDataBuilder();
-                    try {
+                    
 
 
                         BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
@@ -523,11 +524,10 @@ public class AIAgentUtil {
                 });
     }
 
-    private static   Flux<String> buildFlux(ClientConfiguration clientConfiguration,String url,Object message  ) {
+    private static   Flux<String> buildFlux(ClientConfiguration clientConfiguration,String url,Object message ,String method ) {
         return Flux.<String>create(sink -> {
                     String data = null;
                      CommonStreamDataHandler<String> streamDataHandler = new BaseCommonStreamDataHandler<String>() {
-
                          /**
                           * 处理异常，如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
                           *
@@ -562,13 +562,16 @@ public class AIAgentUtil {
                             }
                         };
                         
-                        Map header = new LinkedHashMap();
-                       
-//                        header.put("Accept", "text/event-stream");
-                        HttpRequestProxy.httpGet(clientConfiguration,  url,  responseHandler);
+                      
+                        if(method.equals(HttpMethodName.HTTP_GET)) {
+                            HttpRequestProxy.httpGet(clientConfiguration, url, responseHandler);
+                        }
+                        else if(method.equals(HttpMethodName.HTTP_POST)) {
+                            HttpRequestProxy.sendJsonBody(clientConfiguration,  data, url,  responseHandler);
+                        }
 
 //                        HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, url, header, responseHandler);
-                         
+                       
                     } catch (ReactorCallException e) {
 //                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
                         streamDataHandler.handleException(data,e,sink );
@@ -584,6 +587,9 @@ public class AIAgentUtil {
                         sink.error(e);
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
                     }
+                    finally {
+                        sink.complete();
+                    }
                 }, FluxSink.OverflowStrategy.BUFFER)
                 .subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
                 .timeout(Duration.ofSeconds(60)) // 设置超时
@@ -591,13 +597,84 @@ public class AIAgentUtil {
 //                    String error = SimpleStringUtil.exceptionToString(throwable);
 //                    System.err.println("流式处理错误: " + throwable.getMessage());
 //                    String error = SimpleStringUtil.exceptionToString(throwable);
-                    if(logger.isDebugEnabled()) {
-                        logger.debug(throwable.getMessage(), throwable);
+                    if(logger.isErrorEnabled()) {
+                        logger.error(throwable.getMessage(), throwable);
                     }
                     // 修改此处，将错误信息作为Flux输出
                     return Flux.empty();
                 });
     }
+	
+	private static   Flux<String> buildMcpSSEFlux(ClientConfiguration clientConfiguration,String url   ) {
+		return Flux.<String>create(sink -> {
+					CommonStreamDataHandler<String> streamDataHandler = new BaseCommonStreamDataHandler<String>() {
+						/**
+						 * 处理异常，如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
+						 *
+						 * @param requestBody
+						 * @param throwable   异常
+						 * @param sink        数据行处理结果
+						 * @return
+						 */
+						@Override
+						public void handleException(Object requestBody, Throwable throwable, FluxSink<String> sink) {
+						}
+					};
+					try {
+						 
+						
+						BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
+							@Override
+							public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
+								streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
+								AIResponseUtil.handleStreamResponse(url, response, sink,"", streamDataHandler);
+								return null;
+								
+							}
+						};
+						
+//						Map header = new LinkedHashMap();
+//						
+//						header.put("Accept", "text/event-stream");
+//						header.put("Cache-Control", "no-cache");
+						 
+						HttpRequestProxy.httpGet(clientConfiguration, url, responseHandler);
+						 
+
+//                        HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, url, header, responseHandler);
+						
+					} catch (ReactorCallException e) {
+//                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
+						streamDataHandler.handleException("",e,sink );
+						sink.error(e);
+//                        sink.error(e);
+					} catch (Exception e) {
+						streamDataHandler.handleException("",e,sink );
+						sink.error(e);
+//                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
+					}
+					catch (Throwable e) {
+						streamDataHandler.handleException("",e,sink );
+						sink.error(e);
+//                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
+					}
+					finally {
+						sink.complete();
+					}
+				}, FluxSink.OverflowStrategy.BUFFER)
+				.subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
+				.timeout(Duration.ofSeconds(60)) // 设置超时
+				.onErrorResume(throwable -> {
+//                    String error = SimpleStringUtil.exceptionToString(throwable);
+//                    System.err.println("流式处理错误: " + throwable.getMessage());
+//                    String error = SimpleStringUtil.exceptionToString(throwable);
+					if(logger.isErrorEnabled()) {
+						logger.error(throwable.getMessage(), throwable);
+					}
+					// 修改此处，将错误信息作为Flux输出
+					return Flux.empty();
+				});
+	}
 
     private static <T> Flux<T> buildFlux(ServerEvent serverEvent) {
         return Flux.<T>create(sink -> {
@@ -788,12 +865,101 @@ public class AIAgentUtil {
     /**
      * 创建流式调用的Flux,在指定的数据源上执行
      */
-    public static  Flux<String> stream(String poolName,String url,Object chatMessage ) {
-        ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
-        
+    public static  Flux<String> stream(String poolName,String url,Object chatMessage ,String method) {
+        ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);      
       
       
-        return buildFlux(  clientConfiguration,  url, chatMessage  );
+        return buildFlux(  clientConfiguration,  url, chatMessage  ,  method);
 
     }
+	
+	/**
+	 * 创建流式调用的Flux,在指定的数据源上执行
+	 */
+	public static  Flux<String> mcpSSE(String poolName,String url  ) {
+		ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
+		
+		
+		return buildMcpSSEFlux( clientConfiguration,  url );
+		
+	}
+	
+	public static  void stream(String poolName, String url, Object message , String method, DataCollector dataCollector) {
+		ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
+		
+		
+		String data = null;
+		 
+		try {
+			CommonStreamDataHandler<String> streamDataHandler = new BaseCommonStreamDataHandler<String>() {
+				/**
+				 * 处理异常，如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
+				 *
+				 * @param requestBody
+				 * @param throwable   异常
+				 * @param sink        数据行处理结果
+				 * @return
+				 */
+				@Override
+				public void handleException(Object requestBody, Throwable throwable, FluxSink<String> sink) {
+				}
+			};
+			if (message != null) {
+				if (message instanceof String) {
+					data = (String) message;
+				} else {
+					data = SimpleStringUtil.object2json(message);
+				}
+			}
+			
+			final String _data = data;
+			
+			BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
+				@Override
+				public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
+					streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
+					AIResponseUtil.handleStreamResponse(url, response, _data, dataCollector, streamDataHandler);
+					return null;
+					
+				}
+			};
+			
+			Map header = new LinkedHashMap();
+			
+			header.put("Accept", "text/event-stream");
+			header.put("Cache-Control", "no-cache");
+			header.put("Connection", "keep-alive");
+			if(method.equals(HttpMethodName.HTTP_GET)) {
+				HttpRequestProxy.httpGet(clientConfiguration, url, responseHandler);
+			}
+			else if(method.equals(HttpMethodName.HTTP_POST)) {
+				HttpRequestProxy.sendJsonBody(clientConfiguration,  data, url, header, responseHandler);
+			}
+
+//                        HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, url, header, responseHandler);
+			
+		} catch (ReactorCallException e) {
+//                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
+			 
+//                        sink.error(e);
+		} catch (Exception e) {
+			 
+//                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
+		}
+		catch (Throwable e) {
+		}
+		finally {
+		}
+		
+	}
+
+    /**
+     * 创建流式调用的Flux,在指定的数据源上执行
+     */
+    public static  Flux<String> stream(String poolName,String url,String method) {
+        return stream(  poolName,  url,null ,  method);
+
+    }
+	
+ 
 }

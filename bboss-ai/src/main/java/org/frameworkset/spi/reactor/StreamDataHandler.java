@@ -18,8 +18,6 @@ package org.frameworkset.spi.reactor;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.model.ChatObject;
-import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
-import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import reactor.core.publisher.FluxSink;
 

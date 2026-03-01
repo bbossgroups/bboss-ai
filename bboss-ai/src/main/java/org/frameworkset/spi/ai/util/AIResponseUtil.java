@@ -25,6 +25,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.material.DownImageBase64HttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownFileHttpClientResponseHandler;
+import org.frameworkset.spi.ai.mcp.DataCollector;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -35,6 +36,8 @@ import reactor.core.publisher.FluxSink;
 
 import java.io.IOException;
 import java.util.*;
+
+import static java.lang.Thread.sleep;
 
 /**
  * @author biaoping.yin
@@ -599,7 +602,9 @@ public class AIResponseUtil {
         }
     }
 
-    private static void processStreamResponse(ClassicHttpResponse response, FluxSink<String> sink, CommonStreamDataHandler<String> streamDataHandler) throws IOException {
+    private static void processStreamResponse(ClassicHttpResponse response, 
+                                              FluxSink<String> sink,
+                                              CommonStreamDataHandler<String> streamDataHandler) throws IOException {
 
         FluxSinkStatus fluxSinkStatus = null;
         try  {
@@ -611,37 +616,80 @@ public class AIResponseUtil {
 //                fluxSinkStatus.cancel();
 //                // 执行清理工作
 //            });
-            final FluxSinkStatus fluxSinkStatus_ = fluxSinkStatus;
-            // 添加处置监听器
-            sink.onDispose(() -> {
-                // 当 sink 被处置时执行（包括正常完成、错误和取消）
-                if(logger.isDebugEnabled()) {
-                    logger.debug("Sink disposed");
-                }
-                fluxSinkStatus_.dispose();
-                // 执行清理工作
-                fluxSinkStatus_.releaseResources();
 
-            });
             String line;
-            StringBuilder eventData = new StringBuilder();
-            String currentEventType = "";
-            while (!sink.isCancelled() && (line = fluxSinkStatus.readLine()) != null ) {
+           
+            while (  (line = fluxSinkStatus.readLine()) != null ) {
                 if(fluxSinkStatus.isDispose()){
                     break;
                 }
                 sink.next(line);
-               
+//                logger.info(line);
+                
+                
 
 
             }
-            sink.complete();
+           
              
         }
         finally {
             fluxSinkStatus.releaseResources();
         }
     }
+	
+	private static void processStreamResponse(ClassicHttpResponse response,
+											   DataCollector dataCollector,
+											  CommonStreamDataHandler<String> streamDataHandler) throws IOException {
+		
+		FluxSinkStatus fluxSinkStatus = null;
+		try  {
+			fluxSinkStatus = new FluxSinkStatus(response,streamDataHandler.getHttpUriRequestBase());
+//            // 添加取消监听器
+//            sink.onCancel(() -> {
+//                // 当订阅被取消时执行
+//                logger.info("Subscription cancelled");
+//                fluxSinkStatus.cancel();
+//                // 执行清理工作
+//            });
+			
+			String line;
+            int waitTimes = 1;//值为空时，等待10次
+			do{
+                line = fluxSinkStatus.readLine();
+                if(line == null) {
+                    try {
+                        if(waitTimes <= 0)
+                            break;
+                        sleep(1000L);
+                        waitTimes --;
+                    } catch (InterruptedException e) {
+//                        throw new RuntimeException(e);
+                    }
+                   
+                }
+                if(line != null) {
+                    dataCollector.collector(line);
+                }
+            }while (true);
+//			while (  (line = fluxSinkStatus.readLine()) != null ) {
+//				if(fluxSinkStatus.isDispose()){
+//					break;
+//				}
+//				dataCollector.collector(line);
+////                logger.info(line);
+//				
+//				
+//				
+//				
+//			}
+			
+			
+		}
+		finally {
+			fluxSinkStatus.releaseResources();
+		}
+	}
 
 
     public static ServerEvent handleChatResponse(AgentAdapter agentAdapter,String url, ClassicHttpResponse response, StreamDataBuilder streamDataBuilder)
@@ -701,6 +749,36 @@ public class AIResponseUtil {
             }
         }
     }
+	
+	public static <T> void handleStreamResponse(String url, ClassicHttpResponse response,
+												String data, DataCollector dataCollector,CommonStreamDataHandler<String> streamDataHandler)
+			throws IOException, ParseException {
+		
+		int status = response.getCode();
+		
+		if (org.frameworkset.spi.remote.http.ResponseUtil.isHttpStatusOK( status)) {
+			processStreamResponse(response,  dataCollector,streamDataHandler);
+		} else {
+			HttpEntity entity = response.getEntity();
+			
+			if (entity != null ) {
+				if (logger.isDebugEnabled()) {
+					logger.debug(new StringBuilder().append("Request url:").append(url).append(",status:").append(status).toString());
+				}
+				throw new ReactorCallException(new StringBuilder().append("Request url:")
+						.append(url).append(",error,").append("status=")
+						.append(status).append(":")
+						.append(EntityUtils.toString(entity))
+						.append(",\r\n use message:").append( data).toString());
+//                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString()));
+			}
+			else {
+				throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status)
+						.append(",\r\n use message:").append( data).toString());
+//                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString()));
+			}
+		}
+	}
 
     public static void handleStreamResponse(String url, ClassicHttpResponse response,
                                                 FluxSink<String> sink,String message,CommonStreamDataHandler<String> streamDataHandler)

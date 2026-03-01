@@ -27,6 +27,28 @@ sourceSets {
 
 dependencies {
     api project(":bboss-ai-model")
+
+//    compileOnly (
+//            [group: "io.modelcontextprotocol.sdk", name: "mcp-core", version: "1.0.0"],
+//    )
+//    
+//    {
+//        exclude group: 'log4j', module: 'log4j'
+//        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+//        exclude group: 'org.slf4j', module: 'slf4j-api'
+//        
+//         
+//    }
+//    compileOnly (
+//            [group: "io.modelcontextprotocol.sdk", name: "mcp-json-jackson2", version: "1.0.0"],
+//    )
+//
+//    {
+//        exclude group: 'log4j', module: 'log4j'
+//        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+//        exclude group: 'org.slf4j', module: 'slf4j-api'
+//    }
     api group: 'com.bbossgroups', name: 'bboss-http5', version: BBOSS_HTTP5_VERSION
     api group: 'io.projectreactor', name: 'reactor-core', version: reactor
+    
 }
