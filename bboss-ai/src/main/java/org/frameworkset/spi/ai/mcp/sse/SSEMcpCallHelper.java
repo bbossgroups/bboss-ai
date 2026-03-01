@@ -124,4 +124,19 @@ public class SSEMcpCallHelper {
 		}
 		return mcpCallObject.getResponse();
 	}
+
+	/**
+     * 调用MCP工具
+     *
+     * @param mcpToolCallRequest
+     * @return
+     */
+    public McpToolCallResponse toolsCall(MCPClient mcpClient, McpToolCallRequest mcpToolCallRequest) {
+		McpCallObject<McpToolCallResponse> mcpCallObject = new McpCallObject<>(McpToolCallResponse.class);
+		mcpCallObject.setRequestId(mcpToolCallRequest.getId());
+		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
+		String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolCallRequest, mcpClient.getMessagePath(),String.class);
+		
+		return handleResponse(  mcpCallObject);
+    }
 }

@@ -18,13 +18,13 @@ package org.frameworkset.spi.ai;
 import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.mcp.MCPClient;
 import org.frameworkset.spi.ai.mcp.model.McpListToolResponse;
-import org.frameworkset.spi.ai.util.AIAgentUtil;
-import org.frameworkset.spi.remote.http.HttpMethodName;
+import org.frameworkset.spi.ai.mcp.model.McpToolCallResponse;
+import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
-import reactor.core.publisher.Flux;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -131,17 +131,79 @@ public class McpClientTest {
 		
 //        logger.info("tools:{}", JsonUtil.object2json(tools));
 
-        MCPClient mcpClient1 = new MCPClient("aliyun");
+//        gaotie( );
+        webParser();
+    }
+	
+	public static void gaodeMap( ) throws InterruptedException {
+		
+		MCPClient mcpClient1 = new MCPClient("amap");
 		mcpClient1.init();
-
-        McpListToolResponse tools1 = mcpClient1.listTools();		
-		 
+		
+		McpListToolResponse tools1 = mcpClient1.listTools();
+		
 		logger.info("tools:{}", JsonUtil.object2json(tools1));
+		
+		tools1 = mcpClient1.listTools();
+		
+		logger.info("tools:{}", JsonUtil.object2json(tools1));
+		
+		FunctionTool functionTool = new FunctionTool();
+		functionTool.setFunctionName("maps_ip_location");
+		functionTool.addArgument("ip","223.104.130.11");
+		McpToolCallResponse mcpToolCallResponse = mcpClient1.toolsCall(functionTool);
+		logger.info("mcpToolCallResponse:{}", JsonUtil.object2json(mcpToolCallResponse));
+    }
+	
+	public static void gaotie( ) throws InterruptedException {
+		
+		MCPClient mcpClient1 = new MCPClient("gaotie");
+		mcpClient1.init();
+		
+		McpListToolResponse tools1 = mcpClient1.listTools();
+		
+		logger.info("tools:{}", JsonUtil.object2json(tools1));
+		
+	 
+		
+		FunctionTool functionTool = new FunctionTool();
+		functionTool.setFunctionName("get_all_lines");
+//		functionTool.addArgument("ip","223.104.130.11");
+        functionTool.setArguments(new LinkedHashMap());
+		McpToolCallResponse mcpToolCallResponse = mcpClient1.toolsCall(functionTool);
+		logger.info("mcpToolCallResponse:{}", JsonUtil.object2json(mcpToolCallResponse));
 
-        tools1 = mcpClient1.listTools();
+        functionTool = new FunctionTool();
+        functionTool.setFunctionName("query_stations");
+		functionTool.addArgument("line_name","G1");
+        mcpToolCallResponse = mcpClient1.toolsCall(functionTool);
+        logger.info("mcpToolCallResponse:{}", JsonUtil.object2json(mcpToolCallResponse));
+	}
+    
+    public static void webParser(){
+        
+        MCPClient mcpClient1 = new MCPClient("WebParser");
+        mcpClient1.init();
+
+        McpListToolResponse tools1 = mcpClient1.listTools();
 
         logger.info("tools:{}", JsonUtil.object2json(tools1));
-		
+
+
+
+        FunctionTool functionTool = new FunctionTool();
+        functionTool.setFunctionName("bailian_web_parser");
+		functionTool.addArgument("url","https://esdoc.bbossgroups.com/#/changelog?id=v755-%e5%8a%9f%e8%83%bd%e6%94%b9%e8%bf%9b-20251117");
+        McpToolCallResponse mcpToolCallResponse = mcpClient1.toolsCall(functionTool);
+        logger.info("mcpToolCallResponse:{}", JsonUtil.object2json(mcpToolCallResponse));
+
+        functionTool = new FunctionTool();
+        functionTool.setFunctionName("bailian_get_sub_url");
+        functionTool.addArgument("url","https://esdoc.bbossgroups.com/#/changelog?id=v755-%e5%8a%9f%e8%83%bd%e6%94%b9%e8%bf%9b-20251117");
+         mcpToolCallResponse = mcpClient1.toolsCall(functionTool);
+        logger.info("mcpToolCallResponse:{}", JsonUtil.object2json(mcpToolCallResponse));
+
+      
     }
 
 }

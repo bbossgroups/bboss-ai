@@ -62,6 +62,13 @@ public class FunctionTool {
     public void setFunctionName(String functionName) {
         this.functionName = functionName;
     }
+	
+	public FunctionTool addArgument(String name,Object value){
+		if(arguments == null)
+			arguments = new java.util.LinkedHashMap<>();
+		arguments.put(name, value);
+		return this;
+	}
 
     public Map getArguments() {
         return arguments;

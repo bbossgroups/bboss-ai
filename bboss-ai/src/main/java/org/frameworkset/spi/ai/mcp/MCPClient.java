@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.mcp;
 
 import org.frameworkset.spi.ai.mcp.model.*;
 import org.frameworkset.spi.ai.mcp.sse.SSEMcpCallHelper;
+import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -219,7 +221,14 @@ public class MCPClient {
     }
 	
     private RequestId requestId = new RequestId();
-	
+	public McpToolCallResponse toolsCall(FunctionTool functionTool){
+        McpToolCallRequest mcpToolCallRequest = new McpToolCallRequest();
+        mcpToolCallRequest.setId(this.requestId.nextReqNo());
+        mcpToolCallRequest.functionName(functionTool.getFunctionName());
+        mcpToolCallRequest.arguments(functionTool.getArguments());
+        McpToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
+        return mcpToolCallResponse;
+    }
     public McpListToolResponse listTools(){
         reconnected();
 //        String listTools = """

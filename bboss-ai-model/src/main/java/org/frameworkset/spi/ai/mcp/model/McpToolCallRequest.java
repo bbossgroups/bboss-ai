@@ -18,38 +18,21 @@ package org.frameworkset.spi.ai.mcp.model;
 import java.util.Map;
 
 /**
+ * 工具调用报文
  * @author biaoping.yin
- * @Date 2026/2/28
+ * @Date 2026/3/1
  */
-public class McpToolResponse {
-	private String jsonrpc = "2.0";
-	private long id;
-	protected Map result;
-	public McpToolResponse( ) {
-		  
+public class McpToolCallRequest  extends McpToolRequest{
+	public McpToolCallRequest( ){
+		super();
+		this.setMethod("tools/call");
 	}
 	
-	public String getJsonrpc() {
-		return jsonrpc;
+	public void functionName(String functionName){
+		this.params.put("name",functionName);
+		
 	}
-	
-	public void setJsonrpc(String jsonrpc) {
-		this.jsonrpc = jsonrpc;
+	public void arguments(Map arguments){
+		this.params.put("arguments",arguments);		
 	}
-	
-	public long getId() {
-		return id;
-	}
-	
-	public void setId(long id) {
-		this.id = id;
-	}
-
-    public Map getResult() {
-        return result;
-    }
-
-    public void setResult(Map result) {
-        this.result = result;
-    }
 }
