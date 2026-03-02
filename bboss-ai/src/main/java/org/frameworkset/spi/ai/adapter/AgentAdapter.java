@@ -19,6 +19,7 @@ import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.material.GenMaterialFileDownload;
+import org.frameworkset.spi.ai.mcp.model.MCPToolCallResponse;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.*;
 import org.frameworkset.spi.ai.material.GenFileDownload;
@@ -329,9 +330,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             Map<String,Object> toolMessage = null;
             if(result instanceof String)
                 toolMessage = MessageBuilder.buildToolMessage((String)result,toolId);
-            else{
+            else if (result instanceof MCPToolCallResponse){
+                result = ((MCPToolCallResponse)result).getResult();
                 toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId);
             }
+			else {
+				toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId);
+			}
             return toolMessage;
         } catch (Exception e) {
             throw new FunctionCallException("Call tool function["+ functionName +"] failed:",e);

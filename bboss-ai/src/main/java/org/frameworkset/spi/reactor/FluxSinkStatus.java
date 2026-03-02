@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Date 2025/10/19
  */
 public class FluxSinkStatus {
+	private String seqNo;
     private InputStream inputStream = null;
     private InputStreamReader inputStreamReader = null;
     private BufferedReader reader = null;
@@ -46,8 +47,16 @@ public class FluxSinkStatus {
         this.response = response;
         this.httpUriRequestBase = httpUriRequestBase;
     }
-    
-    public String readLine() throws IOException {
+	
+	public void setSeqNo(String seqNo) {
+		this.seqNo = seqNo;
+	}
+	
+	public String getSeqNo() {
+		return seqNo;
+	}
+	
+	public String readLine() throws IOException {
         return reader.readLine();
     }
     
@@ -69,7 +78,7 @@ public class FluxSinkStatus {
             try {
                 
                     httpUriRequestBase.abort();
-                
+				httpUriRequestBase = null;
             } catch (Exception e) {
 //                    throw new RuntimeException(e);
             }
@@ -78,6 +87,7 @@ public class FluxSinkStatus {
 
             try {
                 inputStream.close();
+				inputStream = null;
             } catch (Exception e) {
 //                    throw new RuntimeException(e);
             }
@@ -85,12 +95,14 @@ public class FluxSinkStatus {
         if(reader != null){
             try {
                 reader.close();
+				reader = null;
             } catch (Exception e) {
             }
         }
         if(inputStreamReader != null){
             try {
                 inputStreamReader.close();
+				inputStreamReader = null;
             } catch (Exception e) {
             }
         }
@@ -99,7 +111,10 @@ public class FluxSinkStatus {
         
    
         try {
-            response.close();
+			if(response != null) {
+				response.close();
+				response = null;
+			}
         } catch (Exception e) {
 //                    throw new RuntimeException(e);
         }

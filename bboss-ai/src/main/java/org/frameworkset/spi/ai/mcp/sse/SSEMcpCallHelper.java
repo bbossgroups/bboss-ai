@@ -60,8 +60,8 @@ public class SSEMcpCallHelper {
 		mcpCallObjects.clear();
 	}
 	
-	public McpInitializedToolResponse initializationCall(MCPClient mcpClient , McpInitializedToolRequest mcpInitializedToolRequest){
-		McpCallObject<McpInitializedToolResponse> mcpCallObject = new McpCallObject<>(McpInitializedToolResponse.class);
+	public MCPInitializedToolResponse initializationCall(MCPClient mcpClient , McpInitializedToolRequest mcpInitializedToolRequest){
+		McpCallObject<MCPInitializedToolResponse> mcpCallObject = new McpCallObject<>(MCPInitializedToolResponse.class);
 		mcpCallObject.setRequestId(mcpInitializedToolRequest.getId());
 		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
 		String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpInitializedToolRequest, mcpClient.getMessagePath(),String.class);
@@ -109,8 +109,8 @@ public class SSEMcpCallHelper {
 		return mcpCallObjects.remove(requestId);
 	}
 	
-	public McpListToolResponse listTools(MCPClient mcpClient, McpListToolRequest mcpToolRequest) {
-		McpCallObject<McpListToolResponse> mcpCallObject = new McpCallObject<>(McpListToolResponse.class);
+	public MCPListToolResponse listTools(MCPClient mcpClient, McpListToolRequest mcpToolRequest) {
+		McpCallObject<MCPListToolResponse> mcpCallObject = new McpCallObject<>(MCPListToolResponse.class);
 		mcpCallObject.setRequestId(mcpToolRequest.getId());
 		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
         String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolRequest, mcpClient.getMessagePath(),String.class);
@@ -131,8 +131,8 @@ public class SSEMcpCallHelper {
      * @param mcpToolCallRequest
      * @return
      */
-    public McpToolCallResponse toolsCall(MCPClient mcpClient, McpToolCallRequest mcpToolCallRequest) {
-		McpCallObject<McpToolCallResponse> mcpCallObject = new McpCallObject<>(McpToolCallResponse.class);
+    public MCPToolCallResponse toolsCall(MCPClient mcpClient, McpToolCallRequest mcpToolCallRequest) {
+		McpCallObject<MCPToolCallResponse> mcpCallObject = new McpCallObject<>(MCPToolCallResponse.class);
 		mcpCallObject.setRequestId(mcpToolCallRequest.getId());
 		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
 		String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolCallRequest, mcpClient.getMessagePath(),String.class);

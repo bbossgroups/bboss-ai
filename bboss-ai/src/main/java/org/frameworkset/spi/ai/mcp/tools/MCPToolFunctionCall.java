@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.tools;
+package org.frameworkset.spi.ai.mcp.tools;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -15,24 +15,26 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.mcp.MCPClient;
+import org.frameworkset.spi.ai.mcp.model.MCPToolCallResponse;
 import org.frameworkset.spi.ai.model.FunctionCall;
-import org.frameworkset.spi.ai.model.FunctionToolDefine;
-
-import java.util.List;
+import org.frameworkset.spi.ai.model.FunctionCallException;
+import org.frameworkset.spi.ai.model.FunctionTool;
 
 /**
- * 动态加载模型工具
- * 动态返回工具调用接口
+ * MCP工具函数调用
  * @author biaoping.yin
- * @Date 2026/2/22
+ * @Date 2026/3/2
  */
-public interface ToolsRegist {
-    List<FunctionToolDefine> registTools();
-    FunctionCall getFunctionCall(String functionName);
-	default void init(){
-		
+public class MCPToolFunctionCall implements FunctionCall<MCPToolCallResponse> {
+	private org.frameworkset.spi.ai.mcp.MCPClient mcpClient;
+	public MCPToolFunctionCall(MCPClient mcpClient){
+		this.mcpClient = mcpClient;
 	}
-	default void destroy(){
-		
+	
+	
+	@Override
+	public MCPToolCallResponse call(FunctionTool functionTool) throws FunctionCallException {
+		return mcpClient.toolsCall(functionTool);
 	}
 }

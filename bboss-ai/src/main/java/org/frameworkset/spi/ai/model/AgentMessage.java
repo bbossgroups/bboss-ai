@@ -267,9 +267,9 @@ public class AgentMessage<T extends AgentMessage> {
     public void init(){
         if(init)
             return;
-        init = true;
-        
+        init = true;        
         if(this.toolsRegist != null ){
+			toolsRegist.init();
             List<FunctionToolDefine> functionToolDefines = this.toolsRegist.registTools();
             if(functionToolDefines != null && functionToolDefines.size() > 0){
                 FunctionCall functionCall = null;
@@ -341,4 +341,10 @@ public class AgentMessage<T extends AgentMessage> {
         this.thinking = thinking;
         return (T)this;
     }
+	
+	public void destroy(){
+		if(toolsRegist != null){
+			toolsRegist.destroy();
+		}
+	}
 }

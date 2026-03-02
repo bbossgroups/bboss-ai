@@ -143,4 +143,12 @@ public class FunctionToolDefine {
     public Parameters parameters(){
         return function.getParameters();
     }
+	
+	public FunctionToolDefine putParameters(Parameters parameters) {
+		if (function == null) {
+			function = new Function();
+		}
+		function.setParameters(parameters);
+		return this;
+	}
 }

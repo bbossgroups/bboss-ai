@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -76,7 +75,7 @@ public class MCPClient {
         ssePath = clientConfiguration.getExtendConfig("sseendpoint");
         connect(false);
     }
-    public void destory(){
+    public void destroy(){
         if(this.fluxDisposable != null){
             try {
                 this.fluxDisposable.dispose();
@@ -221,15 +220,15 @@ public class MCPClient {
     }
 	
     private RequestId requestId = new RequestId();
-	public McpToolCallResponse toolsCall(FunctionTool functionTool){
+	public MCPToolCallResponse toolsCall(FunctionTool functionTool){
         McpToolCallRequest mcpToolCallRequest = new McpToolCallRequest();
         mcpToolCallRequest.setId(this.requestId.nextReqNo());
         mcpToolCallRequest.functionName(functionTool.getFunctionName());
         mcpToolCallRequest.arguments(functionTool.getArguments());
-        McpToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
+        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
         return mcpToolCallResponse;
     }
-    public McpListToolResponse listTools(){
+    public MCPListToolResponse listTools(){
         reconnected();
 //        String listTools = """
 //                {
@@ -240,7 +239,7 @@ public class MCPClient {
 //                """;
 		McpListToolRequest mcpToolRequest = new McpListToolRequest();
 		mcpToolRequest.setId(this.requestId.nextReqNo());
-		McpListToolResponse mcpListToolResponse = this.sseMcpCallHelper.listTools(this, mcpToolRequest);
+		MCPListToolResponse mcpListToolResponse = this.sseMcpCallHelper.listTools(this, mcpToolRequest);
 //        this.sseStreamCompleted = true;
 		return mcpListToolResponse;
 //        String listTools = "";
@@ -288,7 +287,7 @@ public class MCPClient {
          }
 		return data;
     }
-    public McpInitializedToolResponse initialization(){
+    public MCPInitializedToolResponse initialization(){
 //        String initJson = """
 //              {"jsonrpc":"2.0","id":0,"method":"initialize",
 //              "params":{"protocolVersion":"2025-06-18",

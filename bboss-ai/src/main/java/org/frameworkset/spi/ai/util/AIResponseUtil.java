@@ -548,12 +548,12 @@ public class AIResponseUtil {
         return null;
     }
 
-    private static <T> void processStreamResponse(ClassicHttpResponse response, FluxSink<T> sink, BaseStreamDataHandler<T> streamDataHandler) throws IOException {
+    private static <T> void processStreamResponse(ClassicHttpResponse response, FluxSink<T> sink, BaseStreamDataHandler<T> streamDataHandler,DisposeEventHandler disposeEventHandler) throws IOException {
 
         FluxSinkStatus fluxSinkStatus = null;
         try  {
             fluxSinkStatus = new FluxSinkStatus(response,streamDataHandler.getHttpUriRequestBase());
-
+			
 //            // 添加取消监听器
 //            sink.onCancel(() -> {
 //                // 当订阅被取消时执行
@@ -563,16 +563,23 @@ public class AIResponseUtil {
 //            });
             final FluxSinkStatus fluxSinkStatus_ = fluxSinkStatus;
              //添加处置监听器
-            sink.onDispose(() -> {
-                // 当 sink 被处置时执行（包括正常完成、错误和取消）
-                if(logger.isDebugEnabled()) {
-                    logger.debug("Sink disposed");
-                }
-                fluxSinkStatus_.dispose();
-                // 执行清理工作
-                fluxSinkStatus_.releaseResources();
-
-            });
+			if(!disposeEventHandler.containFluxSinkStatus()) {
+				disposeEventHandler.addFluxSinkStatus(fluxSinkStatus);
+				sink.onDispose(() -> {
+					// 当 sink 被处置时执行（包括正常完成、错误和取消）
+					if (logger.isDebugEnabled()) {
+						logger.debug("Sink disposed");
+					}
+//					fluxSinkStatus_.dispose();
+//					// 执行清理工作
+//					fluxSinkStatus_.releaseResources();
+					disposeEventHandler.dispose();
+					
+				});
+			}
+			else{
+				disposeEventHandler.addFluxSinkStatus(fluxSinkStatus);
+			}
             String line;
             boolean needBreak = false;
             BooleanWrapperInf firstEventTag = new NoSynBooleanWrapper(true);
@@ -599,6 +606,7 @@ public class AIResponseUtil {
         }
         finally {
             fluxSinkStatus.releaseResources();
+			disposeEventHandler.removeFluxSinkStatus(fluxSinkStatus.getSeqNo());
         }
     }
 
@@ -666,23 +674,16 @@ public class AIResponseUtil {
 //            });
 			
 			String line;
-            int waitTimes = 1;//值为空时，等待10次
+            
 			do{
                 line = fluxSinkStatus.readLine();
-                if(line == null) {
-                    try {
-                        if(waitTimes <= 0)
-                            break;
-                        sleep(1000L);
-                        waitTimes --;
-                    } catch (InterruptedException e) {
-//                        throw new RuntimeException(e);
-                    }
-                   
-                }
+                
                 if(line != null) {
                     dataCollector.collector(line);
                 }
+				else{
+					break;
+				}
             }while (true);
 //			while (  (line = fluxSinkStatus.readLine()) != null ) {
 //				if(fluxSinkStatus.isDispose()){
@@ -733,13 +734,13 @@ public class AIResponseUtil {
         }
     }
     public static <T> void handleStreamResponse(String url, ClassicHttpResponse response,
-                                                FluxSink<T> sink, StreamDataHandler<T> streamDataHandler)
+                                                FluxSink<T> sink, StreamDataHandler<T> streamDataHandler,DisposeEventHandler disposeEventHandler)
             throws IOException, ParseException {
 
         int status = response.getCode();
 
         if (org.frameworkset.spi.remote.http.ResponseUtil.isHttpStatusOK( status)) {
-            processStreamResponse(response, sink,(BaseStreamDataHandler<T>) streamDataHandler);
+            processStreamResponse(response, sink,(BaseStreamDataHandler<T>) streamDataHandler,disposeEventHandler);
         } else {
             HttpEntity entity = response.getEntity();
             String data = SimpleStringUtil.object2jsonPretty(streamDataHandler.getChatObject().getMessage());

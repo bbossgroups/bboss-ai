@@ -22,10 +22,11 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/2/28
  */
-public class McpListToolResponse extends McpToolResponse{
+public class MCPToolCallResponse extends MCPToolResponse {
  
-	public List<Map> tools(){		
-		return (List<Map>) result.get("tools");
+	public List<Map> content(){		
+		return (List<Map>) result.get("content");
+		 
 	}
 	 
 	 

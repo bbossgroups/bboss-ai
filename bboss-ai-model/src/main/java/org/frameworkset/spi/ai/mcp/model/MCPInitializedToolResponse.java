@@ -21,7 +21,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/2/28
  */
-public class McpInitializedToolResponse extends McpToolResponse{
+public class MCPInitializedToolResponse extends MCPToolResponse {
  
 	public String protocolVersion(){		
 		return (String) result.get("protocolVersion");

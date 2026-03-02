@@ -15,22 +15,41 @@ package org.frameworkset.spi.ai.mcp.model;
  * limitations under the License.
  */
 
-import java.util.List;
 import java.util.Map;
 
 /**
  * @author biaoping.yin
  * @Date 2026/2/28
  */
-public class McpToolCallResponse extends McpToolResponse{
- 
-	public List<Map> content(){		
-		return (List<Map>) result.get("content");
-		 
+public class MCPToolResponse {
+	private String jsonrpc = "2.0";
+	private long id;
+	protected Map result;
+	public MCPToolResponse( ) {
+		  
 	}
-	 
-	 
 	
+	public String getJsonrpc() {
+		return jsonrpc;
+	}
 	
-	 
+	public void setJsonrpc(String jsonrpc) {
+		this.jsonrpc = jsonrpc;
+	}
+	
+	public long getId() {
+		return id;
+	}
+	
+	public void setId(long id) {
+		this.id = id;
+	}
+
+    public Map getResult() {
+        return result;
+    }
+
+    public void setResult(Map result) {
+        this.result = result;
+    }
 }
