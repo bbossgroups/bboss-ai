@@ -1,8 +1,10 @@
-# bboss-ai 项目架构分析
+# agent-ai 项目架构分析
 
 ## 一、项目概述
 
-**bboss-ai** 是一个轻量级 Java AI Agent 开发客户端，基于 Apache HttpClient5、HttpCore5 以及 Project Reactor 构建。该项目提供了对大语言模型（LLM）和多模态模型的统一对接能力，支持同步调用和流式调用两种模式。
+**agent-ai** 是一个轻量级 Java AI Agent 开发客户端，基于 Apache HttpClient5、HttpCore5 以及 Project Reactor 构建。该项目提供了对大语言模型（LLM）和多模态模型的统一对接能力，支持同步调用和流式调用两种模式。
+
+![image-20260302140629787](/image-20260302140629787.png)
 
 ### 核心功能
 - 智能问答（Chat Completion）
@@ -11,6 +13,8 @@
 - 视频识别与生成（Video Understanding/Generation）
 - 工具调用（Function Calling）
 - MCP（Model Context Protocol）服务发现和调用
+- 引入智能体工作流，支持串行、并行、条件智能体节点，还需要扩展有向循环图能力（待实现），基于流程上下文实现智能体协同机制（待实现）
+- 引入Skills技能模块，正在规划中
 
 ### 支持的平台
 - DeepSeek
@@ -28,14 +32,14 @@
 ## 二、项目结构
 
 ```
-bboss-ai/
-├── bboss-ai-model/          # 模型定义模块（基础模型和接口）
+agent-ai/
+├── agent-ai-model/          # 模型定义模块（基础模型和接口）
 │   └── src/main/java/org/frameworkset/spi/ai/
 │       ├── model/           # 核心模型定义
 │       ├── mcp/model/       # MCP 协议模型
 │       └── tools/           # 工具注册接口
 │
-├── bboss-ai/                # 核心实现模块
+├── agent-ai/                # 核心实现模块
 │   └── src/main/java/org/frameworkset/spi/
 │       ├── ai/
 │       │   ├── AIAgent.java           # 智能体主入口类
@@ -55,7 +59,7 @@ bboss-ai/
 
 ## 三、模块详解
 
-### 3.1 bboss-ai-model 模块
+### 3.1 agent-ai-model 模块
 
 该模块定义了所有与 AI 交互的基础模型和接口，作为最小依赖被外部使用。
 
@@ -83,7 +87,7 @@ bboss-ai/
 
 ---
 
-### 3.2 bboss-ai 核心模块
+### 3.2 agent-ai 核心模块
 
 #### 3.2.1 AIAgent - 智能体入口类
 

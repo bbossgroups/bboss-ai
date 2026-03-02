@@ -16,10 +16,12 @@ package org.frameworkset.spi.ai.mcp.tools;
  */
 
 import org.frameworkset.spi.ai.mcp.model.MCPListToolResponse;
+import org.frameworkset.spi.ai.model.Function;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.model.Parameters;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -61,27 +63,31 @@ public class MCPToolsUtils {
 		}
 		return null;
 	}
-	
+	private static Map convertFunction2Tool(Function function){
+		Map tool = new LinkedHashMap();
+		tool.put("name", function.getName());
+		tool.put("title", function.getName());
+		tool.put("description", function.getDescription());
+		tool.put("inputSchema", function.getParameters());
+		return tool;
+	}
 	public static MCPListToolResponse convertFunctionTools2McpTools(List<FunctionToolDefine> functionToolDefines){
+		MCPListToolResponse mcpListToolResponse = new MCPListToolResponse();
 		
-//		List<Map> mcpTools = mcpListToolResponse.tools();
-//		if(mcpTools != null && mcpTools.size() > 0) {
-//			List<FunctionToolDefine> functionToolDefines = new ArrayList<>(mcpTools.size());
-//			for (Map mcpTool : mcpTools) {
-//				FunctionToolDefine functionToolDefine = new FunctionToolDefine();
-//				functionToolDefine.funtionName2ndDescription((String)mcpTool.get("name"), (String)mcpTool.get("description"));
-//				Map inputSchema = (Map)mcpTool.get("inputSchema");
-//				Parameters parameters = new Parameters();
-//				parameters.setType((String)inputSchema.get("type"));
-//				parameters.setRequired((List<String>)inputSchema.get("required"));
-//				parameters.setProperties((Map)inputSchema.get("properties"));
-//				functionToolDefine.putParameters(parameters);
-////				functionToolDefine.requiredParameters((String[])mcpTool.get("inputSchema"))			 
-//				
-//				functionToolDefines.add(functionToolDefine);
-//			}
-//			return functionToolDefines;
-//		}
-		return null;
+		if(functionToolDefines != null && functionToolDefines.size() > 0){
+			List<Map> tools = new ArrayList<>(functionToolDefines.size());
+			for (FunctionToolDefine functionToolDefine : functionToolDefines){
+				Function function = functionToolDefine.getFunction();
+				Map tool = convertFunction2Tool(function);
+				tools.add(tool);
+			}
+			mcpListToolResponse.putTools(tools);
+		}
+		else{
+			mcpListToolResponse.putTools(null);
+		}	
+		
+
+		return mcpListToolResponse;
 	}
 }

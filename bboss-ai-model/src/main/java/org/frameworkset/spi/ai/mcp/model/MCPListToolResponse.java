@@ -15,6 +15,9 @@ package org.frameworkset.spi.ai.mcp.model;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,10 +25,21 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/2/28
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MCPListToolResponse extends MCPToolResponse {
  
 	public List<Map> tools(){		
 		return (List<Map>) result.get("tools");
+	}
+	
+	public MCPListToolResponse putTools(List<Map> tools){
+		if(result == null){
+			result = new LinkedHashMap();
+		}
+		if(tools != null){
+			result.put("tools", tools);
+		}
+		return this;
 	}
 	
 	

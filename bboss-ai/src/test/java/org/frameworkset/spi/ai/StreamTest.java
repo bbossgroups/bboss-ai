@@ -102,11 +102,11 @@ public class StreamTest {
 
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
 //        streamChatWithRemoteTools("zhipu","glm-5","介绍bboss");
-//        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
+        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
 //        streamChatWithRemoteTools("deepseek","deepseek-chat","介绍bboss");
 //        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","介绍bboss");
 		
-		streamChatWithMcpTools("qwenvlplus", "qwen3.5-plus", "查询高铁线路",true);
+//		streamChatWithMcpTools("qwenvlplus", "qwen3.5-plus", "查询高铁线路",true);
         
 //        videovlEvent();
 //        qwenvlCompareStream();

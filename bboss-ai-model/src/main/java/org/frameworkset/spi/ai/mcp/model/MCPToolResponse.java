@@ -15,15 +15,18 @@ package org.frameworkset.spi.ai.mcp.model;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Map;
 
 /**
  * @author biaoping.yin
  * @Date 2026/2/28
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MCPToolResponse {
 	private String jsonrpc = "2.0";
-	private long id;
+	private Long id;
 	protected Map result;
 	public MCPToolResponse( ) {
 		  
@@ -37,11 +40,11 @@ public class MCPToolResponse {
 		this.jsonrpc = jsonrpc;
 	}
 	
-	public long getId() {
+	public Long getId() {
 		return id;
 	}
 	
-	public void setId(long id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 
