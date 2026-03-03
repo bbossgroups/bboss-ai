@@ -63,8 +63,17 @@ public class SSEMcpCallHelper {
 	public MCPInitializedToolResponse initializationCall(MCPClient mcpClient , McpInitializedToolRequest mcpInitializedToolRequest){
 		McpCallObject<MCPInitializedToolResponse> mcpCallObject = new McpCallObject<>(MCPInitializedToolResponse.class);
 		mcpCallObject.setRequestId(mcpInitializedToolRequest.getId());
-		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
-		String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpInitializedToolRequest, mcpClient.getMessagePath(),String.class);
+        String requestId = mcpCallObject.getRequestId()+"";
+        mcpCallObjects.put(requestId, mcpCallObject);
+        try {
+            String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpInitializedToolRequest, mcpClient.getMessagePath(),String.class);
+
+
+        }
+        catch (Exception e){
+            this.removeMcpCallObject(requestId);
+            throw new McpCallException(e);
+        }
 		return handleResponse(mcpCallObject);	
 		
 		 
@@ -108,14 +117,27 @@ public class SSEMcpCallHelper {
 	private McpCallObject getMcpCallObject(String requestId){
 		return mcpCallObjects.remove(requestId);
 	}
-	
-	public MCPListToolResponse listTools(MCPClient mcpClient, McpListToolRequest mcpToolRequest) {
+
+    private McpCallObject removeMcpCallObject(String requestId){
+        return mcpCallObjects.remove(requestId);
+    }
+
+
+    public MCPListToolResponse listTools(MCPClient mcpClient, McpListToolRequest mcpToolRequest) {
 		McpCallObject<MCPListToolResponse> mcpCallObject = new McpCallObject<>(MCPListToolResponse.class);
 		mcpCallObject.setRequestId(mcpToolRequest.getId());
-		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
-        String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolRequest, mcpClient.getMessagePath(),String.class);
-		
-		return handleResponse(  mcpCallObject);
+        String requestId = mcpCallObject.getRequestId()+"";
+		mcpCallObjects.put(requestId, mcpCallObject);
+        try {
+            String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(), mcpToolRequest, mcpClient.getMessagePath(), String.class);
+
+           
+        }
+        catch (Exception e){
+            this.removeMcpCallObject(requestId);
+            throw new McpCallException(e);
+        }
+        return handleResponse(mcpCallObject);
 	}
 	private <T> T handleResponse(McpCallObject<T> mcpCallObject){
 		mcpCallObject.await();
@@ -134,9 +156,17 @@ public class SSEMcpCallHelper {
     public MCPToolCallResponse toolsCall(MCPClient mcpClient, McpToolCallRequest mcpToolCallRequest) {
 		McpCallObject<MCPToolCallResponse> mcpCallObject = new McpCallObject<>(MCPToolCallResponse.class);
 		mcpCallObject.setRequestId(mcpToolCallRequest.getId());
-		mcpCallObjects.put(mcpCallObject.getRequestId()+"", mcpCallObject);
-		String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolCallRequest, mcpClient.getMessagePath(),String.class);
-		
+        String requestId = mcpCallObject.getRequestId()+"";
+		mcpCallObjects.put(requestId, mcpCallObject);
+		try {
+            String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolCallRequest, mcpClient.getMessagePath(),String.class);
+
+
+        }
+        catch (Exception e){
+            this.removeMcpCallObject(requestId);
+            throw new McpCallException(e);
+        }
 		return handleResponse(  mcpCallObject);
     }
 }

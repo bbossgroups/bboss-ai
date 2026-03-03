@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.mcp.model;
  * limitations under the License.
  */
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -26,18 +27,57 @@ public class MCPInitializedToolResponse extends MCPToolResponse {
 	public String protocolVersion(){		
 		return (String) result.get("protocolVersion");
 	}
+
+    public MCPInitializedToolResponse putProtocolVersion(String protocolVersion){
+        if(result == null){
+            result = new LinkedHashMap();
+        }
+        result.put("protocolVersion",protocolVersion);
+        return this;
+    }
+
+    public MCPInitializedToolResponse putListChanged(boolean listChanged){
+        if(result == null){
+            result = new LinkedHashMap();
+        }
+        Map capabilities = new LinkedHashMap ();
+        result.put("capabilities",capabilities);
+        Map tools = new LinkedHashMap ();
+        capabilities.put("tools",tools);
+        tools.put("listChanged",listChanged);
+        return this;
+    }
 	public boolean listChanged(){
 		Map capabilities = (Map) result.get("capabilities");
 		Map tools = (Map) capabilities.get("tools");
 		return (boolean) tools.get("listChanged");
 	}
-	
+    public MCPInitializedToolResponse putResources(Map resources){
+        if(result == null){
+            result = new LinkedHashMap();
+        }
+        Map capabilities = new LinkedHashMap ();
+        result.put("capabilities",capabilities);
+        capabilities.put("resources",resources);
+        
+        return this;
+    }
 	public Map resources(){
 		Map capabilities = (Map) result.get("capabilities");
 		Map resources = (Map) capabilities.get("resources");
 		return resources;
 	}
-	
+    public MCPInitializedToolResponse putServerInfo(String name,String version){
+        if(result == null){
+            result = new LinkedHashMap();
+        }
+        Map serverInfo = new LinkedHashMap ();
+        result.put("serverInfo",serverInfo);
+        serverInfo.put("name",name);
+        serverInfo.put("version",version);
+
+        return this;
+    }
 	public McpServerInfo serverInfo(){
 		Map serverInfo = (Map) result.get("serverInfo");
 		McpServerInfo mcpServerInfo = new McpServerInfo();

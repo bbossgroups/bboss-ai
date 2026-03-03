@@ -4,7 +4,7 @@
 
 **agent-ai** 是一个轻量级 Java AI Agent 开发客户端，基于 Apache HttpClient5、HttpCore5 以及 Project Reactor 构建。该项目提供了对大语言模型（LLM）和多模态模型的统一对接能力，支持同步调用和流式调用两种模式。
 
-![image-20260302140629787](/image-20260302140629787.png)
+![image-20260302140629787](/architect.png)
 
 ### 核心功能
 - 智能问答（Chat Completion）

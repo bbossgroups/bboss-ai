@@ -67,5 +67,19 @@ public class McpToolRequest {
 	public void setParams(Map params) {
 		this.params = params;
 	}
+    
+    public String functionName(){
+        if(params != null){
+            return (String)params.get("name");
+        }
+        return null;
+    }
+
+    public Map functionArguments(){
+        if(params != null){
+            return (Map)params.get("arguments");
+        }
+        return null;
+    }
 	
 }
