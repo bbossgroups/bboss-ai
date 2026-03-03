@@ -50,11 +50,14 @@ public class MCPToolsUtils {
 				FunctionToolDefine functionToolDefine = new FunctionToolDefine();
 				functionToolDefine.funtionName2ndDescription((String)mcpTool.get("name"), (String)mcpTool.get("description"));
 				Map inputSchema = (Map)mcpTool.get("inputSchema");
-				Parameters parameters = new Parameters();
-				parameters.setType((String)inputSchema.get("type"));
-				parameters.setRequired((List<String>)inputSchema.get("required"));
-				parameters.setProperties((Map)inputSchema.get("properties"));
-				functionToolDefine.putParameters(parameters);			
+                if(inputSchema != null) {
+                    Parameters parameters = new Parameters();
+                    parameters.setType((String) inputSchema.get("type"));
+                    parameters.setRequired((List<String>) inputSchema.get("required"));
+                    parameters.setProperties((Map) inputSchema.get("properties"));
+                    functionToolDefine.putParameters(parameters);
+                }
+                
 //				functionToolDefine.requiredParameters((String[])mcpTool.get("inputSchema"))			 
 				 
 				functionToolDefines.add(functionToolDefine);

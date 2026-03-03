@@ -512,7 +512,7 @@ public class AIAgentUtil {
 			}
 		}, FluxSink.OverflowStrategy.BUFFER)
 		.subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
-		.timeout(Duration.ofSeconds(60)) // 设置超时
+//		.timeout(Duration.ofSeconds(60)) // 设置超时
 		.onErrorResume(throwable -> {
 //                    String error = SimpleStringUtil.exceptionToString(throwable);
 //                    System.err.println("流式处理错误: " + throwable.getMessage());
@@ -593,7 +593,7 @@ public class AIAgentUtil {
                     }
                 }, FluxSink.OverflowStrategy.BUFFER)
                 .subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
-                .timeout(Duration.ofSeconds(60)) // 设置超时
+//                .timeout(Duration.ofSeconds(60)) // 设置超时
                 .onErrorResume(throwable -> {
 //                    String error = SimpleStringUtil.exceptionToString(throwable);
 //                    System.err.println("流式处理错误: " + throwable.getMessage());
@@ -666,7 +666,7 @@ public class AIAgentUtil {
 					}
 				}, FluxSink.OverflowStrategy.BUFFER)
 				.subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
-				.timeout(Duration.ofSeconds(120)) // 设置超时
+//				.timeout(Duration.ofSeconds(120)) // 设置超时
 				.onErrorResume(throwable -> {
 //                    String error = SimpleStringUtil.exceptionToString(throwable);
 //                    System.err.println("流式处理错误: " + throwable.getMessage());
@@ -684,7 +684,7 @@ public class AIAgentUtil {
                      sink.next((T)serverEvent);
                 }, FluxSink.OverflowStrategy.BUFFER)
                 .subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
-                .timeout(Duration.ofSeconds(60)) // 设置超时
+//                .timeout(Duration.ofSeconds(60)) // 设置超时
                 .onErrorResume(throwable -> {
 //                    String error = SimpleStringUtil.exceptionToString(throwable);
 //                    System.err.println("流式处理错误: " + throwable.getMessage());

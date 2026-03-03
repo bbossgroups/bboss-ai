@@ -18,6 +18,8 @@ package org.frameworkset.spi.ai.mcp.sse;
  
 import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.mcp.model.*;
+import org.frameworkset.spi.ai.mcp.tools.MCPToolsUtils;
+import org.frameworkset.spi.ai.model.FunctionToolDefine;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,5 +63,12 @@ public class MCPSSERequestUtil {
         if(!mcpSSESink.isNotificationsInitialized()){
             throw new McpCallException("McpSSESink is not initialized");
         }
+    }
+    
+    public static void sendSSEListToolResponse(McpSSESink mcpSSESink,
+                                               McpToolRequest mcpToolRequest, List<FunctionToolDefine> functionToolDefines){
+        MCPListToolResponse listToolResponse = MCPToolsUtils.convertFunctionTools2McpTools(functionToolDefines);
+        listToolResponse.setId(mcpToolRequest.getId());
+        mcpSSESink.sendSSEMessage(JsonUtil.object2json(listToolResponse));
     }
 }

@@ -86,7 +86,6 @@ public class StreamTest {
 //        streamChatWithTools("qwenvlplus","qwen3.5-plus","查询杭州天气，并根据天气给出穿衣、饮食以及出行建议");
 //        streamChatWithTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
 //        streamChatWithTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
-//        streamChatWithMcpTools("qwenvlplus","qwen3.5-plus","查询用户admin的操作日志，并进行分析");
 //        streamChatWithRemoteTools("deepseek","deepseek-chat","查询用户admin的操作日志，展示数据并进行分析");
 //        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","查询用户admin的操作日志，展示数据并进行分析");
         
@@ -102,11 +101,16 @@ public class StreamTest {
 
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
 //        streamChatWithRemoteTools("zhipu","glm-5","介绍bboss");
-        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
+//        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
 //        streamChatWithRemoteTools("deepseek","deepseek-chat","介绍bboss");
 //        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","介绍bboss");
 		
-//		streamChatWithMcpTools("qwenvlplus", "qwen3.5-plus", "查询高铁线路",true);
+//		streamChatWithMcpTools("qwenvlplus","gaotie", "qwen3.5-plus", "查询高铁线路",true);
+
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询用户admin的操作日志，并进行分析",true);
+
+
+        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
         
 //        videovlEvent();
 //        qwenvlCompareStream();
@@ -470,7 +474,7 @@ public class StreamTest {
    
     }
 	
-	public static void streamChatWithMcpTools(String maas, String model, String prompt,boolean thinking) throws InterruptedException {
+	public static void streamChatWithMcpTools(String maas, String mcpServer,String model, String prompt,boolean thinking) throws InterruptedException {
 		List<Map<String, Object>> session = new ArrayList<>();
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
 				.setPrompt(prompt)
@@ -483,7 +487,7 @@ public class StreamTest {
 		chatAgentMessage.setThinking(thinking);
 		AIAgent aiAgent = new AIAgent();
 		
-		chatAgentMessage.setToolsRegist(new MCPToolsRegist("gaotie"));
+		chatAgentMessage.setToolsRegist(new MCPToolsRegist(mcpServer));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		aiAgent.streamChat(maas,chatAgentMessage)

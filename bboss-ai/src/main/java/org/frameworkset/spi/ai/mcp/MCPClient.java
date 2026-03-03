@@ -126,7 +126,7 @@ public class MCPClient {
         synchronized (reconnectedLock){
             sseStreamCompleted = true;
         }
-		start.interrupt();
+//		start.interrupt();
     }
     private void connect(boolean reconnected){
         countDownLatch = new CountDownLatch(1);

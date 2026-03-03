@@ -130,8 +130,9 @@ public class McpClientTest {
 		
 //        logger.info("tools:{}", JsonUtil.object2json(tools));
 
-        gaotie( );
+//        gaotie( );
 //        webParser();
+        visualops();
     }
 	
 	public static void gaodeMap( ) throws InterruptedException {
@@ -204,5 +205,22 @@ public class McpClientTest {
 
       
     }
+
+    public static void visualops(){
+
+        MCPClient mcpClient1 = new MCPClient("visualops");
+        mcpClient1.init();
+
+        MCPListToolResponse tools1 = mcpClient1.listTools();
+
+        logger.info("tools:{}", JsonUtil.object2json(tools1));
+
+
+
+ 
+
+
+    }
+
 
 }

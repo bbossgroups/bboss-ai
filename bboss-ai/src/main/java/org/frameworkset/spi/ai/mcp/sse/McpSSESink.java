@@ -15,15 +15,22 @@ package org.frameworkset.spi.ai.mcp.sse;
  * limitations under the License.
  */
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
+
+
+import static java.lang.Thread.sleep;
 
 /**
  * @author biaoping.yin
  * @Date 2026/3/3
  */
 public class McpSSESink {
+    private static Logger logger = LoggerFactory.getLogger(McpSSESink.class);
     private FluxSink<String> sink;
     private String sessionId;
+    private Thread ping ;
 
 
     private boolean notificationsInitialized;
@@ -35,7 +42,28 @@ public class McpSSESink {
         sink.next(data);
     }
     public void complete() {
-        sink.complete();
+        try {
+            sink.complete();
+        } catch (Exception e) {
+        }
+        if(ping != null) {
+            ping.interrupt();
+            try {
+                ping.join();
+            } catch (InterruptedException e) {
+            }
+        }
+    }
+
+    public void destory() {
+        logger.info("destory McpSSESink sessionId:{}",sessionId);
+        if(ping != null) {
+            ping.interrupt();
+            try {
+                ping.join();
+            } catch (InterruptedException e) {
+            }
+        }
     }
 
     public String getSessionId() {
@@ -43,12 +71,12 @@ public class McpSSESink {
     }
     
     public void sendSSEEndpoint(String endpoint){
-        sink.next("event:endpoint");
-        sink.next("data:"+endpoint+"?sessionId="+sessionId);
+        sink.next("event:endpoint\n");
+        sink.next("data:"+endpoint+"?sessionId="+sessionId+"\n");
     }
     public void sendSSEMessage(String message){
-        sink.next("event:message");
-        sink.next("data:"+message);
+        sink.next("event:message\n");
+        sink.next("data:"+message+"\n");
     }
     public boolean isNotificationsInitialized() {
         return notificationsInitialized;
@@ -56,6 +84,31 @@ public class McpSSESink {
 
     public void setNotificationsInitialized(boolean notificationsInitialized) {
         this.notificationsInitialized = notificationsInitialized;
+    }
+    
+    public void ping(){
+        if(ping == null){
+            ping = new Thread(()->{
+                while(true){
+                    try {
+                        sleep(60000l);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                    sink.next("ping:"+System.currentTimeMillis()+"\n");
+                }
+            });
+            ping.setDaemon(true);
+            ping.start();
+            try {
+                ping.join();
+            } catch (InterruptedException e) {
+                
+            }
+                    
+        }
+        
+       
     }
 
 }
