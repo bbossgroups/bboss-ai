@@ -110,7 +110,12 @@ public class StreamTest {
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询用户admin的操作日志，并进行分析",true);
 
 
-        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+
+//        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
+//        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
+		//多智能体协同
+		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
         
 //        videovlEvent();
 //        qwenvlCompareStream();
@@ -521,6 +526,50 @@ public class StreamTest {
 		// 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
 		countDownLatch.await();
 		
+		
+	}
+	
+	public static void chatWithMcpTools(String maas, String mcpServer,String model, String prompt,boolean thinking) throws InterruptedException {
+		List<Map<String, Object>> session = new ArrayList<>();//会话记忆
+		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
+				.setPrompt(prompt)
+				.setSessionSize(50)
+				.setSessionMemory(session)
+//                .setModel("deepseek-chat")
+				.setModel(model)
+				.setStream( false)
+				.setMaxTokens(4096);
+		chatAgentMessage.setThinking(false);
+		
+		
+		chatAgentMessage.setToolsRegist(new MCPToolsRegist(mcpServer));//12306
+		//1.获取明天对应的日期
+		AIAgent dateAgent = new AIAgent();
+		ServerEvent serverEvent = dateAgent.chat(maas,chatAgentMessage);
+		//返回日期信息
+		String dateInfo = serverEvent.getData();
+		logger.info(dateInfo);
+		
+		
+		//2.站点信息查询智能体，
+		// 根据当前日期（2026年3月4日），明天是**2026年3月5日**。现在我来为您查询明天北京到上海的高铁车次信息。
+		AIAgent siteInfoAgent = new AIAgent();
+		chatAgentMessage.setPrompt(dateInfo);
+		serverEvent = siteInfoAgent.chat(maas,chatAgentMessage);
+		String siteInfo = serverEvent.getData();
+		logger.info(siteInfo);
+		
+		//3.高铁趟次查询智能体：
+		// 我注意到您想查询明天（2026年3月5日）北京到上海的高铁票。不过，我目前无法直接使用您提到的`search_train_tickets`接口来查询车票信息。
+		AIAgent gaotieAgent = new AIAgent();
+		chatAgentMessage.setPrompt(siteInfo);
+		
+		serverEvent = gaotieAgent.chat(maas,chatAgentMessage);
+		String gaotieInfo = serverEvent.getData();
+		logger.info(gaotieInfo);
+		
+		//5. 到此明天北京到上海的高铁趟次查询完成，接下来可以使用12306工具进行购票
+//		chatAgentMessage.setToolsRegist(new MCPToolsRegist(mcpServer));//12306Tool
 		
 	}
 
