@@ -36,7 +36,7 @@ public class SSEMcpCallHelper {
 	private Logger logger = LoggerFactory.getLogger(SSEMcpCallHelper.class);
 	private Map<String, McpCallObject> mcpCallObjects = new ConcurrentHashMap<>();
 	private ExecutorService executor ;
-	public void init(MCPClient client){
+	public void init(MCPSSEClient client){
 		executor = ThreadPoolFactory.buildThreadPool(client.getBulkProcessorName()+"-"+client.getMcpServer(), client.getBulkRejectMessage(), 
 				client.getWorkThreads(),client.getWorkThreadQueue(),
 				client.getBlockedWaitTimeout()
@@ -60,7 +60,7 @@ public class SSEMcpCallHelper {
 		mcpCallObjects.clear();
 	}
 	
-	public MCPInitializedToolResponse initializationCall(MCPClient mcpClient , McpInitializedToolRequest mcpInitializedToolRequest){
+	public MCPInitializedToolResponse initializationCall(MCPSSEClient mcpClient , McpInitializedToolRequest mcpInitializedToolRequest){
 		McpCallObject<MCPInitializedToolResponse> mcpCallObject = new McpCallObject<>(MCPInitializedToolResponse.class);
 		mcpCallObject.setRequestId(mcpInitializedToolRequest.getId());
         String requestId = mcpCallObject.getRequestId()+"";
@@ -123,7 +123,7 @@ public class SSEMcpCallHelper {
     }
 
 
-    public MCPListToolResponse listTools(MCPClient mcpClient, McpListToolRequest mcpToolRequest) {
+    public MCPListToolResponse listTools(MCPSSEClient mcpClient, McpListToolRequest mcpToolRequest) {
 		McpCallObject<MCPListToolResponse> mcpCallObject = new McpCallObject<>(MCPListToolResponse.class);
 		mcpCallObject.setRequestId(mcpToolRequest.getId());
         String requestId = mcpCallObject.getRequestId()+"";
@@ -153,7 +153,7 @@ public class SSEMcpCallHelper {
      * @param mcpToolCallRequest
      * @return
      */
-    public MCPToolCallResponse toolsCall(MCPClient mcpClient, McpToolCallRequest mcpToolCallRequest) {
+    public MCPToolCallResponse toolsCall(MCPSSEClient mcpClient, McpToolCallRequest mcpToolCallRequest) {
 		McpCallObject<MCPToolCallResponse> mcpCallObject = new McpCallObject<>(MCPToolCallResponse.class);
 		mcpCallObject.setRequestId(mcpToolCallRequest.getId());
         String requestId = mcpCallObject.getRequestId()+"";

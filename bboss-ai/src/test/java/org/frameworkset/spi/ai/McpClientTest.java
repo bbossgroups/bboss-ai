@@ -133,7 +133,9 @@ public class McpClientTest {
 //        gaotie( );
 //        webParser();
         //visualops();
-        trail12306();
+//        trail12306();
+
+        shuqi();
     }
 	
 	public static void gaodeMap( ) throws InterruptedException {
@@ -226,6 +228,23 @@ public class McpClientTest {
     public static void trail12306(){
 
         MCPClient mcpClient1 = new MCPClient("12306");
+        mcpClient1.init();
+
+        MCPListToolResponse tools1 = mcpClient1.listTools();
+
+        logger.info("tools:{}", JsonUtil.object2json(tools1));
+
+
+
+
+
+
+    }
+
+
+    public static void shuqi(){
+
+        MCPClient mcpClient1 = new MCPClient("shuqi");
         mcpClient1.init();
 
         MCPListToolResponse tools1 = mcpClient1.listTools();

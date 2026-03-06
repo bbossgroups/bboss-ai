@@ -107,6 +107,8 @@ public class StreamTest {
 		
 //		streamChatWithMcpTools("qwenvlplus","gaotie", "qwen3.5-plus", "查询高铁线路",true);
 
+        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询用户admin的操作日志，并进行分析",true);
 
 
@@ -115,7 +117,7 @@ public class StreamTest {
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
 //        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
-		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
+//		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
         
 //        videovlEvent();
 //        qwenvlCompareStream();

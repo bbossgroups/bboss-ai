@@ -1,0 +1,108 @@
+package org.frameworkset.spi.ai.mcp.streamable;
+/**
+ * Copyright 2026 bboss
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.frameworkset.spi.ai.mcp.MCPBaseClient;
+import org.frameworkset.spi.ai.mcp.model.*;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * @author biaoping.yin
+ * @Date 2026/2/26
+ */
+public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
+     
+    private final static Logger logger = LoggerFactory.getLogger(MCPStreamableClient.class);
+   
+    public MCPStreamableClient(String mcpServer){
+        super(mcpServer);
+    }
+     
+    @Override
+    protected MCPToolCallResponse executeToolsCall(McpToolCallRequest mcpToolCallRequest) {
+//        Map headers = null;
+//        if (sessionId != null) {
+//            headers = new HashMap<>();
+//            headers.put("Mcp-Session-Id", sessionId);
+//        }
+        MCPToolCallResponse mcpToolCallResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
+                mcpToolCallRequest,streamablePath, 
+                MCPToolCallResponse.class);
+//        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
+        return mcpToolCallResponse;
+    }
+
+    private String streamablePath ;
+	
+    public void init(){
+        // 初始化MCPClient
+        ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(this.mcpServer);
+        streamablePath = clientConfiguration.getExtendConfig("streamableendpoint");
+        connect();
+    }
+    public void destroy(){
+         
+    }
+
+    
+    private void connect(){
+         
+        
+        initialization();
+        notificationsInitialized();
+         
+
+    }
+   
+
+    @Override
+    protected MCPListToolResponse executeListTools(McpListToolRequest mcpToolRequest) {
+        MCPListToolResponse mcpListToolResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
+                mcpToolRequest,streamablePath,
+                MCPListToolResponse.class);
+//        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
+        return mcpListToolResponse;
+    }
+ 
+
+    @Override
+    protected String executeNotificationsInitialized(McpToolRequest notificationsInitialized) {
+        String data = HttpRequestProxy.sendJsonBody(getMcpServer(),
+                notificationsInitialized,streamablePath,
+                String.class);
+        if(logger.isDebugEnabled()) {
+            logger.debug("{} notificationsInitialized:{}",mcpServer, data);
+        }
+//        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
+        return data;
+    }
+
+ 
+
+    @Override
+    protected MCPInitializedToolResponse executeInitialization(McpInitializedToolRequest mcpInitializedToolRequest) {
+        MCPInitializedToolResponse mcpInitializedToolResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
+                mcpInitializedToolRequest,streamablePath,
+                MCPInitializedToolResponse.class);
+//        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
+        return mcpInitializedToolResponse;
+    }
+ 
+
+}
