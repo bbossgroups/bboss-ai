@@ -132,10 +132,10 @@ public class McpClientTest {
 
 //        gaotie( );
 //        webParser();
-        //visualops();
+        visualops();
 //        trail12306();
 
-        shuqi();
+//        shuqi();
     }
 	
 	public static void gaodeMap( ) throws InterruptedException {
