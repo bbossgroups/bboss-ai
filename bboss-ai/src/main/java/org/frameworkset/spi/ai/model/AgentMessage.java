@@ -95,11 +95,13 @@ public class AgentMessage<T extends AgentMessage> {
     }
 
     public T setTools(List<FunctionToolDefine> tools) {
+        reset();
         this.tools = tools;
         return (T)this;
     }
 
     public T registTools(List<FunctionToolDefine> tools) {
+        reset();
         if(this.tools == null){
             this.tools = new ArrayList<>();
         }
@@ -108,15 +110,38 @@ public class AgentMessage<T extends AgentMessage> {
     }
 
 
+    private void reset(){
+        if(toolInited) {
+            synchronized (initLock) {
+                if (!toolInited){
+                    return;
+                }
+                if (this.tools != null) {
+                    tools.clear();
+                }
+                if (toolsRegist != null) {
+                    toolsRegist.destroy();
+                    toolsRegist = null;
+                }
+                if (this.toolCalls != null) {
+                    toolCalls.clear();
+                }
+                toolInited = false;
+            }
+        }
+    }
     public T registTool(FunctionToolDefine functionToolDefine) {
-        if(this.tools == null){
+        reset();
+        if (this.tools == null) {
             tools = new ArrayList<>();
         }
         tools.add(functionToolDefine);
+        
         return (T)this;
     }
     
     public T registToolCalls(Map<String,FunctionCall> toolCalls) {
+        reset();
         if(this.toolCalls == null){
             toolCalls = new LinkedHashMap<>();
         }
@@ -124,6 +149,7 @@ public class AgentMessage<T extends AgentMessage> {
         return (T)this;
     }
     public T registToolCall(String toolName,FunctionCall functionCall) {
+        reset();
         if(this.toolCalls == null){
             toolCalls = new LinkedHashMap<>();
         }
@@ -263,72 +289,81 @@ public class AgentMessage<T extends AgentMessage> {
         this.maxTokens = maxTokens;
         return (T)this;
     }
-    private boolean init = false;
+    private boolean toolInited = false;
+    private Object initLock = new Object();
     public void init(){
-        if(init)
+        if(toolInited)
             return;
-        init = true;        
-        if(this.toolsRegist != null ){
-			toolsRegist.init();
-            List<FunctionToolDefine> functionToolDefines = this.toolsRegist.registTools();
-            if(functionToolDefines != null && functionToolDefines.size() > 0){
-                FunctionCall functionCall = null;
-                for(FunctionToolDefine functionToolDefine:functionToolDefines){
-                    functionCall = functionToolDefine.getFunctionCall();
-                    if(functionCall == null){
-                        functionCall = toolsRegist.getFunctionCall(functionToolDefine.getFunction().getName());
-                        if(functionCall != null){
-                            functionToolDefine.setFunctionCall(functionCall);
+        synchronized (initLock) {
+            if(toolInited ){
+                return;
+            }
+            if (this.toolsRegist != null) {
+                toolsRegist.init();
+                List<FunctionToolDefine> functionToolDefines = this.toolsRegist.registTools();
+                if (functionToolDefines != null && functionToolDefines.size() > 0) {
+                    FunctionCall functionCall = null;
+                    for (FunctionToolDefine functionToolDefine : functionToolDefines) {
+                        functionCall = functionToolDefine.getFunctionCall();
+                        if (functionCall == null) {
+                            functionCall = toolsRegist.getFunctionCall(functionToolDefine.getFunction().getName());
+                            if (functionCall != null) {
+                                functionToolDefine.setFunctionCall(functionCall);
+                            }
                         }
                     }
+                    this.registTools(functionToolDefines);
                 }
-                this.registTools(functionToolDefines);
             }
-        }
 
-        if(this.toolCalls != null && toolCalls.size() > 0){
-            for(Map.Entry<String,FunctionCall> entry:toolCalls.entrySet()){
-                FunctionCall functionCall = entry.getValue();
-                String toolName  = entry.getKey();
-                if(tools !=  null && tools.size() > 0) {
-                    for (FunctionToolDefine functionToolDefine : tools) {
-                        if (functionToolDefine.getFunction().getName().equals(toolName)) {
-                            functionToolDefine.setFunctionCall(functionCall);
-                            break;
+            if (this.toolCalls != null && toolCalls.size() > 0) {
+                for (Map.Entry<String, FunctionCall> entry : toolCalls.entrySet()) {
+                    FunctionCall functionCall = entry.getValue();
+                    String toolName = entry.getKey();
+                    if (tools != null && tools.size() > 0) {
+                        for (FunctionToolDefine functionToolDefine : tools) {
+                            if (functionToolDefine.getFunction().getName().equals(toolName)) {
+                                functionToolDefine.setFunctionCall(functionCall);
+                                break;
+                            }
                         }
                     }
+
                 }
-
             }
-        }
-        if(tools !=  null && tools.size() > 0) {
+            if (tools != null && tools.size() > 0) {
 
-            for (FunctionToolDefine functionToolDefine : tools) {
-                FunctionCall functionCall = functionToolDefine.getFunctionCall();
-                if (functionCall != null) {
-                    String toolName = functionToolDefine.getFunction().getName();
-                    if (toolCalls == null) {
-                        toolCalls = new LinkedHashMap<>();
+                for (FunctionToolDefine functionToolDefine : tools) {
+                    FunctionCall functionCall = functionToolDefine.getFunctionCall();
+                    if (functionCall != null) {
+                        String toolName = functionToolDefine.getFunction().getName();
+                        if (toolCalls == null) {
+                            toolCalls = new LinkedHashMap<>();
+                        }
+                        if (!toolCalls.containsKey(toolName))
+                            toolCalls.put(toolName, functionCall);
                     }
-                    if (!toolCalls.containsKey(toolName))
-                        toolCalls.put(toolName, functionCall);
-                }
 
+                }
             }
+            toolInited = true;
         }
     }
     
     public boolean isToolThinkingMessage(){
+        init();
         return this.tools != null && tools.size() > 0 ;
     }
     
     public FunctionCall getFunctionCall(String toolName){
+        init();
         if(toolCalls == null)
             return null;
         return toolCalls.get(toolName);
     }
 
     public T setToolsRegist(ToolsRegist toolsRegist) {
+        reset();
         this.toolsRegist = toolsRegist;
         return (T)this;
     }
@@ -343,8 +378,7 @@ public class AgentMessage<T extends AgentMessage> {
     }
 	
 	public void destroy(){
-		if(toolsRegist != null){
-			toolsRegist.destroy();
-		}
+        reset();
+	 
 	}
 }
