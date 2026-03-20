@@ -164,7 +164,10 @@ public class MessageBuilder {
 
         List contents = new ArrayList<>();
         Map contentData = null;
-
+        contentData = new LinkedHashMap();
+        contentData.put("type", TYPE_TEXT);
+        contentData.put("text", message);;
+        contents.add(contentData);
         if(videoUrls != null && videoUrls.length > 0) {
             for (String videoUrl : videoUrls) {
                 contentData = new LinkedHashMap();
@@ -178,10 +181,7 @@ public class MessageBuilder {
             }
         }
 
-        contentData = new LinkedHashMap();
-        contentData.put("type", TYPE_TEXT);
-        contentData.put("text", message);;
-        contents.add(contentData);
+  
         Map<String, Object> userMessage = new HashMap<>();
         userMessage.put("role", ROLE_USER);
         userMessage.put("content", contents);
@@ -198,7 +198,11 @@ public class MessageBuilder {
 
         List contents = new ArrayList<>();
         Map contentData = null;
-       
+        contentData = new LinkedHashMap();
+        contentData.put("type", TYPE_TEXT);
+        contentData.put("text", message);
+        contents.add(contentData);
+        
         if(imageUrls != null && imageUrls.length > 0) {
             for (String imageUrl : imageUrls) {
                 contentData = new LinkedHashMap();
@@ -212,10 +216,7 @@ public class MessageBuilder {
             }
         }
 
-        contentData = new LinkedHashMap();
-        contentData.put("type", TYPE_TEXT);
-        contentData.put("text", message);
-        contents.add(contentData);
+        
         Map<String, Object> userMessage = new HashMap<>();
         userMessage.put("role", ROLE_USER);
         userMessage.put("content", contents);
