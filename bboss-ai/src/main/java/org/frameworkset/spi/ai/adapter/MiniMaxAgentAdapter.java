@@ -41,7 +41,8 @@ public class MiniMaxAgentAdapter extends DoubaoAgentAdapter{
     
     @Override
     public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
-        throw new UnsupportedOperationException("getImageVLCompletionsUrl");
+//        throw new UnsupportedOperationException("getImageVLCompletionsUrl");
+        return "/v1/text/chatcompletion_v2";
     }
     @Override
     public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {

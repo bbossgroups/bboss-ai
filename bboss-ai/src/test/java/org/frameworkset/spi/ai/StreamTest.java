@@ -117,7 +117,7 @@ public class StreamTest {
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
-        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
+//        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
         
 //        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
@@ -125,7 +125,8 @@ public class StreamTest {
         
 //        videovlEvent();
 //        qwenvlCompareStream();
-//        qwenvlCompare();
+//        qwenvlCompare("qwen3-vl-plus","qwenvlplus");
+        qwenvlCompare("MiniMax-M2.7","minimax");
 //        callChatDeepseekSimple();
 //        callMinimaxSimple();
 //        qwenvJiutian();
@@ -810,7 +811,7 @@ public class StreamTest {
 
     }
 
-    public static void qwenvlCompare() throws InterruptedException {
+    public static void qwenvlCompare(String model,String maas) throws InterruptedException {
         String message  = "介绍两个图片内容并比对相似度,以json格式返回结果";
 //		
 //		[
@@ -830,7 +831,7 @@ public class StreamTest {
 
 
         ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
-        imageVLAgentMessage.setModel( "qwen3-vl-plus");
+        imageVLAgentMessage.setModel( model);
         imageVLAgentMessage.setPrompt( message);
         imageVLAgentMessage.addImageUrl(images[0]);
         imageVLAgentMessage.addImageUrl(images[1]);
@@ -838,13 +839,15 @@ public class StreamTest {
 
  
 
-        // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
-        imageVLAgentMessage.addParameter("enable_thinking", true);
-        imageVLAgentMessage.addParameter("thinking_budget", 81920);
+        if("qwenvlplus".equals(maas)) {
+            // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
+            imageVLAgentMessage.addParameter("enable_thinking", true);
+            imageVLAgentMessage.addParameter("thinking_budget", 81920);
+        }
 
         
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("qwenvlplus",imageVLAgentMessage);
-        logger.info(SimpleStringUtil.object2json( serverEvent));
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maas,imageVLAgentMessage);
+        logger.info(SimpleStringUtil.object2json( serverEvent.getData()));
         
          
     }
