@@ -85,8 +85,13 @@ public class StreamData {
     public StreamData(Map toolCallsChunk , String finishReason){
         this.type = ServerEvent.TOOL_CALLS;
         this.finishReason = finishReason;
+        if(finishReason != null && finishReason.equals("tool_calls")){
+            this.buildToolCallsFinished = true;
+        }
         this.toolCallsChunk = toolCallsChunk; 
     }
+    
+    
 
     public StreamData(int type, String data, String url, String finishReason,boolean done){
         this.type = type;

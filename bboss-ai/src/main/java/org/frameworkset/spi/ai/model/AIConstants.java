@@ -31,7 +31,8 @@ public class AIConstants {
     public static final String AI_MODEL_TYPE_SILICONFLOW = "siliconflow";
     public static final String AI_MODEL_TYPE_JIUTIAN = "jiutian";
     public static final String AI_MODEL_TYPE_ZHIPU = "zhipu";
-    
+    public static final String AI_MODEL_TYPE_MINIMAX = "minimax";
+
     public enum ModelType{
         QWEN(AI_MODEL_TYPE_QWEN,"通义千问"),
         DOUBAO(AI_MODEL_TYPE_DOUBAO,"字节火山引擎"),

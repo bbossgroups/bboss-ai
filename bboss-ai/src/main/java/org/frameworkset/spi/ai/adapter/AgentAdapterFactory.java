@@ -18,7 +18,6 @@ package org.frameworkset.spi.ai.adapter;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.AIConstants;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.LinkedHashMap;
@@ -42,8 +41,8 @@ public class AgentAdapterFactory {
 
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_JIUTIAN,new JiutianAgentAdapter().initAgentAdapter());
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_ZHIPU,new ZhipuAgentAdapter().initAgentAdapter());
+        agentAdapters.put(AIConstants.AI_MODEL_TYPE_MINIMAX,new MiniMaxAgentAdapter().initAgentAdapter());
 
-        
     }
     
     public static AgentAdapter getAgentAdapter(String modelType) {

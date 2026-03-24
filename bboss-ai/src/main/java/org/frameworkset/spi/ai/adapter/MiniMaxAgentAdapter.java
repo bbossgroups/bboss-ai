@@ -17,30 +17,39 @@ package org.frameworkset.spi.ai.adapter;
 
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
-import org.frameworkset.spi.ai.util.MessageBuilder;
-import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
-import java.io.File;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Zhipu模型智能体适配器
+ * Minimax系列模型智能体适配器
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
+public class MiniMaxAgentAdapter extends DoubaoAgentAdapter{
+    @Override
+    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage) {
+        return "/v1/video_generation";
+    }
+
+    @Override
+    public String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage) {
+        return "/v1/query/video_generation";
+    }
+
+    
     @Override
     public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
-        return "/api/paas/v4/chat/completions";
+        throw new UnsupportedOperationException("getImageVLCompletionsUrl");
     }
     @Override
     public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
-        return "/api/paas/v4/chat/completions";
+        return "/v1/text/chatcompletion_v2";
     }
     @Override
     public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
-        return "/api/paas/v4/images/generations";
+        return "/v1/image_generation";
     }
     @Override
     public Boolean getDefaultThinking() {
@@ -83,11 +92,11 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
      */
     @Override
     public String getAudioSTTCompletionsUrl(AudioSTTAgentMessage audioSTTAgentMessage){
-        return "/api/paas/v4/audio/transcriptions";
+        throw new UnsupportedOperationException("getAudioSTTCompletionsUrl");
     }
     @Override
     public String getGenAudioCompletionsUrl(AudioAgentMessage audioAgentMessage){
-        return "/api/paas/v4/audio/speech";
+        return "/v1/t2a_v2";
     }
 
     /**
@@ -129,66 +138,5 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
         }
         return audioEvent;
     }
-    /**
-     * 获取音频识别模型智能问答请求参数类型
-     * @return
-     */
-    public String getAIAudioParsertRequestType(){
-        return AIConstants.AI_CHAT_REQUEST_POST_FORM;
-
-    }
-
-    /**
-     * 解析语音识别流数据
-     * @param data
-     * @return
-     */
-    public StreamData parseAudioStreamContentFromData(StreamDataBuilder streamDataBuilder, String data){
-        return AIResponseUtil.parseZhipuAudioStreamContentFromData(  streamDataBuilder,data);
-    }
-    @Override
-    public Map buildAudioSTTRequestMap(AudioSTTAgentMessage audioSTTAgentMessage) {
-        Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("model", audioSTTAgentMessage.getModel());
-        requestMap.put("prompt", audioSTTAgentMessage.getPrompt());
-        
-        Object audio = audioSTTAgentMessage.getAudio();
-        // 添加当前用户消息
-        Map<String, Object> userMessage = null;
-        if(audio != null) {
-            userMessage = MessageBuilder.buildAudioSystemMessage(audioSTTAgentMessage.getPrompt());
-        }
-        else{
-            userMessage = MessageBuilder.buildAudioUserMessage(audioSTTAgentMessage.getPrompt());
-        }
-        
-        audioSTTAgentMessage.addSessionMessage(userMessage);
-
-        if(audio != null) {
-            if(audio instanceof File){
-                Map<String,File> files = new LinkedHashMap<>();
-                files.put("file",(File)audio);
-                audioSTTAgentMessage.setFiles( files);
-            }
-            else if (audio instanceof byte[]) {
-                requestMap.put("file_base64","data:" + audioSTTAgentMessage.getContentType() + ";base64," +
-                        Base64.getEncoder().encodeToString((byte[]) audio));
-            } else if (audio instanceof String) {
-                requestMap.put("file_base64",audio);
-            }
-            else{
-                throw new AIRuntimeException("audio must be File or byte[] or String");
-            }
-        }
-        
-        Map parameters = audioSTTAgentMessage.getParameters();
-        if(parameters != null) {
-            requestMap.putAll( parameters);
-        }
-        if(audioSTTAgentMessage.getStream() != null){
-            requestMap.put("stream", audioSTTAgentMessage.getStream());
-        }
-         
-        return requestMap;
-    }
+    
 }

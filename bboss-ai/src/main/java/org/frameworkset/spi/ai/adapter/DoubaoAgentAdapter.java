@@ -23,7 +23,7 @@ import org.frameworkset.spi.remote.http.ClientConfiguration;
 import java.util.*;
 
 /**
- * 字节模型智能体适配器
+ * 字节Doubao模型智能体适配器
  * @author biaoping.yin
  * @Date 2026/1/4
  */

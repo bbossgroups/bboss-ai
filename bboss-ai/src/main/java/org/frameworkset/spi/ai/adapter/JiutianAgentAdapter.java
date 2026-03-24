@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Kimi模型智能体适配器
+ * Jiutian模型智能体适配器
  * @author biaoping.yin
  * @Date 2026/1/4
  */

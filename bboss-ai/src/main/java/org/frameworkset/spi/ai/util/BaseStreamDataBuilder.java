@@ -32,6 +32,8 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
      * stream模式下工具识别对象
      */
     private StreamData toolCallsStreamData;
+    
+    private boolean toolResolved;
     /**
      * stream模式下思考工具识别过程对象
      */
@@ -99,6 +101,14 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
             return true;
         }
         return false;
+    }
+    
+    public boolean isToolResolved() {
+        return toolResolved;
+    }
+
+    public void setToolResolved(boolean toolResolved) {
+        this.toolResolved = toolResolved;
     }
 
     public StreamData functionTools(List<Map> tool_calls, String finishReason){

@@ -1,0 +1,52 @@
+[02/27/26 12:52:41] DEBUG    Handling POST message                   sse.py:177
+                    DEBUG    Parsed session ID:                      sse.py:193
+                             881cd757-27f5-4ab1-8433-f15f5931792b              
+                    DEBUG    Received JSON: b'        {\n            sse.py:206
+                             "jsonrpc": "2.0",\n          "id": 0,\n           
+                             "method": "initialize",\n                         
+                             "params": {\n                                     
+                             "protocolVersion": "2025-06-18",\n                
+                             "capabilities": {\n                               
+                             "elicitation": {}\n            },\n               
+                             "clientInfo": {\n              "name":            
+                             "mcp-client",\n              "version":           
+                             "1.0.0"\n            }\n          }\n             
+                             }\n'                                              
+2026-02-27 12:52:41.883 DEBUG Handling POST message
+2026-02-27 12:52:41.883 DEBUG Parsed session ID: 881cd757-27f5-4ab1-8433-f15f5931792b
+2026-02-27 12:52:41.883 DEBUG Received JSON: b'        {\n          "jsonrpc": "2.0",\n          "id": 0,\n          "method": "initialize",\n          "params": {\n            "protocolVersion": "2025-06-18",\n            "capabilities": {\n              "elicitation": {}\n            },\n            "clientInfo": {\n              "name": "mcp-client",\n              "version": "1.0.0"\n            }\n          }\n        }\n'
+2026-02-27 12:52:41.883 DEBUG Validated client message: root=JSONRPCRequest(method='initialize', params={'protocolVersion': '2025-06-18', 'capabilities': {'elicitation': {}}, 'clientInfo': {'name': 'mcp-client', 'version': '1.0.0'}}, jsonrpc='2.0', id=0)
+2026-02-27 12:52:41.903 DEBUG Sending session message to writer: SessionMessage(message=JSONRPCMessage(root=JSONRPCRequest(method='initialize', params={'protocolVersion': '2025-06-18', 'capabilities': {'elicitation': {}}, 'clientInfo': {'name': 'mcp-client', 'version': '1.0.0'}}, jsonrpc='2.0', id=0)), metadata=ServerMessageMetadata(related_request_id=None, request_context=<starlette.requests.Request object at 0x0000014A445CEC80>))
+INFO:     127.0.0.1:57301 - "POST /messages/?session_id=881cd75727f54ab18433f15f5931792b HTTP/1.1" 202 Accepted
+2026-02-27 12:52:41.903 DEBUG Sending message via SSE: SessionMessage(message=JSONRPCMessage(root=JSONRPCResponse(jsonrpc='2.0', id=0, result={'protocolVersion': '2025-06-18', 'capabilities': {'experimental': {}, 'prompts': {'listChanged': False}, 'resources': {'subscribe': False, 'listChanged': False}, 'tools': {'listChanged': False}}, 'serverInfo': {'name': 'high_speed_railQuerySystem', 'version': '1.10.1'}})), metadata=None)
+                    DEBUG    Validated client message:               sse.py:210
+                             root=JSONRPCRequest(method='initialize'           
+                             , params={'protocolVersion':                      
+                             '2025-06-18', 'capabilities':                     
+                             {'elicitation': {}}, 'clientInfo':                
+                             {'name': 'mcp-client', 'version':                 
+                             '1.0.0'}}, jsonrpc='2.0', id=0)                   
+                    DEBUG    Sending session message to writer:      sse.py:221
+                             SessionMessage(message=JSONRPCMessage(r           
+                             oot=JSONRPCRequest(method='initialize',           
+                              params={'protocolVersion':                       
+                             '2025-06-18', 'capabilities':                     
+                             {'elicitation': {}}, 'clientInfo':                
+                             {'name': 'mcp-client', 'version':                 
+                             '1.0.0'}}, jsonrpc='2.0', id=0)),                 
+                             metadata=ServerMessageMetadata(related_           
+                             request_id=None,                                  
+                             request_context=<starlette.requests.Req           
+                             uest object at 0x0000014A445CEC80>))              
+                    DEBUG    Sending message via SSE:                sse.py:147
+                             SessionMessage(message=JSONRPCMessage(r           
+                             oot=JSONRPCResponse(jsonrpc='2.0',                
+                             id=0, result={'protocolVersion':                  
+                             '2025-06-18', 'capabilities':                     
+                             {'experimental': {}, 'prompts':                   
+                             {'listChanged': False}, 'resources':              
+                             {'subscribe': False, 'listChanged':               
+                             False}, 'tools': {'listChanged':                  
+                             False}}, 'serverInfo': {'name':                   
+                             'high_speed_railQuerySystem',                     
+                             'version': '1.10.1'}})), metadata=None)       

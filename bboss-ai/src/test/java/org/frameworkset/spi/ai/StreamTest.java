@@ -107,14 +107,18 @@ public class StreamTest {
 		
 //		streamChatWithMcpTools("qwenvlplus","gaotie", "qwen3.5-plus", "查询高铁线路",true);
 
-        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询用户admin的操作日志，并进行分析",true);
+//        streamChatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询用户admin的操作日志，并进行分析",true);
 
-
+//        chatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
+//        streamChatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
+        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
+        
 //        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
 //		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
@@ -123,9 +127,34 @@ public class StreamTest {
 //        qwenvlCompareStream();
 //        qwenvlCompare();
 //        callChatDeepseekSimple();
+//        callMinimaxSimple();
 //        qwenvJiutian();
 //        chatByJiutian();
 //        audioFileRecognition();
+    }
+    
+    public static void callMinimaxSimple() throws InterruptedException {
+        //MiniMax-M2.7
+        //定义问题变量
+        String message = "介绍一下bboss jobflow";
+        //设置模型调用参数，
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+        chatAgentMessage.setModel("MiniMax-M2.7");
+        chatAgentMessage.setPrompt(message);
+
+        chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
+        AIAgentUtil.streamChatCompletion("minimax",chatAgentMessage)
+                .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
+                .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
+                .doOnError(error ->{countDownLatch.countDown(); logger.error("错误: " + error.getMessage(),error);})
+                .subscribe();
+
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        countDownLatch.await();
     }
     public static void callDeepseekSimple() throws InterruptedException {
         //定义问题变量
@@ -531,7 +560,7 @@ public class StreamTest {
 		
 	}
 	
-	public static void chatWithMcpTools(String maas, String mcpServer,String model, String prompt,boolean thinking) throws InterruptedException {
+	public static void chatWithMcpTools(String maas, String mcpServer,String model, String prompt) throws InterruptedException {
 		List<Map<String, Object>> session = new ArrayList<>();//会话记忆
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
 				.setPrompt(prompt)

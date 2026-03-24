@@ -393,7 +393,15 @@ public class AIResponseUtil {
                        else{
                            Map delta = (Map) choice.get("delta");
                            if (delta != null) {
-                               return new StreamData( (List<FunctionTool>)null,(List<Map>)null, finishReason);
+                               Object tool_call = delta.get("tool_calls");
+                               if(tool_call != null){
+                                   List<Map> tool_call_ = (List<Map>) tool_call;
+                                   return new StreamData( tool_call_.get(0), finishReason);
+//                                   return streamDataBuilder.functionToolsChunk((List<Map>) tool_call, finishReason);
+                               }
+                               else{
+                                    return new StreamData( (List<FunctionTool>)null,(List<Map>)null, finishReason);
+                               }
                            }
                            else {
                                Map message = (Map) choice.get("message");
@@ -957,6 +965,9 @@ public class AIResponseUtil {
                    
                     if(content.isBuildToolCallsFinished()){
                         //构建完整的toolCalls对象
+                        if(content.getToolCalls() != null || content.getToolCallsChunk() != null){
+                            streamDataBuilder.appendToolCallsStreamData( content);
+                        }
                         buildServerEvent(   firstEventTag,  streamDataBuilder.getToolCallsStreamData(),
                                   streamDataBuilder,  agentAdapter,  sink);
                         return content.isDone();
@@ -994,7 +1005,7 @@ public class AIResponseUtil {
         List<StreamData> _tools = content.getToolCallsStreamDatas();
         
         for(int i = 0; _tools != null && i < _tools.size(); i++){
-            streamDataChunk = _tools.get(i);            
+            streamDataChunk = _tools.get(i);             
             streamDataBuilder.appendArguments(argumentsBuilder,streamDataChunk.getToolCallsChunk());
              
         }
@@ -1009,11 +1020,15 @@ public class AIResponseUtil {
         content.setToolCalls(toolCalls);
         serverEvent.setFunctionTools(functionTools);
         content.setFunctionTools(functionTools);
+        streamDataBuilder.setToolResolved(true);
         
     }
     private static void buildServerEvent( BooleanWrapperInf firstEventTag,StreamData content,
                                                  BaseStreamDataBuilder streamDataBuilder,AgentAdapter agentAdapter,FluxSink<ServerEvent> sink)
     {
+        if(streamDataBuilder.isToolResolved()){
+            return;
+        }
         ServerEvent serverEvent = new ServerEvent();
         if (firstEventTag.get()) {
             firstEventTag.set(false);
