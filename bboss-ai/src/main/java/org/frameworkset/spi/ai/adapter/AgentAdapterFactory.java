@@ -42,7 +42,33 @@ public class AgentAdapterFactory {
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_JIUTIAN,new JiutianAgentAdapter().initAgentAdapter());
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_ZHIPU,new ZhipuAgentAdapter().initAgentAdapter());
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_MINIMAX,new MiniMaxAgentAdapter().initAgentAdapter());
+        agentAdapters.put(AIConstants.AI_MODEL_TYPE_HUNYUAN,new TencentHYAgentAdapter().initAgentAdapter());
 
+    }
+
+    /**
+     * 注册新的模型适配器
+     * @param modelType
+     * @param agentAdapter
+     */
+    public static void registerAgentAdapter(String modelType, AgentAdapter agentAdapter){
+        agentAdapters.put(modelType,agentAdapter.initAgentAdapter());
+    }
+
+    /**
+     * 注册新的模型适配器
+     * @param modelType
+     * @param agentAdapterClass
+     */
+    public static void registerAgentAdapter(String modelType, Class<? extends AgentAdapter> agentAdapterClass){
+        AgentAdapter agentAdapter = null;
+        try {
+            agentAdapter = agentAdapterClass.newInstance();
+            registerAgentAdapter(  modelType,   agentAdapter);
+        } catch (Exception e) {
+            throw new AIRuntimeException(e);
+        }  
+       
     }
     
     public static AgentAdapter getAgentAdapter(String modelType) {
@@ -60,8 +86,12 @@ public class AgentAdapterFactory {
 
     
     public static AgentAdapter getAgentAdapter(ClientConfiguration clientConfiguration,Object message) {
-        
-        return AgentAdapterFactory.getAgentAdapter(clientConfiguration.getModelType());
+        String modelType = clientConfiguration.getModelType();
+        if(modelType == null || modelType.equals("")){
+            modelType = clientConfiguration.getHosts();
+        }
+
+        return AgentAdapterFactory.getAgentAdapter(modelType);
     }
     
 

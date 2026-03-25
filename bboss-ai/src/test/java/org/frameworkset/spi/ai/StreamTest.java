@@ -61,7 +61,7 @@ public class StreamTest {
        
        
 
-        properties.put("tool.http.hosts","127.0.0.1:8080");///设置tool服务地址
+        properties.put("tool.http.hosts","10.13.6.4:8128");///设置tool服务地址
         properties.put("tool.http.apiKeyId","17689048891086XsDsJVgwiQcmKhOdh23DX4NT");//设置apiKey
         properties.put("tool.http.timeoutSocket","60000");
         properties.put("tool.http.timeoutConnection","40000");
@@ -73,9 +73,13 @@ public class StreamTest {
 //        callChatDeepseekSimple();
 //        testCustom();
 //        callguijiSimple();
-//            qwenvl(false);
+//          qwenvl("qwenvlplus","qwen3-vl-plus",true);
+        qwenvl("hunyuan","hunyuan-vision",true);
 //        videovl();
 //        chatWithTools("deepseek","deepseek-chat");
+
+
+//        chatWithTools("hunyuan","hunyuan-2.0-thinking-20251109");
 
 
 //        chatWithTools("qwenvlplus","qwen3.5-plus");
@@ -126,7 +130,7 @@ public class StreamTest {
 //        videovlEvent();
 //        qwenvlCompareStream();
 //        qwenvlCompare("qwen3-vl-plus","qwenvlplus");
-        qwenvlCompare("MiniMax-M2.7","minimax");
+//        qwenvlCompare("MiniMax-M2.7","minimax");
 //        callChatDeepseekSimple();
 //        callMinimaxSimple();
 //        qwenvJiutian();
@@ -308,19 +312,21 @@ public class StreamTest {
     }
 
     
-    public static void qwenvl(boolean stream) throws InterruptedException {
+    public static void qwenvl(String maas,String model,boolean stream) throws InterruptedException {
         String message  = "介绍图片内容并计算结果";
 
 
         ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
-        imageVLAgentMessage.setModel( "qwen3-vl-plus");
+        imageVLAgentMessage.setModel( model);//hunyuan-vision,qwen3-vl-plus
         imageVLAgentMessage.setPrompt( message);
-        imageVLAgentMessage.addImageUrl("https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        String base64 = FileUtil.getBase64Content("C:\\data\\ai\\aigenfiles\\image\\0ac0f3af23fe4e6c8769321c7d5360c5.jpg");
+//        imageVLAgentMessage.addImageUrl("https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        imageVLAgentMessage.addImageUrl(base64);
         imageVLAgentMessage.setStream(stream);
 
 
 
-        if(stream) {
+        if(stream && maas.equals("qwenvlplus")) {
             // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
             imageVLAgentMessage.addParameter("enable_thinking", true);
             imageVLAgentMessage.addParameter("thinking_budget", 81920);
@@ -328,7 +334,7 @@ public class StreamTest {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         AIAgent aiAgent = new AIAgent();
         if(stream) {
-            Flux<ServerEvent> flux = aiAgent.streamImageParser("qwenvlplus", imageVLAgentMessage);
+            Flux<ServerEvent> flux = aiAgent.streamImageParser(maas, imageVLAgentMessage);
             flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                     .doOnNext(chunk -> {
                         if (!chunk.isDone())
@@ -350,7 +356,7 @@ public class StreamTest {
             countDownLatch.await();
         }
         else{
-            ServerEvent serverEvent = aiAgent.imageParser("qwenvlplus", imageVLAgentMessage);
+            ServerEvent serverEvent = aiAgent.imageParser(maas, imageVLAgentMessage);
             logger.info(serverEvent.getData());
         }
 
@@ -394,7 +400,7 @@ public class StreamTest {
     public static void chatWithTools(String maas,String model){
         List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
-                .setPrompt("查询杭州天气，并根据天气给出穿衣、饮食以及出行建议")
+                .setPrompt("查询杭州市天气，并根据天气给出穿衣、饮食以及出行建议")
                 .setSessionSize(50)
                 .setSessionMemory(session)
 //                .setModel("deepseek-chat")

@@ -30,6 +30,34 @@ import java.util.*;
  * @Date 2026/1/4
  */
 public class QwenAgentAdapter extends AgentAdapter{
+    @Override
+    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+        return "/compatible-mode/v1/chat/completions";
+    }
+
+    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage){
+        if(videoAgentMessage.getFirstFrameUrl() != null) {
+            return "/api/v1/services/aigc/image2video/video-synthesis";
+        }
+        else {
+            return "/api/v1/services/aigc/video-generation/video-synthesis";
+        }
+    }
+    @Override
+    public String getGenAudioCompletionsUrl(AudioAgentMessage audioAgentMessage){
+        return "/api/v1/services/aigc/multimodal-generation/generation";
+    }
+
+    /**
+     * maas平台音频识别服务地址
+     * @param audioSTTAgentMessage
+     * @return
+     */
+    @Override
+
+    public String getAudioSTTCompletionsUrl(AudioSTTAgentMessage audioSTTAgentMessage){
+        return "/api/v1/services/aigc/multimodal-generation/generation";
+    }
     public String getVideoVLCompletionsUrl(VideoVLAgentMessage videoVLAgentMessage) {
         return "/v1/chat/completions";
     }
@@ -104,10 +132,6 @@ public class QwenAgentAdapter extends AgentAdapter{
         return result;
     }
 
-    @Override
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
-        return "/compatible-mode/v1/chat/completions";
-    }
 
     public VideoTask buildVideoResponseTask(ClientConfiguration clientConfiguration, VideoAgentMessage videoAgentMessage,Map taskInfo ){
         Map output = (Map)taskInfo.get("output");
@@ -124,14 +148,7 @@ public class QwenAgentAdapter extends AgentAdapter{
         result.setRequestId((String) taskInfo.get("request_id"));
         return result;
     }
-    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage){
-        if(videoAgentMessage.getFirstFrameUrl() != null) {
-            return "/api/v1/services/aigc/image2video/video-synthesis";
-        }
-        else {
-            return "/api/v1/services/aigc/video-generation/video-synthesis";
-        }
-    }
+  
     @Override
     protected Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage, ClientConfiguration clientConfiguration) {
         
@@ -225,21 +242,7 @@ public class QwenAgentAdapter extends AgentAdapter{
     public StreamData parseAudioGenStreamContentFromData(String data){
         return AIResponseUtil.parseQianwenAudioGenStreamContentFromData(data);
     }
-    @Override
-    public String getGenAudioCompletionsUrl(AudioAgentMessage audioAgentMessage){
-        return "/api/v1/services/aigc/multimodal-generation/generation";
-    }
-
-    /**
-     * maas平台音频识别服务地址
-     * @param audioSTTAgentMessage
-     * @return
-     */
-    @Override
-
-    public String getAudioSTTCompletionsUrl(AudioSTTAgentMessage audioSTTAgentMessage){
-        return "/api/v1/services/aigc/multimodal-generation/generation";
-    }
+    
     @Override
     protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage) {
         Map<String, Object> requestMap = new HashMap<>();

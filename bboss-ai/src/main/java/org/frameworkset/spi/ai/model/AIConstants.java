@@ -31,7 +31,48 @@ public class AIConstants {
     public static final String AI_MODEL_TYPE_SILICONFLOW = "siliconflow";
     public static final String AI_MODEL_TYPE_JIUTIAN = "jiutian";
     public static final String AI_MODEL_TYPE_ZHIPU = "zhipu";
-    public static final String AI_MODEL_TYPE_MINIMAX = "minimax";
+    public static final String AI_MODEL_TYPE_MINIMAX = "minimax";    
+    public static final String AI_MODEL_TYPE_HUNYUAN = "hunyuan";
+
+    public static final String AI_MODEL_TYPE_QWEN_URL = "https://dashscope.aliyuncs.com";
+    public static final String AI_MODEL_TYPE_DOUBAO_URL = "https://ark.cn-beijing.volces.com";
+    public static final String AI_MODEL_TYPE_DEEPSEEK_URL = "https://api.deepseek.com";
+    public static final String AI_MODEL_TYPE_KIMI_URL = "https://api.moonshot.cn";
+    public static final String AI_MODEL_TYPE_SILICONFLOW_URL = "https://api.siliconflow.cn";
+    public static final String AI_MODEL_TYPE_JIUTIAN_URL = "https://jiutian.10086.cn";
+    public static final String AI_MODEL_TYPE_ZHIPU_URL = "https://open.bigmodel.cn";
+    public static final String AI_MODEL_TYPE_MINIMAX_URL = "https://api.minimaxi.com";
+    public static final String AI_MODEL_TYPE_HUNYUAN_URL = "https://api.hunyuan.cloud.tencent.com";
+
+    /**
+     * 根据maas平台地址，返回对应平台适配器类型
+     * @param apiurl
+     * @return
+     */
+    public static String getModelTypeByUrl(String apiurl){
+        if(apiurl == null)
+            return null;
+        if(apiurl.startsWith(AI_MODEL_TYPE_QWEN_URL))
+            return AI_MODEL_TYPE_QWEN;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_DOUBAO_URL))
+            return AI_MODEL_TYPE_DOUBAO;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_DEEPSEEK_URL))
+            return AI_MODEL_TYPE_DEEPSEEK;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_KIMI_URL))
+            return AI_MODEL_TYPE_KIMI;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_SILICONFLOW_URL))
+            return AI_MODEL_TYPE_SILICONFLOW;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_JIUTIAN_URL))
+            return AI_MODEL_TYPE_JIUTIAN;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_ZHIPU_URL))
+            return AI_MODEL_TYPE_ZHIPU;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_MINIMAX_URL))
+            return AI_MODEL_TYPE_MINIMAX;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_HUNYUAN_URL))
+            return AI_MODEL_TYPE_HUNYUAN;
+        else
+            return null;
+    }
 
     public enum ModelType{
         QWEN(AI_MODEL_TYPE_QWEN,"通义千问"),
@@ -43,7 +84,9 @@ public class AIConstants {
         OPENAI(AI_MODEL_TYPE_OPENAI,"OpenAI"),
         SILICONFLOW(AI_MODEL_TYPE_SILICONFLOW,"硅基流程"),
         JIUTIAN(AI_MODEL_TYPE_JIUTIAN,"九天平台")        ,
-        ZHIPU(AI_MODEL_TYPE_ZHIPU,"智谱");
+        ZHIPU(AI_MODEL_TYPE_ZHIPU,"智谱")    ,
+        MINIMAX(AI_MODEL_TYPE_MINIMAX,"Minimax"),
+        HUNYUAN(AI_MODEL_TYPE_HUNYUAN,"腾讯混元");
         private String type;
         private String name;
         ModelType(String type,String name){

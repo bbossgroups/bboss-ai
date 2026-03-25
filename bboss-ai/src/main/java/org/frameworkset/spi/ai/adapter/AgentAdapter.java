@@ -38,9 +38,13 @@ import java.util.*;
 public abstract class AgentAdapter implements CompletionsUrlInterface{
     private org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AgentAdapter.class);
     protected GenFileDownload genFileDownload;
+    private boolean inited;
 
      
     protected AgentAdapter initAgentAdapter(){
+        if(inited)
+            return this;
+        inited = true;
         genFileDownload = new GenMaterialFileDownload();
         return this;
     }
