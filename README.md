@@ -1,4 +1,4 @@
-轻量级bboss ai agent开发客户端
+轻量级多模态java大模型智能体客户端
 
 # 版本构建方法
 
@@ -8,64 +8,33 @@ gradle clean publishToMavenLocal
 
 https://esdoc.bbossgroups.com/#/bboss-build
 # bboss ai
-基于 httpclient5、httpcore5以及reactor的bboss ai java大模型对接客户端，支持同步调用和流式调用两种模式；
+基于 httpclient5、httpcore5以及reactor的多模态java大模型智能体客户端，支持同步调用和流式调用两种模式；
 
-模型支持：集成和适配Deepseek、Kimi、智谱、阿里百炼通义千问、字节豆包火山引擎等国内主流Maas平台，支持兼容各种主流最新的LLM模型和多模态模型，包括LLM、计算视觉，音频/视频模型，快速实现智能问答、图片识别/生成、语音识别/生成以及视频识别/生成功能
+模型支持：兼容各种主流最新的LLM模型和多模态模型，包括LLM、计算视觉，音频/视频模型，快速实现智能问答、图片识别/生成、语音识别/生成以及视频识别/生成功能
 
-客户端支持工具和MCP服务发现和调用
+模型平台：集成和适配Deepseek、Kimi、智谱、阿里百炼通义千问qwen、字节豆包火山引擎、Minimax、腾讯混元以及中国移动九天等国内主流Maas平台，通过简单的适配和扩展即可支持私有化模型平台
+
+工具能力：支持工具和MCP服务发现和调用，提供MCP sse和streamable两种mcp 通讯协议，同时提供mcp server协议实现
+
+多智能体协同：配合bboss graph提供的工作流和有限循环图，实现多智能体协同，快速构建多智能体系统
 
 使用参考文档：https://doc.bbossgroups.com/#/mvc/chatstream
 
-# bboss httpproxy
- http负载均衡组件-HttpRequestProxy  使用参考文档https://esdoc.bbossgroups.com/#/httpproxy5
+# 使用案例
+## 多模态智能问答web demo
 
- 负载均衡组件特点：
+源码工程 https://gitee.com/bboss/bbootdemo
 
- 1.服务负载均衡（目前提供RoundRobin负载算法）
+关键代码：
 
- 2.服务健康检查
+流式问答控制器 https://gitee.com/bboss/bbootdemo/blob/master/src/main/java/org/frameworkset/web/react/ReactorController.java
 
- 3.服务容灾故障恢复
+前端网页 https://gitee.com/bboss/bbootdemo/blob/master/WebRoot/chatBackuppressSession.html
 
- 4.服务自动发现（apollo，nacos，可以扩展到zk，etcd，consul，eureka，db以及其他第三方注册中心）
+## 后端多模态演示案例
+源码工程：https://gitee.com/bboss/bboss-ai
 
- 5.路由规则动态切换
-
- 5.分组服务管理
-
- 可以配置多组服务集群地址，每一组地址清单支持的配置格式：
-
- http://ip:port
-
- https://ip:port
-
- ip:port（默认http协议）
-
- 多个地址用逗号分隔
-
- 6.服务安全认证（支持basic认证、Kerberos认证）
-
- 7.主备路由/异地灾备特色
-
- 负载均衡器主备功能开发，如果主节点全部挂掉，请求转发到可用的备用节点，如果备用节点也挂了，就抛出异常，如果主节点恢复正常，那么请求重新发往主节点 
-
-# 开发文档
-
-https://esdoc.bbossgroups.com/#/httpproxy5
-
-httpproxy 案例：
-
-基于apollo进行配置管理、节点自动发现、路由规则自动切换，源码地址如下
-
-https://gitee.com/bboss/httpproxy-apollo 
-
-https://github.com/bbossgroups/httpproxy-apollo
-
-基于nacos进行配置管理、节点自动发现、路由规则自动切换，源码地址如下
-
-https://gitee.com/bboss/httpproxy-nacos
-
-https://github.com/bbossgroups/httpproxy-nacos
+关键代码：https://gitee.com/bboss/bboss-ai/blob/main/bboss-ai/src/test/java/org/frameworkset/spi/ai/StreamTest.java
 
 # 联系我们
 

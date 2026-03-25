@@ -52,6 +52,8 @@ public class AgentAdapterFactory {
      * @param agentAdapter
      */
     public static void registerAgentAdapter(String modelType, AgentAdapter agentAdapter){
+        if(agentAdapters.containsKey(modelType))
+            throw new AIRuntimeException("modelType:["+modelType+"] has been registered.");
         agentAdapters.put(modelType,agentAdapter.initAgentAdapter());
     }
 
