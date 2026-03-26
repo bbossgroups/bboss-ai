@@ -72,6 +72,24 @@ public class AgentAdapterFactory {
         }  
        
     }
+
+    /**
+     * 注册新的模型适配器
+     * @param modelType
+     * @param agentAdapterClass
+     */
+    public static void registerAgentAdapter(String modelType, String agentAdapterClass){
+        AgentAdapter agentAdapter = null;
+        try {
+            Class<? extends AgentAdapter> agentAdapterClass_ = (Class<? extends AgentAdapter>) Class.forName(agentAdapterClass);
+            registerAgentAdapter(  modelType,   agentAdapterClass_);
+        } catch (AIRuntimeException e) {
+            throw e;
+        }catch (Exception e) {
+            throw new AIRuntimeException(e);
+        }
+
+    }
     
     public static AgentAdapter getAgentAdapter(String modelType) {
         AgentAdapter agentAdapter = null;

@@ -1,5 +1,21 @@
 轻量级多模态java大模型智能体客户端
 
+使用参考文档：https://esdoc.bbossgroups.com/#/bboss-ai
+# 集成bboss ai
+maven坐标
+```xml
+<dependency>
+   <groupId>com.bbossgroups</groupId>
+   <artifactId>bboss-ai</artifactId>
+   <version>6.5.3</version>
+</dependency>
+```
+gradle坐标
+```groovy
+implementation 'com.bbossgroups:bboss-ai:6.5.3'
+```
+
+
 # 版本构建方法
 
 gradle clean publishToMavenLocal
@@ -18,7 +34,7 @@ https://esdoc.bbossgroups.com/#/bboss-build
 
 多智能体协同：配合bboss graph提供的工作流和有限循环图，实现多智能体协同，快速构建多智能体系统
 
-使用参考文档：https://doc.bbossgroups.com/#/mvc/chatstream
+
 
 # 使用案例
 ## 多模态智能问答web demo

@@ -34,7 +34,7 @@ public class QwenAgentAdapter extends AgentAdapter{
     public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
         return "/compatible-mode/v1/chat/completions";
     }
-
+    @Override
     public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage){
         if(videoAgentMessage.getFirstFrameUrl() != null) {
             return "/api/v1/services/aigc/image2video/video-synthesis";
@@ -58,6 +58,7 @@ public class QwenAgentAdapter extends AgentAdapter{
     public String getAudioSTTCompletionsUrl(AudioSTTAgentMessage audioSTTAgentMessage){
         return "/api/v1/services/aigc/multimodal-generation/generation";
     }
+    @Override
     public String getVideoVLCompletionsUrl(VideoVLAgentMessage videoVLAgentMessage) {
         return "/v1/chat/completions";
     }

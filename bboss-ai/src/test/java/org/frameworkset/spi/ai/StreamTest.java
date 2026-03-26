@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai;
 
 import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
@@ -36,10 +37,7 @@ import reactor.core.publisher.FluxSink;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -50,7 +48,9 @@ public class StreamTest {
     private static Logger logger = LoggerFactory.getLogger(StreamTest.class);
     public static void main(String[] args) throws InterruptedException, IOException {
         //加载配置文件，启动负载均衡器,应用中只需要执行一次
+        AgentAdapterFactory.registerAgentAdapter("custom",CustomAgentAdapter.class);
         HttpRequestProxy.startHttpPools("application-stream.properties");
+        
 		
 		HttpRequestProxy.startHttpPools("mcpserver.properties");
 
@@ -74,7 +74,7 @@ public class StreamTest {
 //        testCustom();
 //        callguijiSimple();
 //          qwenvl("qwenvlplus","qwen3-vl-plus",true);
-        qwenvl("hunyuan","hunyuan-vision",true);
+//        qwenvl("hunyuan","hunyuan-vision",true);
 //        videovl();
 //        chatWithTools("deepseek","deepseek-chat");
 
@@ -122,6 +122,8 @@ public class StreamTest {
 
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
 //        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
+
+        streamChatWithMcpTools("custom","shuqi","qwen3.5-plus","推荐一部穿越小说",true);
         
 //        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
@@ -150,8 +152,9 @@ public class StreamTest {
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
+        AIAgent aiAgent = new AIAgent();
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        AIAgentUtil.streamChatCompletion("minimax",chatAgentMessage)
+        aiAgent.streamChat("minimax",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
@@ -173,7 +176,8 @@ public class StreamTest {
         
         CountDownLatch countDownLatch = new CountDownLatch(1);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        AIAgentUtil.streamChatCompletion("deepseek",chatAgentMessage)
+        AIAgent aiAgent = new AIAgent();
+        aiAgent.streamChat("deepseek",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
@@ -197,7 +201,8 @@ public class StreamTest {
 
         chatAgentMessage.setStream( false).setTemperature(0.7).addParameter("max_tokens", 2048);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("deepseek",chatAgentMessage);
+        AIAgent aiAgent = new AIAgent();
+        ServerEvent serverEvent = aiAgent.chat("deepseek",chatAgentMessage);
         logger.info(serverEvent.getData());
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
       
@@ -214,7 +219,8 @@ public class StreamTest {
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
         CountDownLatch countDownLatch = new CountDownLatch(1);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        AIAgentUtil.streamChatCompletion("guiji",chatAgentMessage)
+        AIAgent aiAgent = new AIAgent();
+        aiAgent.streamChat("guiji",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
@@ -224,7 +230,15 @@ public class StreamTest {
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         countDownLatch.await();
     }
+ 
+
+    private static String getWeatherInfo(String city) {
+        // 模拟天气查询
+        return city + "今天晴，温度 15-25℃，建议穿薄外套。";
+    }
     public static void testCustom() throws InterruptedException {
+        
+        
         //定义问题变量
         String message = "介绍一下bboss jobflow";
         //设置模型调用参数，
@@ -797,7 +811,8 @@ public class StreamTest {
         imageVLAgentMessage.addParameter("enable_thinking", true);
         imageVLAgentMessage.addParameter("thinking_budget", 81920);
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus",imageVLAgentMessage);
+        AIAgent aiAgent = new AIAgent();
+        Flux<ServerEvent> flux = aiAgent.streamImageParser("qwenvlplus",imageVLAgentMessage);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
                     if(!chunk.isDone())
@@ -850,9 +865,9 @@ public class StreamTest {
             imageVLAgentMessage.addParameter("enable_thinking", true);
             imageVLAgentMessage.addParameter("thinking_budget", 81920);
         }
-
+        AIAgent aiAgent = new AIAgent();
         
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maas,imageVLAgentMessage);
+        ServerEvent serverEvent = aiAgent.imageParser(maas,imageVLAgentMessage);
         logger.info(SimpleStringUtil.object2json( serverEvent.getData()));
         
          
