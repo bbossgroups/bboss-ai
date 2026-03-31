@@ -67,7 +67,9 @@ public class FeishuHelper {
     
     public void buildMcpToolsHeader(Map headers,String tools){
         headers.put("X-Lark-MCP-Allowed-Tools",tools);
-        headers.put("X-Lark-MCP-TAT",this.getTenantAccessToken());
+        String accessToken = this.getTenantAccessToken();
+        headers.put("X-Lark-MCP-TAT",accessToken);
+//        headers.put("Authorization","Bearer "+accessToken);
     }
 
  

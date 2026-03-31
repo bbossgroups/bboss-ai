@@ -128,7 +128,7 @@ public class StreamTest {
 //        streamChatWithMcpTools("custom","shuqi","qwen3.5-plus","推荐一部穿越小说",true);
 
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库飞书定制开发和应用中的文档",true);
-        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库AI转型学习中的文档",true);
+        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
         
 //        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
@@ -555,12 +555,12 @@ public class StreamTest {
         }
         else{
             BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
-            //bboss应用
-//            baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd0")
-//                    .setFeishAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs");
+//            bboss应用
+            baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd0")
+                    .setFeishAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs");
             //企业关怀应用
-            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
-                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
+//            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
+//                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
             baseFeishuConfig.addHttpConfig("http.poolNames", "feishu")
                     .addHttpConfig("feishu.http.hosts", "https://open.feishu.cn")
                     .addHttpConfig("feishu.http.maxTotal", 100)
