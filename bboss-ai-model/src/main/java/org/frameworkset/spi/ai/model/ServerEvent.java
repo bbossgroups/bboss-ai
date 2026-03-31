@@ -88,9 +88,15 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     private int type = DATA;
 
     /**
-     * 字段表示数据报文类型，0表示答案内容，1表示思维链内容,默认值为0
+     * 字段表示数据报文类型，0表示答案内容，1表示思维链内容,2 表示返回识别的工具定义内容，默认值为0
      */
     private int contentType = CONTENT;
+
+    /**
+     * 标识是否是执行工具调用，分析工具调用结果数据后，返回的结果内容
+     * true 是，false 不是
+     */
+    private boolean toolCallResponse;
     
     /**
      * 标记数据获取是否完成
@@ -273,5 +279,12 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     public boolean isToolCallsType() {
         return contentType == TOOL_CALLS;
     }
- 
+    
+    public boolean isToolCallResponse(){
+        return toolCallResponse;
+    }
+
+    public void setToolCallResponse(boolean toolCallResponse) {
+        this.toolCallResponse = toolCallResponse;
+    }
 }

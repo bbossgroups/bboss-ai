@@ -29,13 +29,16 @@ import java.util.List;
  * @Date 2026/3/2
  */
 public class MCPToolsRegist implements ToolsRegist {
-	private String mcpServer;
-	private MCPClient mcpClient;
+	protected String mcpServer;
+    protected MCPClient mcpClient;
 	public MCPToolsRegist(String mcpServer){
 		this.mcpServer = mcpServer;
 	}
+    protected MCPClient buildMCPClient(){
+		return new MCPClient(mcpServer);
+	}
 	public void init(){
-		mcpClient = new MCPClient(mcpServer);
+		mcpClient = buildMCPClient();
 		mcpClient.init();
 	}
 	public void destroy(){

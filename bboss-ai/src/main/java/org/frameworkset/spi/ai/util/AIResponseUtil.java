@@ -103,7 +103,7 @@ public class AIResponseUtil {
 
     }
 
-    public static boolean handleServerEventExceptionData(Throwable throwable,FluxSink<ServerEvent> sink, BooleanWrapperInf firstEventTag){
+    public static boolean handleServerEventExceptionData(Throwable throwable,FluxSink<ServerEvent> sink, BaseStreamDataBuilder streamDataBuilder,BooleanWrapperInf firstEventTag){
         if(logger.isWarnEnabled()) {
             logger.warn("服务端异常：", throwable);
         }
@@ -114,6 +114,7 @@ public class AIResponseUtil {
             firstEventTag.set(false);
             serverEvent.setFirst(true);
         }
+        serverEvent.setToolCallResponse(streamDataBuilder.getChatObject().isToolCall());
         serverEvent.setData(error);
         serverEvent.setType(ServerEvent.ERROR);
         sink.next(serverEvent);
@@ -892,7 +893,7 @@ public class AIResponseUtil {
                 serverEvent.setRole(content.getRole());
                 serverEvent.setContent(content.getContent());
                 serverEvent.setReasoningContent(content.getReasoningContent());
-
+                serverEvent.setToolCallResponse(streamDataBuilder.getChatObject().isToolCall());
 
             }
 
@@ -917,6 +918,10 @@ public class AIResponseUtil {
         if(logger.isDebugEnabled()){
             logger.debug("line: " + line);
         }
+
+//        if(logger.isInfoEnabled()){
+//            logger.info("line: " + line);
+//        }
         String data = null;
         if(stream){
             if (line.startsWith("data: ")||line.startsWith("data:")) {
@@ -946,6 +951,7 @@ public class AIResponseUtil {
                     serverEvent.setFirst(true);
                 }
                 serverEvent.setType(ServerEvent.DATA);
+                serverEvent.setToolCallResponse(streamDataBuilder.getChatObject().isToolCall());
                 serverEvent.setDone(true);
           
                 sink.next(serverEvent);
@@ -1038,9 +1044,11 @@ public class AIResponseUtil {
             buildToolCalls(  streamDataBuilder,  content,  serverEvent);
         }
         else {
+            
             serverEvent.setFunctionTools(content.getFunctionTools());
             serverEvent.setToolCalls(content.getToolCalls());
         }
+        serverEvent.setToolCallResponse(streamDataBuilder.getChatObject().isToolCall());
         serverEvent.setData(content.getContent());
         serverEvent.setGenUrl(content.getUrl());
         serverEvent.setFinishReason(content.getFinishReason());

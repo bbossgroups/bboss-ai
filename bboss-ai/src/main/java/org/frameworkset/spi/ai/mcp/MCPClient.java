@@ -27,8 +27,8 @@ import org.frameworkset.spi.remote.http.ClientConfiguration;
  * @Date 2026/2/26
  */
 public class MCPClient {
-    private MCPClientInf mcpClientInf;
-    private String mcpServer;
+    protected MCPClientInf mcpClientInf;
+    protected String mcpServer;
     public MCPClient(String mcpServer){
         this.mcpServer = mcpServer;
        

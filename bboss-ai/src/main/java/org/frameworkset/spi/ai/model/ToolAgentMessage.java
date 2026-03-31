@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.model;
  */
 
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,13 @@ public class ToolAgentMessage extends ChatAgentMessage{
         this.functionTools = functionTools;
     }
 
-    
+    @Override
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter) {
+        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter);
+        chatObject.setToolCall(true);
+        return chatObject;
+    }
+
     public List<FunctionTool> getFunctionTools() {
         return functionTools;
     }
@@ -85,7 +92,7 @@ public class ToolAgentMessage extends ChatAgentMessage{
     }
 
     @Override
-    public Integer getMaxTokens() {
+    public Long getMaxTokens() {
         return chatAgentMessage.getMaxTokens();
     }
 

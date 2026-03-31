@@ -15,11 +15,14 @@ package org.frameworkset.spi.ai.mcp.tools;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.mcp.MCPClient;
 import org.frameworkset.spi.ai.mcp.model.MCPToolCallResponse;
 import org.frameworkset.spi.ai.model.FunctionCall;
 import org.frameworkset.spi.ai.model.FunctionCallException;
 import org.frameworkset.spi.ai.model.FunctionTool;
+
+import java.util.Map;
 
 /**
  * MCP工具函数调用
@@ -31,10 +34,19 @@ public class MCPToolFunctionCall implements FunctionCall<MCPToolCallResponse> {
 	public MCPToolFunctionCall(MCPClient mcpClient){
 		this.mcpClient = mcpClient;
 	}
-	
-	
+
+    protected void validateResponse(MCPToolCallResponse mcpToolCallResponse) throws FunctionCallException{
+        Map result = mcpToolCallResponse.getResult();
+        Boolean isError = (Boolean) result.get("isError");
+        if(isError != null && isError){
+
+            throw new FunctionCallException(JsonUtil.object2json(mcpToolCallResponse));
+        }
+    }
 	@Override
 	public MCPToolCallResponse call(FunctionTool functionTool) throws FunctionCallException {
-		return mcpClient.toolsCall(functionTool);
+        MCPToolCallResponse mcpToolCallResponse = mcpClient.toolsCall(functionTool);
+        validateResponse(mcpToolCallResponse    );
+		return mcpToolCallResponse;
 	}
 }

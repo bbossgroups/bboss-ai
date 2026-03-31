@@ -72,7 +72,7 @@ public class AgentMessage<T extends AgentMessage> {
 
 
 
-    private Integer maxTokens; 
+    private Long maxTokens; 
     private Boolean stream;
     private Double temperature;
     private Map headers = null;
@@ -281,11 +281,11 @@ public class AgentMessage<T extends AgentMessage> {
         this.temperature = temperature;
         return (T)this;
     }
-    public Integer getMaxTokens() {
+    public Long getMaxTokens() {
         return maxTokens;
     }
 
-    public T setMaxTokens(Integer maxTokens) {
+    public T setMaxTokens(Long maxTokens) {
         this.maxTokens = maxTokens;
         return (T)this;
     }

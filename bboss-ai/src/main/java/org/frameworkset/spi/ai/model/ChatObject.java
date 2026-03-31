@@ -32,6 +32,7 @@ public class ChatObject {
 
 
     private boolean thinking;
+    private boolean toolCall;
     private Object message;
     private AgentMessage agentMessage;
     private String aiChatRequestType = AIConstants.AI_CHAT_REQUEST_BODY_JSON;
@@ -126,5 +127,13 @@ public class ChatObject {
 
     public void setThinking(boolean thinking) {
         this.thinking = thinking;
+    }
+
+    public void setToolCall(boolean toolCall) {
+        this.toolCall = toolCall;
+    }
+
+    public boolean isToolCall() {
+        return toolCall;
     }
 }

@@ -22,6 +22,8 @@ import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 /**
  * @author biaoping.yin
  * @Date 2026/2/26
@@ -33,16 +35,20 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     public MCPStreamableClient(String mcpServer){
         super(mcpServer);
     }
+    
+    protected Map buildHeaders() {
+         return null;
+    }
      
     @Override
     protected MCPToolCallResponse executeToolsCall(McpToolCallRequest mcpToolCallRequest) {
-//        Map headers = null;
+        Map headers = buildHeaders();
 //        if (sessionId != null) {
 //            headers = new HashMap<>();
 //            headers.put("Mcp-Session-Id", sessionId);
 //        }
         MCPToolCallResponse mcpToolCallResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
-                mcpToolCallRequest,streamablePath, 
+                mcpToolCallRequest,headers,streamablePath, 
                 MCPToolCallResponse.class);
 //        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
         return mcpToolCallResponse;
@@ -73,8 +79,9 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
 
     @Override
     protected MCPListToolResponse executeListTools(McpListToolRequest mcpToolRequest) {
+        Map headers = buildHeaders();
         MCPListToolResponse mcpListToolResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
-                mcpToolRequest,streamablePath,
+                mcpToolRequest,headers,streamablePath,
                 MCPListToolResponse.class);
 //        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
         return mcpListToolResponse;
@@ -83,8 +90,9 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
 
     @Override
     protected String executeNotificationsInitialized(McpToolRequest notificationsInitialized) {
+        Map headers = buildHeaders();
         String data = HttpRequestProxy.sendJsonBody(getMcpServer(),
-                notificationsInitialized,streamablePath,
+                notificationsInitialized,headers,streamablePath,
                 String.class);
         if(logger.isDebugEnabled()) {
             logger.debug("{} notificationsInitialized:{}",mcpServer, data);
@@ -97,8 +105,9 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
 
     @Override
     protected MCPInitializedToolResponse executeInitialization(McpInitializedToolRequest mcpInitializedToolRequest) {
+        Map headers = buildHeaders();
         MCPInitializedToolResponse mcpInitializedToolResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
-                mcpInitializedToolRequest,streamablePath,
+                mcpInitializedToolRequest,headers,streamablePath,
                 MCPInitializedToolResponse.class);
 //        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
         return mcpInitializedToolResponse;

@@ -228,7 +228,7 @@ public class AIAgentUtil {
             @Override
 
             public boolean handleException(Object requestBody,Throwable throwable, FluxSink<ServerEvent> sink, BooleanWrapperInf firstEventTag){
-                boolean result = AIResponseUtil.handleServerEventExceptionData(  throwable, sink,   firstEventTag);
+                boolean result = AIResponseUtil.handleServerEventExceptionData(  throwable, sink,   (BaseStreamDataBuilder)chatObject.getStreamDataBuilder(), firstEventTag);
                 return result;
             }
 
@@ -343,7 +343,7 @@ public class AIAgentUtil {
             @Override
 
             public boolean handleException(Object requestBody,Throwable throwable, FluxSink<ServerEvent> sink, BooleanWrapperInf firstEventTag){
-                boolean result = AIResponseUtil.handleServerEventExceptionData(  throwable, sink,   firstEventTag);
+                boolean result = AIResponseUtil.handleServerEventExceptionData(  throwable, sink,   (BaseStreamDataBuilder)chatObject.getStreamDataBuilder(),firstEventTag);
                 return result;
             }
 

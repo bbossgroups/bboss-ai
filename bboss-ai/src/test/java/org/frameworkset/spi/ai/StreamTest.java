@@ -18,6 +18,8 @@ package org.frameworkset.spi.ai;
 import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
+import org.frameworkset.spi.ai.mcp.feishu.BaseFeishuConfig;
+import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
@@ -123,7 +125,10 @@ public class StreamTest {
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
 //        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
 
-        streamChatWithMcpTools("custom","shuqi","qwen3.5-plus","推荐一部穿越小说",true);
+//        streamChatWithMcpTools("custom","shuqi","qwen3.5-plus","推荐一部穿越小说",true);
+
+//        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库飞书定制开发和应用中的文档",true);
+        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库AI转型学习中的文档",true);
         
 //        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
@@ -419,7 +424,7 @@ public class StreamTest {
                 .setSessionMemory(session)
 //                .setModel("deepseek-chat")
                 .setModel(model)
-                .setMaxTokens(4096);
+                .setMaxTokens(65536L);
 
         AIAgent aiAgent = new AIAgent();
        
@@ -476,7 +481,7 @@ public class StreamTest {
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setStream( true)
-                .setMaxTokens(4096);
+                .setMaxTokens(65536L);
         chatAgentMessage.setThinking(true);
         AIAgent aiAgent = new AIAgent();
 
@@ -540,11 +545,32 @@ public class StreamTest {
 //                .setModel("deepseek-chat")
 				.setModel(model)
 				.setStream( true)
-				.setMaxTokens(4096);
+				.setMaxTokens(65536L);
 		chatAgentMessage.setThinking(thinking);
 		AIAgent aiAgent = new AIAgent();
-		
-		chatAgentMessage.setToolsRegist(new MCPToolsRegist(mcpServer));
+        MCPToolsRegist mcpToolsRegist = null;
+		//feishumcp
+        if(!mcpServer.equals("feishumcp")){
+            mcpToolsRegist = new MCPToolsRegist(mcpServer);
+        }
+        else{
+            BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
+            //bboss应用
+//            baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd0")
+//                    .setFeishAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs");
+            //企业关怀应用
+            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
+                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
+            baseFeishuConfig.addHttpConfig("http.poolNames", "feishu")
+                    .addHttpConfig("feishu.http.hosts", "https://open.feishu.cn")
+                    .addHttpConfig("feishu.http.maxTotal", 100)
+                    .addHttpConfig("feishu.http.defaultMaxPerRoute", 100)
+                    .setMcpTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
+            ;
+            
+            mcpToolsRegist = new FeishuMcpRegist("feishumcp", baseFeishuConfig);
+        }
+		chatAgentMessage.setToolsRegist(mcpToolsRegist);
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		aiAgent.streamChat(maas,chatAgentMessage)
@@ -590,7 +616,7 @@ public class StreamTest {
 //                .setModel("deepseek-chat")
 				.setModel(model)
 				.setStream( false)
-				.setMaxTokens(4096);
+				.setMaxTokens(65536L);
 		chatAgentMessage.setThinking(false);
 		
 		
@@ -634,7 +660,7 @@ public class StreamTest {
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setStream( true)
-                .setMaxTokens(4096);
+                .setMaxTokens(65536L);
 
         AIAgent aiAgent = new AIAgent();
 

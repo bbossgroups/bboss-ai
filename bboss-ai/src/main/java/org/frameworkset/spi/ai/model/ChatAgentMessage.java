@@ -44,7 +44,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
             thinking = _thinking;
         chatObject.setThinking(thinking);
     }
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter){
+    public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter){
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
