@@ -25,7 +25,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/3/23
  */
-public class BaseFeishuConfig<T extends BaseFeishuConfig>   {
+public class BaseFeishuConfig<T extends BaseFeishuConfig> implements BaseFeishuConfigInf  {
 
     protected String feishuDataSource;
 
@@ -34,6 +34,17 @@ public class BaseFeishuConfig<T extends BaseFeishuConfig>   {
 
     protected String feishuAppId;
     protected String feishAppSecret;
+    /**
+     * access_token expire time:默认值2小时，刷新时间提前10分钟
+     */
+    protected long accessTokenExpireTime = 2L * 50L * 60L * 1000L;
+    public long getAccessTokenExpireTime() {
+        return accessTokenExpireTime;
+    }
+    public T setAccessTokenExpireTime(long accessTokenExpireTime) {
+        this.accessTokenExpireTime = accessTokenExpireTime;
+        return (T)this;
+    }
 
     public String getMcpTools() {
         return mcpTools;
@@ -111,22 +122,66 @@ public class BaseFeishuConfig<T extends BaseFeishuConfig>   {
        
     }
     
+//    private static Map<String,BaseFeishuConfig> feishuHelpers = new LinkedHashMap<>();
+    private static Object initFeishHelperLock = new Object();
     public void initFeishHelper(){
-        FeishuHelper feishuHelper = new FeishuHelper(this);
-        feishuHelper.init();
-        this.feishuHelper = feishuHelper;
+        if(this.feishuHelper != null){
+            return;
+        }
+         
+        synchronized (initFeishHelperLock) {
+            if(this.feishuHelper != null){
+                return;
+            }
+            
+            FeishuHelper feishuHelper = new FeishuHelper(this);
+            feishuHelper.init();
+            this.feishuHelper = feishuHelper;
+//            feishuHelpers.put(this.feishuDataSource, this);
+        }
     }
+    
+    
     
     public void destroy(){
         if(feishuHelper != null) {
             feishuHelper.destroy();
         }
     }
+//
+//    public static void destroyAll(){
+//        synchronized (initFeishHelperLock) {
+//            for (BaseFeishuConfig feishuConfig : feishuHelpers.values()) {
+//                if (feishuConfig != null) {
+//                    feishuConfig.destroy();
+//                }
+//            }
+//        }
+//    }
+//
+//    public static void destroy(String feishuDataSource){
+//        synchronized (initFeishHelperLock) {
+//            BaseFeishuConfig feishuConfig = feishuHelpers.remove(feishuDataSource);
+//            if (feishuConfig != null) {
+//                feishuConfig.destroy();
+//            }
+//            
+//        }
+//    }
 
     public FeishuHelper getFeishuHelper() {
+        initFeishHelper();
         return feishuHelper;
     }
- 
+//
+//    public static FeishuHelper getFeishuHelper(String feishuDataSource) {
+//        BaseFeishuConfig feishuConfig = feishuHelpers.get(feishuDataSource);
+//        if(feishuConfig != null){
+//            return feishuConfig.getFeishuHelper();
+//        }
+//        throw new FeishuException("feishuDataSource[" + feishuDataSource + "] is not exists!");
+//    }
+// 
  
     private void checkConfigs(){
         if(httpConfigs == null)

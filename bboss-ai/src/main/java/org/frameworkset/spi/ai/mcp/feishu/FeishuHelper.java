@@ -38,11 +38,11 @@ public class FeishuHelper {
     private String appId;
     private String appSecret;
     private String feishuDatasource;
-    private BaseFeishuConfig baseFeishuConfig;
+    private BaseFeishuConfigInf baseFeishuConfig;
     private FeishuTokenHolder feishuTokenHolder;
     private ResourceStartResult resourceStartResult;
 
-    public FeishuHelper(BaseFeishuConfig baseFeishuConfig){
+    public FeishuHelper(BaseFeishuConfigInf baseFeishuConfig){
         this.feishuDatasource = baseFeishuConfig.getFeishuDataSource();
         this.appId = baseFeishuConfig.getFeishuAppId();
         this.appSecret = baseFeishuConfig.getFeishAppSecret();         
@@ -106,14 +106,14 @@ public class FeishuHelper {
         return listFieldsResult;
     }
 
-    public Map deleteData(String accessToken, String deleteUrl,Map requestBody){
+    public Map deleteData( String accessToken,String deleteUrl,Map requestBody){
         Map headers = buildHeaders(accessToken);
 
         Map deleteResult = HttpRequestProxy.sendJsonBody(feishuDatasource,requestBody,deleteUrl,headers,Map.class);
         return deleteResult;
     }
     
-    public String getRecordIdByField(String fieldName, Object value){
+    public String getRecordIdByField(String accessToken,String fieldName, Object value){
         StringBuilder requestBody = new StringBuilder();
         requestBody.append("{")
                 .append("\"automatic_fields\": false,")
@@ -144,7 +144,7 @@ public class FeishuHelper {
         //用INDICATOR_ID替换变量${INDICATOR_ID}
         
 
-        Map datas = searchData(getTenantAccessToken(), baseFeishuConfig.getSearchUrl(),  requestBody.toString());
+        Map datas = searchData(accessToken, baseFeishuConfig.getSearchUrl(),  requestBody.toString());
         String recordId = null;
         if(datas != null ){
             Map data = (Map)datas.get("data");
@@ -161,7 +161,7 @@ public class FeishuHelper {
         return recordId;
     }
 
-    public List<String> getRecordIdsByField( String fieldName, Object value){
+    public List<String> getRecordIdsByField(String accessToken, String fieldName, Object value){
         StringBuilder requestBody = new StringBuilder();
         requestBody.append("{")
                 .append("\"automatic_fields\": false,")
@@ -192,7 +192,7 @@ public class FeishuHelper {
         //用INDICATOR_ID替换变量${INDICATOR_ID}
 
 
-        Map datas = searchData(getTenantAccessToken(), baseFeishuConfig.getSearchUrl(),  requestBody.toString());
+        Map datas = searchData(accessToken,baseFeishuConfig.getSearchUrl(),  requestBody.toString());
         List<String> recordIds = null;
         if(datas != null ){
             Map data = (Map)datas.get("data");
@@ -214,7 +214,7 @@ public class FeishuHelper {
      * 根据条件获取id集合
      * @return
      */
-    public List<String> getRecordIdsByField(List<FieldName2ndValues> fieldName2ndValues){
+    public List<String> getRecordIdsByField(String accessToken,List<FieldName2ndValues> fieldName2ndValues){
         StringBuilder requestBody = new StringBuilder();
         requestBody.append("{")
                 .append("\"automatic_fields\": false,")
@@ -260,7 +260,7 @@ public class FeishuHelper {
         //用INDICATOR_ID替换变量${INDICATOR_ID}
 
 
-        Map datas = searchData(getTenantAccessToken(), baseFeishuConfig.getSearchUrl(),  requestBody.toString());
+        Map datas = searchData(  accessToken, baseFeishuConfig.getSearchUrl(),  requestBody.toString());
         List<String> recordIds = null;
         if(datas != null ){
             Map data = (Map)datas.get("data");
@@ -296,7 +296,7 @@ public class FeishuHelper {
                 public String refreshToken() {
                     return requestTenantAccessToken();
                 }
-            }, 2L * 50L * 60L * 1000L);
+            }, baseFeishuConfig.getAccessTokenExpireTime());
             this.feishuTokenHolder = feishuTokenHolder;
 
         }catch(Exception e){
@@ -348,13 +348,13 @@ public class FeishuHelper {
      * String url = "/open-apis/bitable/v1/apps/N0tMboDHOaSWAwsXh0ucIoARnnc/tables/tblCzBSEvUXKYMTI/records";
      * 推送发送结果到飞书
      */
-    public Map sendRequest(String accessToken, Map record, String url){
+    public Map sendRequest( String accessToken, Map record, String url){
 //        logger.info(accessToken);
 //        String url = "/open-apis/bitable/v1/apps/N0tMboDHOaSWAwsXh0ucIoARnnc/tables/tblCzBSEvUXKYMTI/records";
         //多维表格地址
         //https://asiainfo.feishu.cn/base/N0tMboDHOaSWAwsXh0ucIoARnnc?table=tblCzBSEvUXKYMTI&view=vewFoeaJxt
 
-        Map headers = buildHeaders(  accessToken);
+        Map headers = buildHeaders(accessToken);
         Map message_ = HttpRequestProxy.sendJsonBody(feishuDatasource,record,url,headers,Map.class);
 //        logger.info("推送多维表格结果:{}", JsonUtil.object2json(message_));
 

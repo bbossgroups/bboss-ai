@@ -35,19 +35,26 @@ public class FeishuTokenHolder {
     private Lock writeLock = readWriteLock.writeLock();
     private Logger logger = LoggerFactory.getLogger(FeishuTokenHolder.class);
     
+    private boolean refreshFailed;
+    private boolean stopped;
+    
     public FeishuTokenHolder(RefreshTokenFunction refreshTokenFunction,long expireTime) {
         this.expireTime = expireTime;
         this.refreshTokenFunction = refreshTokenFunction;
-        refreshToken();
+        refreshToken(false);
         refreshThread = new Thread(() -> {
             while (true) {
                 try {
+                    if(stopped)
+                        break;
                     Thread.sleep(expireTime);
                 } catch (InterruptedException e) {
                     break;
                 }
+                if(stopped)
+                    break;
                 try {
-                    refreshToken();
+                    refreshToken(false);
                 }
                 catch (Exception e){
                     logger.error("refreshToken error",e);
@@ -59,16 +66,27 @@ public class FeishuTokenHolder {
         refreshThread.start();
     }
     
-    private void refreshToken(){
+    private void refreshToken(boolean fromGetToken){
         writeLock.lock();
         try {
+            if(fromGetToken && !refreshFailed){
+                return;
+            }
             token = refreshTokenFunction.refreshToken();
+            if (refreshFailed) {                
+                refreshFailed = false;
+            }
+        }
+        catch (Exception e){
+            logger.error("refreshToken error",e);
+            refreshFailed = true;
         }
         finally {
             writeLock.unlock();
         }
     }
     public void destroy(){
+        stopped = true;
         refreshThread.interrupt();
         try {
             refreshThread.join();
@@ -77,8 +95,13 @@ public class FeishuTokenHolder {
     }
     
     public String getToken() {
+        // 如果刷新失败，则再次刷新，避免使用无效的token
+        if(refreshFailed){
+            refreshToken(true);
+        }
         readLock.lock();
         try {
+            
             return token;
         }
         finally {
