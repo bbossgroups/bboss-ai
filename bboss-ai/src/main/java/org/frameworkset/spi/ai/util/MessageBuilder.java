@@ -78,6 +78,24 @@ public class MessageBuilder {
         userMessage.put("content", contents);
         return userMessage;
     }
+
+    public static void buildZhipuGenVideoMessage(Map<String, Object> requestMap, VideoAgentMessage videoAgentMessage){
+        requestMap.put("prompt",videoAgentMessage.getPrompt());
+
+        List contents = new ArrayList<>();
+        Map contentData = null;
+
+        if(videoAgentMessage.getImgUrl() != null){
+            requestMap.put("image_url",videoAgentMessage.getImgUrl());
+           
+
+        }
+        
+        if(videoAgentMessage.getFirstFrameUrl() != null && videoAgentMessage.getLastFrameUrl() != null){
+            requestMap.put("image_url",new String[]{videoAgentMessage.getFirstFrameUrl(),videoAgentMessage.getLastFrameUrl()});
+
+        }       
+    }
     public static void buildGenVideoMessage(Map<String, Object> requestMap, VideoAgentMessage videoAgentMessage){
         
 

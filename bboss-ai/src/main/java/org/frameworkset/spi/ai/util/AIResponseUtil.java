@@ -25,6 +25,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.material.DownImageBase64HttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownFileHttpClientResponseHandler;
+import org.frameworkset.spi.ai.material.DownVideoImageFileHttpClientResponseHandler;
 import org.frameworkset.spi.ai.mcp.DataCollector;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.reactor.*;
@@ -64,6 +65,23 @@ public class AIResponseUtil {
       return handler;
       
   }
+
+    public static HttpClientResponseHandler<String>  buildDownVideoImageHttpClientResponseHandler(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, String imageUrl){
+        String type  = videoStoreAgentMessage.getStoreVideoType();
+        HttpClientResponseHandler<String> handler = null;
+        if(type == null || type.equals(AIConstants.STORETYPE_BASE64) || type.equals(AIConstants.STORETYPE_URL)){
+            handler = new DownImageBase64HttpClientResponseHandler();
+        }
+        else if(type.equals(AIConstants.STORETYPE_FILE)){
+            handler = new DownVideoImageFileHttpClientResponseHandler( config,videoStoreAgentMessage,  imageUrl);
+        }
+        if(handler == null){
+            logger.warn("unsupport StoreImageType:{}", type);
+            throw new AIRuntimeException("unsupport StoreImageType:"+type);
+        }
+        return handler;
+
+    }
 
     public static HttpClientResponseHandler<String>  buildDownAudioHttpClientResponseHandler(ClientConfiguration config, AudioAgentMessage audioAgentMessage, String audioUrl){
          

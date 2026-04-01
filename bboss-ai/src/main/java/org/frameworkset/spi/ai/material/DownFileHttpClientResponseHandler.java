@@ -40,6 +40,9 @@ public class DownFileHttpClientResponseHandler extends BaseURLResponseHandler<St
         this.storeAgentMessage = storeAgentMessage;
 
     }
+    protected String getStoreFilePath(StoreFilePathFunction storeFilePathFunction,String url){
+        return storeFilePathFunction.getStoreFilePath(url);
+    }
 
     @Override
     public String handleResponse(ClassicHttpResponse response) throws HttpException, IOException {
@@ -47,7 +50,7 @@ public class DownFileHttpClientResponseHandler extends BaseURLResponseHandler<St
         if (status == 200) {
             String storeFilePath = null;
             if(storeAgentMessage.getStoreFilePathFunction() != null){
-                storeFilePath = storeAgentMessage.getStoreFilePathFunction().getStoreFilePath(url);
+                storeFilePath = getStoreFilePath(storeAgentMessage.getStoreFilePathFunction(),url);
             }
             else{
                 storeFilePath = storeAgentMessage.getStoreFilePath();

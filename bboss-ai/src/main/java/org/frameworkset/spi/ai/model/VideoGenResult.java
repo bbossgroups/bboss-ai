@@ -21,13 +21,25 @@ package org.frameworkset.spi.ai.model;
  */
 public class VideoGenResult extends VideoTask{
     /**
-     * 视频播放地址
+     * 下载后的视频播放地址
      */
     private String videoUrl;
     /**
-     * 视频原始地址
+     * 生成的视频原始地址
      */
     private String videoGenUrl;
+
+
+    /**
+     * 下载后视频封面链接
+     */
+    private String coverImageUrl;
+
+    /**
+     * 生成的原始视频封面链接
+     * 
+     */
+    private String coverImageGenUrl;
     private String submitTime;
     private String scheduledTime;
     private String endTime;
@@ -79,5 +91,20 @@ public class VideoGenResult extends VideoTask{
 
     public void setVideoGenUrl(String videoGenUrl) {
         this.videoGenUrl = videoGenUrl;
+    }
+    public String getCoverImageUrl() {
+        return coverImageUrl;
+    }
+
+    public void setCoverImageUrl(String coverImageUrl) {
+        this.coverImageUrl = coverImageUrl;
+    }
+
+    public String getCoverImageGenUrl() {
+        return coverImageGenUrl;
+    }
+
+    public void setCoverImageGenUrl(String coverImageGenUrl) {
+        this.coverImageGenUrl = coverImageGenUrl;
     }
 }

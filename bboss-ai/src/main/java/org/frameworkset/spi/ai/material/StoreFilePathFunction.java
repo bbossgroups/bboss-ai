@@ -21,5 +21,8 @@ package org.frameworkset.spi.ai.material;
  * @Date 2026/1/20
  */
 public interface StoreFilePathFunction {
-    String getStoreFilePath(String imageUrl);
+    String getStoreFilePath(String genUrl);
+    default String getVideoImageStoreFilePath(String videoImageUrl){
+        return videoImageUrl;
+    }
 }

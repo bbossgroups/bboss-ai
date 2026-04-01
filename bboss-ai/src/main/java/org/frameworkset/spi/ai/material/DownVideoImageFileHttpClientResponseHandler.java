@@ -15,19 +15,24 @@ package org.frameworkset.spi.ai.material;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.model.AudioAgentMessage;
-import org.frameworkset.spi.ai.model.ImageAgentMessage;
-import org.frameworkset.spi.ai.model.VideoStoreAgentMessage;
+import org.frameworkset.spi.ai.model.StoreAgentMessage;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**
  * @author biaoping.yin
  * @Date 2026/1/20
  */
-public interface GenFileDownload {
+public class DownVideoImageFileHttpClientResponseHandler extends DownFileHttpClientResponseHandler {
+    
+    public DownVideoImageFileHttpClientResponseHandler(ClientConfiguration clientConfiguration, StoreAgentMessage storeAgentMessage, String url) {
+        super(clientConfiguration, storeAgentMessage, url);
 
-    String downloadImage(ClientConfiguration config, ImageAgentMessage imageAgentMessage, String downUrl, String imageUrl);
-    String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage,  String imageUrl);
-    String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage, String downUrl, String audioUrl);
-    String downloadVideo(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, String downUrl, String videoUrl);
+    }
+    protected String getStoreFilePath(StoreFilePathFunction storeFilePathFunction,String url){
+        return storeFilePathFunction.getVideoImageStoreFilePath(url);
+    }
+    
+
+
+    
 }

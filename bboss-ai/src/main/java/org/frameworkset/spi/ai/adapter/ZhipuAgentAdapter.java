@@ -42,6 +42,17 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
     public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
         return "/api/paas/v4/images/generations";
     }
+
+    @Override
+    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage) {
+        return "/api/paas/v4/videos/generations";
+    }
+
+    @Override
+    public String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage) {
+        return "https://open.bigmodel.cn/api/paas/v4/async-result/"+videoStoreAgentMessage.getTaskId();
+    }
+
     @Override
     public Boolean getDefaultThinking() {
         return true;
@@ -190,5 +201,173 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
         }
          
         return requestMap;
+    }
+
+    @Override
+    protected Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage, ClientConfiguration clientConfiguration) {
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("model",videoAgentMessage.getModel());
+
+        MessageBuilder.buildZhipuGenVideoMessage(requestMap,videoAgentMessage);
+
+        Map<String,Object> parameters = videoAgentMessage.getParameters();
+        if(parameters != null){
+            requestMap.putAll(parameters);
+        }
+
+
+        return requestMap;
+    }
+
+    @Override
+    public VideoTask buildVideoResponseTask(ClientConfiguration clientConfiguration, VideoAgentMessage videoAgentMessage, Map taskInfo) {
+        VideoTask result = new VideoTask();
+        if(taskInfo != null) {
+            result.setTaskId((String) taskInfo.get("id"));
+            result.setTaskStatus((String)taskInfo.get("task_status"));
+
+        }
+        else {
+            Map error = (Map) taskInfo.get("error");
+            if(error != null) {
+                result.setCode((String) error.get("code"));
+                result.setMessage((String) error.get("message"));
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * {
+     *   "id": "<string>",
+     *   "request_id": "<string>",
+     *   "created": 123,
+     *   "model": "<string>",
+     *   "choices": [
+     *     {
+     *       "index": 123,
+     *       "message": {
+     *         "role": "assistant",
+     *         "content": "<string>",
+     *         "reasoning_content": "<string>",
+     *         "audio": {
+     *           "id": "<string>",
+     *           "data": "<string>",
+     *           "expires_at": "<string>"
+     *         },
+     *         "tool_calls": [
+     *           {
+     *             "function": {
+     *               "name": "<string>",
+     *               "arguments": "<string>"
+     *             },
+     *             "mcp": {
+     *               "id": "<string>",
+     *               "type": "mcp_list_tools",
+     *               "server_label": "<string>",
+     *               "error": "<string>",
+     *               "tools": [
+     *                 {
+     *                   "name": "<string>",
+     *                   "description": "<string>",
+     *                   "annotations": {},
+     *                   "input_schema": {
+     *                     "type": "object",
+     *                     "properties": {},
+     *                     "required": [
+     *                       "<string>"
+     *                     ],
+     *                     "additionalProperties": true
+     *                   }
+     *                 }
+     *               ],
+     *               "arguments": "<string>",
+     *               "name": "<string>",
+     *               "output": {}
+     *             },
+     *             "id": "<string>",
+     *             "type": "<string>"
+     *           }
+     *         ]
+     *       },
+     *       "finish_reason": "<string>"
+     *     }
+     *   ],
+     *   "usage": {
+     *     "prompt_tokens": 123,
+     *     "completion_tokens": 123,
+     *     "prompt_tokens_details": {
+     *       "cached_tokens": 123
+     *     },
+     *     "total_tokens": 123
+     *   },
+     *   "video_result": [
+     *     {
+     *       "url": "<string>",
+     *       "cover_image_url": "<string>"
+     *     }
+     *   ],
+     *   "web_search": [
+     *     {
+     *       "icon": "<string>",
+     *       "title": "<string>",
+     *       "link": "<string>",
+     *       "media": "<string>",
+     *       "publish_date": "<string>",
+     *       "content": "<string>",
+     *       "refer": "<string>"
+     *     }
+     *   ],
+     *   "content_filter": [
+     *     {
+     *       "role": "<string>",
+     *       "level": 123
+     *     }
+     *   ]
+     * }
+     *
+     * @param clientConfiguration
+     * @param videoStoreAgentMessage
+     * @param taskInfo
+     * @return
+     */
+    @Override
+    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration, VideoStoreAgentMessage videoStoreAgentMessage, Map taskInfo) {
+        VideoGenResult result = new VideoGenResult();
+
+        if(taskInfo != null) {
+
+            result.setTaskId((String) taskInfo.get("id"));
+            result.setTaskStatus((String) taskInfo.get("task_status"));
+            List<Map> video_result = (List<Map>) taskInfo.get("video_result");
+           
+            if(video_result != null && video_result.size() > 0){
+                Map content = video_result.get(0);
+                String videoGenUrl = (String) content.get("url");
+                result.setVideoGenUrl(videoGenUrl);
+
+                String coverImageGenUrl = (String) content.get("cover_image_url");
+                result.setCoverImageGenUrl(coverImageGenUrl);
+                
+                if(videoGenUrl != null && videoGenUrl.length() > 0) {
+                    result.setVideoUrl(genFileDownload.downloadVideo(clientConfiguration, videoStoreAgentMessage, null, videoGenUrl));
+                }
+                
+                if(coverImageGenUrl != null && coverImageGenUrl.length() > 0) {
+                    result.setCoverImageUrl(genFileDownload.downloadVideoImage(clientConfiguration, videoStoreAgentMessage,  coverImageGenUrl));
+                }
+            }
+
+            Map error = (Map) taskInfo.get("error");
+
+            if(error != null) {
+                result.setCode((String) error.get("code"));
+                result.setMessage((String) error.get("message"));
+            }
+        }
+
+
+        return result;
     }
 }

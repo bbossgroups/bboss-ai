@@ -40,6 +40,15 @@ public class GenMaterialFileDownload implements GenFileDownload {
         return HttpRequestProxy.httpGet(config, imageUrl, AIResponseUtil.buildDownImageHttpClientResponseHandler(config,imageAgentMessage,imageUrl));
     }
 
+
+    @Override
+    public String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage,  String imageUrl){
+        if(videoStoreAgentMessage.getStoreVideoType() == null || videoStoreAgentMessage.getStoreVideoType().equals(AIConstants.STORETYPE_URL)){
+            return imageUrl;
+        }
+        return HttpRequestProxy.httpGet(config, imageUrl, AIResponseUtil.buildDownVideoImageHttpClientResponseHandler(config,videoStoreAgentMessage,imageUrl));
+    }
+
     @Override
     public String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage, String downUrl, String audioUrl) {
         if(audioAgentMessage.getStoreAudioType() == null || audioAgentMessage.getStoreAudioType().equals(AIConstants.STORETYPE_URL)){

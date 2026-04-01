@@ -69,6 +69,11 @@ public class JiutianGenFileDownload implements GenFileDownload {
     }
 
     @Override
+    public String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, String imageUrl) {
+        return null;
+    }
+
+    @Override
     public String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage, String downUrl, String audioUrl) {
         return null;
     }
