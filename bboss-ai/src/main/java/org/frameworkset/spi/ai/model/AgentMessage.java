@@ -33,6 +33,10 @@ public class AgentMessage<T extends AgentMessage> {
 
     private Boolean thinking;
     /**
+     * maas平台数据源名称
+     */
+    private String maas;
+    /**
      * 提示词工程
      */
     private String prompt;
@@ -381,4 +385,12 @@ public class AgentMessage<T extends AgentMessage> {
         reset();
 	 
 	}
+
+    public String getMaas() {
+        return maas;
+    }
+
+    public void setMaas(String maas) {
+        this.maas = maas;
+    }
 }

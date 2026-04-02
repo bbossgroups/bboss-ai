@@ -15,10 +15,17 @@ package org.frameworkset.spi.ai;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.AgentSessionStore;
+import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
+import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
+
+
+import java.util.Map;
 
 /**
  * 智能体工具包
@@ -27,6 +34,72 @@ import reactor.core.publisher.Flux;
  */
 public class AIAgent {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(AIAgent.class);
+    private String prompt;
+    private String type;
+    private ToolsRegist toolsRegist;
+    private AgentSessionStore agentSessionStore;
+    private String agentId;
+    public AIAgent(){
+        this(null);
+    }
+
+    public AIAgent setAgentSessionStore(AgentSessionStore agentSessionStore) {
+        this.agentSessionStore = agentSessionStore;
+        return this;
+    }
+
+    public AgentSessionStore getAgentSessionStore() {
+        return agentSessionStore;
+    }
+
+    public AIAgent(String prompt, String type, ToolsRegist toolsRegist, Integer sessionSize){
+        this.prompt = prompt;
+        this.type = type;
+        this.toolsRegist = toolsRegist;
+        this.agentId = SimpleStringUtil.getUUID32();
+        if(sessionSize != null )
+            agentSessionStore = new AgentSessionStoreMemory(sessionSize);
+    }
+    public AIAgent(String prompt,String type,ToolsRegist toolsRegist){
+        this(  prompt, type, toolsRegist,null);
+    }
+
+    public AIAgent(String prompt,ToolsRegist toolsRegist){
+        this(  prompt, null, toolsRegist,null);
+    }
+
+    public AIAgent(String prompt,ToolsRegist toolsRegist,int sessionSize){
+        this(  prompt, null, toolsRegist,sessionSize);
+    }
+
+    public AIAgent(String prompt,String type){
+        this(  prompt, type, null,null);
+    }
+
+    public AIAgent(String prompt){
+        this(  prompt, null, null,null);
+    }
+
+    public AIAgent(String prompt,int sessionSize){
+        this(  prompt, null, null,sessionSize);
+    }
+    
+    private void reactMessage(AgentMessage agentMessage){
+        if(prompt != null)
+            agentMessage.setPrompt(prompt);
+        if(toolsRegist != null)
+            agentMessage.setToolsRegist(toolsRegist);
+        if(agentSessionStore != null){
+            if(agentMessage instanceof SessionAgentMessage) {
+                AgentSessionStore _agentSessionStore = ((SessionAgentMessage)agentMessage).getSessionStore();
+                if(_agentSessionStore != null) {
+                    _agentSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
+                    Map<String, Object> message = _agentSessionStore.getLastMessage();
+                    agentSessionStore.addSessionMessage(message);
+                }
+            }
+        }
+    }
     /**
      * 实现图片生成功能
      * @param maasName
@@ -34,10 +107,12 @@ public class AIAgent {
      * @return
      */
     public ImageEvent genImage(String maasName, ImageAgentMessage imageAgentMessage){
+        reactMessage(  imageAgentMessage);
         return AIAgentUtil.multimodalImageGeneration(maasName, imageAgentMessage);
     }
     public ImageEvent genImage( ImageAgentMessage imageAgentMessage){
-        return AIAgentUtil.multimodalImageGeneration( imageAgentMessage);
+        reactMessage(  imageAgentMessage);
+        return AIAgentUtil.multimodalImageGeneration(imageAgentMessage.getMaas(), imageAgentMessage);
     }
 
     /**
@@ -47,10 +122,12 @@ public class AIAgent {
      * @return
      */
     public VideoTask submitVideoTask(String maasName,VideoAgentMessage videoAgentMessage){
+        reactMessage(  videoAgentMessage);
         return AIAgentUtil.submitVideoTask(maasName,videoAgentMessage);
     }
     public VideoTask submitVideoTask(VideoAgentMessage videoAgentMessage){
-        return AIAgentUtil.submitVideoTask(videoAgentMessage);
+        reactMessage(  videoAgentMessage);
+        return AIAgentUtil.submitVideoTask(videoAgentMessage.getMaas(),videoAgentMessage);
     }
 
     public VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage){
@@ -58,7 +135,7 @@ public class AIAgent {
     }
 
     public VideoGenResult getVideoTaskResult( VideoStoreAgentMessage videoStoreAgentMessage){
-        return AIAgentUtil.getVideoTaskResult(null,videoStoreAgentMessage);
+        return AIAgentUtil.getVideoTaskResult(videoStoreAgentMessage.getMaas(),videoStoreAgentMessage);
     }
     /**
      * 调用音频合成模型，生成音频
@@ -66,7 +143,8 @@ public class AIAgent {
      * @return
      */
     public AudioEvent genAudio(  AudioAgentMessage audioAgentMessage){
-        return AIAgentUtil.multimodalAudioGeneration( audioAgentMessage);
+        reactMessage(  audioAgentMessage);
+        return AIAgentUtil.multimodalAudioGeneration( audioAgentMessage.getMaas(),audioAgentMessage);
     }
 
     /**
@@ -75,7 +153,8 @@ public class AIAgent {
      * @return
      */
     public Flux<ServerEvent> streamAudioGen(AudioAgentMessage audioAgentMessage){
-        return AIAgentUtil.streamAudioGenerationEvent(null,audioAgentMessage);
+        reactMessage(  audioAgentMessage);
+        return AIAgentUtil.streamAudioGenerationEvent(audioAgentMessage.getMaas(),audioAgentMessage);
     }
 
     /**
@@ -85,6 +164,7 @@ public class AIAgent {
      * @return
      */
     public Flux<ServerEvent> streamAudioGen(String maasName,  AudioAgentMessage audioAgentMessage){
+        reactMessage(  audioAgentMessage);
         return AIAgentUtil.streamAudioGenerationEvent(maasName,audioAgentMessage);
     }
     /**
@@ -94,6 +174,7 @@ public class AIAgent {
      * @return
      */
     public AudioEvent genAudio(String maasName,   AudioAgentMessage audioAgentMessage){
+        reactMessage(  audioAgentMessage);
         return AIAgentUtil.multimodalAudioGeneration(maasName, audioAgentMessage);
     }
 
@@ -104,7 +185,7 @@ public class AIAgent {
      * @return
      */
     public Flux<ServerEvent> streamAudioParser(String maasName,  AudioSTTAgentMessage audioSTTAgentMessage){
-
+        reactMessage(  audioSTTAgentMessage);
         audioSTTAgentMessage.init();
 
         return AIAgentUtil.streamChatCompletionEvent(maasName, audioSTTAgentMessage);
@@ -116,7 +197,7 @@ public class AIAgent {
      * @return
      */
     public Flux<ServerEvent> streamImageParser(String maasName,   ImageVLAgentMessage imageVLAgentMessage){
-
+        reactMessage(  imageVLAgentMessage);
         imageVLAgentMessage.init();
    
         return AIAgentUtil.streamChatCompletionEvent(maasName, imageVLAgentMessage);
@@ -127,7 +208,8 @@ public class AIAgent {
      * @return
      */
     public Flux<ServerEvent> streamVideoParser(   VideoVLAgentMessage videoVLAgentMessage){
-        return AIAgentUtil.streamChatCompletionEvent( videoVLAgentMessage);
+        reactMessage(  videoVLAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(videoVLAgentMessage.getMaas(), videoVLAgentMessage);
     }
     
     /**
@@ -137,6 +219,7 @@ public class AIAgent {
      * @return
      */
     public Flux<ServerEvent> streamVideoParser(String maasName,   VideoVLAgentMessage videoVLAgentMessage){
+        reactMessage(  videoVLAgentMessage);
 
         videoVLAgentMessage.init();
 
@@ -148,12 +231,14 @@ public class AIAgent {
      * @return
      */
     public Flux<ServerEvent> streamImageParser(   ImageVLAgentMessage imageVLAgentMessage){
-        return AIAgentUtil.streamChatCompletionEvent( imageVLAgentMessage);
+        reactMessage(  imageVLAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(imageVLAgentMessage.getMaas(), imageVLAgentMessage);
     }
     /**
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage){
+        reactMessage(  chatAgentMessage);
     
         return streamChat(  maasName,     chatAgentMessage,true);
     }
@@ -162,6 +247,7 @@ public class AIAgent {
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage,boolean toolStream){
+        reactMessage(  chatAgentMessage);
         chatAgentMessage.init();
 
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage);
@@ -171,7 +257,8 @@ public class AIAgent {
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat( ChatAgentMessage chatAgentMessage){
-        return AIAgentUtil.streamChatCompletionEvent( chatAgentMessage);
+        reactMessage(  chatAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(chatAgentMessage.getMaas(), chatAgentMessage);
     }
 
     /**
@@ -180,6 +267,7 @@ public class AIAgent {
      */
     @Deprecated
     public ServerEvent chatCompletionEvent(String maasName,  ChatAgentMessage chatAgentMessage){
+        reactMessage(  chatAgentMessage);
         return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
     }
 
@@ -187,7 +275,15 @@ public class AIAgent {
      * 实现同步智能问答,在指定的数据源上执行
      */
     public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage){
-        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
+        reactMessage(  chatAgentMessage);
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
+        if(serverEvent != null && serverEvent.getData() != null){
+            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
+            if(this.agentSessionStore != null)
+                this.agentSessionStore.addSessionMessage(message);
+        }
+        return serverEvent;
+//        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
     }
 
     /**
@@ -196,14 +292,16 @@ public class AIAgent {
      */
     @Deprecated
     public ServerEvent chatCompletionEvent(  ChatAgentMessage chatAgentMessage){
-        return chat(chatAgentMessage);
+        reactMessage(  chatAgentMessage);
+        return chat(chatAgentMessage.getMaas(),chatAgentMessage);
     }
 
     /**
      * 实现同步智能问答,在指定的数据源上执行
      */
     public ServerEvent chat(  ChatAgentMessage chatAgentMessage){
-        return AIAgentUtil.chatCompletionEvent(chatAgentMessage);
+        return chat(chatAgentMessage.getMaas(),    chatAgentMessage);
+       
     }
 
     /**
@@ -212,7 +310,8 @@ public class AIAgent {
      * @return
      */
     public ServerEvent imageParser(  ImageVLAgentMessage imageVLAgentMessage){
-        return AIAgentUtil.imageParser( imageVLAgentMessage);
+        reactMessage( imageVLAgentMessage);
+        return AIAgentUtil.imageParser(imageVLAgentMessage.getMaas(), imageVLAgentMessage);
     }
 
     /**
@@ -222,6 +321,7 @@ public class AIAgent {
      * @return
      */
     public ServerEvent imageParser(String maasName,  ImageVLAgentMessage imageVLAgentMessage){
+        reactMessage( imageVLAgentMessage);
         return AIAgentUtil.imageParser(maasName, imageVLAgentMessage);
     }
     /**
@@ -231,6 +331,7 @@ public class AIAgent {
      * @return
      */
     public ServerEvent audioParser(String maasName, AudioSTTAgentMessage audioSTTAgentMessage){
+        reactMessage( audioSTTAgentMessage);
         return AIAgentUtil.audioParser(maasName,audioSTTAgentMessage);
     }
     /**
@@ -239,7 +340,8 @@ public class AIAgent {
      * @return
      */
     public ServerEvent videoParser( VideoVLAgentMessage videoVLAgentMessage){
-        return AIAgentUtil.videoParser(null,videoVLAgentMessage);
+        reactMessage( videoVLAgentMessage);
+        return AIAgentUtil.videoParser(videoVLAgentMessage.getMaas(),videoVLAgentMessage);
     }
     /**
      * 实现同步音频识别处理
@@ -248,6 +350,7 @@ public class AIAgent {
      * @return
      */
     public ServerEvent videoParser(String maasName, VideoVLAgentMessage videoVLAgentMessage){
+        reactMessage( videoVLAgentMessage);
         return AIAgentUtil.videoParser(maasName,videoVLAgentMessage);
     }
     

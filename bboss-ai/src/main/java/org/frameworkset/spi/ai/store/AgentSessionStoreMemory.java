@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.mcp.feishu;
+package org.frameworkset.spi.ai.store;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -15,10 +15,27 @@ package org.frameworkset.spi.ai.mcp.feishu;
  * limitations under the License.
  */
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author biaoping.yin
- * @Date 2026/3/31
+ * @Date 2026/1/4
  */
-public interface RefreshTokenFunction {
-    String refreshToken();
+public class AgentSessionStoreMemory extends BaseAgentSessionStore{
+
+    public AgentSessionStoreMemory(List<Map<String, Object>> sessionMemory) {
+        super(sessionMemory);
+    }
+
+    public AgentSessionStoreMemory(List<Map<String, Object>> sessionMemory, int sessionSize) {
+        super(sessionMemory, sessionSize);
+    }
+
+    public AgentSessionStoreMemory(int sessionSize) {
+        super(sessionSize);
+    }
+
+    public AgentSessionStoreMemory() {
+    }
 }

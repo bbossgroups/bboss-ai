@@ -15,10 +15,10 @@ package org.frameworkset.spi.ai.mcp.feishu;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.mcp.MCPClient;
-import org.frameworkset.spi.ai.mcp.tools.MCPToolFunctionCall;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
-import org.frameworkset.spi.ai.model.FunctionCall;
+import org.frameworkset.spi.feishu.BaseFeishuConfig;
 
 /**
  * @author biaoping.yin
@@ -26,10 +26,22 @@ import org.frameworkset.spi.ai.model.FunctionCall;
  */
 public class FeishuMcpRegist extends MCPToolsRegist {
     private BaseFeishuConfig baseFeishuConfig;
+    private String tools;
+    private String appId;
+    private String appSecret;
 	public FeishuMcpRegist(String mcpServer,BaseFeishuConfig baseFeishuConfig) {
 		super(mcpServer);
         this.baseFeishuConfig = baseFeishuConfig;
 	}
+
+    public FeishuMcpRegist(String mcpServer,String appId,String appSecret,String tools) {
+        super(mcpServer);
+        this.tools = tools;
+        this.appId = appId;
+        this.appSecret = appSecret;
+    }
+    
+    
 
     @Override
     protected MCPClient buildMCPClient(){
@@ -38,6 +50,22 @@ public class FeishuMcpRegist extends MCPToolsRegist {
 
     @Override
     public void init() {
+        if(baseFeishuConfig == null){
+            BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
+//            bboss应用
+            baseFeishuConfig.setFeishuAppId(appId)
+                    .setFeishAppSecret(appSecret);
+            //企业关怀应用
+//            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
+//                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
+            String feishuDatasource = SimpleStringUtil.getUUID32();
+            baseFeishuConfig.addHttpConfig("http.poolNames", feishuDatasource)
+                    .addHttpConfig(feishuDatasource+ ".http.hosts", "https://open.feishu.cn")
+                    .addHttpConfig(feishuDatasource+ ".http.maxTotal", 100)
+                    .addHttpConfig(feishuDatasource+ ".http.defaultMaxPerRoute", 100)
+                    .setMcpTools(tools);
+            this.baseFeishuConfig = baseFeishuConfig;
+        }
         baseFeishuConfig.build();
         baseFeishuConfig.initFeishHelper();
         super.init();

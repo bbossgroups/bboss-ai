@@ -96,7 +96,8 @@ configure(subprojects) { subproject ->
 
 }
 
-configure([project(":bboss-ai"),
+configure([project(":bboss-ai-flow"),
+           project(":bboss-ai"),
            project(":bboss-ai-model")]) { subproject ->
 
 	publishing {

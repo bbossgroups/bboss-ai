@@ -18,14 +18,15 @@ package org.frameworkset.spi.ai;
 import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
-import org.frameworkset.spi.ai.mcp.feishu.BaseFeishuConfig;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
+import org.frameworkset.spi.feishu.BaseFeishuConfig;
 import org.frameworkset.spi.reactor.BaseStreamDataHandler;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.spi.reactor.FluxSinkStatus;
@@ -50,7 +51,7 @@ public class StreamTest {
     private static Logger logger = LoggerFactory.getLogger(StreamTest.class);
     public static void main(String[] args) throws InterruptedException, IOException {
         //加载配置文件，启动负载均衡器,应用中只需要执行一次
-        AgentAdapterFactory.registerAgentAdapter("custom",CustomAgentAdapter.class);
+//        AgentAdapterFactory.registerAgentAdapter("custom",CustomAgentAdapter.class);
         HttpRequestProxy.startHttpPools("application-stream.properties");
         
 		
@@ -398,7 +399,7 @@ public class StreamTest {
         String base64 = FileUtil.getBase64Video("C:\\data\\ai\\aigenfiles\\video\\a7afc105e4df4742814f472bcd517e03.mp4");
         videoVLAgentMessage.addVideoUrl(base64);
         videoVLAgentMessage.setStream(false);
-        videoVLAgentMessage.setSessionMemory(sessions).setSessionSize(50);//多轮会话
+        videoVLAgentMessage.setSessionStore(new AgentSessionStoreMemory());//多轮会话
 
 
         // 禁止思考链
@@ -420,8 +421,7 @@ public class StreamTest {
         List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt("查询杭州市天气，并根据天气给出穿衣、饮食以及出行建议")
-                .setSessionSize(50)
-                .setSessionMemory(session)
+                .setSessionStore(new AgentSessionStoreMemory())
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setMaxTokens(65536L);
@@ -476,8 +476,7 @@ public class StreamTest {
         List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt(prompt)
-                .setSessionSize(50)
-                .setSessionMemory(session)
+                .setSessionStore(new AgentSessionStoreMemory())
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setStream( true)
@@ -540,8 +539,7 @@ public class StreamTest {
 		List<Map<String, Object>> session = new ArrayList<>();
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
 				.setPrompt(prompt)
-				.setSessionSize(50)
-				.setSessionMemory(session)
+                .setSessionStore(new AgentSessionStoreMemory())
 //                .setModel("deepseek-chat")
 				.setModel(model)
 				.setStream( true)
@@ -608,11 +606,9 @@ public class StreamTest {
 	}
 	
 	public static void chatWithMcpTools(String maas, String mcpServer,String model, String prompt) throws InterruptedException {
-		List<Map<String, Object>> session = new ArrayList<>();//会话记忆
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
 				.setPrompt(prompt)
-				.setSessionSize(50)
-				.setSessionMemory(session)
+				.setSessionStore(new AgentSessionStoreMemory())
 //                .setModel("deepseek-chat")
 				.setModel(model)
 				.setStream( false)
@@ -652,11 +648,9 @@ public class StreamTest {
 	}
 
     public static void streamChatWithTools(String maas,String model,String prompt) throws InterruptedException {
-        List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt(prompt)
-                .setSessionSize(50)
-                .setSessionMemory(session)
+                .setSessionStore(new AgentSessionStoreMemory())
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setStream( true)
@@ -911,7 +905,6 @@ public class StreamTest {
         Boolean enableStream = false;
         
         String message = "介绍音频内容";
-        List sessionMemory = new ArrayList<>();
 
         AudioSTTAgentMessage audioSTTAgentMessage = new AudioSTTAgentMessage();
         audioSTTAgentMessage.setStream(enableStream);
@@ -937,8 +930,7 @@ public class StreamTest {
         }
         audioSTTAgentMessage.setModel(model);
         // 构建消息历史列表，包含之前的会话记忆,语音识别模型本身无法实现多轮会话，如果要多轮会话，需切换支持多轮会话的模型，例如LLM和千问图片识别模型
-        audioSTTAgentMessage.setSessionMemory(sessionMemory);
-        audioSTTAgentMessage.setSessionSize(50);
+        audioSTTAgentMessage.setSessionStore(new AgentSessionStoreMemory());
         // 添加当前用户消息
         audioSTTAgentMessage.setPrompt( message);
 

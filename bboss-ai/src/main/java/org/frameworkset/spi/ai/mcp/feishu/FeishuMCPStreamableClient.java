@@ -16,6 +16,8 @@ package org.frameworkset.spi.ai.mcp.feishu;
  */
 
 import org.frameworkset.spi.ai.mcp.streamable.MCPStreamableClient;
+import org.frameworkset.spi.feishu.BaseFeishuConfig;
+import org.frameworkset.spi.feishu.FeishuHelper;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

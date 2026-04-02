@@ -16,6 +16,8 @@ package org.frameworkset.spi.ai.mcp.feishu;
  */
 
 import org.frameworkset.spi.ai.mcp.MCPClient;
+import org.frameworkset.spi.feishu.BaseFeishuConfig;
+import org.frameworkset.spi.feishu.FeishuHelper;
 
 /**
  * @author biaoping.yin

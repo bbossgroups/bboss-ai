@@ -15,8 +15,9 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.store.AgentSessionStore;
+import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
-import org.frameworkset.spi.ai.util.MessageBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -25,68 +26,83 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public class SessionAgentMessage<T extends SessionAgentMessage> extends AgentMessage<T> {
+public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends AgentMessage<T> {
     /** 使用静态变量存储会话记忆（实际项目中建议使用缓存或数据库）*/
-    private List<Map<String, Object>> sessionMemory;
+    private AgentSessionStore sessionStore;
 
-    /**
-     * 会话窗口大小，默认20
-     */
-    private int sessionSize = 20;
+    public T setSessionMemory(List<Map<String,Object>> session) {
 
-    public T setSessionMemory(List<Map<String, Object>> sessionMemory) {
-        this.sessionMemory = sessionMemory;
+        sessionStore = new AgentSessionStoreMemory(session);
+        return (T)this;
+    }
+    public T setSessionMemory(List<Map<String,Object>> session,int sessionSize) {
+         
+        sessionStore = new AgentSessionStoreMemory(session);
+        sessionStore.setSessionSize(sessionSize);
+
+        return (T)this;
+    }
+    
+    public List<Map<String,Object>> getSessionMemory() {
+        return ((AgentSessionStoreMemory)sessionStore).getSessionMemory();
+    }
+
+    public T setSessionStore(AgentSessionStore sessionStore) {
+        this.sessionStore = sessionStore;
+        
         return (T)this;
     }
 
-    public List<Map<String, Object>> getSessionMemory() {
-        return sessionMemory;
+    public AgentSessionStore getSessionStore() {
+        return sessionStore;
     }
+    
+    public T addSubTaskSessionStore(String agentId,AgentSessionStore subTaskSessionStore) {
 
-
-    public T setSessionSize(int sessionSize) {
-        this.sessionSize = sessionSize;
+        sessionStore.addSubTaskSessionMemory(agentId, subTaskSessionStore);
         return (T)this;
     }
+    
+    
+
+    public AgentSessionStore getSubTaskSessionMemory(String agentId) {
+        if(sessionStore == null){
+            return null;
+        }
+        return sessionStore.getSubTaskSessionMemory(agentId);
+    }
+
+    
 
     public int getSessionSize() {
-        return sessionSize;
+        return sessionStore.getSessionSize();
     }
     public T addSessionMessage(Map<String, Object> message){        
-        if(sessionMemory == null){
+        if(sessionStore == null){
             return (T)this;
         }
-        sessionMemory.add(message);
-        if(sessionMemory.size() > sessionSize){
-            sessionMemory.remove(0);
-        }
+        sessionStore.addSessionMessage(message);         
         return (T)this;
     }
-    public T addAssistantSessionMessage(String message){
-        if(sessionMemory == null){
-            return (T)this;
+    public Map<String,Object> addAssistantSessionMessage(String message){
+        if(sessionStore == null){
+            return null;
         }
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
-        return addSessionMessage(assistantMessage);
+        return sessionStore.addAssistantSessionMessage(message);
     }
 
-    public T addAssistantSessionMessage(ServerEvent serverEvent){
-        if(sessionMemory == null){
-            return (T)this;
+    public Map<String,Object> addAssistantSessionMessage(ServerEvent serverEvent){
+        if(sessionStore == null){
+            return null;
         }
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent);
-
-        return addSessionMessage(assistantMessage);
+        return sessionStore.addAssistantSessionMessage(serverEvent);
     }
 
-    public T addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder){
-        if(sessionMemory == null){
-            return (T)this;
+    public Map<String,Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder){
+        if(sessionStore == null){
+            return null;
         }
-        
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(  baseStreamDataBuilder);
-
-        return addSessionMessage(assistantMessage);
+        return sessionStore.addAssistantSessionMessage(baseStreamDataBuilder);
     }
 
 
@@ -98,7 +114,7 @@ public class SessionAgentMessage<T extends SessionAgentMessage> extends AgentMes
      * @return
      * @deprecated 请使用addAssistantSessionMessage方法
      */
-    public T addSessionMessage(String message){
+    public Map<String,Object> addSessionMessage(String message){
          
         return addAssistantSessionMessage(  message);
     }
