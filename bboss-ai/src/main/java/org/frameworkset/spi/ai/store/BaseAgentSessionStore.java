@@ -28,7 +28,22 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/4/2
  */
-public abstract class BaseAgentSessionStore implements AgentSessionStore{
+public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> implements AgentSessionStore<T>{
+    /**
+     * 用户会话id
+     */
+
+    private String sessionId;
+    /**
+     * 用户id，可选
+     */
+    private String userId;
+    /**
+     * 会话对应的agentId
+     */
+    private String agentId;
+    protected StoreContext storeContext;
+    protected AgentSessionStore parentAgentSessionStore;
     /** 短期记忆：使用静态变量存储会话记忆（实际项目中建议使用缓存或数据库）*/
     protected List<Map<String, Object>> sessionMemory;
     public BaseAgentSessionStore(List<Map<String, Object>> sessionMemory){
@@ -36,7 +51,12 @@ public abstract class BaseAgentSessionStore implements AgentSessionStore{
 
     }
 
-    public BaseAgentSessionStore(List<Map<String, Object>> sessionMemory,int sessionSize){
+    public T setSessionMemory(List<Map<String, Object>> sessionMemory) {
+        this.sessionMemory = sessionMemory;
+        return (T) this;
+    }
+
+    public BaseAgentSessionStore(List<Map<String, Object>> sessionMemory, int sessionSize){
         this.sessionMemory = sessionMemory;
         this.sessionSize = sessionSize;
 
@@ -46,14 +66,45 @@ public abstract class BaseAgentSessionStore implements AgentSessionStore{
         this.sessionSize = sessionSize;
 
     }
+    public BaseAgentSessionStore( AgentSessionStore parentAgentSessionStore,int sessionSize){
+        this.parentAgentSessionStore = parentAgentSessionStore;
+        this.sessionMemory = new ArrayList<>();
+        this.sessionSize = sessionSize;
+
+    }
+
     public BaseAgentSessionStore(){
         this.sessionMemory = new ArrayList<>();
 
     }
+
+    public AgentSessionStore getParentAgentSessionStore() {
+        return parentAgentSessionStore;
+    }
+
+    public BaseAgentSessionStore(StoreContext storeContext){
+        this.storeContext = storeContext;
+        this.sessionId = storeContext.getSessionId();   
+        this.userId = storeContext.getUserId();
+        this.agentId = storeContext.getAgentId();
+        this.sessionMemory = storeContext.getSessionMemory();
+        this.sessionSize = storeContext.getSessionSize();
+        if(sessionMemory == null){
+            this.sessionMemory = new ArrayList<>();
+        }
+
+    }
+    
     /**
      * 子任务会话记忆
      */
     private Map<String,AgentSessionStore> subTaskSessionMemorys;
+
+    public BaseAgentSessionStore(String sessionId, String userId, String agentId ) {
+        this.sessionId = sessionId;
+        this.userId = userId;
+        this.agentId = agentId;
+    }
 
 
     public List<Map<String, Object>> getSessionMemory() {
@@ -76,8 +127,13 @@ public abstract class BaseAgentSessionStore implements AgentSessionStore{
         return subTaskSessionMemorys.get(agentId);
     }
 
+
     @Override
-    public void addSessionMessage(Map<String, Object> message){
+    public void appendSessionMessageFromParent(Map<String, Object> message){
+        _addSessionMessage(message,true);
+    }
+
+    private void _addSessionMessage(Map<String, Object> message,boolean appendSessionMessageFromParent){
         if(sessionMemory == null){
             return ;
         }
@@ -85,6 +141,18 @@ public abstract class BaseAgentSessionStore implements AgentSessionStore{
         if(sessionMemory.size() > sessionSize){
             sessionMemory.remove(0);
         }
+        if(!appendSessionMessageFromParent && parentAgentSessionStore != null){
+            parentAgentSessionStore.addSessionMessage(message,agentId);
+        }
+    }
+    @Override
+    public void addSessionMessage(Map<String, Object> message){
+        _addSessionMessage(message,false);
+         
+    }
+    @Override
+    public void addSessionMessage(Map<String, Object> message,String agentId){
+        _addSessionMessage(message,false);
     }
     @Override
     public Map<String, Object> addAssistantSessionMessage(String message){
@@ -116,7 +184,7 @@ public abstract class BaseAgentSessionStore implements AgentSessionStore{
         addSessionMessage(assistantMessage);
         return assistantMessage;
     }
-    public Map<String,Object> getLastMessage(){
+    public Map<String,Object> getLastMessage(String prompt,String agentId){
         if(sessionMemory == null || sessionMemory.size() == 0){
             return null;
         }
@@ -127,11 +195,38 @@ public abstract class BaseAgentSessionStore implements AgentSessionStore{
      */
     protected int sessionSize = 50;
     @Override
-    public void setSessionSize(int sessionSize) {
+    public T setSessionSize(int sessionSize) {
         this.sessionSize = sessionSize;
+        return (T) this;
     }
     @Override
     public int getSessionSize() {
         return sessionSize;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getAgentId() {
+        return agentId;
+    }
+
+    public T setAgentId(String agentId) {
+        this.agentId = agentId;
+
+        return (T) this;
     }
 }

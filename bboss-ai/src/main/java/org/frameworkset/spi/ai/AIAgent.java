@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -36,6 +37,7 @@ public class AIAgent {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(AIAgent.class);
     private String prompt;
     private String type;
+    private int sessionSize;
     private ToolsRegist toolsRegist;
     private AgentSessionStore agentSessionStore;
     private String agentId;
@@ -56,11 +58,18 @@ public class AIAgent {
         this.prompt = prompt;
         this.type = type;
         this.toolsRegist = toolsRegist;
-        this.agentId = SimpleStringUtil.getUUID32();
-        if(sessionSize != null )
-            agentSessionStore = new AgentSessionStoreMemory(sessionSize);
+        if(sessionSize != null ){
+            this.sessionSize = sessionSize;
+        }
+//            agentSessionStore = new AgentSessionStoreMemory(sessionSize);
     }
-    public AIAgent(String prompt,String type,ToolsRegist toolsRegist){
+
+    public AIAgent setAgentId(String agentId) {
+        this.agentId = agentId;
+        return this;
+    }
+
+    public AIAgent(String prompt, String type, ToolsRegist toolsRegist){
         this(  prompt, type, toolsRegist,null);
     }
 
@@ -89,16 +98,39 @@ public class AIAgent {
             agentMessage.setPrompt(prompt);
         if(toolsRegist != null)
             agentMessage.setToolsRegist(toolsRegist);
-        if(agentSessionStore != null){
-            if(agentMessage instanceof SessionAgentMessage) {
-                AgentSessionStore _agentSessionStore = ((SessionAgentMessage)agentMessage).getSessionStore();
-                if(_agentSessionStore != null) {
-                    _agentSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
-                    Map<String, Object> message = _agentSessionStore.getLastMessage();
-                    agentSessionStore.addSessionMessage(message);
+         
+    
+        if(agentMessage instanceof SessionAgentMessage) {
+            SessionAgentMessage sessionAgentMessage = (SessionAgentMessage)agentMessage;
+            AgentSessionStore mainSessionStore = sessionAgentMessage.getMainSessionStore();
+            if(mainSessionStore != null) {
+                if(agentSessionStore == null){
+                    agentSessionStore = new AgentSessionStoreMemory(mainSessionStore,sessionSize);
+                    agentSessionStore.setAgentId(agentId);
                 }
+                List<Map<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
+                boolean empty = sessionMemory.isEmpty();
+                sessionAgentMessage.setSessionStore(agentSessionStore);
+                mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
+                Map<String, Object> message = mainSessionStore.getLastMessage(prompt,agentId);
+                if(empty) {
+                    List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(message, agentId, sessionSize);
+                    if (sessionMessages != null && sessionMessages.size() > 0) {
+                        for (Map<String, Object> sessionMessage : sessionMessages) {
+                            agentSessionStore.appendSessionMessageFromParent(sessionMessage);
+                        }
+
+
+                    }
+                }
+                else if(message != null){//不为空，直接append主智能体中的最后一条消息
+                    agentSessionStore.appendSessionMessageFromParent(message);
+                }
+                
+                 
             }
         }
+        
     }
     /**
      * 实现图片生成功能

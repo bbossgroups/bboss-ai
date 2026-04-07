@@ -18,29 +18,37 @@ package org.frameworkset.spi.ai.store;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public interface AgentSessionStore {
+public interface AgentSessionStore<T extends AgentSessionStore> {
     
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
-    
-    Map<String,Object> getLastMessage();
+    String getAgentId();
+    Map<String,Object> getLastMessage(String prompt,String agentId);
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
 
-    void setSessionSize(int sessionSize) ;
-
+    T setSessionSize(int sessionSize) ;
+    T setAgentId(String agentId) ;
     int getSessionSize() ;
+    String getSessionId();
     void addSessionMessage(Map<String, Object> message);
+
+    void addSessionMessage(Map<String, Object> message,String agentId);
+    void appendSessionMessageFromParent(Map<String, Object> message);
+    void addSessionMessage( Map<String, Object> systemMessage,String prompt,String agentId);
+   
     Map<String, Object> addAssistantSessionMessage(String message);
 
     Map<String, Object> addAssistantSessionMessage(ServerEvent serverEvent);
     Map<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder);
 
 
+    List<Map<String, Object>> getSessionMemory();
 
- 
+    List<Map<String, Object>>  getAgentSessionMessage(Map<String,Object> lastMessage,String agentId,int agentSessionSize);
 }

@@ -456,7 +456,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             if(sessionMemory.size() == 0){
                 if(chatAgentMessage.getSystemPrompt() != null){
                     systemMessage = MessageBuilder.buildSystemMessage(chatAgentMessage.getSystemPrompt());
-                    chatAgentMessage.addSessionMessage(systemMessage);
+                    chatAgentMessage.addSessionMessage(systemMessage,message);
                 }
             }
             // 添加当前用户消息

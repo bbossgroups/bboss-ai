@@ -29,6 +29,10 @@ public class FeishuMcpRegist extends MCPToolsRegist {
     private String tools;
     private String appId;
     private String appSecret;
+    public FeishuMcpRegist(String mcpServer ) {
+        super(mcpServer);
+        this.baseFeishuConfig = baseFeishuConfig;
+    }
 	public FeishuMcpRegist(String mcpServer,BaseFeishuConfig baseFeishuConfig) {
 		super(mcpServer);
         this.baseFeishuConfig = baseFeishuConfig;
@@ -40,8 +44,21 @@ public class FeishuMcpRegist extends MCPToolsRegist {
         this.appId = appId;
         this.appSecret = appSecret;
     }
-    
-    
+
+    public FeishuMcpRegist setAppId(String appId) {
+        this.appId = appId;
+        return this;
+    }
+
+    public FeishuMcpRegist setAppSecret(String appSecret) {
+        this.appSecret = appSecret;
+        return this;
+    }
+
+    public FeishuMcpRegist setTools(String tools) {
+        this.tools = tools;
+        return this;
+    }
 
     @Override
     protected MCPClient buildMCPClient(){

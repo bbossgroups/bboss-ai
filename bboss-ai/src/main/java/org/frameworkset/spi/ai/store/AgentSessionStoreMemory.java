@@ -22,8 +22,9 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public class AgentSessionStoreMemory extends BaseAgentSessionStore{
+public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends BaseAgentSessionStore<T>{
 
+    
     public AgentSessionStoreMemory(List<Map<String, Object>> sessionMemory) {
         super(sessionMemory);
     }
@@ -36,6 +37,30 @@ public class AgentSessionStoreMemory extends BaseAgentSessionStore{
         super(sessionSize);
     }
 
+    public AgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore,int sessionSize) {
+        super(parentAgentSessionStore,sessionSize);
+    }
+
+    
+
     public AgentSessionStoreMemory() {
+    }
+
+    public AgentSessionStoreMemory(String sessionId, String userId, String agentId) {
+        super(sessionId, userId, agentId );
+    }
+
+    public AgentSessionStoreMemory(StoreContext storeContext) {
+        super(storeContext);
+    }
+
+    @Override
+    public void addSessionMessage(Map<String, Object> systemMessage,String prompt,String agentId) {
+        super.addSessionMessage(systemMessage);
+    }
+
+    @Override
+    public List<Map<String, Object>> getAgentSessionMessage(Map<String, Object> lastMessage, String agentId, int agentSessionSize) {
+        return null;
     }
 }

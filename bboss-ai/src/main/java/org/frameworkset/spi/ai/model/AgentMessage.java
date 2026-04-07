@@ -55,6 +55,7 @@ public class AgentMessage<T extends AgentMessage> {
      * 默认角色提示词工程
      */
     private String systemPrompt;
+    
 
     public String getNegativePrompt() {
         return negativePrompt;
