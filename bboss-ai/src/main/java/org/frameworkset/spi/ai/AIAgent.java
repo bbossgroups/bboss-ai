@@ -112,7 +112,7 @@ public class AIAgent {
                 boolean empty = sessionMemory.isEmpty();
                 sessionAgentMessage.setSessionStore(agentSessionStore);
                 mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
-                Map<String, Object> message = mainSessionStore.getLastMessage(prompt,agentId);
+                Map<String, Object> message = mainSessionStore.getLastMessage(prompt == null?agentMessage.getPrompt():prompt,agentId);
                 if(empty) {
                     List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(message, agentId, sessionSize);
                     if (sessionMessages != null && sessionMessages.size() > 0) {
@@ -270,7 +270,6 @@ public class AIAgent {
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage){
-        reactMessage(  chatAgentMessage);
     
         return streamChat(  maasName,     chatAgentMessage,true);
     }

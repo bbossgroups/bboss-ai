@@ -138,7 +138,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             return ;
         }
         sessionMemory.add(message);
-        if(sessionMemory.size() > sessionSize){
+        if(sessionSize > 0 && sessionMemory.size() > sessionSize){
             sessionMemory.remove(0);
         }
         if(!appendSessionMessageFromParent && parentAgentSessionStore != null){

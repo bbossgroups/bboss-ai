@@ -134,7 +134,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                             getSessionId(),
                             new Date(),
                             getUserId(),
-                            agentId,//session由哪个agentId对应的agent创建
+                            this.getAgentId() !=null?getAgentId():agentId,//如果主agentId存在，则使用主agentId，否则session由agentId对应的agent创建
                             prompt.length() > 30 ? prompt.substring(0, 30) : prompt);
                 } else {
                     List<SessionMessage> sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
