@@ -34,7 +34,9 @@ public class AgentSessionStoreDBConfig {
 
     public static String sqlitex_createSessionMessageTableSQL = new StringBuilder().append("create table $sessionMessageTableName (msgId varchar(100),")  //消息id
             .append( "createTime number(20),") //创建时间
-            .append( "agentId varchar(100),")  //代理id
+            .append( "parentAgentId varchar(100),")  //父agentid
+            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中 0：否 1：是
             .append( "sessionId varchar(100),")  //会话id
             .append( "seqNo int,")  //消息序号
             .append( "message text,")  //消息正文
@@ -97,7 +99,9 @@ public class AgentSessionStoreDBConfig {
     public static final String mysql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL comment '消息id'," )
             .append(" createTime datetime NOT NULL comment '创建时间', " )
             .append( "sessionId varchar(100) NOT NULL, " )  //会话id
-            .append( "agentId varchar(100),")  //代理id
+            .append( "parentAgentId varchar(100),")  //父agentid
+            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, " )  //消息正文
             .append( "role varchar(100) NOT NULL, " )
@@ -106,7 +110,9 @@ public class AgentSessionStoreDBConfig {
     public static final String oracle_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
-            .append( "agentId varchar2(100),")  //代理id
+            .append( "parentAgentId varchar2(100),")  //父agentid
+            .append( "agentId varchar2(100),")  //创建消息的agentid
+            .append( "agentResultMessage varchar2(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
             .append( "role varchar2(100) NOT NULL, " )
@@ -114,7 +120,9 @@ public class AgentSessionStoreDBConfig {
     public static final String dm_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
-            .append( "agentId varchar2(100),")  //代理id
+            .append( "parentAgentId varchar2(100),")  //父agentid
+            .append( "agentId varchar2(100),")  //创建消息的agentid
+            .append( "agentResultMessage varchar2(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
             .append( "role varchar2(100) NOT NULL, " )
@@ -122,7 +130,9 @@ public class AgentSessionStoreDBConfig {
     public static final String sqlserver_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL," )
             .append( "createTime datetime NOT NULL,")  //创建时间
             .append("sessionId varchar(100) NOT NULL,") //会话id
-            .append( "agentId varchar(100),")  //代理id
+            .append( "parentAgentId varchar(100),")  //父agentid
+            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message nvarchar(max) NOT NULL,")  //消息正文
             .append( "role varchar(100) NOT NULL,") 
@@ -130,7 +140,9 @@ public class AgentSessionStoreDBConfig {
     public static final String postgresql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName (msgId varchar(100) NOT NULL," )
             .append( "createTime timestamp NOT NULL,")  //创建时间
             .append( "sessionId varchar(100) NOT NULL,")  //会话id
-            .append( "agentId varchar(100),")  //代理id
+            .append( "parentAgentId varchar(100),")  //父agentid
+            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message text NOT NULL,")  //消息正文
             .append( "role varchar(100) NOT NULL,") 
@@ -148,6 +160,8 @@ public class AgentSessionStoreDBConfig {
     private String deleteSessionMessageBySessionIdSQL;
     private String selectSessionMessageByUserIdSQL;
     private String selectSessionMessageBySessionIdSQL;
+
+    private String selectMaxSeqNoBySessionIdSQL;
 
     private String selectSessionMessageBySessionId2ndAgentIdSQL;
     
@@ -199,8 +213,13 @@ public class AgentSessionStoreDBConfig {
         selectSessionBySessionIdSQL = new StringBuilder().append("select * from ")
                 .append(sessionTableName).append(" where sessionId=? ").toString();
 
+        /**
+         *         .append( "parentAgentId varchar(100),")  //父agentid
+         *             .append( "agentId varchar(100),")  //创建消息的agentid
+         *             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
+         */
         insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
-                .append(" (msgId,createTime,sessionId,agentId,seqNo,message,role) values(?,?,?,?,?,?,?)").toString();
+                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,agentResultMessage,seqNo,message,role) values(?,?,?,?,?,?,?,?,?)").toString();
         deleteSessionMessageSQL = "DELETE FROM "+sessionMessageTableName+" where msgId=? and jobType=?";
         deleteSessionMessageByUserIdSQL = new StringBuilder().append("delete from ")
                 .append(sessionMessageTableName).append(" where useId=? ").toString();
@@ -215,10 +234,17 @@ public class AgentSessionStoreDBConfig {
          * 查询最近的消息
          */
         selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where sessionId=? order by createTime asc").toString();
+                .append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and agentResultMessage = '1')) order by createTime asc").toString();
+
+        selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
+                .append(sessionMessageTableName).append(" where sessionId=? ").toString();
 
         selectSessionMessageBySessionId2ndAgentIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where sessionId=? and agentId= ? order by createTime asc").toString();
+                .append(sessionMessageTableName).append(" where sessionId=? and (agentId= ? or (parentAgentId= ? and agentResultMessage = '1')) order by createTime asc").toString();
+    }
+
+    public String getSelectMaxSeqNoBySessionIdSQL() {
+        return selectMaxSeqNoBySessionIdSQL;
     }
 
     public String getSelectSessionMessageBySessionId2ndAgentIdSQL() {

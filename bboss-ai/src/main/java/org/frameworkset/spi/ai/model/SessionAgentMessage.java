@@ -68,7 +68,16 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             sessionStore = this.agentSessionStoreBuilder.build(storeContext);
             mainSessionStore = sessionStore;
         }
-        sessionStore.setSessionSize(sessionSize);
+        else if(sessionStore instanceof AgentSessionStoreMemory){
+            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)sessionStore;
+            if(agentSessionStoreMemory.getSessionMemory() != null){
+                throw new AIRuntimeException("Session memory already exists");
+            }
+            agentSessionStoreMemory.setSessionMemory(session);
+            agentSessionStoreMemory.setSessionSize(sessionSize);
+            mainSessionStore = sessionStore;
+
+        }
 
         return (T)this;
     }
@@ -78,16 +87,17 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(sessionStore == null) {
             if(storeContext == null){
                 storeContext = new StoreContext();
-                storeContext.setSessionSize(sessionSize);
             }
+            storeContext.setSessionSize(sessionSize);
             sessionStore = this.agentSessionStoreBuilder.build(storeContext);
             mainSessionStore = sessionStore;
         }
         else {
             if(storeContext == null){
                 storeContext = new StoreContext();
-                storeContext.setSessionSize(sessionSize);
+                
             }
+            storeContext.setSessionSize(sessionSize);
             sessionStore.setSessionSize(sessionSize);
             mainSessionStore.setSessionSize(sessionSize);
         }
@@ -155,7 +165,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(sessionStore == null){
             return (T)this;
         }
-        sessionStore.addSessionMessage(systemMessage,  prompt,  sessionStore.getAgentId());
+        sessionStore.addSessionMessage(systemMessage,  prompt,  sessionStore.getAgentId(), sessionStore.getParantAgentId(), false);
         
         return (T)this;
     }
@@ -168,6 +178,14 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         
         sessionStore.addSessionMessage(message);         
         return (T)this;
+    }
+    
+    public Map<String,Object> addAgentResultSessionMessage(String message){
+        initSessionStore();
+        if(sessionStore == null){
+            return null;
+        }
+        return sessionStore.addAgentResultSessionMessage(message);
     }
     public Map<String,Object> addAssistantSessionMessage(String message){
         initSessionStore();

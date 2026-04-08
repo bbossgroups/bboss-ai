@@ -58,6 +58,7 @@ public class AIAgent {
         this.prompt = prompt;
         this.type = type;
         this.toolsRegist = toolsRegist;
+        this.agentId = SimpleStringUtil.getUUID32();
         if(sessionSize != null ){
             this.sessionSize = sessionSize;
         }
@@ -112,9 +113,11 @@ public class AIAgent {
                 boolean empty = sessionMemory.isEmpty();
                 sessionAgentMessage.setSessionStore(agentSessionStore);
                 mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
-                Map<String, Object> message = mainSessionStore.getLastMessage(prompt == null?agentMessage.getPrompt():prompt,agentId);
+                //需要将父智能体中产生的最新的消息作为当前智能体的执行上下文
+                Map<String, Object> lastNewMessage = mainSessionStore.getLastMessage(prompt == null?agentMessage.getPrompt():prompt,agentId);
+                
                 if(empty) {
-                    List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(message, agentId, sessionSize);
+                    List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastNewMessage, agentId, sessionSize);
                     if (sessionMessages != null && sessionMessages.size() > 0) {
                         for (Map<String, Object> sessionMessage : sessionMessages) {
                             agentSessionStore.appendSessionMessageFromParent(sessionMessage);
@@ -123,8 +126,8 @@ public class AIAgent {
 
                     }
                 }
-                else if(message != null){//不为空，直接append主智能体中的最后一条消息
-                    agentSessionStore.appendSessionMessageFromParent(message);
+                else if(lastNewMessage != null){//不为空，直接append主智能体中的最后一条消息
+                    agentSessionStore.appendSessionMessageFromParent(lastNewMessage);
                 }
                 
                  
@@ -309,9 +312,12 @@ public class AIAgent {
         reactMessage(  chatAgentMessage);
         ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
         if(serverEvent != null && serverEvent.getData() != null){
-            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
+//            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
             if(this.agentSessionStore != null)
-                this.agentSessionStore.addSessionMessage(message);
+                this.agentSessionStore.addAgentResultSessionMessage(serverEvent.getData());
+            else{
+                chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
+            }
         }
         return serverEvent;
 //        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);

@@ -33,7 +33,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
      * 用户会话id
      */
 
-    private String sessionId;
+    protected String sessionId;
     /**
      * 用户id，可选
      */
@@ -72,7 +72,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.sessionSize = sessionSize;
 
     }
-
+    public void addSelfSessionMessage(Map<String, Object> message){
+        
+    }
     public BaseAgentSessionStore(){
         this.sessionMemory = new ArrayList<>();
 
@@ -119,6 +121,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     }
 
 
+    public String getParantAgentId(){
+        if(parentAgentSessionStore != null)
+            return parentAgentSessionStore.getAgentId();
+        return null;
+    }
+
     @Override
     public AgentSessionStore getSubTaskSessionMemory(String agentId) {
         if(subTaskSessionMemorys == null){
@@ -130,10 +138,11 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
     @Override
     public void appendSessionMessageFromParent(Map<String, Object> message){
-        _addSessionMessage(message,true);
+        _addSessionMessage(message,null,null,true,false,false);
     }
 
-    private void _addSessionMessage(Map<String, Object> message,boolean appendSessionMessageFromParent){
+    private void _addSessionMessage(Map<String, Object> message,String agentId,String parentAgentId,
+                                    boolean appendSessionMessageFromParent,boolean appendSelfAndParent,boolean agentResultMessage){
         if(sessionMemory == null){
             return ;
         }
@@ -142,17 +151,32 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             sessionMemory.remove(0);
         }
         if(!appendSessionMessageFromParent && parentAgentSessionStore != null){
-            parentAgentSessionStore.addSessionMessage(message,agentId);
+            if(appendSelfAndParent) {
+                parentAgentSessionStore.addSessionMessage(message, agentId,false,parentAgentId,agentResultMessage);
+            }
+            else{
+                parentAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentSessionStore.getAgentId(),agentResultMessage ?"1":"0");
+            }
+            
         }
+    }
+
+
+
+    @Override
+    public Map<String, Object> addAgentResultSessionMessage(String message){
+        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
+        _addSessionMessage(assistantMessage,this.getAgentId(),this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null,false,true,true);
+        return assistantMessage;
     }
     @Override
     public void addSessionMessage(Map<String, Object> message){
-        _addSessionMessage(message,false);
+        _addSessionMessage(message,this.getAgentId(),this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null,false,false,false);
          
     }
     @Override
-    public void addSessionMessage(Map<String, Object> message,String agentId){
-        _addSessionMessage(message,false);
+    public void addSessionMessage(Map<String, Object> message,String agentId,boolean appendSelfAndParent,String parentAgentId,boolean agentResultMessage){
+        _addSessionMessage(message,agentId,parentAgentId,false,appendSelfAndParent,false);
     }
     @Override
     public Map<String, Object> addAssistantSessionMessage(String message){
@@ -184,7 +208,13 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         addSessionMessage(assistantMessage);
         return assistantMessage;
     }
+    protected abstract boolean loadSessionMemory(Map<String, Object> userMessage);
+    protected abstract boolean loadSessionMemory(String prompt,String agentId);
+
+    @Override
     public Map<String,Object> getLastMessage(String prompt,String agentId){
+        if(this.loadSessionMemory(prompt,agentId))//如果是从历史数据中加载，则无需返回最近消息，否则需返回最新消息给子智能体
+            return null;
         if(sessionMemory == null || sessionMemory.size() == 0){
             return null;
         }

@@ -798,7 +798,8 @@ public class AIAgentUtil {
         if(functionTools != null && functionTools.size() > 0){
             ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
             _chatMessage.addAssistantSessionMessage(serverEvent );
-			logger.info(serverEvent.getData());
+            if(serverEvent.getData() != null && serverEvent.getData().length() > 0)
+			    logger.info(serverEvent.getData());
             ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage,functionTools);
             return chatCompletionEvent(  poolName,toolAgentMessage);
             /**

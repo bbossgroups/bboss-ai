@@ -25,9 +25,13 @@ import java.util.Map;
  * @Date 2026/4/3
  */
 public class SessionMessage {
+    private String msgId;
     private Date createTime;
     private String sessionId;
     private String agentId;
+
+    private String parentAgentId;
+    private String agentResultMessage = "0";
     private int seqNo;
     
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.SessionMessageEditor")
@@ -40,6 +44,22 @@ public class SessionMessage {
 
     public void setMessage(Map<String, Object> message) {
         this.message = message;
+    }
+
+    public String getParentAgentId() {
+        return parentAgentId;
+    }
+
+    public void setParentAgentId(String parentAgentId) {
+        this.parentAgentId = parentAgentId;
+    }
+
+    public String getAgentResultMessage() {
+        return agentResultMessage;
+    }
+
+    public void setAgentResultMessage(String agentResultMessage) {
+        this.agentResultMessage = agentResultMessage;
     }
 
     public String getRole() {
@@ -80,5 +100,12 @@ public class SessionMessage {
     public void setAgentId(String agentId) {
         this.agentId = agentId;
     }
-    
+
+    public String getMsgId() {
+        return msgId;
+    }
+
+    public void setMsgId(String msgId) {
+        this.msgId = msgId;
+    }
 }

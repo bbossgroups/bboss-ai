@@ -31,16 +31,21 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     String getAgentId();
     Map<String,Object> getLastMessage(String prompt,String agentId);
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
+    
+    String getParantAgentId();
 
     T setSessionSize(int sessionSize) ;
     T setAgentId(String agentId) ;
     int getSessionSize() ;
-    String getSessionId();
+    String getSessionId(); 
+
     void addSessionMessage(Map<String, Object> message);
 
-    void addSessionMessage(Map<String, Object> message,String agentId);
+    Map<String, Object> addAgentResultSessionMessage(String message);
+
+    void addSessionMessage(Map<String, Object> message,String agentId,boolean appendSelfAndParent,String parentAgentId,boolean agentResultMessage);
     void appendSessionMessageFromParent(Map<String, Object> message);
-    void addSessionMessage( Map<String, Object> systemMessage,String prompt,String agentId);
+    void addSessionMessage( Map<String, Object> systemMessage,String prompt,String agentId,String parentAgentId,boolean agentResultMessage);
    
     Map<String, Object> addAssistantSessionMessage(String message);
 
@@ -51,4 +56,6 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     List<Map<String, Object>> getSessionMemory();
 
     List<Map<String, Object>>  getAgentSessionMessage(Map<String,Object> lastMessage,String agentId,int agentSessionSize);
+
+    void persistentSessionMessage(Map<String, Object> message, String agentId,String parentAgentId,String agentResultMessage);
 }
