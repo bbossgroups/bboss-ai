@@ -109,10 +109,10 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
     
     
     public void init(){
-         
-        if(this.sessionId != null){
-
-             
+        if(this.sessionId == null){
+            this.sessionId = SimpleStringUtil.getUUID32();
+        }
+        else{             
                 
             AgentSession agentSession = agentSessions.get(this.sessionId);
             if(agentSession != null) {
@@ -230,6 +230,14 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
     }
     
     protected List<Map<String, Object>> resolve(Map<String,Object> lastMessage, List<SessionMessage> agentSessionMessages, int agentSessionSize){
+        if(agentSessionMessages == null || agentSessionMessages.size() == 0){
+            if(lastMessage != null){
+                List<Map<String, Object>> _agentSessionMessages = new ArrayList<>();
+                _agentSessionMessages.add(lastMessage);
+                return _agentSessionMessages;
+            }
+            return null;
+        }
         List<Map<String, Object>> _agentSessionMessages = new ArrayList<>();
         int dataSize = agentSessionMessages.size();
         if(agentSessionMessages != null && agentSessionMessages.size() > 0){

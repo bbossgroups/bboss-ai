@@ -116,6 +116,11 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             }
             
         }
+        else{
+            
+            sessionId = SimpleStringUtil.getUUID32();
+            logger.info("SessionId is null and create new sessionId:{}",sessionId);
+        }
         
         
     }

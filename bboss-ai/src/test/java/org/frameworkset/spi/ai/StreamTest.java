@@ -15,13 +15,13 @@ package org.frameworkset.spi.ai;
  * limitations under the License.
  */
 
+import com.frameworkset.common.poolman.util.SQLUtil;
 import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.SimpleStringUtil;
-import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
+import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
@@ -40,7 +40,10 @@ import reactor.core.publisher.FluxSink;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -49,6 +52,21 @@ import java.util.concurrent.CountDownLatch;
  */
 public class StreamTest {
     private static Logger logger = LoggerFactory.getLogger(StreamTest.class);
+    public static void initDB(){
+//        SQLUtil.startPool("visualops",//数据源名称
+//                "com.mysql.cj.jdbc.Driver",//oracle驱动
+//                "jdbc:mysql://10.13.6.127:3306/visualops?useUnicode=true&characterEncoding=utf-8&useSSL=false",//mysql链接串
+//                "root","passwd",//数据库账号和口令
+//                "select 1 " //数据库连接校验sql
+//        );
+
+        SQLUtil.startPool("visualops",//数据源名称
+                "com.mysql.cj.jdbc.Driver",//oracle驱动
+                "jdbc:mysql://192.168.137.1:3306/bboss?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true",//mysql链接串
+                "root","123456",//数据库账号和口令
+                "select 1 " //数据库连接校验sql
+        );
+    }
     public static void main(String[] args) throws InterruptedException, IOException {
         //加载配置文件，启动负载均衡器,应用中只需要执行一次
 //        AgentAdapterFactory.registerAgentAdapter("custom",CustomAgentAdapter.class);
@@ -129,8 +147,9 @@ public class StreamTest {
 //        streamChatWithMcpTools("custom","shuqi","qwen3.5-plus","推荐一部穿越小说",true);
 
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库飞书定制开发和应用中的文档",true);
-        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
-        
+//        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
+//        streamDBStoreChatWithMcpTools("deepseek","feishumcp","deepseek-chat","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
+        streamDBStoreChatWithMcpTools("qwenvlplus","feishumcp","qwen3.6-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
 //        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
 //		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
@@ -389,7 +408,6 @@ public class StreamTest {
      */
     public static void videovlEvent() throws InterruptedException, IOException {
         String message  = "识别视频内容,并判断视频是否包含动物叫声";
-        List<Map<String,Object>> sessions = new ArrayList<>();
 
         
         VideoVLAgentMessage videoVLAgentMessage = new VideoVLAgentMessage();
@@ -399,7 +417,7 @@ public class StreamTest {
         String base64 = FileUtil.getBase64Video("C:\\data\\ai\\aigenfiles\\video\\a7afc105e4df4742814f472bcd517e03.mp4");
         videoVLAgentMessage.addVideoUrl(base64);
         videoVLAgentMessage.setStream(false);
-        videoVLAgentMessage.setSessionStore(new AgentSessionStoreMemory());//多轮会话
+        videoVLAgentMessage.setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10));//多轮会话
 
 
         // 禁止思考链
@@ -418,10 +436,9 @@ public class StreamTest {
     }
     
     public static void chatWithTools(String maas,String model){
-        List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt("查询杭州市天气，并根据天气给出穿衣、饮食以及出行建议")
-                .setSessionStore(new AgentSessionStoreMemory())
+                .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setMaxTokens(65536L);
@@ -473,10 +490,10 @@ public class StreamTest {
     }
 
     public static void streamChatWithRemoteTools(String maas, String model, String prompt) throws InterruptedException {
-        List<Map<String, Object>> session = new ArrayList<>();
+//        List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt(prompt)
-                .setSessionStore(new AgentSessionStoreMemory())
+                .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setStream( true)
@@ -536,10 +553,9 @@ public class StreamTest {
     }
 	
 	public static void streamChatWithMcpTools(String maas, String mcpServer,String model, String prompt,boolean thinking) throws InterruptedException {
-		List<Map<String, Object>> session = new ArrayList<>();
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
 				.setPrompt(prompt)
-                .setSessionStore(new AgentSessionStoreMemory())
+                .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))
 //                .setModel("deepseek-chat")
 				.setModel(model)
 				.setStream( true)
@@ -554,15 +570,10 @@ public class StreamTest {
         else{
             BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
 //            bboss应用
-            baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd0")
+            baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd1")
                     .setFeishAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs");
-            //企业关怀应用
-//            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
-//                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
-            baseFeishuConfig.addHttpConfig("http.poolNames", "feishu")
-                    .addHttpConfig("feishu.http.hosts", "https://open.feishu.cn")
-                    .addHttpConfig("feishu.http.maxTotal", 100)
-                    .addHttpConfig("feishu.http.defaultMaxPerRoute", 100)
+
+            baseFeishuConfig
                     .setMcpTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
             ;
             
@@ -604,11 +615,82 @@ public class StreamTest {
 		
 		
 	}
+
+    public static void streamDBStoreChatWithMcpTools(String maas, String mcpServer,String model, String prompt,boolean thinking) throws InterruptedException {
+        initDB();
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
+                .setPrompt(prompt)
+                .setStoreContext(new StoreContext()
+                                    .setSessionMemory(new ArrayList<>()).setSessionSize(10)
+                                    .setStoreType(StoreContext.STORE_TYPE_DB)
+                                    .setDataSource("visualops").setSessionId(SimpleStringUtil.getUUID32()).setUserId("admin")
+                        )
+//                .setModel("deepseek-chat")
+                .setModel(model)
+                .setStream( true)
+                .setMaxTokens(65536L);
+        chatAgentMessage.setThinking(thinking);
+        AIAgent aiAgent = new AIAgent();
+        MCPToolsRegist mcpToolsRegist = null;
+        //feishumcp
+        if(!mcpServer.equals("feishumcp")){
+            mcpToolsRegist = new MCPToolsRegist(mcpServer);
+        }
+        else{
+            BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
+//            bboss应用
+            baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd1")
+                    .setFeishAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs");
+            //企业关怀应用
+//            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
+//                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
+            baseFeishuConfig 
+                    .setMcpTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
+            ;
+
+            mcpToolsRegist = new FeishuMcpRegist("feishumcp", baseFeishuConfig);
+        }
+        chatAgentMessage.setToolsRegist(mcpToolsRegist);
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        aiAgent.streamChat(maas,chatAgentMessage)
+                .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                .doOnNext(chunk ->{
+                    if(!chunk.isDone() && !chunk.finished()) {
+
+                        if(chunk.getData() != null)
+                            System.out.print(chunk.getData());
+                        else{
+                            if(chunk.isToolCallsType()) {
+                                System.out.println();
+                                System.out.println("开始执行工具：");
+                            }
+                        }
+
+                    }
+                    else{
+                        System.out.println();
+                    }
+                }) //打印流式调用返回的问题答案片段
+                .doOnComplete(() -> {
+                    logger.info("\n=== 流完成 ===");
+                    countDownLatch.countDown();
+                })
+                .doOnError(error -> {
+                    logger.error("错误: " + error.getMessage(),error);
+                    countDownLatch.countDown();
+                })
+                .subscribe();
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        countDownLatch.await();
+
+
+    }
 	
 	public static void chatWithMcpTools(String maas, String mcpServer,String model, String prompt) throws InterruptedException {
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
 				.setPrompt(prompt)
-				.setSessionStore(new AgentSessionStoreMemory())
+                .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))
 //                .setModel("deepseek-chat")
 				.setModel(model)
 				.setStream( false)
@@ -650,7 +732,7 @@ public class StreamTest {
     public static void streamChatWithTools(String maas,String model,String prompt) throws InterruptedException {
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt(prompt)
-                .setSessionStore(new AgentSessionStoreMemory())
+                .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setStream( true)
@@ -930,7 +1012,7 @@ public class StreamTest {
         }
         audioSTTAgentMessage.setModel(model);
         // 构建消息历史列表，包含之前的会话记忆,语音识别模型本身无法实现多轮会话，如果要多轮会话，需切换支持多轮会话的模型，例如LLM和千问图片识别模型
-        audioSTTAgentMessage.setSessionStore(new AgentSessionStoreMemory());
+        audioSTTAgentMessage.setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10));
         // 添加当前用户消息
         audioSTTAgentMessage.setPrompt( message);
 
