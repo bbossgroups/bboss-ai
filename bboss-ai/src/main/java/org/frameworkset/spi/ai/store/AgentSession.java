@@ -15,9 +15,10 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
+import org.frameworkset.spi.ai.model.LastSessionMessage;
+
+import java.util.*;
 
 /**
  * @author biaoping.yin
@@ -60,14 +61,55 @@ public class AgentSession {
         this.title = title;
     }
 
-    public List<SessionMessage> getAssistantMessages(String agentId) {
+    /**
+     * 记录智能体引用的历史消息清单
+     */
+    private Map<String,List<LastSessionMessage>> agentReferenceSessionMessages = new ConcurrentHashMap();
+    
+    public void saveLastSessionMessage(LastSessionMessage lastSessionMessage, String refAgentId) {
+        
+        
+        synchronized (agentReferenceSessionMessages) {
+            List<LastSessionMessage> lastSessionMessages = agentReferenceSessionMessages.get(refAgentId);
+            if (lastSessionMessages == null) {
+
+                lastSessionMessages = new ArrayList<>();
+                agentReferenceSessionMessages.put(refAgentId, lastSessionMessages);
+            }
+
+            lastSessionMessages.add(lastSessionMessage);
+        }
+        
+    }
+    private boolean isReferMessage(SessionMessage assistantMessage,List<LastSessionMessage> lastSessionMessages){
+        if(lastSessionMessages == null || lastSessionMessages.size() == 0)
+            return false;
+        for(LastSessionMessage lastSessionMessage : lastSessionMessages){
+            if(lastSessionMessage.getMsgId().equals(assistantMessage.getMsgId()))
+                return true;
+        }
+        return false;
+    }
+    //msgId,msgAgentId,refAgentId,sessionId
+    /**
+     * 根据agentId获取agentId的历史消息
+     * @param agentId
+     * @return
+     */
+    public List<SessionMessage> getAgentSessionMessage(String agentId) {
         if(assistantMessages == null || assistantMessages.size() == 0)
             return null;
         List<SessionMessage> agentMessages = null;
+        List<LastSessionMessage> lastSessionMessages = this.agentReferenceSessionMessages.get(agentId);
         for(SessionMessage assistantMessage : assistantMessages) {
             String messageAgentId = assistantMessage.getAgentId();
             String messageParentId = assistantMessage.getParentAgentId();
-            if (messageAgentId != null && messageAgentId.equals(agentId) ) {
+            if(isReferMessage(assistantMessage,lastSessionMessages)){
+                if (agentMessages == null)
+                    agentMessages = new ArrayList<>();
+                agentMessages.add(assistantMessage);
+            }
+            else if (messageAgentId != null && messageAgentId.equals(agentId) ) {
                 if (agentMessages == null)
                     agentMessages = new ArrayList<>();
                 agentMessages.add(assistantMessage);
@@ -78,6 +120,16 @@ public class AgentSession {
                 agentMessages.add(assistantMessage);
             }
             
+        }
+        
+        if(lastSessionMessages != null && lastSessionMessages.size() > 0) {
+            for (LastSessionMessage lastSessionMessage : lastSessionMessages) {
+                if (agentMessages == null)
+                    agentMessages = new ArrayList<>();
+                SessionMessage sessionMessage = new SessionMessage();
+                sessionMessage.setMessage(lastSessionMessage.getLastSessionMessage());
+                agentMessages.add(sessionMessage);
+            }
         }
         return agentMessages;
     }
@@ -140,7 +192,7 @@ public class AgentSession {
                         mainAgentMessages = new ArrayList<>();
                     mainAgentMessages.add(assistantMessage);
                 }
-                else if (messageParentId != null && messageParentId.equals(agentId) && assistantMessage.getAgentResultMessage().equals("1")) {
+                else if (messageParentId != null && messageParentId.equals(agentId) && assistantMessage.getAgentResultMessage().equals("1")) {//子agent的输出结果消息也是主agent的消息
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
                     mainAgentMessages.add(assistantMessage);
@@ -152,7 +204,7 @@ public class AgentSession {
 
     public synchronized void addSessionMessage(SessionMessage sessionMessage) {
         if(assistantMessages == null)
-            assistantMessages = new ArrayList<SessionMessage>();
+            assistantMessages = new ArrayList<>();
         assistantMessages.add(sessionMessage);
     }
 
@@ -166,4 +218,6 @@ public class AgentSession {
         }
         return maxSeqNo;
     }
+
+
 }

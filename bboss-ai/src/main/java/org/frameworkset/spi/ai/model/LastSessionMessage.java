@@ -1,0 +1,90 @@
+package org.frameworkset.spi.ai.model;
+/**
+ * Copyright 2026 bboss
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.util.Map;
+
+/**
+ * @author biaoping.yin
+ * @Date 2026/4/10
+ */
+public class LastSessionMessage {
+    private Map<String,Object> lastSessionMessage;
+    /**会话id*/
+    private String sessionId;
+    /**消息id*/
+    private String msgId;
+    /**消息对应智能体id*/
+    private String msgAgentId;
+    private String msgParentAgentId;    
+    
+    /**
+     * 是不是最新的消息，如果是，则需要记录引用关系到数据库
+     * 当智能体第一次初始化加载历史记录时，需要从引用关系表中获取对应的消息
+     * true 最新消息
+     * false 不是最新消息
+     */
+    private boolean freshMessage;
+
+    public Map<String, Object> getLastSessionMessage() {
+        
+        return lastSessionMessage;
+    }
+
+    public void setLastSessionMessage(Map<String, Object> lastSessionMessage) {
+        this.lastSessionMessage = lastSessionMessage;
+    }
+
+    public boolean isFreshMessage() {
+        return freshMessage;
+    }
+
+    public void setFreshMessage(boolean freshMessage) {
+        this.freshMessage = freshMessage;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public String getMsgId() {
+        return msgId;
+    }
+
+    public void setMsgId(String msgId) {
+        this.msgId = msgId;
+    }
+
+    public String getMsgAgentId() {
+        return msgAgentId;
+    }
+
+    public void setMsgAgentId(String msgAgentId) {
+        this.msgAgentId = msgAgentId;
+    }
+
+    public String getMsgParentAgentId() {
+        return msgParentAgentId;
+    }
+
+    public void setMsgParentAgentId(String msgParentAgentId) {
+        this.msgParentAgentId = msgParentAgentId;
+    }
+}

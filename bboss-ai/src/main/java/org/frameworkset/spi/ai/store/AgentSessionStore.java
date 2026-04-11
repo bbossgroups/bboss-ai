@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
@@ -29,8 +30,17 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     String getAgentId();
-    Map<String,Object> getLastMessage(String prompt,String agentId);
+    void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
+    LastSessionMessage getLastSubAgentSessionMessage(String prompt, String agentId);
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
+
+    /**
+     * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
+     * @param prompt
+     * @param agentId
+     * @return
+     */
+    boolean loadSessionMemory(String prompt,String agentId);
     
     String getParantAgentId();
 
@@ -41,11 +51,11 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 
     void addSessionMessage(Map<String, Object> message);
 
-    Map<String, Object> addAgentResultSessionMessage(String message);
+    LastSessionMessage addAgentResultSessionMessage(String message);
 
-    void addSessionMessage(Map<String, Object> message,String agentId,boolean appendSelfAndParent,String parentAgentId,boolean agentResultMessage);
+    LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId);
     void appendSessionMessageFromParent(Map<String, Object> message);
-    void addSessionMessage( Map<String, Object> systemMessage,String prompt,String agentId,String parentAgentId,boolean agentResultMessage);
+    void addSessionMessage( Map<String, Object> systemMessage,String prompt,String agentId,String parentAgentId);
    
     Map<String, Object> addAssistantSessionMessage(String message);
 
@@ -55,7 +65,14 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 
     List<Map<String, Object>> getSessionMemory();
 
-    List<Map<String, Object>>  getAgentSessionMessage(Map<String,Object> lastMessage,String agentId,int agentSessionSize);
+    List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize);
 
-    void persistentSessionMessage(Map<String, Object> message, String agentId,String parentAgentId,String agentResultMessage);
+    LastSessionMessage persistentSessionMessage(Map<String, Object> message, String agentId,String parentAgentId,String agentResultMessage);
+    AgentSessionStore getMainAgentSessionStore() ;
+
+    T setMainAgentSessionStore(AgentSessionStore mainAgentSessionStore) ;
+
+    void setParantAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage);
+
+    void setSubAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage);
 }

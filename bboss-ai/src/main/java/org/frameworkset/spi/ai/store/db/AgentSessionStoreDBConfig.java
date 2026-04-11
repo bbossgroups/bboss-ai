@@ -17,7 +17,6 @@ package org.frameworkset.spi.ai.store.db;
 
 import com.frameworkset.common.poolman.DBUtil;
 import com.frameworkset.orm.adapter.DB;
-import org.frameworkset.persitent.util.SQLUtil;
 
 /**
  * 数据库会话存储配置：sql语句
@@ -25,24 +24,14 @@ import org.frameworkset.persitent.util.SQLUtil;
  * @Date 2026/4/5
  */
 public class AgentSessionStoreDBConfig {
-    public static String sqlitex_createSessionTableSQL = new StringBuilder().append("create table $sessionTableName (sessionId varchar(100),")  //会话id
+    public static String sqlite_createSessionTableSQL = new StringBuilder().append("create table $sessionTableName (sessionId varchar(100),")  //会话id
             .append( "createTime number(20),") //创建时间
             .append( "useId varchar(100),")  //用户id
             .append( "agentId varchar(100),")  //代理id
             .append( "title varchar(500),")  //会话标题         
             .append( "PRIMARY KEY (sessionId))").toString();
 
-    public static String sqlitex_createSessionMessageTableSQL = new StringBuilder().append("create table $sessionMessageTableName (msgId varchar(100),")  //消息id
-            .append( "createTime number(20),") //创建时间
-            .append( "parentAgentId varchar(100),")  //父agentid
-            .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中 0：否 1：是
-            .append( "sessionId varchar(100),")  //会话id
-            .append( "seqNo int,")  //消息序号
-            .append( "message text,")  //消息正文
-            .append( "role varchar(100),")
-            .append( "PRIMARY KEY (msgId))").toString();
-    
+
     public static final String mysql_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar(100) NOT NULL comment '会话id'," )
             .append(" createTime datetime NOT NULL comment '创建时间', " )
             .append( "useId varchar(100) comment '用户id',")  //用户id
@@ -95,7 +84,17 @@ public class AgentSessionStoreDBConfig {
             .append("COMMENT ON COLUMN $sessionTableName.agentId IS '代理id';")
             .append("COMMENT ON COLUMN $sessionTableName.title IS '会话标题';")
             .toString();
-    
+    public static String sqlitex_createSessionMessageTableSQL = new StringBuilder().append("create table $sessionMessageTableName (msgId varchar(100),")  //消息id
+            .append( "createTime number(20),") //创建时间
+            .append( "parentAgentId varchar(100),")  //父agentid
+            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中 0：否 1：是
+            .append( "sessionId varchar(100),")  //会话id
+            .append( "seqNo int,")  //消息序号
+            .append( "message text,")  //消息正文
+            .append( "role varchar(100),")
+            .append( "PRIMARY KEY (msgId))").toString();
+
     public static final String mysql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL comment '消息id'," )
             .append(" createTime datetime NOT NULL comment '创建时间', " )
             .append( "sessionId varchar(100) NOT NULL, " )  //会话id
@@ -106,7 +105,8 @@ public class AgentSessionStoreDBConfig {
             .append( "message LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, " )  //消息正文
             .append( "role varchar(100) NOT NULL, " )
             .append( "primary key(msgId)) comment '消息表主键' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").toString();
-    
+
+   
     public static final String oracle_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
@@ -147,6 +147,93 @@ public class AgentSessionStoreDBConfig {
             .append( "message text NOT NULL,")  //消息正文
             .append( "role varchar(100) NOT NULL,") 
             .append( "primary key(msgId))").toString();
+
+    /**
+     * 智能体之间消息引用关系表sqlite：后续智能体会引用前一个智能体的输出消息
+     */
+   public static final String sqlite_createSessionMessageReferenceTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageReferenceTableName ( msgId TEXT NOT NULL, " )
+           .append(" msgAgentId varchar(100) NOT NULL, " )
+           .append( "refAgentId varchar(100) NOT NULL,)" )   
+            .append("sessionId varchar(100) NOT NULL") //会话id
+            .toString();
+
+    /**
+     * 智能体之间消息引用关系表mysql：后续智能体会引用前一个智能体的输出消息
+     */
+    public static final String mysql_createSessionMessageReferenceTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageReferenceTableName ( msgId varchar(100) NOT NULL comment '消息id'," )
+            .append(" msgAgentId varchar(100) NOT NULL comment '消息所属智能体agentId', " )
+            .append( "refAgentId varchar(100) NOT NULL comment '引用消息智能体agentId'," )   
+            .append("sessionId varchar(100) NOT NULL,") //会话id
+             .append("INDEX idx_msgId (msgId), ")
+            .append("INDEX idx_msgAgentId (msgAgentId), ")
+            .append("INDEX idx_refAgentId (refAgentId), ")
+            .append("INDEX idx_msgId_agentId (msgId, msgAgentId), ")
+            .append("UNIQUE INDEX uk_msg_ref (msgId, refAgentId)")
+            .append( ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").toString();
+
+    /**
+     * 智能体之间消息引用关系表oracle：后续智能体会引用前一个智能体的输出消息
+     */
+    public static final String oracle_createSessionMessageReferenceTableSQL = new StringBuilder()
+        .append("CREATE TABLE $sessionMessageReferenceTableName ( ")
+        .append("msgId VARCHAR2(100) NOT NULL, ")                           // Oracle中使用VARCHAR2而不是varchar
+        .append("msgAgentId VARCHAR2(100) NOT NULL, ")                       // 消息所属智能体agentId
+        .append("refAgentId VARCHAR2(100) NOT NULL, ")                       // 引用消息智能体agentId
+            .append("sessionId varchar(100) NOT NULL,") //会话id
+        .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
+        .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
+        .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")        // 唯一约束
+        .append(")")
+        .toString();
+
+    /**
+     * 智能体之间消息引用关系表dm：后续智能体会引用前一个智能体的输出消息
+     */
+    public static final String dm_createSessionMessageReferenceTableSQL = new StringBuilder()
+            .append("CREATE TABLE $sessionMessageReferenceTableName ( ")
+            .append("msgId VARCHAR2(100) NOT NULL, ")                           // Oracle中使用VARCHAR2而不是varchar
+            .append("msgAgentId VARCHAR2(100) NOT NULL, ")                       // 消息所属智能体agentId
+            .append("refAgentId VARCHAR2(100) NOT NULL, ")                       // 引用消息智能体agentId
+            .append("sessionId varchar(100) NOT NULL,") //会话id
+            .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
+            .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
+            .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")        // 唯一约束
+            .append(")")
+            .toString();
+// ... existing code ...
+/**
+ * 智能体之间消息引用关系表sqlserver：后续智能体会引用前一个智能体的输出消息
+ */
+public static final String sqlserver_createSessionMessageReferenceTableSQL = new StringBuilder()
+        .append("CREATE TABLE $sessionMessageReferenceTableName ( ")
+        .append("msgId VARCHAR(100) NOT NULL, ")                           
+        .append("msgAgentId VARCHAR(100) NOT NULL, ")                       // 消息所属智能体agentId
+        .append("refAgentId VARCHAR(100) NOT NULL, ")                       // 引用消息智能体agentId
+        .append("sessionId varchar(100) NOT NULL,") //会话id
+        .append("CONSTRAINT uk_ref_agentid UNIQUE (refAgentId), ")        // 唯一约束
+        .append("CONSTRAINT uk_msg_agentid UNIQUE (msgAgentId), ")        // 唯一约束    
+        .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")     // 唯一约束
+        .append(")")
+        .toString();
+// ... existing code ...
+
+     
+   /**
+    * 智能体之间消息引用关系表postgresql：后续智能体会引用前一个智能体的输出消息
+    */
+   public static final String postgresql_createSessionMessageReferenceTableSQL = new StringBuilder()
+           .append("CREATE TABLE $sessionMessageReferenceTableName ( ")
+           .append("msgId VARCHAR(100) NOT NULL, ")                           // PostgreSQL使用VARCHAR而不是VARCHAR2
+           .append("msgAgentId VARCHAR(100) NOT NULL, ")                       // 消息所属智能体agentId
+           .append("refAgentId VARCHAR(100) NOT NULL, ")                       // 引用消息智能体agentId
+           .append("sessionId varchar(100) NOT NULL,") //会话id
+           .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
+           .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
+           .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId)           ") // 唯一约束
+           .append(")")
+           .toString();
+
+
     private String insertSessionSQL;
     private String deleteSessionSQL;
     private String deleteSessionByUserIdSQL;
@@ -168,6 +255,14 @@ public class AgentSessionStoreDBConfig {
     private String existSQL;
 
     private String existMessageSQL;
+    
+    private String existMessageReferenceSQL;
+
+    public String getInsertSessionMessageRerenceSQL() {
+        return insertSessionMessageRerenceSQL;
+    }
+
+    private String insertSessionMessageRerenceSQL;
     private String dataSource;
     /**
      * 会话基本信息存储表名称
@@ -178,6 +273,15 @@ public class AgentSessionStoreDBConfig {
      * 会话消息记录存储表名称
      */
     private String sessionMessageTableName = "agent_session_message";
+
+    public String getSessionMessageReferenceTableName() {
+        return sessionMessageReferenceTableName;
+    }
+
+    /**
+     * 会话消息记录引用关系表名称
+     */
+    private String sessionMessageReferenceTableName = "agent_session_message_ref";
 
     public void setDataSource(String dataSource) {
         this.dataSource = dataSource;
@@ -198,6 +302,7 @@ public class AgentSessionStoreDBConfig {
     public void init(){
         existSQL = new StringBuilder().append("select 1 from ").append(sessionTableName).toString();
         existMessageSQL = new StringBuilder().append("select 1 from ").append(sessionMessageTableName).toString();
+        existMessageReferenceSQL = new StringBuilder().append("select 1 from ").append(sessionMessageReferenceTableName).toString();
         insertSessionSQL = "INSERT INTO "+sessionTableName+" (sessionId, createTime, useId, agentId, title) \n" +
                 "VALUES (?, ?, ?, ?, ?)";
         
@@ -208,7 +313,7 @@ public class AgentSessionStoreDBConfig {
                 .append(sessionTableName).append(" where sessionId=? ").toString();
 
         selectSessionByUserIdSQL = new StringBuilder().append("select * from ")
-                .append(sessionTableName).append(" where useId=?").toString();
+                .append(sessionTableName).append(" where useId=? order by createTime desc").toString();
 
         selectSessionBySessionIdSQL = new StringBuilder().append("select * from ")
                 .append(sessionTableName).append(" where sessionId=? ").toString();
@@ -220,6 +325,9 @@ public class AgentSessionStoreDBConfig {
          */
         insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
                 .append(" (msgId,createTime,sessionId,parentAgentId,agentId,agentResultMessage,seqNo,message,role) values(?,?,?,?,?,?,?,?,?)").toString();
+
+        insertSessionMessageRerenceSQL = "INSERT INTO "+sessionMessageReferenceTableName+" (msgId,msgAgentId,refAgentId,sessionId) " +
+                                                    "VALUES (?, ?, ?, ?)";
         deleteSessionMessageSQL = "DELETE FROM "+sessionMessageTableName+" where msgId=? and jobType=?";
         deleteSessionMessageByUserIdSQL = new StringBuilder().append("delete from ")
                 .append(sessionMessageTableName).append(" where useId=? ").toString();
@@ -228,19 +336,25 @@ public class AgentSessionStoreDBConfig {
                 .append(sessionMessageTableName).append(" where sessionId=? ").toString();
 
         selectSessionMessageByUserIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where useId=? ").toString();
+                .append(sessionMessageTableName).append(" where useId=? order by createTime,seqNo desc").toString();
 
         /**
          * 查询最近的消息
          */
         selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and agentResultMessage = '1')) order by createTime asc").toString();
+                .append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and agentResultMessage = '1')) order by createTime,seqNo asc").toString();
 
         selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
                 .append(sessionMessageTableName).append(" where sessionId=? ").toString();
 
-        selectSessionMessageBySessionId2ndAgentIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where sessionId=? and (agentId= ? or (parentAgentId= ? and agentResultMessage = '1')) order by createTime asc").toString();
+        selectSessionMessageBySessionId2ndAgentIdSQL = new StringBuilder()
+                .append("select *  from ")
+                .append(sessionMessageTableName)
+                .append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and agentResultMessage = '1')))" )
+                .append(" or msgId in (select msgId from ")
+                .append(sessionMessageReferenceTableName)
+                .append(" where sessionId=? and refAgentId = ?) " )
+                .append("order  by createTime, seqNo asc").toString();
     }
 
     public String getSelectMaxSeqNoBySessionIdSQL() {
@@ -266,6 +380,8 @@ public class AgentSessionStoreDBConfig {
         } else if ("postgresql".equalsIgnoreCase(type)) {
             sql = postgresql_createSessionTableSQL;
         }
+        else if("sqlite".equalsIgnoreCase(type))
+            sql = this.sqlite_createSessionTableSQL;
         return sql.replace("$sessionTableName", sessionTableName);
     }
     
@@ -284,7 +400,33 @@ public class AgentSessionStoreDBConfig {
         } else if ("postgresql".equalsIgnoreCase(type)) {
             sql = postgresql_createSessionMessageTableSQL;
         }
+        else if("sqlite".equalsIgnoreCase(type)) {
+            sql = sqlitex_createSessionMessageTableSQL;
+        }
+        
         return sql.replace("$sessionMessageTableName", sessionMessageTableName);
+    }
+
+    public String evalCreateSessionMessageReferenceTableSQL(String dbName) {
+        DB adaptor  = DBUtil.getDBAdapter(dbName);
+        String type = adaptor.getDBTYPE();
+        String sql = null;
+        if ("mysql".equalsIgnoreCase(type)) {
+            sql = mysql_createSessionMessageReferenceTableSQL;
+        } else if ("oracle".equalsIgnoreCase(type)) {
+            sql = oracle_createSessionMessageReferenceTableSQL;
+        } else if ("dm".equalsIgnoreCase(type)) {
+            sql = dm_createSessionMessageReferenceTableSQL;
+        } else if ("sqlserver".equalsIgnoreCase(type)) {
+            sql = sqlserver_createSessionMessageReferenceTableSQL;
+        } else if ("postgresql".equalsIgnoreCase(type)) {
+            sql = postgresql_createSessionMessageReferenceTableSQL;
+        }
+        else if("sqlite".equalsIgnoreCase(type)) {
+            sql = sqlite_createSessionMessageReferenceTableSQL;
+        }
+
+        return sql.replace("$sessionMessageReferenceTableName", sessionMessageReferenceTableName);
     }
 
 
@@ -350,5 +492,9 @@ public class AgentSessionStoreDBConfig {
 
     public void setSessionMessageTableName(String sessionMessageTableName) {
         this.sessionMessageTableName = sessionMessageTableName;
+    }
+
+    public String getExistMessageReferenceSQL() {
+        return existMessageReferenceSQL;
     }
 }

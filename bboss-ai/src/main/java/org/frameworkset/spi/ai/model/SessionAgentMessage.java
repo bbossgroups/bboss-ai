@@ -165,7 +165,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(sessionStore == null){
             return (T)this;
         }
-        sessionStore.addSessionMessage(systemMessage,  prompt,  sessionStore.getAgentId(), sessionStore.getParantAgentId(), false);
+        sessionStore.addSessionMessage(systemMessage,  prompt,  sessionStore.getAgentId(), sessionStore.getParantAgentId());
         
         return (T)this;
     }
@@ -180,12 +180,14 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         return (T)this;
     }
     
-    public Map<String,Object> addAgentResultSessionMessage(String message){
+    public LastSessionMessage addAgentResultSessionMessage(String message){
         initSessionStore();
         if(sessionStore == null){
             return null;
         }
-        return sessionStore.addAgentResultSessionMessage(message);
+        LastSessionMessage lastSessionMessage = sessionStore.addAgentResultSessionMessage(message);
+        sessionStore.setParantAgentLastSessionMessage(lastSessionMessage);
+        return lastSessionMessage;
     }
     public Map<String,Object> addAssistantSessionMessage(String message){
         initSessionStore();
@@ -212,16 +214,5 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     }
 
 
-
-    @Deprecated
-    /**
-     * 添加会话消息
-     * @param message
-     * @return
-     * @deprecated 请使用addAssistantSessionMessage方法
-     */
-    public Map<String,Object> addSessionMessage(String message){
-         
-        return addAssistantSessionMessage(  message);
-    }
+ 
 }

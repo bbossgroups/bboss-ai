@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -30,6 +31,10 @@ import java.util.Map;
  */
 public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> implements AgentSessionStore<T>{
     /**
+     * 在内存中持久化用户消息
+     */
+    protected boolean persistentSessionMemory;
+    /**
      * 用户会话id
      */
 
@@ -44,6 +49,11 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     private String agentId;
     protected StoreContext storeContext;
     protected AgentSessionStore parentAgentSessionStore;
+
+
+
+
+    protected AgentSessionStore mainAgentSessionStore;
     /** 短期记忆：使用静态变量存储会话记忆（实际项目中建议使用缓存或数据库）*/
     protected List<Map<String, Object>> sessionMemory;
     public BaseAgentSessionStore(List<Map<String, Object>> sessionMemory){
@@ -135,14 +145,15 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return subTaskSessionMemorys.get(agentId);
     }
 
-
+ 
+   
+ 
     @Override
     public void appendSessionMessageFromParent(Map<String, Object> message){
-        _addSessionMessage(message,null,null,true,false,false);
+        appendSessionMessage( message);
+        
     }
-
-    private void _addSessionMessage(Map<String, Object> message,String agentId,String parentAgentId,
-                                    boolean appendSessionMessageFromParent,boolean appendSelfAndParent,boolean agentResultMessage){
+    protected void appendSessionMessage(Map<String, Object> message){
         if(sessionMemory == null){
             return ;
         }
@@ -150,34 +161,99 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(sessionSize > 0 && sessionMemory.size() > sessionSize){
             sessionMemory.remove(0);
         }
-        if(!appendSessionMessageFromParent && parentAgentSessionStore != null){
-            if(appendSelfAndParent) {
-                parentAgentSessionStore.addSessionMessage(message, agentId,false,parentAgentId,agentResultMessage);
-            }
-            else{
-                parentAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentSessionStore.getAgentId(),agentResultMessage ?"1":"0");
-            }
-            
-        }
     }
 
 
 
-    @Override
-    public Map<String, Object> addAgentResultSessionMessage(String message){
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
-        _addSessionMessage(assistantMessage,this.getAgentId(),this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null,false,true,true);
-        return assistantMessage;
-    }
     @Override
     public void addSessionMessage(Map<String, Object> message){
-        _addSessionMessage(message,this.getAgentId(),this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null,false,false,false);
+
+        if(sessionMemory == null){
+            return ;
+        }
+        appendSessionMessage(message);
+        if(mainAgentSessionStore != null){
+            mainAgentSessionStore.persistentSessionMessage(message, agentId,this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null,"0");
+        }
+        else if(this.persistentSessionMemory){
+            persistentSessionMessage(message, agentId,this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null,"0");
+        }
          
     }
+
     @Override
-    public void addSessionMessage(Map<String, Object> message,String agentId,boolean appendSelfAndParent,String parentAgentId,boolean agentResultMessage){
-        _addSessionMessage(message,agentId,parentAgentId,false,appendSelfAndParent,false);
+    public LastSessionMessage addAgentResultSessionMessage(String message){
+        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
+        LastSessionMessage lastSubAgentSessionMessage = null;
+        if(sessionMemory == null){
+            lastSubAgentSessionMessage = new LastSessionMessage();
+            lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
+            return lastSubAgentSessionMessage;
+        }
+        appendSessionMessage(assistantMessage);
+
+        if(parentAgentSessionStore != null){
+            lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId,this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null);
+
+        }
+        else{
+            lastSubAgentSessionMessage = new LastSessionMessage();
+            lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
+            return lastSubAgentSessionMessage;
+        }
+
+
+
+        return lastSubAgentSessionMessage;
     }
+    /**
+     * 添加子智能体结果消息
+     * @param message
+     * @param agentId
+     * @param parentAgentId
+     */
+    @Override
+    public LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId){
+
+        LastSessionMessage lastSessionMessage = null;
+        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
+//            loadSessionMemory(message,  agentId);
+            //msgId,createTime,sessionId,seqNo,message,role
+            mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,"1");
+            
+        }
+        else if(this.persistentSessionMemory){//主智能体直接持久化消息
+//            loadSessionMemory(message,  agentId);
+            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,"1");
+            
+
+        }
+        //msgId,createTime,sessionId,seqNo,message,role
+
+
+        appendSessionMessage(message);
+        
+        return lastSessionMessage;
+
+    }
+
+    @Override
+    public void addSessionMessage( Map<String, Object> systemMessage,String prompt,String agentId,String parentAgentId){
+
+        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
+            //msgId,createTime,sessionId,seqNo,message,role
+            mainAgentSessionStore.persistentSessionMessage(systemMessage, agentId,parentAgentId,"0");
+        }
+        else if(this.persistentSessionMemory){//主智能体直接持久化消息
+            persistentSessionMessage(systemMessage, agentId,parentAgentId,"0");//1 代表子智能体输出结果 0 代表子智能体中间消息
+        }
+//            SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
+//                    SimpleStringUtil.getUUID32(),new Date(),this.getSessionId(),agentId, integerCount.increament(), JsonUtil.object2json(systemMessage),
+//                    systemMessage.get("role"));
+
+        appendSessionMessage(systemMessage);
+    }
+ 
     @Override
     public Map<String, Object> addAssistantSessionMessage(String message){
         if(sessionMemory == null){
@@ -208,17 +284,44 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         addSessionMessage(assistantMessage);
         return assistantMessage;
     }
-    protected abstract boolean loadSessionMemory(Map<String, Object> userMessage);
-    protected abstract boolean loadSessionMemory(String prompt,String agentId);
+
+//    /**
+//     * 主agent初始化记忆消息，如果未加载记忆消息，则进行加载
+//     * @param userMessage
+//     * @return
+//     */
+//    protected abstract boolean loadSessionMemory(Map<String, Object> userMessage,String agentId);
+//    /**
+//     * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
+//     * @param prompt
+//     * @param agentId
+//     * @return
+//     */
+//    public abstract boolean loadSessionMemory(String prompt,String agentId);
+
+    protected LastSessionMessage lastSubAgentSessionMessage;
+    
 
     @Override
-    public Map<String,Object> getLastMessage(String prompt,String agentId){
+    public LastSessionMessage getLastSubAgentSessionMessage(String prompt, String agentId){
+//        this.loadSessionMemory(prompt,agentId);
+        if(lastSubAgentSessionMessage != null){
+            return lastSubAgentSessionMessage;
+        }
+        else{
+            return null;
+        }
+        /**
         if(this.loadSessionMemory(prompt,agentId))//如果是从历史数据中加载，则无需返回最近消息，否则需返回最新消息给子智能体
             return null;
         if(sessionMemory == null || sessionMemory.size() == 0){
             return null;
         }
-        return sessionMemory.get(sessionMemory.size() - 1);
+        LastSessionMessage lastSessionMessage = new LastSessionMessage();
+        lastSessionMessage.setLastSessionMessage(sessionMemory.get(sessionMemory.size() - 1));
+        lastSessionMessage.setFreshMessage(true);
+        return lastSessionMessage;
+         */
     }
     /**
      * 会话窗口大小，默认20
@@ -259,4 +362,28 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
         return (T) this;
     }
+
+    public AgentSessionStore getMainAgentSessionStore() {
+        return mainAgentSessionStore;
+    }
+
+    public T setMainAgentSessionStore(AgentSessionStore mainAgentSessionStore) {
+        this.mainAgentSessionStore = mainAgentSessionStore;
+        return (T) this;
+    }
+
+    public void setParantAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage){
+        if(this.parentAgentSessionStore != null){
+            parentAgentSessionStore.setSubAgentLastSessionMessage(lastSubAgentSessionMessage);
+        }
+        else {
+            this.lastSubAgentSessionMessage = lastSubAgentSessionMessage;
+        }
+    }
+    
+    public void setSubAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage){
+        this.lastSubAgentSessionMessage = lastSubAgentSessionMessage;
+        //todo 如果当前子智能体所属的父智能体是父智能体对应的上级智能体的的最后一个子智能体，那么需要级联设置
+    }
+    
 }

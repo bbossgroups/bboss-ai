@@ -40,14 +40,20 @@ public class AIAgent {
     private int sessionSize;
     private ToolsRegist toolsRegist;
     private AgentSessionStore agentSessionStore;
+
+    private AgentSessionStore parentSessionStore;
     private String agentId;
     public AIAgent(){
         this(null);
     }
-
-    public AIAgent setAgentSessionStore(AgentSessionStore agentSessionStore) {
-        this.agentSessionStore = agentSessionStore;
+    
+    public AIAgent setParentSessionStore(AgentSessionStore parentSessionStore) {
+        this.parentSessionStore = parentSessionStore;
         return this;
+    }
+
+    public AgentSessionStore getParentSessionStore() {
+        return parentSessionStore;
     }
 
     public AgentSessionStore getAgentSessionStore() {
@@ -105,19 +111,31 @@ public class AIAgent {
             SessionAgentMessage sessionAgentMessage = (SessionAgentMessage)agentMessage;
             AgentSessionStore mainSessionStore = sessionAgentMessage.getMainSessionStore();
             if(mainSessionStore != null) {
+                mainSessionStore.loadSessionMemory(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
                 if(agentSessionStore == null){
-                    agentSessionStore = new AgentSessionStoreMemory(mainSessionStore,sessionSize);
+                    if(parentSessionStore != null)
+                        agentSessionStore = new AgentSessionStoreMemory(parentSessionStore,sessionSize);
+                    else
+                        agentSessionStore = new AgentSessionStoreMemory(mainSessionStore,sessionSize);
                     agentSessionStore.setAgentId(agentId);
+                    agentSessionStore.setMainAgentSessionStore(mainSessionStore);
                 }
                 List<Map<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
                 boolean empty = sessionMemory.isEmpty();
                 sessionAgentMessage.setSessionStore(agentSessionStore);
                 mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
                 //需要将父智能体中产生的最新的消息作为当前智能体的执行上下文
-                Map<String, Object> lastNewMessage = mainSessionStore.getLastMessage(prompt == null?agentMessage.getPrompt():prompt,agentId);
+                LastSessionMessage lastSubAgentSessionMessage = null;
+                if(parentSessionStore != null) {
+                    lastSubAgentSessionMessage = parentSessionStore.getLastSubAgentSessionMessage(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
+                }
+                else{
+                    lastSubAgentSessionMessage = mainSessionStore.getLastSubAgentSessionMessage(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
+                }
                 
                 if(empty) {
-                    List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastNewMessage, agentId, sessionSize);
+                    //加载历史消息
+                    List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
                     if (sessionMessages != null && sessionMessages.size() > 0) {
                         for (Map<String, Object> sessionMessage : sessionMessages) {
                             agentSessionStore.appendSessionMessageFromParent(sessionMessage);
@@ -126,8 +144,10 @@ public class AIAgent {
 
                     }
                 }
-                else if(lastNewMessage != null){//不为空，直接append主智能体中的最后一条消息
-                    agentSessionStore.appendSessionMessageFromParent(lastNewMessage);
+                else if(lastSubAgentSessionMessage != null){//不为空，直接append主智能体中的最后一条消息
+                    agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
+                    mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
+                    //记录消息引用关系
                 }
                 
                  
@@ -313,11 +333,12 @@ public class AIAgent {
         ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
         if(serverEvent != null && serverEvent.getData() != null){
 //            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
-            if(this.agentSessionStore != null)
-                this.agentSessionStore.addAgentResultSessionMessage(serverEvent.getData());
-            else{
-                chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
+            if(this.agentSessionStore != null) {
+                LastSessionMessage lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(serverEvent.getData());
+                this.agentSessionStore.setParantAgentLastSessionMessage(lastSubAgentSessionMessage);
             }
+            
+            
         }
         return serverEvent;
 //        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);

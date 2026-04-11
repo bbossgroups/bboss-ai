@@ -47,9 +47,9 @@ public class StreamTest {
 		HttpRequestProxy.startHttpPools("mcpserver.properties");
 
 //        multiagent("qwenvlplus","qwen3.6-plus");
-//        multiagent("zhipu","glm-5");
-//        multiagentWeathor("zhipu","glm-5",null);
-        multiagentWeathor("zhipu","glm-5","1021bcca95fe4393bd4726f7b667a75a");
+//        multiagent("zhipu","glm-5.1");
+//        multiagentWeathor("zhipu","glm-5.1",null);
+        multiagentWeathor("zhipu","glm-5.1","1021bcca95fe4393bd4726f7b667a75a");
         
         
     }
@@ -107,9 +107,10 @@ public class StreamTest {
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setSystemPrompt("你是一个天气分析和文档创建助手")
                 .setStoreContext(new StoreContext()
+                        .setSessionId(sessionId)
                         .setSessionMemory(new ArrayList<>()).setSessionSize(10)
-                        .setStoreType(StoreContext.STORE_TYPE_DB)
 //                        .setStoreType(StoreContext.STORE_TYPE_MEMORY)
+                        .setStoreType(StoreContext.STORE_TYPE_DB)
                         .setDataSource("visualops")//.setSessionId(sessionId == null?SimpleStringUtil.getUUID32():sessionId).setUserId("admin")
                 )
                 .setModel(model)
