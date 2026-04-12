@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.adapter;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
@@ -39,7 +40,7 @@ public class SiliconflowAgentAdapter extends QwenAgentAdapter{
     }
 
     @Override
-    protected void filterParameters(AgentMessage agentMessage, Map<String, Object> requestMap, Map<String, Object> parameters) {
+    protected void filterParameters(AgentMessage agentMessage, AIAgent aiAgent,Map<String, Object> requestMap, Map<String, Object> parameters) {
         if(SimpleStringUtil.isEmpty( parameters)){
             if( agentMessage.getStream() != null){
                 requestMap.put("stream", agentMessage.getStream());
@@ -71,7 +72,7 @@ public class SiliconflowAgentAdapter extends QwenAgentAdapter{
             }
         }
 
-        buildTools(  agentMessage, requestMap);
+        buildTools( aiAgent , requestMap);
     }
   
 

@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
@@ -25,6 +26,8 @@ import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,9 +39,21 @@ import java.util.Map;
 public class AIAgent {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(AIAgent.class);
     private String prompt;
+    private String systemPrompt;
     private String type;
     private int sessionSize;
+
+    /**
+     * 工具清单，标准工具规范格式
+     */
+    private List<FunctionToolDefine> tools;
+
+    @JsonIgnore
+    private Map<String,FunctionCall> toolCalls;
+
+    @JsonIgnore
     private ToolsRegist toolsRegist;
+    
     private AgentSessionStore agentSessionStore;
 
     private AgentSessionStore parentSessionStore;
@@ -46,7 +61,20 @@ public class AIAgent {
     public AIAgent(){
         this(null);
     }
-    
+
+    public String getPrompt() {
+        return prompt;
+    }
+
+    public String getSystemPrompt() {
+        return systemPrompt;
+    }
+
+    public AIAgent setSystemPrompt(String systemPrompt) {
+        this.systemPrompt = systemPrompt;
+        return this;
+    }
+
     public AIAgent setParentSessionStore(AgentSessionStore parentSessionStore) {
         this.parentSessionStore = parentSessionStore;
         return this;
@@ -64,7 +92,7 @@ public class AIAgent {
         this.prompt = prompt;
         this.type = type;
         this.toolsRegist = toolsRegist;
-        this.agentId = SimpleStringUtil.getUUID32();
+//        this.agentId = SimpleStringUtil.getUUID32();
         if(sessionSize != null ){
             this.sessionSize = sessionSize;
         }
@@ -101,16 +129,24 @@ public class AIAgent {
     }
     
     private void reactMessage(AgentMessage agentMessage){
-        if(prompt != null)
-            agentMessage.setPrompt(prompt);
-        if(toolsRegist != null)
-            agentMessage.setToolsRegist(toolsRegist);
+//        if(prompt != null)
+//            agentMessage.setPrompt(prompt);
+//        if(toolsRegist != null)
+//            agentMessage.setToolsRegist(toolsRegist);
          
     
         if(agentMessage instanceof SessionAgentMessage) {
             SessionAgentMessage sessionAgentMessage = (SessionAgentMessage)agentMessage;
             AgentSessionStore mainSessionStore = sessionAgentMessage.getMainSessionStore();
             if(mainSessionStore != null) {
+                if(agentId == null){
+                    if(parentSessionStore != null){
+                        agentId = parentSessionStore.genSubAgentId();
+                    }
+                    else{
+                        agentId = mainSessionStore.genSubAgentId();
+                    }
+                }
                 mainSessionStore.loadSessionMemory(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
                 if(agentSessionStore == null){
                     if(parentSessionStore != null)
@@ -122,7 +158,7 @@ public class AIAgent {
                 }
                 List<Map<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
                 boolean empty = sessionMemory.isEmpty();
-                sessionAgentMessage.setSessionStore(agentSessionStore);
+//                sessionAgentMessage.setSessionStore(agentSessionStore);
                 mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
                 //需要将父智能体中产生的最新的消息作为当前智能体的执行上下文
                 LastSessionMessage lastSubAgentSessionMessage = null;
@@ -163,11 +199,11 @@ public class AIAgent {
      */
     public ImageEvent genImage(String maasName, ImageAgentMessage imageAgentMessage){
         reactMessage(  imageAgentMessage);
-        return AIAgentUtil.multimodalImageGeneration(maasName, imageAgentMessage);
+        return AIAgentUtil.multimodalImageGeneration(maasName, imageAgentMessage,this);
     }
     public ImageEvent genImage( ImageAgentMessage imageAgentMessage){
         reactMessage(  imageAgentMessage);
-        return AIAgentUtil.multimodalImageGeneration(imageAgentMessage.getMaas(), imageAgentMessage);
+        return AIAgentUtil.multimodalImageGeneration(imageAgentMessage.getMaas(), imageAgentMessage,this);
     }
 
     /**
@@ -178,11 +214,11 @@ public class AIAgent {
      */
     public VideoTask submitVideoTask(String maasName,VideoAgentMessage videoAgentMessage){
         reactMessage(  videoAgentMessage);
-        return AIAgentUtil.submitVideoTask(maasName,videoAgentMessage);
+        return AIAgentUtil.submitVideoTask(maasName,videoAgentMessage,this);
     }
     public VideoTask submitVideoTask(VideoAgentMessage videoAgentMessage){
         reactMessage(  videoAgentMessage);
-        return AIAgentUtil.submitVideoTask(videoAgentMessage.getMaas(),videoAgentMessage);
+        return AIAgentUtil.submitVideoTask(videoAgentMessage.getMaas(),videoAgentMessage,this);
     }
 
     public VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage){
@@ -199,7 +235,7 @@ public class AIAgent {
      */
     public AudioEvent genAudio(  AudioAgentMessage audioAgentMessage){
         reactMessage(  audioAgentMessage);
-        return AIAgentUtil.multimodalAudioGeneration( audioAgentMessage.getMaas(),audioAgentMessage);
+        return AIAgentUtil.multimodalAudioGeneration( audioAgentMessage.getMaas(),audioAgentMessage,this);
     }
 
     /**
@@ -209,7 +245,7 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamAudioGen(AudioAgentMessage audioAgentMessage){
         reactMessage(  audioAgentMessage);
-        return AIAgentUtil.streamAudioGenerationEvent(audioAgentMessage.getMaas(),audioAgentMessage);
+        return AIAgentUtil.streamAudioGenerationEvent(audioAgentMessage.getMaas(),audioAgentMessage,this);
     }
 
     /**
@@ -220,7 +256,7 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamAudioGen(String maasName,  AudioAgentMessage audioAgentMessage){
         reactMessage(  audioAgentMessage);
-        return AIAgentUtil.streamAudioGenerationEvent(maasName,audioAgentMessage);
+        return AIAgentUtil.streamAudioGenerationEvent(maasName,audioAgentMessage,this);
     }
     /**
      * 调用音频合成模型，生成音频
@@ -230,7 +266,7 @@ public class AIAgent {
      */
     public AudioEvent genAudio(String maasName,   AudioAgentMessage audioAgentMessage){
         reactMessage(  audioAgentMessage);
-        return AIAgentUtil.multimodalAudioGeneration(maasName, audioAgentMessage);
+        return AIAgentUtil.multimodalAudioGeneration(maasName, audioAgentMessage,this);
     }
 
     /**
@@ -241,9 +277,9 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamAudioParser(String maasName,  AudioSTTAgentMessage audioSTTAgentMessage){
         reactMessage(  audioSTTAgentMessage);
-        audioSTTAgentMessage.init();
+//        audioSTTAgentMessage.init();
 
-        return AIAgentUtil.streamChatCompletionEvent(maasName, audioSTTAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(maasName, audioSTTAgentMessage,this);
     }
     /**
      * 实现流式图片识别处理
@@ -253,9 +289,9 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamImageParser(String maasName,   ImageVLAgentMessage imageVLAgentMessage){
         reactMessage(  imageVLAgentMessage);
-        imageVLAgentMessage.init();
+//        imageVLAgentMessage.init();
    
-        return AIAgentUtil.streamChatCompletionEvent(maasName, imageVLAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(maasName, imageVLAgentMessage,this);
     }
     /**
      * 实现流式图片识别处理
@@ -264,7 +300,7 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamVideoParser(   VideoVLAgentMessage videoVLAgentMessage){
         reactMessage(  videoVLAgentMessage);
-        return AIAgentUtil.streamChatCompletionEvent(videoVLAgentMessage.getMaas(), videoVLAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(videoVLAgentMessage.getMaas(), videoVLAgentMessage,this);
     }
     
     /**
@@ -276,9 +312,9 @@ public class AIAgent {
     public Flux<ServerEvent> streamVideoParser(String maasName,   VideoVLAgentMessage videoVLAgentMessage){
         reactMessage(  videoVLAgentMessage);
 
-        videoVLAgentMessage.init();
+//        videoVLAgentMessage.init();
 
-        return AIAgentUtil.streamChatCompletionEvent(maasName, videoVLAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(maasName, videoVLAgentMessage,this);
     }
     /**
      * 实现流式图片识别处理
@@ -287,7 +323,7 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamImageParser(   ImageVLAgentMessage imageVLAgentMessage){
         reactMessage(  imageVLAgentMessage);
-        return AIAgentUtil.streamChatCompletionEvent(imageVLAgentMessage.getMaas(), imageVLAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(imageVLAgentMessage.getMaas(), imageVLAgentMessage,this);
     }
     /**
      * 实现流式智能问答功能,在指定的数据源上执行
@@ -302,9 +338,9 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage,boolean toolStream){
         reactMessage(  chatAgentMessage);
-        chatAgentMessage.init();
+//        chatAgentMessage.init();
 
-        return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this);
     }
 
     /**
@@ -312,7 +348,7 @@ public class AIAgent {
      */
     public Flux<ServerEvent> streamChat( ChatAgentMessage chatAgentMessage){
         reactMessage(  chatAgentMessage);
-        return AIAgentUtil.streamChatCompletionEvent(chatAgentMessage.getMaas(), chatAgentMessage);
+        return AIAgentUtil.streamChatCompletionEvent(chatAgentMessage.getMaas(), chatAgentMessage,this);
     }
 
     /**
@@ -322,7 +358,7 @@ public class AIAgent {
     @Deprecated
     public ServerEvent chatCompletionEvent(String maasName,  ChatAgentMessage chatAgentMessage){
         reactMessage(  chatAgentMessage);
-        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
+        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this);
     }
 
     /**
@@ -330,7 +366,7 @@ public class AIAgent {
      */
     public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage){
         reactMessage(  chatAgentMessage);
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this);
         if(serverEvent != null && serverEvent.getData() != null){
 //            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
             if(this.agentSessionStore != null) {
@@ -369,7 +405,7 @@ public class AIAgent {
      */
     public ServerEvent imageParser(  ImageVLAgentMessage imageVLAgentMessage){
         reactMessage( imageVLAgentMessage);
-        return AIAgentUtil.imageParser(imageVLAgentMessage.getMaas(), imageVLAgentMessage);
+        return AIAgentUtil.imageParser(imageVLAgentMessage.getMaas(), imageVLAgentMessage,this);
     }
 
     /**
@@ -380,7 +416,7 @@ public class AIAgent {
      */
     public ServerEvent imageParser(String maasName,  ImageVLAgentMessage imageVLAgentMessage){
         reactMessage( imageVLAgentMessage);
-        return AIAgentUtil.imageParser(maasName, imageVLAgentMessage);
+        return AIAgentUtil.imageParser(maasName, imageVLAgentMessage,this);
     }
     /**
      * 实现同步音频识别处理
@@ -390,7 +426,7 @@ public class AIAgent {
      */
     public ServerEvent audioParser(String maasName, AudioSTTAgentMessage audioSTTAgentMessage){
         reactMessage( audioSTTAgentMessage);
-        return AIAgentUtil.audioParser(maasName,audioSTTAgentMessage);
+        return AIAgentUtil.audioParser(maasName,audioSTTAgentMessage,this);
     }
     /**
      * 实现同步音频识别处理
@@ -399,7 +435,7 @@ public class AIAgent {
      */
     public ServerEvent videoParser( VideoVLAgentMessage videoVLAgentMessage){
         reactMessage( videoVLAgentMessage);
-        return AIAgentUtil.videoParser(videoVLAgentMessage.getMaas(),videoVLAgentMessage);
+        return AIAgentUtil.videoParser(videoVLAgentMessage.getMaas(),videoVLAgentMessage,this);
     }
     /**
      * 实现同步音频识别处理
@@ -409,10 +445,170 @@ public class AIAgent {
      */
     public ServerEvent videoParser(String maasName, VideoVLAgentMessage videoVLAgentMessage){
         reactMessage( videoVLAgentMessage);
-        return AIAgentUtil.videoParser(maasName,videoVLAgentMessage);
+        return AIAgentUtil.videoParser(maasName,videoVLAgentMessage,this);
     }
-    
 
 
+    public String getAgentId() {
+        return this.agentId != null ? this.agentId : this.agentSessionStore.getAgentId();
+    }
+
+    public String getParentAgentId() {
+        
+        return this.agentSessionStore.getParantAgentId();
+    }
+
+    public List<Map<String, Object>> getSessionMemory() {
+        
+        return this.agentSessionStore.getSessionMemory();
+    }
+
+
+    public List<FunctionToolDefine> getTools() {
+        return tools;
+    }
+
+    public AIAgent setTools(List<FunctionToolDefine> tools) {
+        reset();
+        this.tools = tools;
+        return this;
+    }
+
+    public AIAgent registTools(List<FunctionToolDefine> tools) {
+        reset();
+        if(this.tools == null){
+            this.tools = new ArrayList<>();
+        }
+        this.tools.addAll( tools);
+        return this;
+    }
+    private boolean toolInited = false;
+    private Object initLock = new Object();
+    public void init(){
+        if(toolInited)
+            return;
+        synchronized (initLock) {
+            if(toolInited ){
+                return;
+            }
+            if (this.toolsRegist != null) {
+                toolsRegist.init();
+                List<FunctionToolDefine> functionToolDefines = this.toolsRegist.registTools();
+                if (functionToolDefines != null && functionToolDefines.size() > 0) {
+                    FunctionCall functionCall = null;
+                    for (FunctionToolDefine functionToolDefine : functionToolDefines) {
+                        functionCall = functionToolDefine.getFunctionCall();
+                        if (functionCall == null) {
+                            functionCall = toolsRegist.getFunctionCall(functionToolDefine.getFunction().getName());
+                            if (functionCall != null) {
+                                functionToolDefine.setFunctionCall(functionCall);
+                            }
+                        }
+                    }
+                    this.registTools(functionToolDefines);
+                }
+            }
+
+            if (this.toolCalls != null && toolCalls.size() > 0) {
+                for (Map.Entry<String, FunctionCall> entry : toolCalls.entrySet()) {
+                    FunctionCall functionCall = entry.getValue();
+                    String toolName = entry.getKey();
+                    if (tools != null && tools.size() > 0) {
+                        for (FunctionToolDefine functionToolDefine : tools) {
+                            if (functionToolDefine.getFunction().getName().equals(toolName)) {
+                                functionToolDefine.setFunctionCall(functionCall);
+                                break;
+                            }
+                        }
+                    }
+
+                }
+            }
+            if (tools != null && tools.size() > 0) {
+
+                for (FunctionToolDefine functionToolDefine : tools) {
+                    FunctionCall functionCall = functionToolDefine.getFunctionCall();
+                    if (functionCall != null) {
+                        String toolName = functionToolDefine.getFunction().getName();
+                        if (toolCalls == null) {
+                            toolCalls = new LinkedHashMap<>();
+                        }
+                        if (!toolCalls.containsKey(toolName))
+                            toolCalls.put(toolName, functionCall);
+                    }
+
+                }
+            }
+            toolInited = true;
+        }
+    }
+
+//    public boolean isToolThinkingMessage(){
+//        init();
+//        return this.tools != null && tools.size() > 0 ;
+//    }
+
+    public FunctionCall getFunctionCall(String toolName){
+        init();
+        if(toolCalls == null)
+            return null;
+        return toolCalls.get(toolName);
+    }
+
+    public AIAgent setToolsRegist(ToolsRegist toolsRegist) {
+        reset();
+        this.toolsRegist = toolsRegist;
+        return this;
+    }
+    public void destroy(){
+        reset();
+
+    }
+    private void reset(){
+        if(toolInited) {
+            synchronized (initLock) {
+                if (!toolInited){
+                    return;
+                }
+                if (this.tools != null) {
+                    tools.clear();
+                }
+                if (toolsRegist != null) {
+                    toolsRegist.destroy();
+                    toolsRegist = null;
+                }
+                if (this.toolCalls != null) {
+                    toolCalls.clear();
+                }
+                toolInited = false;
+            }
+        }
+    }
+    public AIAgent registTool(FunctionToolDefine functionToolDefine) {
+        reset();
+        if (this.tools == null) {
+            tools = new ArrayList<>();
+        }
+        tools.add(functionToolDefine);
+
+        return this;
+    }
+
+    public AIAgent registToolCalls(Map<String,FunctionCall> toolCalls) {
+        reset();
+        if(this.toolCalls == null){
+            toolCalls = new LinkedHashMap<>();
+        }
+        this.toolCalls.putAll(toolCalls);
+        return this;
+    }
+    public AIAgent registToolCall(String toolName,FunctionCall functionCall) {
+        reset();
+        if(this.toolCalls == null){
+            toolCalls = new LinkedHashMap<>();
+        }
+        this.toolCalls.put(toolName, functionCall);
+        return this;
+    }
 
 }

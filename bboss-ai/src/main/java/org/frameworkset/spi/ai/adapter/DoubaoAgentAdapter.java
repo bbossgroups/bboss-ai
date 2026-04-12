@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.adapter;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -50,12 +51,12 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
     }
 
     @Override
-    public Map buildGenImageRequestMap(ImageAgentMessage imageAgentMessage) {
+    public Map buildGenImageRequestMap(ImageAgentMessage imageAgentMessage, AIAgent aiAgent) {
 
         Map<String, Object> requestMap = new HashMap<>();
 
         requestMap.put("model", imageAgentMessage.getModel());
-        requestMap.put("prompt", imageAgentMessage.getPrompt());
+        requestMap.put("prompt", getPrompt(  imageAgentMessage,   aiAgent));
         List<String> imageUrls = imageAgentMessage.getImageUrls();
         if(imageUrls != null && imageUrls.size() > 0) {
             if(imageUrls.size() == 1){
@@ -159,11 +160,11 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
     }
 
     @Override
-    protected Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage, ClientConfiguration clientConfiguration) {
+    protected Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage, ClientConfiguration clientConfiguration,AIAgent aiAgent) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoAgentMessage.getModel());
 
-        MessageBuilder.buildGenVideoMessage(requestMap,videoAgentMessage);
+        MessageBuilder.buildGenVideoMessage(requestMap,videoAgentMessage,aiAgent);
         
         Map<String,Object> parameters = videoAgentMessage.getParameters();
         if(parameters != null){

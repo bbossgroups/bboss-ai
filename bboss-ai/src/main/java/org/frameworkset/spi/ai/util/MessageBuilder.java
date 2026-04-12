@@ -15,10 +15,8 @@ package org.frameworkset.spi.ai.util;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.model.ImageAgentMessage;
-import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.model.StreamData;
-import org.frameworkset.spi.ai.model.VideoAgentMessage;
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +77,14 @@ public class MessageBuilder {
         return userMessage;
     }
 
-    public static void buildZhipuGenVideoMessage(Map<String, Object> requestMap, VideoAgentMessage videoAgentMessage){
-        requestMap.put("prompt",videoAgentMessage.getPrompt());
+    public static  String getSystemPrompt(AgentMessage agentMessage, AIAgent aiAgent){
+        return aiAgent.getSystemPrompt() != null ? aiAgent.getSystemPrompt():agentMessage.getSystemPrompt();
+    }
+    public static  String getPrompt(AgentMessage agentMessage, AIAgent aiAgent){
+        return aiAgent.getPrompt() != null ? aiAgent.getPrompt():agentMessage.getPrompt();
+    }
+    public static void buildZhipuGenVideoMessage(Map<String, Object> requestMap, VideoAgentMessage videoAgentMessage, AIAgent aiAgent){
+        requestMap.put("prompt", getPrompt(  videoAgentMessage,   aiAgent));
 
         List contents = new ArrayList<>();
         Map contentData = null;
@@ -96,12 +100,12 @@ public class MessageBuilder {
 
         }       
     }
-    public static void buildGenVideoMessage(Map<String, Object> requestMap, VideoAgentMessage videoAgentMessage){
+    public static void buildGenVideoMessage(Map<String, Object> requestMap, VideoAgentMessage videoAgentMessage,AIAgent aiAgent){
         
 
         List contents = new ArrayList<>();
         Map contentData = new LinkedHashMap();
-        contentData.put("text", videoAgentMessage.getPrompt());
+        contentData.put("text", getPrompt(  videoAgentMessage,   aiAgent));
         contentData.put("type", "text");
         contents.add(contentData);
 
@@ -149,13 +153,13 @@ public class MessageBuilder {
         return userMessage;
     }
 
-    public static Map<String,Object> buildGenImageMessage(ImageAgentMessage imageAgentMessage){
+    public static Map<String,Object> buildGenImageMessage(ImageAgentMessage imageAgentMessage,AIAgent aiAgent){
         Map<String, Object> userMessage = new LinkedHashMap<>();
         userMessage.put("role",ROLE_USER);
 
         List contents = new ArrayList<>();
         Map contentData = new LinkedHashMap();
-        contentData.put("text", imageAgentMessage.getPrompt());
+        contentData.put("text", getPrompt(  imageAgentMessage,   aiAgent));
         
         
 

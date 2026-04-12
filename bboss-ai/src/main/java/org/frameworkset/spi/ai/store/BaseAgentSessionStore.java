@@ -34,6 +34,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
      * 在内存中持久化用户消息
      */
     protected boolean persistentSessionMemory;
+    
+    protected AgentIdAssign agentIdAssign = new AgentIdAssign();
     /**
      * 用户会话id
      */
@@ -59,6 +61,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     public BaseAgentSessionStore(List<Map<String, Object>> sessionMemory){
         this.sessionMemory = sessionMemory;
 
+    }
+    
+    public String genSubAgentId(){
+        return this.agentId + "-"+agentIdAssign.getAgentId();
     }
 
     public T setSessionMemory(List<Map<String, Object>> sessionMemory) {
@@ -95,10 +101,14 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     }
 
     public BaseAgentSessionStore(StoreContext storeContext){
+        this.persistentSessionMemory = true;
         this.storeContext = storeContext;
         this.sessionId = storeContext.getSessionId();   
         this.userId = storeContext.getUserId();
         this.agentId = storeContext.getAgentId();
+        if(agentId == null){
+            this.agentId = "agentId-0";
+        }
         this.sessionMemory = storeContext.getSessionMemory();
         this.sessionSize = storeContext.getSessionSize();
         if(sessionMemory == null){
@@ -134,6 +144,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     public String getParantAgentId(){
         if(parentAgentSessionStore != null)
             return parentAgentSessionStore.getAgentId();
+        else if(mainAgentSessionStore != null){
+            return mainAgentSessionStore.getAgentId();
+        }
         return null;
     }
 
@@ -173,10 +186,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         }
         appendSessionMessage(message);
         if(mainAgentSessionStore != null){
-            mainAgentSessionStore.persistentSessionMessage(message, agentId,this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null,"0");
+            mainAgentSessionStore.persistentSessionMessage(message, agentId,this.getParantAgentId(),"0");
         }
         else if(this.persistentSessionMemory){
-            persistentSessionMessage(message, agentId,this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null,"0");
+            persistentSessionMessage(message, agentId,this.getParantAgentId(),"0");
         }
          
     }
@@ -193,7 +206,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         appendSessionMessage(assistantMessage);
 
         if(parentAgentSessionStore != null){
-            lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId,this.parentAgentSessionStore != null?this.parentAgentSessionStore.getAgentId():null);
+            lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId,this.getParantAgentId());
 
         }
         else{

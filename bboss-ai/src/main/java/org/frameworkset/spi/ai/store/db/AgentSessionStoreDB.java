@@ -69,12 +69,10 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     
     public AgentSessionStoreDB(StoreContext storeContext) {
         super(storeContext);
-        persistentSessionMemory = true;
         this.dataSource = storeContext.getDataSource();
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         agentSessionStoreDBConfig.setSessionTableName(storeContext.getSessionTableName());
         agentSessionStoreDBConfig.setSessionMessageTableName(storeContext.getSessionMessageTableName());
-        init();
         
     }
  
@@ -222,14 +220,19 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                     parentAgentId, agentId,agentResultMessage,integerCount.increament(), JsonUtil.object2json(message),
                     message.get("role"));
 
-            LastSessionMessage lastSessionMessage = new LastSessionMessage();
-            lastSessionMessage.setMsgId(msgId);
-            lastSessionMessage.setLastSessionMessage(message);
-            lastSessionMessage.setFreshMessage(true);
-            lastSessionMessage.setSessionId(getSessionId());
-            lastSessionMessage.setMsgAgentId(agentId);
-            lastSessionMessage.setMsgParentAgentId(parentAgentId);
-            return lastSessionMessage;
+            if(agentResultMessage != null && agentResultMessage.equals("1")) {
+                LastSessionMessage lastSessionMessage = new LastSessionMessage();
+                lastSessionMessage.setMsgId(msgId);
+                lastSessionMessage.setLastSessionMessage(message);
+                lastSessionMessage.setFreshMessage(true);
+                lastSessionMessage.setSessionId(getSessionId());
+                lastSessionMessage.setMsgAgentId(agentId);
+                lastSessionMessage.setMsgParentAgentId(parentAgentId);
+                return lastSessionMessage;
+            }
+            else{
+                return null;
+            }
         } catch (SQLException e) {
             throw new AIRuntimeException("add session message error",e);
         }

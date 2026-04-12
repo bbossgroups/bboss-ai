@@ -35,6 +35,11 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
     private static Map<String,AgentSession> agentSessions = new ConcurrentHashMap();
     protected IntegerCount integerCount = new IntegerCount();
 
+    /**
+     * 为统一流程中的智能体分配一个唯一的智能体ID
+     */
+    protected IntegerCount agentIdCount = new IntegerCount();
+
     public AgentSessionStoreMemory(List<Map<String, Object>> sessionMemory) {
         super(sessionMemory);
     }
@@ -43,12 +48,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         super(sessionMemory, sessionSize);
     }
 
-    public AgentSessionStoreMemory(boolean persistentSessionMemory,List<Map<String, Object>> sessionMemory, int sessionSize) {
-        super(sessionMemory, sessionSize);
-        this.persistentSessionMemory = persistentSessionMemory;
-        if(persistentSessionMemory)
-            init();
-    }
+     
 
     public AgentSessionStoreMemory(int sessionSize) {
         super(sessionSize);
@@ -69,6 +69,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 
     public AgentSessionStoreMemory(StoreContext storeContext) {
         super(storeContext);
+        
     }
 
   
@@ -173,17 +174,24 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setCreateTime(new java.util.Date());
         sessionMessage.setSessionId(this.getSessionId());
         sessionMessage.setAgentId(agentId);
+        sessionMessage.setParentAgentId(parentAgentId);
+        sessionMessage.setAgentResultMessage(agentResultMessage);
         sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
         agentSession.addSessionMessage(sessionMessage);
 
-        LastSessionMessage lastSessionMessage = new LastSessionMessage();
-        lastSessionMessage.setMsgId(sessionMessage.getMsgId());
-        lastSessionMessage.setLastSessionMessage(message);
-        lastSessionMessage.setFreshMessage(true);
-        lastSessionMessage.setSessionId(getSessionId());
-        lastSessionMessage.setMsgAgentId(agentId);
-        lastSessionMessage.setMsgParentAgentId(parentAgentId);
-        return lastSessionMessage;
+        if(agentResultMessage != null && agentResultMessage.equals("1")) {
+            LastSessionMessage lastSessionMessage = new LastSessionMessage();
+            lastSessionMessage.setMsgId(sessionMessage.getMsgId());
+            lastSessionMessage.setLastSessionMessage(message);
+            lastSessionMessage.setFreshMessage(true);
+            lastSessionMessage.setSessionId(getSessionId());
+            lastSessionMessage.setMsgAgentId(agentId);
+            lastSessionMessage.setMsgParentAgentId(parentAgentId);
+            return lastSessionMessage;
+        }
+        else{
+            return null;
+        }
             //msgId,createTime,sessionId,seqNo,message,role
 //            SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
 //                    SimpleStringUtil.getUUID32(),new Date(),this.getSessionId(), agentId,integerCount.increament(), JsonUtil.object2json(message),

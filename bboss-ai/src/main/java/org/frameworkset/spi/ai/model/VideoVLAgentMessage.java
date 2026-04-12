@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
@@ -36,7 +37,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
     
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -45,7 +46,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
 
-        parameters = agentAdapter.buildVideoVLRequestMap(this);
+        parameters = agentAdapter.buildVideoVLRequestMap(this,aiAgent);
         setVideoVLCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(this));
         stream = (Boolean)parameters.get("stream");
         aiChatRequestType = agentAdapter.getAIVideoParserRequestType();
@@ -86,6 +87,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         chatObject.setCompletionsUrl(this.getVideoVLCompletionsUrl());
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
+        chatObject.setAiAgent(aiAgent);
         return chatObject;
     }
 

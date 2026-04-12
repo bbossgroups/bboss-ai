@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
@@ -30,8 +31,8 @@ import java.util.Map;
 public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
  
     private String chatCompletionsUrl;
-    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter){
-        Map parameters = agentAdapter.buildOpenAIRequestMap(this);
+    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent){
+        Map parameters = agentAdapter.buildOpenAIRequestMap(this,   aiAgent);
         return parameters;
     }
 
@@ -44,7 +45,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
             thinking = _thinking;
         chatObject.setThinking(thinking);
     }
-    public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter){
+    public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent){
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -54,7 +55,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
         
-        parameters = buildOpenAIRequestMap(agentAdapter);
+        parameters = buildOpenAIRequestMap(agentAdapter,   aiAgent);
         buildThinking(  chatObject,  agentAdapter,   parameters);
         this.setChatCompletionsUrl(agentAdapter.getChatCompletionsUrl(this));
         stream = (Boolean)parameters.get("stream");
@@ -100,6 +101,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         chatObject.setCompletionsUrl(this.getChatCompletionsUrl());
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
+        chatObject.setAiAgent(aiAgent);
         return chatObject;
     }
 

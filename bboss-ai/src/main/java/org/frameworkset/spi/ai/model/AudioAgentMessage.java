@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
@@ -60,7 +61,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
     }
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -68,7 +69,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         String aiChatRequestType = null;
         StreamDataBuilder streamDataBuilder = null;
         Object agentMessage = null;       
-        parameters = agentAdapter._buildGenAudioRequestMap(this,clientConfiguration);
+        parameters = agentAdapter._buildGenAudioRequestMap(this,clientConfiguration,aiAgent);
         stream = (Boolean)parameters.get("stream");
         aiChatRequestType = agentAdapter.getAIChatRequestType();
         agentMessage = parameters;
@@ -115,6 +116,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         chatObject.setStream(stream);
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
+        chatObject.setAiAgent(aiAgent);
         return chatObject;
     }
 }

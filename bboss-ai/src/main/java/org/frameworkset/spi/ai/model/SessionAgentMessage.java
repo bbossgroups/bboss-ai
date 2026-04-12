@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
@@ -29,7 +30,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     
     
     /** 使用静态变量存储会话记忆（实际项目中建议使用缓存或数据库）*/
-    private AgentSessionStore sessionStore;
+//    private AgentSessionStore sessionStore;
     private AgentSessionStore mainSessionStore;
     private StoreContext storeContext;
     private AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
@@ -41,19 +42,19 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
 
     public T setSessionMemory(List<Map<String,Object>> session) {
 
-        if(sessionStore == null) {
+        if(mainSessionStore == null) {
             storeContext = new StoreContext();
             storeContext.setSessionMemory(session);
-            sessionStore = this.agentSessionStoreBuilder.build(storeContext);
-            mainSessionStore = sessionStore;
+            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+//            mainSessionStore = sessionStore;
         }
-        else if(sessionStore instanceof AgentSessionStoreMemory){
-            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)sessionStore;
+        else if(mainSessionStore instanceof AgentSessionStoreMemory){
+            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)mainSessionStore;
             if(agentSessionStoreMemory.getSessionMemory() != null){
                 throw new AIRuntimeException("Session memory already exists");
             }
             agentSessionStoreMemory.setSessionMemory(session);
-            mainSessionStore = sessionStore;
+//            mainSessionStore = sessionStore;
             
         }
         return (T)this;
@@ -61,21 +62,21 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     
     
     public T setSessionMemory(List<Map<String,Object>> session,int sessionSize) {
-        if(sessionStore == null) {
+        if(mainSessionStore == null) {
             storeContext = new StoreContext();
             storeContext.setSessionSize(sessionSize);
             storeContext.setSessionMemory(session);
-            sessionStore = this.agentSessionStoreBuilder.build(storeContext);
-            mainSessionStore = sessionStore;
+            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+//            mainSessionStore = sessionStore;
         }
-        else if(sessionStore instanceof AgentSessionStoreMemory){
-            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)sessionStore;
+        else if(mainSessionStore instanceof AgentSessionStoreMemory){
+            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)mainSessionStore;
             if(agentSessionStoreMemory.getSessionMemory() != null){
                 throw new AIRuntimeException("Session memory already exists");
             }
             agentSessionStoreMemory.setSessionMemory(session);
             agentSessionStoreMemory.setSessionSize(sessionSize);
-            mainSessionStore = sessionStore;
+//            mainSessionStore = sessionStore;
 
         }
 
@@ -84,13 +85,13 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
 
     public T setSessionSize(int sessionSize) {
         
-        if(sessionStore == null) {
+        if(mainSessionStore == null) {
             if(storeContext == null){
                 storeContext = new StoreContext();
             }
             storeContext.setSessionSize(sessionSize);
-            sessionStore = this.agentSessionStoreBuilder.build(storeContext);
-            mainSessionStore = sessionStore;
+            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+//            mainSessionStore = sessionStore;
         }
         else {
             if(storeContext == null){
@@ -98,119 +99,145 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
                 
             }
             storeContext.setSessionSize(sessionSize);
-            sessionStore.setSessionSize(sessionSize);
+//            sessionStore.setSessionSize(sessionSize);
             mainSessionStore.setSessionSize(sessionSize);
         }
 
         return (T)this;
     }
-    public List<Map<String,Object>> getSessionMemory() {
-        initSessionStore();
-        if(sessionStore == null){
-            return null;
-        }
-         
-        return sessionStore.getSessionMemory();
-    }
+//    public List<Map<String,Object>> getSessionMemory() {
+//        initSessionStore();
+//        if(mainSessionStore == null){
+//            return null;
+//        }
+//         
+//        return mainSessionStore.getSessionMemory();
+//    }
 
-    public T setSessionStore(AgentSessionStore sessionStore) {
-        this.sessionStore = sessionStore;
-        
-        return (T)this;
-    }
+//    public T setSessionStore(AgentSessionStore sessionStore) {
+//        this.mainSessionStore = sessionStore;
+//        
+//        return (T)this;
+//    }
 
     public AgentSessionStore getMainSessionStore() {
         initSessionStore();
         return mainSessionStore;
     }
 
-    public AgentSessionStore getSessionStore() {
-        initSessionStore();
-        return sessionStore;
-    }
+  
+ 
     
-    public T addSubTaskSessionStore(String agentId,AgentSessionStore subTaskSessionStore) {
-        initSessionStore();
-        sessionStore.addSubTaskSessionMemory(agentId, subTaskSessionStore);
-        return (T)this;
-    }
-    
-    
-
-    public AgentSessionStore getSubTaskSessionMemory(String agentId) {
-        initSessionStore();
-        if(sessionStore == null){
-            return null;
-        }
-        return sessionStore.getSubTaskSessionMemory(agentId);
-    }
-
+     
     private void initSessionStore(){
-        if(sessionStore == null && storeContext != null){
-            sessionStore = this.agentSessionStoreBuilder.build(storeContext);
-            mainSessionStore = sessionStore;
+        if(mainSessionStore == null && storeContext != null){
+            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+//            mainSessionStore = sessionStore;
         }
+    }
+    public T setMainSessionStore(AgentSessionStore mainSessionStore){
+        this.mainSessionStore = mainSessionStore;
+        return (T)this;
     }
 
     public int getSessionSize() {
         initSessionStore();
-        if (sessionStore != null)
-            return sessionStore.getSessionSize();
+        if (mainSessionStore != null)
+            return mainSessionStore.getSessionSize();
         return 0;
     
     }
 
-    public T addSessionMessage(Map<String, Object> systemMessage,String prompt){
+    private AgentSessionStore getAgentSessionStore(String agentId){
+        AgentSessionStore agentSessionStore = null;
+        if(agentId == null){
+            agentSessionStore = mainSessionStore;
+        }
+        else {
+            agentSessionStore = mainSessionStore.getSubTaskSessionMemory(agentId);
+        }
+        return agentSessionStore;
+    }
+    public T addSessionMessage(Map<String, Object> systemMessage,String prompt, AIAgent aiAgent){
         initSessionStore();
-        if(sessionStore == null){
+        if(mainSessionStore == null){
             return (T)this;
         }
-        sessionStore.addSessionMessage(systemMessage,  prompt,  sessionStore.getAgentId(), sessionStore.getParantAgentId());
+        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
+        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+        if(agentSessionStore == null){
+            return (T)this;
+        }
+        agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId());
         
         return (T)this;
     }
     
-    public T addSessionMessage(Map<String, Object> message){   
+    public T addSessionMessage(Map<String, Object> message, AIAgent aiAgent){   
         initSessionStore();
-        if(sessionStore == null){
+        if(mainSessionStore == null){
             return (T)this;
         }
-        
-        sessionStore.addSessionMessage(message);         
+        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
+        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+        if(agentSessionStore == null){
+            return (T)this;
+        }
+        agentSessionStore.addSessionMessage(message);         
         return (T)this;
     }
     
-    public LastSessionMessage addAgentResultSessionMessage(String message){
+    public LastSessionMessage addAgentResultSessionMessage(String message,AIAgent aiAgent){
         initSessionStore();
-        if(sessionStore == null){
+        if(mainSessionStore == null){
             return null;
         }
-        LastSessionMessage lastSessionMessage = sessionStore.addAgentResultSessionMessage(message);
-        sessionStore.setParantAgentLastSessionMessage(lastSessionMessage);
+        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
+        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+        if(agentSessionStore == null){
+            return null;
+        }
+        LastSessionMessage lastSessionMessage = agentSessionStore.addAgentResultSessionMessage(message);
+        agentSessionStore.setParantAgentLastSessionMessage(lastSessionMessage);
         return lastSessionMessage;
     }
-    public Map<String,Object> addAssistantSessionMessage(String message){
+    public Map<String,Object> addAssistantSessionMessage(String message,AIAgent aiAgent){
         initSessionStore();
-        if(sessionStore == null){
+        if(mainSessionStore == null){
             return null;
         }
-        return sessionStore.addAssistantSessionMessage(message);
+        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
+        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+        if(agentSessionStore == null){
+            return null;
+        }
+        return agentSessionStore.addAssistantSessionMessage(message);
     }
 
-    public Map<String,Object> addAssistantSessionMessage(ServerEvent serverEvent){
+    public Map<String,Object> addAssistantSessionMessage(ServerEvent serverEvent, AIAgent aiAgent){
         initSessionStore();
-        if(sessionStore == null){
+        if(mainSessionStore == null){
             return null;
         }
-        return sessionStore.addAssistantSessionMessage(serverEvent);
+        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
+        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+        if(agentSessionStore == null){
+            return null;
+        }
+        return agentSessionStore.addAssistantSessionMessage(serverEvent);
     }
 
-    public Map<String,Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder){
+    public Map<String,Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder, AIAgent aiAgent){
         initSessionStore();
-        if(sessionStore == null){
+        if(mainSessionStore == null){
             return null;
         }
-        return sessionStore.addAssistantSessionMessage(baseStreamDataBuilder);
+        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
+        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+        if(agentSessionStore == null){
+            return null;
+        }
+        return agentSessionStore.addAssistantSessionMessage(baseStreamDataBuilder);
     }
 
 

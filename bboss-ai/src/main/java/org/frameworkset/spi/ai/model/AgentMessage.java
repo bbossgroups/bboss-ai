@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.model;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -41,16 +42,7 @@ public class AgentMessage<T extends AgentMessage> {
      */
     private String prompt;
 
-    /**
-     * 工具清单，标准工具规范格式
-     */
-    private List<FunctionToolDefine> tools;
-
-    @JsonIgnore
-    private Map<String,FunctionCall> toolCalls;
-
-    @JsonIgnore
-    private ToolsRegist toolsRegist;
+ 
     /**
      * 默认角色提示词工程
      */
@@ -95,73 +87,6 @@ public class AgentMessage<T extends AgentMessage> {
      */
 //    private String modelType;
 
-    public List<FunctionToolDefine> getTools() {
-        return tools;
-    }
-
-    public T setTools(List<FunctionToolDefine> tools) {
-        reset();
-        this.tools = tools;
-        return (T)this;
-    }
-
-    public T registTools(List<FunctionToolDefine> tools) {
-        reset();
-        if(this.tools == null){
-            this.tools = new ArrayList<>();
-        }
-        this.tools.addAll( tools);
-        return (T)this;
-    }
-
-
-    private void reset(){
-        if(toolInited) {
-            synchronized (initLock) {
-                if (!toolInited){
-                    return;
-                }
-                if (this.tools != null) {
-                    tools.clear();
-                }
-                if (toolsRegist != null) {
-                    toolsRegist.destroy();
-                    toolsRegist = null;
-                }
-                if (this.toolCalls != null) {
-                    toolCalls.clear();
-                }
-                toolInited = false;
-            }
-        }
-    }
-    public T registTool(FunctionToolDefine functionToolDefine) {
-        reset();
-        if (this.tools == null) {
-            tools = new ArrayList<>();
-        }
-        tools.add(functionToolDefine);
-        
-        return (T)this;
-    }
-    
-    public T registToolCalls(Map<String,FunctionCall> toolCalls) {
-        reset();
-        if(this.toolCalls == null){
-            toolCalls = new LinkedHashMap<>();
-        }
-        this.toolCalls.putAll(toolCalls);
-        return (T)this;
-    }
-    public T registToolCall(String toolName,FunctionCall functionCall) {
-        reset();
-        if(this.toolCalls == null){
-            toolCalls = new LinkedHashMap<>();
-        }
-        this.toolCalls.put(toolName, functionCall);
-        return (T)this;
-    }
-    
     
 
     public String getPrompt() {
@@ -200,7 +125,7 @@ public class AgentMessage<T extends AgentMessage> {
      * @param agentAdapter
      * @return
      */
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter){
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent){
         return null;
     }
     public T setPrompt(String prompt) {
@@ -294,84 +219,7 @@ public class AgentMessage<T extends AgentMessage> {
         this.maxTokens = maxTokens;
         return (T)this;
     }
-    private boolean toolInited = false;
-    private Object initLock = new Object();
-    public void init(){
-        if(toolInited)
-            return;
-        synchronized (initLock) {
-            if(toolInited ){
-                return;
-            }
-            if (this.toolsRegist != null) {
-                toolsRegist.init();
-                List<FunctionToolDefine> functionToolDefines = this.toolsRegist.registTools();
-                if (functionToolDefines != null && functionToolDefines.size() > 0) {
-                    FunctionCall functionCall = null;
-                    for (FunctionToolDefine functionToolDefine : functionToolDefines) {
-                        functionCall = functionToolDefine.getFunctionCall();
-                        if (functionCall == null) {
-                            functionCall = toolsRegist.getFunctionCall(functionToolDefine.getFunction().getName());
-                            if (functionCall != null) {
-                                functionToolDefine.setFunctionCall(functionCall);
-                            }
-                        }
-                    }
-                    this.registTools(functionToolDefines);
-                }
-            }
-
-            if (this.toolCalls != null && toolCalls.size() > 0) {
-                for (Map.Entry<String, FunctionCall> entry : toolCalls.entrySet()) {
-                    FunctionCall functionCall = entry.getValue();
-                    String toolName = entry.getKey();
-                    if (tools != null && tools.size() > 0) {
-                        for (FunctionToolDefine functionToolDefine : tools) {
-                            if (functionToolDefine.getFunction().getName().equals(toolName)) {
-                                functionToolDefine.setFunctionCall(functionCall);
-                                break;
-                            }
-                        }
-                    }
-
-                }
-            }
-            if (tools != null && tools.size() > 0) {
-
-                for (FunctionToolDefine functionToolDefine : tools) {
-                    FunctionCall functionCall = functionToolDefine.getFunctionCall();
-                    if (functionCall != null) {
-                        String toolName = functionToolDefine.getFunction().getName();
-                        if (toolCalls == null) {
-                            toolCalls = new LinkedHashMap<>();
-                        }
-                        if (!toolCalls.containsKey(toolName))
-                            toolCalls.put(toolName, functionCall);
-                    }
-
-                }
-            }
-            toolInited = true;
-        }
-    }
     
-    public boolean isToolThinkingMessage(){
-        init();
-        return this.tools != null && tools.size() > 0 ;
-    }
-    
-    public FunctionCall getFunctionCall(String toolName){
-        init();
-        if(toolCalls == null)
-            return null;
-        return toolCalls.get(toolName);
-    }
-
-    public T setToolsRegist(ToolsRegist toolsRegist) {
-        reset();
-        this.toolsRegist = toolsRegist;
-        return (T)this;
-    }
 
     public Boolean getThinking() {
         return thinking;
@@ -381,11 +229,7 @@ public class AgentMessage<T extends AgentMessage> {
         this.thinking = thinking;
         return (T)this;
     }
-	
-	public void destroy(){
-        reset();
 	 
-	}
 
     public String getMaas() {
         return maas;

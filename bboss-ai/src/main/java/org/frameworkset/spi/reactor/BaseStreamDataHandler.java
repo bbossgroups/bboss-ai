@@ -57,9 +57,9 @@ public abstract class BaseStreamDataHandler<T> implements StreamDataHandler<T> {
      
     public void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ChatObject chatObject, BaseStreamDataBuilder baseStreamDataBuilder,FluxSink<T> sink,DisposeEventHandler disposeEventHandler) {
         ChatAgentMessage _chatMessage = (ChatAgentMessage) chatObject.getAgentMessage();
-        _chatMessage.addAssistantSessionMessage(baseStreamDataBuilder );
+        _chatMessage.addAssistantSessionMessage(baseStreamDataBuilder,chatObject.getAiAgent() );
         ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage, baseStreamDataBuilder.getFunctionTools());
-        AIAgentUtil.streamChatCompletionEvent(clientConfiguration, toolAgentMessage,sink,disposeEventHandler);
+        AIAgentUtil.streamChatCompletionEvent(clientConfiguration, toolAgentMessage,sink,disposeEventHandler,chatObject.getAiAgent());
     }
 
 

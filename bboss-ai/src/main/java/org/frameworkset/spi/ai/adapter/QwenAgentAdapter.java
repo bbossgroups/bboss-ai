@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.adapter;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -151,7 +152,7 @@ public class QwenAgentAdapter extends AgentAdapter{
     }
   
     @Override
-    protected Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage, ClientConfiguration clientConfiguration) {
+    protected Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage, ClientConfiguration clientConfiguration,AIAgent aiAgent) {
         
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoAgentMessage.getModel());
@@ -160,7 +161,7 @@ public class QwenAgentAdapter extends AgentAdapter{
 
 
         Map<String,Object> inputVoice = new LinkedHashMap();
-        inputVoice.put("prompt",videoAgentMessage.getPrompt());
+        inputVoice.put("prompt",getPrompt(  videoAgentMessage,   aiAgent));
         if(videoAgentMessage.getAudioUrl() != null){
             inputVoice.put("audio_url",videoAgentMessage.getAudioUrl());
         }
@@ -245,7 +246,7 @@ public class QwenAgentAdapter extends AgentAdapter{
     }
     
     @Override
-    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage) {
+    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioAgentMessage.getModel());
 
@@ -253,7 +254,7 @@ public class QwenAgentAdapter extends AgentAdapter{
 
 
         Map<String,Object> inputVoice = new LinkedHashMap();
-        inputVoice.put("text",audioAgentMessage.getPrompt());
+        inputVoice.put("text",getPrompt(  audioAgentMessage,   aiAgent));
         if(audioAgentMessage.getParameters() != null){
             inputVoice.putAll(audioAgentMessage.getParameters());
         }
@@ -268,7 +269,7 @@ public class QwenAgentAdapter extends AgentAdapter{
     }
 
     @Override
-    protected Map buildGenImageRequestMap(ImageAgentMessage imageAgentMessage) {
+    protected Map buildGenImageRequestMap(ImageAgentMessage imageAgentMessage, AIAgent aiAgent) {
 
         Map<String, Object> requestMap = new HashMap<>();
 
@@ -281,7 +282,7 @@ public class QwenAgentAdapter extends AgentAdapter{
         // 构建消息历史列表，包含之前的会话记忆
 
         List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = MessageBuilder.buildGenImageMessage(imageAgentMessage);
+        Map<String, Object> userMessage = MessageBuilder.buildGenImageMessage(imageAgentMessage,aiAgent);
         messages.add(userMessage);
         input.put("messages", messages);
         requestMap.put("input", input);

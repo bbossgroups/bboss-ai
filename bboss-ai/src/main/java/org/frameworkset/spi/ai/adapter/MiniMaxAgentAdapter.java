@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.adapter;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -72,10 +73,10 @@ public class MiniMaxAgentAdapter extends DoubaoAgentAdapter{
      *           "volume": 1.0
      *     }' \
      */
-    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage) {
+    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage, AIAgent aiAgent) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioAgentMessage.getModel());
-        requestMap.put("input", audioAgentMessage.getPrompt());
+        requestMap.put("input", getPrompt(  audioAgentMessage,   aiAgent));
     
         if(audioAgentMessage.getParameters() != null && audioAgentMessage.getParameters().size() > 0){
             requestMap.putAll(audioAgentMessage.getParameters());

@@ -31,11 +31,13 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
     public AgentSessionStore build(StoreContext storeContext) {
         AgentSessionStore agentSessionStore = null;
         if(storeContext.getStoreType() == null || storeContext.getStoreType().equals(StoreContext.STORE_TYPE_MEMORY)) {
-            agentSessionStore = new AgentSessionStoreMemory(true,storeContext.getSessionMemory(), storeContext.getSessionSize());
+            agentSessionStore = new AgentSessionStoreMemory(storeContext);
+            
         }        
         else if(storeContext.getStoreType().equals(StoreContext.STORE_TYPE_DB)) {
             agentSessionStore = new AgentSessionStoreDB(storeContext);
         }
+        agentSessionStore.init();
         if(agentSessionStore == null)
             throw new AIRuntimeException("Invalid store type: " + storeContext.getStoreType())  ;
         return agentSessionStore;

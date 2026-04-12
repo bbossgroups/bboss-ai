@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.adapter;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -76,10 +77,10 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
      *           "volume": 1.0
      *     }' \
      */
-    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage) {
+    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioAgentMessage.getModel());
-        requestMap.put("input", audioAgentMessage.getPrompt());
+        requestMap.put("input", getPrompt(  audioAgentMessage,   aiAgent));
     
         if(audioAgentMessage.getParameters() != null && audioAgentMessage.getParameters().size() > 0){
             requestMap.putAll(audioAgentMessage.getParameters());
@@ -158,22 +159,24 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
         return AIResponseUtil.parseZhipuAudioStreamContentFromData(  streamDataBuilder,data);
     }
     @Override
-    public Map buildAudioSTTRequestMap(AudioSTTAgentMessage audioSTTAgentMessage) {
+    public Map buildAudioSTTRequestMap(AudioSTTAgentMessage audioSTTAgentMessage, AIAgent aiAgent) {
+
+        String agentId = aiAgent.getAgentId();
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioSTTAgentMessage.getModel());
-        requestMap.put("prompt", audioSTTAgentMessage.getPrompt());
+        requestMap.put("prompt", getPrompt(  audioSTTAgentMessage,   aiAgent));
         
         Object audio = audioSTTAgentMessage.getAudio();
         // 添加当前用户消息
         Map<String, Object> userMessage = null;
         if(audio != null) {
-            userMessage = MessageBuilder.buildAudioSystemMessage(audioSTTAgentMessage.getPrompt());
+            userMessage = MessageBuilder.buildAudioSystemMessage(getPrompt(  audioSTTAgentMessage,   aiAgent));
         }
         else{
-            userMessage = MessageBuilder.buildAudioUserMessage(audioSTTAgentMessage.getPrompt());
+            userMessage = MessageBuilder.buildAudioUserMessage(getPrompt(  audioSTTAgentMessage,   aiAgent));
         }
         
-        audioSTTAgentMessage.addSessionMessage(userMessage);
+        audioSTTAgentMessage.addSessionMessage(userMessage,aiAgent);
 
         if(audio != null) {
             if(audio instanceof File){
@@ -204,11 +207,11 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
     }
 
     @Override
-    protected Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage, ClientConfiguration clientConfiguration) {
+    protected Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage, ClientConfiguration clientConfiguration,AIAgent aiAgent) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoAgentMessage.getModel());
 
-        MessageBuilder.buildZhipuGenVideoMessage(requestMap,videoAgentMessage);
+        MessageBuilder.buildZhipuGenVideoMessage(requestMap,videoAgentMessage,aiAgent);
 
         Map<String,Object> parameters = videoAgentMessage.getParameters();
         if(parameters != null){

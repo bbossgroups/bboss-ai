@@ -273,7 +273,7 @@ public class StreamTest {
 
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        
+        AIAgent aiAgent = new AIAgent();
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题，可以自定义每次返回的片段解析方法
         //处理数据行,如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
         AIAgentUtil.streamChatCompletion("deepseek",chatAgentMessage,new BaseStreamDataHandler<String>() {
@@ -339,7 +339,7 @@ public class StreamTest {
                         sink.complete();
                         return true;
                     }
-                })
+                },aiAgent)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
@@ -477,7 +477,7 @@ public class StreamTest {
                 .requiredParameters("location")
                 .addSubParameter("params","location","string","城市或者地州, 例如：上海市")
                 .setFunctionCall(new ToolFunctionCall() );
-        chatAgentMessage.registTool(functionToolDefine);
+        aiAgent.registTool(functionToolDefine);
         /**
          * "thinking": {
          *     "type": "disabled"
@@ -501,7 +501,7 @@ public class StreamTest {
         chatAgentMessage.setThinking(true);
         AIAgent aiAgent = new AIAgent();
 
-        chatAgentMessage.setToolsRegist(new ToolsRegist() {
+        aiAgent.setToolsRegist(new ToolsRegist() {
             @Override
             public List<FunctionToolDefine> registTools() {
                 Map params = new HashMap();
@@ -579,7 +579,7 @@ public class StreamTest {
             
             mcpToolsRegist = new FeishuMcpRegist("feishumcp", baseFeishuConfig);
         }
-		chatAgentMessage.setToolsRegist(mcpToolsRegist);
+        aiAgent.setToolsRegist(mcpToolsRegist);
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		aiAgent.streamChat(maas,chatAgentMessage)
@@ -641,16 +641,14 @@ public class StreamTest {
 //            bboss应用
             baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd1")
                     .setFeishAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs");
-            //企业关怀应用
-//            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
-//                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
+
             baseFeishuConfig 
                     .setMcpTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
             ;
 
             mcpToolsRegist = new FeishuMcpRegist("feishumcp", baseFeishuConfig);
         }
-        chatAgentMessage.setToolsRegist(mcpToolsRegist);
+        aiAgent.setToolsRegist(mcpToolsRegist);
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
         aiAgent.streamChat(maas,chatAgentMessage)
@@ -696,11 +694,12 @@ public class StreamTest {
 				.setStream( false)
 				.setMaxTokens(65536L);
 		chatAgentMessage.setThinking(false);
-		
-		
-		chatAgentMessage.setToolsRegist(new MCPToolsRegist(mcpServer));//12306
+        ToolsRegist toolsRegist = new MCPToolsRegist(mcpServer);
+
+        AIAgent dateAgent = new AIAgent();
+        dateAgent.setToolsRegist(toolsRegist);//12306
 		//1.获取明天对应的日期
-		AIAgent dateAgent = new AIAgent();
+		
 		ServerEvent serverEvent = dateAgent.chat(maas,chatAgentMessage);
 		//返回日期信息
 		String dateInfo = serverEvent.getData();
@@ -710,6 +709,7 @@ public class StreamTest {
 		//2.站点信息查询智能体，
 		// 根据当前日期（2026年3月4日），明天是**2026年3月5日**。现在我来为您查询明天北京到上海的高铁车次信息。
 		AIAgent siteInfoAgent = new AIAgent();
+        siteInfoAgent.setToolsRegist(toolsRegist);//12306
 		chatAgentMessage.setPrompt(dateInfo);
 		serverEvent = siteInfoAgent.chat(maas,chatAgentMessage);
 		String siteInfo = serverEvent.getData();
@@ -718,6 +718,7 @@ public class StreamTest {
 		//3.高铁趟次查询智能体：
 		// 我注意到您想查询明天（2026年3月5日）北京到上海的高铁票。不过，我目前无法直接使用您提到的`search_train_tickets`接口来查询车票信息。
 		AIAgent gaotieAgent = new AIAgent();
+        gaotieAgent.setToolsRegist(toolsRegist);
 		chatAgentMessage.setPrompt(siteInfo);
 		
 		serverEvent = gaotieAgent.chat(maas,chatAgentMessage);
@@ -772,7 +773,7 @@ public class StreamTest {
                 .requiredParameters("location")
                 .addSubParameter("params","location","string","城市或者地州, 例如：上海市")
                 .setFunctionCall(new ToolFunctionCall() );
-        chatAgentMessage.registTool(functionToolDefine);
+        aiAgent.registTool(functionToolDefine);
         CountDownLatch countDownLatch = new CountDownLatch(1);
         aiAgent.streamChat(maas,chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))

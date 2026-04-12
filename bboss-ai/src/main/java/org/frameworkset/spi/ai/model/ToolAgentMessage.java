@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
@@ -34,8 +35,8 @@ public class ToolAgentMessage extends ChatAgentMessage{
     }
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter) {
-        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter);
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter,AIAgent aiAgent) {
+        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter,aiAgent);
         chatObject.setToolCall(true);
         return chatObject;
     }
@@ -52,14 +53,14 @@ public class ToolAgentMessage extends ChatAgentMessage{
         return chatAgentMessage;
     }
 
-    @Override
-    public FunctionCall getFunctionCall(String toolName) {
-        return chatAgentMessage.getFunctionCall(toolName);
-    }
+//    @Override
+//    public FunctionCall getFunctionCall(String toolName) {
+//        return chatAgentMessage.getFunctionCall(toolName);
+//    }
 
     @Override
-    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter){
-        Map parameters = agentAdapter.buildOpenAIRequestMapWithTool(this);
+    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent){
+        Map parameters = agentAdapter.buildOpenAIRequestMapWithTool(this,aiAgent);
         return parameters;
     }
     
@@ -96,10 +97,10 @@ public class ToolAgentMessage extends ChatAgentMessage{
         return chatAgentMessage.getMaxTokens();
     }
 
-    @Override
-    public List<Map<String, Object>> getSessionMemory() {
-        return chatAgentMessage.getSessionMemory();
-    }
+//    @Override
+//    public List<Map<String, Object>> getSessionMemory() {
+//        return chatAgentMessage.getSessionMemory();
+//    }
 
     @Override
     public int getSessionSize() {
@@ -111,8 +112,8 @@ public class ToolAgentMessage extends ChatAgentMessage{
     }
 
     @Override
-    public ChatAgentMessage addSessionMessage(Map<String, Object> message) {
-          chatAgentMessage.addSessionMessage(message);
+    public ChatAgentMessage addSessionMessage(Map<String, Object> message, AIAgent aiAgent) {
+          chatAgentMessage.addSessionMessage(message,   aiAgent);
           return this;
     }
 
@@ -127,17 +128,17 @@ public class ToolAgentMessage extends ChatAgentMessage{
      * <p>
      * }
      */
-    @Override
-    public List<FunctionToolDefine> getTools() {
-        return chatAgentMessage.getTools();
-    }
+//    @Override
+//    public List<FunctionToolDefine> getTools() {
+//        return chatAgentMessage.getTools();
+//    }
 
-    @Override
-    public void init() {
-//        super.init();
-    }
-    @Override
-    public boolean isToolThinkingMessage(){
-        return false ;
-    }
+//    @Override
+//    public void init() {
+////        super.init();
+//    }
+//    @Override
+//    public boolean isToolThinkingMessage(){
+//        return false ;
+//    }
 }

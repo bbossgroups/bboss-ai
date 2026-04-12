@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
@@ -30,7 +31,7 @@ public class ChatObject {
     private boolean stream;
 
 
-
+    private AIAgent aiAgent;
     private boolean thinking;
     private boolean toolCall;
     private Object message;
@@ -44,6 +45,14 @@ public class ChatObject {
     private String completionsUrl;
     public String getCompletionsUrl() {
         return completionsUrl;
+    }
+
+    public void setAiAgent(AIAgent aiAgent) {
+        this.aiAgent = aiAgent;
+    }
+
+    public AIAgent getAiAgent() {
+        return aiAgent;
     }
 
     public void setCompletionsUrl(String completionsUrl) {

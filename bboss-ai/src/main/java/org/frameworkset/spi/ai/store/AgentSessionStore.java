@@ -27,7 +27,8 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public interface AgentSessionStore<T extends AgentSessionStore> {
-    
+    void init();
+    String genSubAgentId();
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     String getAgentId();
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
