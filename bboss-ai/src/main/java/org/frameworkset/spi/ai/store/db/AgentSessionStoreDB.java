@@ -209,7 +209,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     }
 
     @Override
-    public LastSessionMessage persistentSessionMessage(Map<String, Object> message, String agentId, String parentAgentId, String agentResultMessage){
+    public LastSessionMessage persistentSessionMessage(Map<String, Object> message,
+                                                       String agentId, String parentAgentId,String marks,String metadata, String agentResultMessage){
         try {
 
 //            loadSessionMemory(message, agentId);
@@ -218,7 +219,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
                     msgId,new Date(),this.getSessionId(),
                     parentAgentId, agentId,agentResultMessage,integerCount.increament(), JsonUtil.object2json(message),
-                    message.get("role"));
+                    message.get("role"),marks,metadata);
 
             if(agentResultMessage != null && agentResultMessage.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();

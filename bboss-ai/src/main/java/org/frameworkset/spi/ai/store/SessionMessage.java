@@ -30,6 +30,10 @@ public class SessionMessage {
     private String sessionId;
     private String agentId;
 
+
+    private String marks;
+    private String metadata;
+
     private String parentAgentId;
     private String agentResultMessage = "0";
     private int seqNo;
@@ -107,5 +111,22 @@ public class SessionMessage {
 
     public void setMsgId(String msgId) {
         this.msgId = msgId;
+    }
+
+
+    public String getMarks() {
+        return marks;
+    }
+
+    public void setMarks(String marks) {
+        this.marks = marks;
+    }
+
+    public String getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(String metadata) {
+        this.metadata = metadata;
     }
 }

@@ -36,28 +36,28 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public class AIAgent {
+public class AIAgent<T extends AIAgent> {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(AIAgent.class);
-    private String prompt;
-    private String systemPrompt;
+    protected String prompt;
+    protected String systemPrompt;
     private String type;
-    private int sessionSize;
+    protected int sessionSize;
 
     /**
      * 工具清单，标准工具规范格式
      */
-    private List<FunctionToolDefine> tools;
+    protected List<FunctionToolDefine> tools;
 
     @JsonIgnore
-    private Map<String,FunctionCall> toolCalls;
+    protected Map<String,FunctionCall> toolCalls;
 
     @JsonIgnore
-    private ToolsRegist toolsRegist;
-    
-    private AgentSessionStore agentSessionStore;
+    protected ToolsRegist toolsRegist;
 
-    private AgentSessionStore parentSessionStore;
-    private String agentId;
+    protected AgentSessionStore agentSessionStore;
+
+    protected AgentSessionStore parentSessionStore;
+    protected String agentId;
     public AIAgent(){
         this(null);
     }
@@ -70,14 +70,14 @@ public class AIAgent {
         return systemPrompt;
     }
 
-    public AIAgent setSystemPrompt(String systemPrompt) {
+    public T setSystemPrompt(String systemPrompt) {
         this.systemPrompt = systemPrompt;
-        return this;
+        return (T)this;
     }
 
-    public AIAgent setParentSessionStore(AgentSessionStore parentSessionStore) {
+    public T setParentSessionStore(AgentSessionStore parentSessionStore) {
         this.parentSessionStore = parentSessionStore;
-        return this;
+        return (T)this;
     }
 
     public AgentSessionStore getParentSessionStore() {
@@ -99,9 +99,9 @@ public class AIAgent {
 //            agentSessionStore = new AgentSessionStoreMemory(sessionSize);
     }
 
-    public AIAgent setAgentId(String agentId) {
+    public T setAgentId(String agentId) {
         this.agentId = agentId;
-        return this;
+        return (T)this;
     }
 
     public AIAgent(String prompt, String type, ToolsRegist toolsRegist){
@@ -128,7 +128,46 @@ public class AIAgent {
         this(  prompt, null, null,sessionSize);
     }
     
-    private void reactMessage(AgentMessage agentMessage){
+    protected LastSessionMessage getLastSubAgentSessionMessage(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
+        //UserAgent无需追加父智能体中产生的最新的消息作
+        LastSessionMessage lastSubAgentSessionMessage = null;
+        if(parentSessionStore != null) {
+            lastSubAgentSessionMessage = parentSessionStore.getLastSubAgentSessionMessage(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
+        }
+        else{
+            lastSubAgentSessionMessage = mainSessionStore.getLastSubAgentSessionMessage(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
+        }
+        return lastSubAgentSessionMessage;
+    }
+    
+    protected void loadHistoryMessages(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
+        List<Map<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
+        boolean empty = sessionMemory.isEmpty();
+//                sessionAgentMessage.setSessionStore(agentSessionStore);
+        mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
+
+        //UserAgent无需追加父智能体中产生的最新的消息作
+        LastSessionMessage lastSubAgentSessionMessage = getLastSubAgentSessionMessage(  mainSessionStore,  agentMessage);
+        
+
+        if(empty) {
+            //加载历史消息
+            List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
+            if (sessionMessages != null && sessionMessages.size() > 0) {
+                for (Map<String, Object> sessionMessage : sessionMessages) {
+                    agentSessionStore.appendSessionMessageFromParent(sessionMessage);
+                }
+
+
+            }
+        }
+        else if(lastSubAgentSessionMessage != null){//不为空，直接append主智能体中的最后一条消息
+            agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
+            mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
+            //记录消息引用关系
+        }
+    }
+    protected void reactMessage(AgentMessage agentMessage){
 //        if(prompt != null)
 //            agentMessage.setPrompt(prompt);
 //        if(toolsRegist != null)
@@ -156,35 +195,7 @@ public class AIAgent {
                     agentSessionStore.setAgentId(agentId);
                     agentSessionStore.setMainAgentSessionStore(mainSessionStore);
                 }
-                List<Map<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
-                boolean empty = sessionMemory.isEmpty();
-//                sessionAgentMessage.setSessionStore(agentSessionStore);
-                mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
-                //需要将父智能体中产生的最新的消息作为当前智能体的执行上下文
-                LastSessionMessage lastSubAgentSessionMessage = null;
-                if(parentSessionStore != null) {
-                    lastSubAgentSessionMessage = parentSessionStore.getLastSubAgentSessionMessage(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
-                }
-                else{
-                    lastSubAgentSessionMessage = mainSessionStore.getLastSubAgentSessionMessage(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
-                }
-                
-                if(empty) {
-                    //加载历史消息
-                    List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
-                    if (sessionMessages != null && sessionMessages.size() > 0) {
-                        for (Map<String, Object> sessionMessage : sessionMessages) {
-                            agentSessionStore.appendSessionMessageFromParent(sessionMessage);
-                        }
-
-
-                    }
-                }
-                else if(lastSubAgentSessionMessage != null){//不为空，直接append主智能体中的最后一条消息
-                    agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
-                    mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
-                    //记录消息引用关系
-                }
+                loadHistoryMessages(  mainSessionStore,  agentMessage);
                 
                  
             }
@@ -468,19 +479,19 @@ public class AIAgent {
         return tools;
     }
 
-    public AIAgent setTools(List<FunctionToolDefine> tools) {
+    public T setTools(List<FunctionToolDefine> tools) {
         reset();
         this.tools = tools;
-        return this;
+        return (T)this;
     }
 
-    public AIAgent registTools(List<FunctionToolDefine> tools) {
+    public T registTools(List<FunctionToolDefine> tools) {
         reset();
         if(this.tools == null){
             this.tools = new ArrayList<>();
         }
         this.tools.addAll( tools);
-        return this;
+        return (T)this;
     }
     private boolean toolInited = false;
     private Object initLock = new Object();
@@ -555,10 +566,10 @@ public class AIAgent {
         return toolCalls.get(toolName);
     }
 
-    public AIAgent setToolsRegist(ToolsRegist toolsRegist) {
+    public T setToolsRegist(ToolsRegist toolsRegist) {
         reset();
         this.toolsRegist = toolsRegist;
-        return this;
+        return (T)this;
     }
     public void destroy(){
         reset();
@@ -584,31 +595,31 @@ public class AIAgent {
             }
         }
     }
-    public AIAgent registTool(FunctionToolDefine functionToolDefine) {
+    public T registTool(FunctionToolDefine functionToolDefine) {
         reset();
         if (this.tools == null) {
             tools = new ArrayList<>();
         }
         tools.add(functionToolDefine);
 
-        return this;
+        return (T) this;
     }
 
-    public AIAgent registToolCalls(Map<String,FunctionCall> toolCalls) {
+    public T registToolCalls(Map<String,FunctionCall> toolCalls) {
         reset();
         if(this.toolCalls == null){
             toolCalls = new LinkedHashMap<>();
         }
         this.toolCalls.putAll(toolCalls);
-        return this;
+        return (T)this;
     }
-    public AIAgent registToolCall(String toolName,FunctionCall functionCall) {
+    public T registToolCall(String toolName,FunctionCall functionCall) {
         reset();
         if(this.toolCalls == null){
             toolCalls = new LinkedHashMap<>();
         }
         this.toolCalls.put(toolName, functionCall);
-        return this;
+        return (T)this;
     }
 
 }

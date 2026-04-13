@@ -21,7 +21,6 @@ import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
@@ -29,8 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -49,8 +46,8 @@ public class StreamTest {
 //        multiagent("qwenvlplus","qwen3.6-plus");
 //        multiagent("zhipu","glm-5.1");
 //        multiagentWeathor("zhipu","glm-5.1",null);
-        multiagentWeathor("zhipu","glm-5.1","2021bcca95fe4393bd4726f7b667a75a");
-        
+        multiagentWeathor("zhipu","glm-5.1","6021bcca95fe4393bd4726f7b667a75a");
+//        multiuserAgentWeathor("zhipu","glm-5.1","3021bcca95fe4393bd4726f7b667a75a");
         
     }
 
@@ -132,6 +129,44 @@ public class StreamTest {
                 ,50);//.setAgentId("docAgent");
         ServerEvent serverEvent = logAgent.chat(chatAgentMessage);
         logger.info(serverEvent.getData());
+        ServerEvent serverEvent1 = docAgent.chat(chatAgentMessage);
+        logger.info("serverEvent:{}", serverEvent1.getData());
+
+
+
+    }
+
+    public static void multiuserAgentWeathor(String maas, String model,String sessionId) throws InterruptedException {
+        initDB();
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
+                .setSystemPrompt("你是一个天气分析和文档创建助手")
+                .setStoreContext(new StoreContext()
+                                .setSessionId(sessionId)
+                                .setSessionMemory(new ArrayList<>()).setSessionSize(10)
+//                        .setStoreType(StoreContext.STORE_TYPE_MEMORY)
+                                .setStoreType(StoreContext.STORE_TYPE_DB)
+                                .setDataSource("visualops")//.setSessionId(sessionId == null?SimpleStringUtil.getUUID32():sessionId).setUserId("admin")
+                )
+                .setModel(model)
+                .setStream( false)
+                .setMaxTokens(65536L);
+        chatAgentMessage.setThinking(false);
+        chatAgentMessage.setMaas(maas);
+
+
+
+        AIAgent logAgent = new AIAgent("查询杭州市天气，并给出穿衣出行建议",new MCPToolsRegist("visualops"),50)
+                ;//.setAgentId("logAgent");
+
+       
+        ServerEvent serverEvent = logAgent.chat(chatAgentMessage);
+        logger.info(serverEvent.getData());
+        UserAgent docAgent = new UserAgent("将杭州市天气查询结果和出穿衣出行建议创建为飞书文档："+serverEvent.getData(),
+                new FeishuMcpRegist("feishumcp")
+                        .setAppId("cli_a9d43b87aff89cd1")
+                        .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
+                        .setTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments")
+                ,50);//.setAgentId("docAgent");
         ServerEvent serverEvent1 = docAgent.chat(chatAgentMessage);
         logger.info("serverEvent:{}", serverEvent1.getData());
 

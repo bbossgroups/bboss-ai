@@ -186,10 +186,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         }
         appendSessionMessage(message);
         if(mainAgentSessionStore != null){
-            mainAgentSessionStore.persistentSessionMessage(message, agentId,this.getParantAgentId(),"0");
+            mainAgentSessionStore.persistentSessionMessage(message, agentId,this.getParantAgentId(),null,null,"0");
         }
         else if(this.persistentSessionMemory){
-            persistentSessionMessage(message, agentId,this.getParantAgentId(),"0");
+            persistentSessionMessage(message, agentId,this.getParantAgentId(),null,null,"0");
         }
          
     }
@@ -232,12 +232,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
 //            loadSessionMemory(message,  agentId);
             //msgId,createTime,sessionId,seqNo,message,role
-            mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,"1");
+            mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,"1");
             
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
 //            loadSessionMemory(message,  agentId);
-            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,"1");
+            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,null,null,"1");
             
 
         }
@@ -255,10 +255,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
         if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
             //msgId,createTime,sessionId,seqNo,message,role
-            mainAgentSessionStore.persistentSessionMessage(systemMessage, agentId,parentAgentId,"0");
+            mainAgentSessionStore.persistentSessionMessage(systemMessage, agentId,parentAgentId,null,null,"0");
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
-            persistentSessionMessage(systemMessage, agentId,parentAgentId,"0");//1 代表子智能体输出结果 0 代表子智能体中间消息
+            persistentSessionMessage(systemMessage, agentId,parentAgentId,null,null,"0");//1 代表子智能体输出结果 0 代表子智能体中间消息
         }
 //            SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
 //                    SimpleStringUtil.getUUID32(),new Date(),this.getSessionId(),agentId, integerCount.increament(), JsonUtil.object2json(systemMessage),

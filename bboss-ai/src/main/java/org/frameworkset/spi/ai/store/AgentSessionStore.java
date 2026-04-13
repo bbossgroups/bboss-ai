@@ -68,7 +68,8 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 
     List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize);
 
-    LastSessionMessage persistentSessionMessage(Map<String, Object> message, String agentId,String parentAgentId,String agentResultMessage);
+    LastSessionMessage persistentSessionMessage(Map<String, Object> message, 
+                                                String agentId,String parentAgentId,String marks,String metadata,String agentResultMessage);
     AgentSessionStore getMainAgentSessionStore() ;
 
     T setMainAgentSessionStore(AgentSessionStore mainAgentSessionStore) ;
