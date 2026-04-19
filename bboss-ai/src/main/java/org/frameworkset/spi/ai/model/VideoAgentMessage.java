@@ -35,6 +35,11 @@ public class VideoAgentMessage extends AgentMessage<VideoAgentMessage> {
     private String firstFrameUrl;
     private String lastFrameUrl;
 
+
+
+    private String videoUrl;
+    
+
     public String getFirstFrameUrl() {
         return firstFrameUrl;
     }
@@ -97,5 +102,13 @@ public class VideoAgentMessage extends AgentMessage<VideoAgentMessage> {
     public VideoAgentMessage setTemplate(String template) {
         this.template = template;
         return this;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
     }
 }

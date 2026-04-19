@@ -164,7 +164,7 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoAgentMessage.getModel());
 
-        MessageBuilder.buildGenVideoMessage(requestMap,videoAgentMessage,aiAgent);
+        MessageBuilder.buildDoubaoGenVideoMessage(requestMap,videoAgentMessage,aiAgent);
         
         Map<String,Object> parameters = videoAgentMessage.getParameters();
         if(parameters != null){
@@ -235,13 +235,24 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
                     result.setVideoUrl(genFileDownload.downloadVideo(clientConfiguration, videoStoreAgentMessage, null, result.getVideoGenUrl()));
                 }
             }
-            
+            Map<String,Object> error = (Map<String, Object>) taskInfo.get("error");
+            if(error != null){
+                result.setCode((String) error.get("code"));
+                result.setMessage((String) error.get("message"));
+            }
+            else{
+                result.setCode((String) taskInfo.get("code"));
+                result.setMessage((String) taskInfo.get("message"));
+            }
             result.setSubmitTime(String.valueOf( taskInfo.get("created_at")));
+            result.setDraft((boolean) taskInfo.get("draft"));
+            result.setUpdated(String.valueOf( taskInfo.get("updated_at")));
+            result.setExpiresAt((int) taskInfo.get("execution_expires_after"));
+            result.setGenerateAudio((boolean) taskInfo.get("generate_audio"));
             result.setScheduledTime(result.getSubmitTime());
             
              
-            result.setCode((String) taskInfo.get("code"));
-            result.setMessage((String) taskInfo.get("message"));
+            
         }
        
  

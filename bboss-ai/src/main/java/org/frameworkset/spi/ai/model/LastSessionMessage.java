@@ -38,6 +38,13 @@ public class LastSessionMessage {
      * false 不是最新消息
      */
     private boolean freshMessage;
+    
+    public String getData(){
+        if(lastSessionMessage != null){
+            return (String)lastSessionMessage.get("content");
+        }
+        return null;
+    }
 
     public Map<String, Object> getLastSessionMessage() {
         

@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
@@ -32,7 +33,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     String getAgentId();
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
-    LastSessionMessage getLastSubAgentSessionMessage(String prompt, String agentId);
+    LastSessionMessage getLastSubAgentSessionMessage();
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
 
     /**
@@ -45,6 +46,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     
     String getParantAgentId();
 
+    T setAIAgent(AIAgent aiAgent);
     T setSessionSize(int sessionSize) ;
     T setAgentId(String agentId) ;
     int getSessionSize() ;

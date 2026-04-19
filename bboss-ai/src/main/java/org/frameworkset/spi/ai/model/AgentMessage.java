@@ -15,15 +15,11 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -235,7 +231,8 @@ public class AgentMessage<T extends AgentMessage> {
         return maas;
     }
 
-    public void setMaas(String maas) {
+    public T setMaas(String maas) {
         this.maas = maas;
+        return (T)this;
     }
 }

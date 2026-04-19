@@ -56,7 +56,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
 
     @Override
     public Boolean getDefaultThinking() {
-        return true;
+        return false;
     }
 
     @Override

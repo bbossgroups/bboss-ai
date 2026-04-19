@@ -45,6 +45,26 @@ public class VideoGenResult extends VideoTask{
     private String endTime;
     private String origPrompt;
 
+    public boolean isDraft() {
+        return draft;
+    }
+
+    public void setDraft(boolean draft) {
+        this.draft = draft;
+    }
+
+    public String getUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(String updated) {
+        this.updated = updated;
+    }
+
+    private boolean draft;
+    private String updated;
+    private boolean generateAudio;
+
     public String getSubmitTime() {
         return submitTime;
     }
@@ -106,5 +126,14 @@ public class VideoGenResult extends VideoTask{
 
     public void setCoverImageGenUrl(String coverImageGenUrl) {
         this.coverImageGenUrl = coverImageGenUrl;
+    }
+ 
+
+    public boolean isGenerateAudio() {
+        return generateAudio;
+    }
+
+    public void setGenerateAudio(boolean generateAudio) {
+        this.generateAudio = generateAudio;
     }
 }

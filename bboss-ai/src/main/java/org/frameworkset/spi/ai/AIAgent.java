@@ -44,6 +44,13 @@ public class AIAgent<T extends AIAgent> {
     protected int sessionSize;
 
     /**
+     * true 智能体会话记录不会被记录到父智能体的会议记忆，同时也不会加载父智能体的会话记忆
+     * false 会记录
+     * 
+     */
+    protected boolean disableGloableStore;
+
+    /**
      * 工具清单，标准工具规范格式
      */
     protected List<FunctionToolDefine> tools;
@@ -53,13 +60,33 @@ public class AIAgent<T extends AIAgent> {
 
     @JsonIgnore
     protected ToolsRegist toolsRegist;
-
+    @JsonIgnore
     protected AgentSessionStore agentSessionStore;
-
+    @JsonIgnore
     protected AgentSessionStore parentSessionStore;
     protected String agentId;
+    @JsonIgnore
+    protected AgentMessage agentMessage;
     public AIAgent(){
-        this(null);
+        this((String)null);
+    }
+
+    public T setAgentMessage(AgentMessage agentMessage) {
+        this.agentMessage = agentMessage;
+        return (T)this;
+    }
+
+    public AgentMessage getAgentMessage() {
+        return agentMessage;
+    }
+
+    public boolean isDisableGloableStore() {
+        return disableGloableStore;
+    }
+
+    public T setPrompt(String prompt) {
+        this.prompt = prompt;
+        return (T)this;
     }
 
     public String getPrompt() {
@@ -116,6 +143,10 @@ public class AIAgent<T extends AIAgent> {
         this(  prompt, null, toolsRegist,sessionSize);
     }
 
+    public AIAgent(ToolsRegist toolsRegist){
+        this(  null, null, toolsRegist,null);
+    }
+
     public AIAgent(String prompt,String type){
         this(  prompt, type, null,null);
     }
@@ -132,10 +163,10 @@ public class AIAgent<T extends AIAgent> {
         //UserAgent无需追加父智能体中产生的最新的消息作
         LastSessionMessage lastSubAgentSessionMessage = null;
         if(parentSessionStore != null) {
-            lastSubAgentSessionMessage = parentSessionStore.getLastSubAgentSessionMessage(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
+            lastSubAgentSessionMessage = parentSessionStore.getLastSubAgentSessionMessage( );
         }
         else{
-            lastSubAgentSessionMessage = mainSessionStore.getLastSubAgentSessionMessage(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
+            lastSubAgentSessionMessage = mainSessionStore.getLastSubAgentSessionMessage( );
         }
         return lastSubAgentSessionMessage;
     }
@@ -146,25 +177,26 @@ public class AIAgent<T extends AIAgent> {
 //                sessionAgentMessage.setSessionStore(agentSessionStore);
         mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
 
-        //UserAgent无需追加父智能体中产生的最新的消息作
-        LastSessionMessage lastSubAgentSessionMessage = getLastSubAgentSessionMessage(  mainSessionStore,  agentMessage);
-        
+        if(!disableGloableStore) {
+            //UserAgent无需追加父智能体中产生的最新的消息作
+            LastSessionMessage lastSubAgentSessionMessage = getLastSubAgentSessionMessage(mainSessionStore, agentMessage);
 
-        if(empty) {
-            //加载历史消息
-            List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
-            if (sessionMessages != null && sessionMessages.size() > 0) {
-                for (Map<String, Object> sessionMessage : sessionMessages) {
-                    agentSessionStore.appendSessionMessageFromParent(sessionMessage);
+
+            if (empty) {
+                //加载历史消息
+                List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
+                if (sessionMessages != null && sessionMessages.size() > 0) {
+                    for (Map<String, Object> sessionMessage : sessionMessages) {
+                        agentSessionStore.appendSessionMessageFromParent(sessionMessage);
+                    }
+
+
                 }
-
-
+            } else if (lastSubAgentSessionMessage != null) {//不为空，直接append主智能体中的最后一条消息
+                agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
+                mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
+                //记录消息引用关系
             }
-        }
-        else if(lastSubAgentSessionMessage != null){//不为空，直接append主智能体中的最后一条消息
-            agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
-            mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
-            //记录消息引用关系
         }
     }
     protected void reactMessage(AgentMessage agentMessage){
@@ -193,6 +225,7 @@ public class AIAgent<T extends AIAgent> {
                     else
                         agentSessionStore = new AgentSessionStoreMemory(mainSessionStore,sessionSize);
                     agentSessionStore.setAgentId(agentId);
+                    agentSessionStore.setAIAgent(this);
                     agentSessionStore.setMainAgentSessionStore(mainSessionStore);
                 }
                 loadHistoryMessages(  mainSessionStore,  agentMessage);
@@ -380,9 +413,11 @@ public class AIAgent<T extends AIAgent> {
         ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this);
         if(serverEvent != null && serverEvent.getData() != null){
 //            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
-            if(this.agentSessionStore != null) {
+            if(this.agentSessionStore != null ) {
                 LastSessionMessage lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(serverEvent.getData());
-                this.agentSessionStore.setParantAgentLastSessionMessage(lastSubAgentSessionMessage);
+                if( !disableGloableStore) {
+                    this.agentSessionStore.setParantAgentLastSessionMessage(lastSubAgentSessionMessage);
+                }
             }
             
             

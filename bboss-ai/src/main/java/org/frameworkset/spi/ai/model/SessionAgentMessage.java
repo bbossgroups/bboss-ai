@@ -166,6 +166,9 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
         AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
         if(agentSessionStore == null){
+            agentSessionStore = aiAgent.getAgentSessionStore();
+        }
+        if(agentSessionStore == null){
             return (T)this;
         }
         agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId());
@@ -198,7 +201,9 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             return null;
         }
         LastSessionMessage lastSessionMessage = agentSessionStore.addAgentResultSessionMessage(message);
-        agentSessionStore.setParantAgentLastSessionMessage(lastSessionMessage);
+        if(!aiAgent.isDisableGloableStore()) {
+            agentSessionStore.setParantAgentLastSessionMessage(lastSessionMessage);
+        }
         return lastSessionMessage;
     }
     public Map<String,Object> addAssistantSessionMessage(String message,AIAgent aiAgent){

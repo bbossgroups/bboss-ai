@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
@@ -52,7 +53,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     protected StoreContext storeContext;
     protected AgentSessionStore parentAgentSessionStore;
 
-
+    protected AIAgent aiAgent;
 
 
     protected AgentSessionStore mainAgentSessionStore;
@@ -62,7 +63,17 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.sessionMemory = sessionMemory;
 
     }
-    
+
+    @Override
+    public T setAIAgent(AIAgent aiAgent) {
+        this.aiAgent = aiAgent;
+        return (T)this;
+    }
+
+    public AIAgent getAiAgent() {
+        return aiAgent;
+    }
+
     public String genSubAgentId(){
         return this.agentId + "-"+agentIdAssign.getAgentId();
     }
@@ -206,7 +217,18 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         appendSessionMessage(assistantMessage);
 
         if(parentAgentSessionStore != null){
-            lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId,this.getParantAgentId());
+            if(aiAgent != null ){
+                if(!aiAgent.isDisableGloableStore()) {
+                    lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
+                }
+                else{
+                    parentAgentSessionStore.persistentSessionMessage(assistantMessage, agentId, this.getParantAgentId(),null,null,"1");
+                }
+            }
+            else{
+                lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
+            }
+            
 
         }
         else{
@@ -316,7 +338,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     
 
     @Override
-    public LastSessionMessage getLastSubAgentSessionMessage(String prompt, String agentId){
+    public LastSessionMessage getLastSubAgentSessionMessage(){
 //        this.loadSessionMemory(prompt,agentId);
         if(lastSubAgentSessionMessage != null){
             return lastSubAgentSessionMessage;
