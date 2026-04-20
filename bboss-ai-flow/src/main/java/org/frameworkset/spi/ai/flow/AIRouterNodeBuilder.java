@@ -33,7 +33,8 @@ import java.util.List;
  */
 public class AIRouterNodeBuilder extends CallableJobFlowNodeBuilder {
     private String prompt2 = "# 用户问题：${prompt}\r# 根据用户问题，从以下智能体列表中选择一个最合适的智能体记录\r${routeChoiceList}\r# 输出要求：\r" +
-            "将匹配的智能体JSON串包含在```json和```中输出，将其他文字都去除" 
+            "1.如果匹配到智能体将匹配的智能体JSON串包含在```json和```中输出，将其他文字都去除\r" +
+            "2.如果未匹配到智能体，请返回空内容\r" 
             ;
     // 新增：极简提示词，直接要求纯 JSON
     private String promptMinimal = "根据用户问题选择最合适的智能体。\n\n" +
@@ -51,9 +52,10 @@ public class AIRouterNodeBuilder extends CallableJobFlowNodeBuilder {
 
     private AgentMessage agentMessage;
     public AIRouterNodeBuilder(AIRouteAgent aiRouteAgent ) {
-        super( );
+        super( aiRouteAgent.getAgentId(),aiRouteAgent.getAgentName());        
         this.aiRouteAgent = aiRouteAgent;
         this.aiPlanAgent = aiRouteAgent.getAiPlanAgent();
+       
     }
     public AIRouterNodeBuilder(String nodeName) {
         super(nodeName);

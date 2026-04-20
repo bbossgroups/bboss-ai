@@ -71,6 +71,11 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return this;
     }
 
+    /**
+     * 添加路由网关节点：负责根据用户问题决定后续的路由节点，AI进行自主决策
+     * @param aiRouteAgent
+     * @return
+     */
     public AIPlanAgent addAIRouteAgent(AIRouteAgent aiRouteAgent) {
         if(jobFlowBuilder == null){
             jobFlowBuilder = new JobFlowBuilder();
@@ -89,11 +94,17 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return this;
     }
 
-    public AIPlanAgent addRouteChoiceAgent(AIRouteChoiceAgent aiRouteChoiceAgent) {
+    /**
+     * 添加路由节点
+     * @param aiRouteChoiceAgent
+     * @return
+     */
+    public AIPlanAgent addRouteChoiceAgent(AIBaseRouteChoiceAgent aiRouteChoiceAgent) {
         if(jobFlowBuilder == null){
             jobFlowBuilder = new JobFlowBuilder();
+            
         }
-        aiRouteChoiceAgent.setAiPlanAgent(this);
+        aiRouteChoiceAgent.setPlanAgent(this);
        
         jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(aiRouteChoiceAgent )
                 .setTriggerScriptAPI(nodeTriggerContext -> {
@@ -109,6 +120,21 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return this;
     }
 
+
+    /**
+     * 添加默认路由节点
+     * @param defaultRouteChoiceAgent
+     * @return
+     */
+    public AIPlanAgent addDefaultRouteChoiceAgent(AIRouteChoiceAgent defaultRouteChoiceAgent) {
+        if(jobFlowBuilder == null){
+            jobFlowBuilder = new JobFlowBuilder();
+        }
+        defaultRouteChoiceAgent.setPlanAgent(this);
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(defaultRouteChoiceAgent ),true);
+        return this;
+    }
+
     public LastSessionMessage chat( ) {
         
         if(jobFlowBuilder != null){
@@ -116,6 +142,8 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
             JobFlowScheduleConfig jobFlowScheduleConfig = new JobFlowScheduleConfig();
             jobFlowScheduleConfig.setExecuteOneTime(true);
             jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
+            jobFlowBuilder.setJobFlowId(this.getAgentId());
+            jobFlowBuilder.setJobFlowName(this.getAgentName());
             JobFlow jobflow = jobFlowBuilder.build();
             jobflow.execute();
             return this.getLastSessionMessage();

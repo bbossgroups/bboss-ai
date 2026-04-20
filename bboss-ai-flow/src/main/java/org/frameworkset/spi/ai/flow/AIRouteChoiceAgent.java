@@ -15,16 +15,14 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 
 /**
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class AIRouteChoiceAgent<T extends AIRouteChoiceAgent> 
-        extends AIAgent<T> {
-    private AIPlanAgent aiPlanAgent;
+public class AIRouteChoiceAgent  
+        extends AIBaseRouteChoiceAgent<AIRouteChoiceAgent> {
     public AIRouteChoiceAgent(ToolsRegist mcpToolsRegist ) {
         super(   mcpToolsRegist);
     }
@@ -33,14 +31,7 @@ public class AIRouteChoiceAgent<T extends AIRouteChoiceAgent>
         super(  );
     }
 
-    public AIPlanAgent getAiPlanAgent() {
-        return aiPlanAgent;
-    }
-
-    public T setAiPlanAgent(AIPlanAgent aiPlanAgent) {
-        this.aiPlanAgent = aiPlanAgent;
-        return (T)this;
-    }
+ 
 
  
 }

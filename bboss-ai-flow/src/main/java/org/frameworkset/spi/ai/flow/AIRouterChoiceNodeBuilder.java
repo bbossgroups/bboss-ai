@@ -30,13 +30,13 @@ import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 public class AIRouterChoiceNodeBuilder extends CallableJobFlowNodeBuilder {
     private AIPlanAgent aiPlanAgent;
 
-    private AIRouteChoiceAgent aiAgent;
+    private AIBaseRouteChoiceAgent aiAgent;
     
 
-    public AIRouterChoiceNodeBuilder(AIRouteChoiceAgent aiAgent ) {
-        super( );
+    public AIRouterChoiceNodeBuilder(AIBaseRouteChoiceAgent aiAgent ) {
+        super( aiAgent.getAgentId(),aiAgent.getAgentName());
         this.aiAgent = aiAgent;
-        this.aiPlanAgent = aiAgent.getAiPlanAgent();
+        this.aiPlanAgent = aiAgent.getPlanAgent();
     }
     public AIRouterChoiceNodeBuilder(String nodeName) {
         super(nodeName);

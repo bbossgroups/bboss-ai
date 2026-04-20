@@ -16,7 +16,6 @@ package org.frameworkset.spi.ai;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
@@ -24,7 +23,6 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
-
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -65,6 +63,9 @@ public class AIAgent<T extends AIAgent> {
     @JsonIgnore
     protected AgentSessionStore parentSessionStore;
     protected String agentId;
+
+
+    protected String agentName;
     @JsonIgnore
     protected AgentMessage agentMessage;
     public AIAgent(){
@@ -656,5 +657,15 @@ public class AIAgent<T extends AIAgent> {
         this.toolCalls.put(toolName, functionCall);
         return (T)this;
     }
+
+    public String getAgentName() {
+        return agentName;
+    }
+
+    public T setAgentName(String agentName) {
+        this.agentName = agentName;
+        return (T)this;
+    }
+
 
 }

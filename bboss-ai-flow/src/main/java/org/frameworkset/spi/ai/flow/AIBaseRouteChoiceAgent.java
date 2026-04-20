@@ -15,24 +15,32 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 
 /**
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class UserRouteChoiceAgent 
-        extends AIBaseRouteChoiceAgent<UserRouteChoiceAgent> {
- 
+public class AIBaseRouteChoiceAgent<T extends AIBaseRouteChoiceAgent> 
+        extends AIAgent<T> {
+    protected AIPlanAgent planAgent;
+    public AIBaseRouteChoiceAgent(ToolsRegist mcpToolsRegist ) {
+        super(   mcpToolsRegist);
+    }
 
-    public UserRouteChoiceAgent(  ) {
+    public AIBaseRouteChoiceAgent(  ) {
         super(  );
     }
 
-    public UserRouteChoiceAgent(ToolsRegist mcpToolsRegist) {
-        super( mcpToolsRegist);
+    public AIPlanAgent getPlanAgent() {
+        return planAgent;
     }
- 
+
+    public T setPlanAgent(AIPlanAgent aiPlanAgent) {
+        this.planAgent = aiPlanAgent;
+        return (T)this;
+    }
 
  
 }
