@@ -24,6 +24,7 @@ import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.store.StoreContext;
+import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
@@ -216,10 +217,16 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role
             String msgId = SimpleStringUtil.getUUID32();
+            String role = (String) message.get("role");
+            if(agentResultMessage != null && !agentResultMessage.equals("1")){
+                if(role.equals(MessageBuilder.ROLE_USER)){
+                    agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
+                }
+            }
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
                     msgId,new Date(),this.getSessionId(),
                     parentAgentId, agentId,agentResultMessage,integerCount.increament(), JsonUtil.object2json(message),
-                    message.get("role"),marks,metadata);
+                    role,marks,metadata);
 
             if(agentResultMessage != null && agentResultMessage.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();

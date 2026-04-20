@@ -43,6 +43,8 @@ public class AIConstants {
     public static final String AI_MODEL_TYPE_ZHIPU_URL = "https://open.bigmodel.cn";
     public static final String AI_MODEL_TYPE_MINIMAX_URL = "https://api.minimaxi.com";
     public static final String AI_MODEL_TYPE_HUNYUAN_URL = "https://api.hunyuan.cloud.tencent.com";
+    
+    
 
     /**
      * 根据maas平台地址，返回对应平台适配器类型

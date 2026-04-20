@@ -28,6 +28,8 @@ import java.util.Map;
  */
 public class AgentMessage<T extends AgentMessage> {
 
+    
+    
     private Boolean thinking;
     /**
      * maas平台数据源名称

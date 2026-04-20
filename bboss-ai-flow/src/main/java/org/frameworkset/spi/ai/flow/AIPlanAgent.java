@@ -33,9 +33,7 @@ import reactor.core.publisher.Flux;
  */
 public class AIPlanAgent extends AIAgent<AIPlanAgent> {
 
-    private String prompt;
     private AgentSessionStore mainSessionStore;
-    private AgentMessage agentMessage;
     private StoreContext storeContext;
     private AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
     private JobFlowBuilder jobFlowBuilder;
@@ -47,6 +45,11 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     public LastSessionMessage getLastSessionMessage(){
         return mainSessionStore.getLastSubAgentSessionMessage();
     }
+    private void initAIJobFlowBuilder(){
+        if(jobFlowBuilder == null){
+            jobFlowBuilder = new AIJobFlowBuilder(this);
+        }
+    }
 
     public JobFlowBuilder getJobFlowBuilder() {
         return jobFlowBuilder;
@@ -55,21 +58,16 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     private void initSessionStore(){
         if(mainSessionStore == null && storeContext != null){
             mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+            mainSessionStore.setAIAgent(this);
             if(agentMessage != null && agentMessage instanceof SessionAgentMessage){
                 ((SessionAgentMessage)agentMessage).setMainSessionStore(mainSessionStore);
             }
-//            mainSessionStore = sessionStore;
         }
     }
 
-    public AgentMessage getAgentMessage() {
-        return agentMessage;
-    }
+ 
 
-    public AIPlanAgent setAgentMessage(AgentMessage agentMessage) {
-        this.agentMessage = agentMessage;
-        return this;
-    }
+ 
 
     /**
      * 添加路由网关节点：负责根据用户问题决定后续的路由节点，AI进行自主决策
@@ -77,34 +75,24 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @return
      */
     public AIPlanAgent addAIRouteAgent(AIRouteAgent aiRouteAgent) {
-        if(jobFlowBuilder == null){
-            jobFlowBuilder = new JobFlowBuilder();
-        }
-        aiRouteAgent.setAiPlanAgent(this);
+        initAIJobFlowBuilder();
+        aiRouteAgent.setPlanAgent(this);
+        aiRouteAgent.setParentAgent(this);
         jobFlowBuilder.addJobFlowNodeBuilder(new AIRouterNodeBuilder(aiRouteAgent));
         return this;
     }
 
-    public String getPrompt() {
-        return prompt;
-    }
-
-    public AIPlanAgent setPrompt(String prompt) {
-        this.prompt = prompt;
-        return this;
-    }
+ 
 
     /**
      * 添加路由节点
      * @param aiRouteChoiceAgent
      * @return
      */
-    public AIPlanAgent addRouteChoiceAgent(AIBaseRouteChoiceAgent aiRouteChoiceAgent) {
-        if(jobFlowBuilder == null){
-            jobFlowBuilder = new JobFlowBuilder();
-            
-        }
+    public AIPlanAgent addRouteChoiceAgent(AIBaseNodeAgent aiRouteChoiceAgent) {
+        initAIJobFlowBuilder();
         aiRouteChoiceAgent.setPlanAgent(this);
+        aiRouteChoiceAgent.setParentAgent(this);
        
         jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(aiRouteChoiceAgent )
                 .setTriggerScriptAPI(nodeTriggerContext -> {
@@ -126,12 +114,35 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param defaultRouteChoiceAgent
      * @return
      */
-    public AIPlanAgent addDefaultRouteChoiceAgent(AIRouteChoiceAgent defaultRouteChoiceAgent) {
-        if(jobFlowBuilder == null){
-            jobFlowBuilder = new JobFlowBuilder();
-        }
+    public AIPlanAgent addDefaultRouteChoiceAgent(AINodeAgent defaultRouteChoiceAgent) {
+        initAIJobFlowBuilder();
         defaultRouteChoiceAgent.setPlanAgent(this);
+        defaultRouteChoiceAgent.setParentAgent(this);
         jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(defaultRouteChoiceAgent ),true);
+        return this;
+    }
+    /**
+     * 添加工作流节点
+     * @param judgeAgent
+     * @return
+     */
+    public AIPlanAgent addJudgeAgent(AIJudgeAgent judgeAgent) {
+        initAIJobFlowBuilder();
+        judgeAgent.setPlanAgent(this);
+        judgeAgent.setParentAgent(this);
+        jobFlowBuilder.addJobFlowNodeBuilder(new AIJudgeNodeBuilder(judgeAgent ));
+        return this;
+    }
+    /**
+     * 添加工作流节点
+     * @param aiAgent
+     * @return
+     */
+    public AIPlanAgent addAgent(AIBaseNodeAgent aiAgent) {
+        initAIJobFlowBuilder();
+        aiAgent.setPlanAgent(this);
+        aiAgent.setParentAgent(this);
+        jobFlowBuilder.addJobFlowNodeBuilder(new AINodeBuilder(aiAgent ));
         return this;
     }
 

@@ -108,10 +108,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     }
 
     protected String getSystemPrompt(AgentMessage agentMessage, AIAgent aiAgent){
-        return MessageBuilder.getSystemPrompt(  agentMessage,   aiAgent);
+        return aiAgent.evalSystemPrompt(  agentMessage);
     }
     protected String getPrompt(AgentMessage agentMessage, AIAgent aiAgent){
-        return MessageBuilder.getPrompt(agentMessage,aiAgent);
+        return aiAgent.evalPrompt(agentMessage);
     }
     public Map buildVideoVLRequestMap(VideoVLAgentMessage videoVLAgentMessage, AIAgent aiAgent) {
 

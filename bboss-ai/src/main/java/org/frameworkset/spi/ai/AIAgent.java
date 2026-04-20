@@ -64,12 +64,33 @@ public class AIAgent<T extends AIAgent> {
     protected AgentSessionStore parentSessionStore;
     protected String agentId;
 
+    public T setParentAgent(AIAgent parentAgent) {
+        this.parentAgent = parentAgent;
+        return (T)this;
+    }
+
+    protected AIAgent parentAgent;
+
 
     protected String agentName;
     @JsonIgnore
     protected AgentMessage agentMessage;
     public AIAgent(){
         this((String)null);
+    }
+    
+    public AIAgent getParentAgent(){
+        if(parentAgent != null){
+            return parentAgent;
+        }
+        if(this.parentSessionStore != null){
+            return parentSessionStore.getAiAgent();
+        }
+        return null;
+    }
+
+    public LastSessionMessage getLastSessionMessage(){
+        return agentSessionStore != null?agentSessionStore.getLastSubAgentSessionMessage():null;
     }
 
     public T setAgentMessage(AgentMessage agentMessage) {
@@ -201,10 +222,7 @@ public class AIAgent<T extends AIAgent> {
         }
     }
     protected void reactMessage(AgentMessage agentMessage){
-//        if(prompt != null)
-//            agentMessage.setPrompt(prompt);
-//        if(toolsRegist != null)
-//            agentMessage.setToolsRegist(toolsRegist);
+
          
     
         if(agentMessage instanceof SessionAgentMessage) {
@@ -497,7 +515,7 @@ public class AIAgent<T extends AIAgent> {
 
 
     public String getAgentId() {
-        return this.agentId != null ? this.agentId : this.agentSessionStore.getAgentId();
+        return this.agentId != null ? this.agentId : agentSessionStore != null?this.agentSessionStore.getAgentId():null;
     }
 
     public String getParentAgentId() {
@@ -668,4 +686,52 @@ public class AIAgent<T extends AIAgent> {
     }
 
 
+    public  String evalSystemPrompt(AgentMessage agentMessage){
+        String systemPrompt = this.getSystemPrompt();
+        if(systemPrompt == null){           
+            systemPrompt = agentMessage.getSystemPrompt();            
+        }
+        if(systemPrompt != null && this.getParentAgent() != null){
+            this.getParentAgent().setFirstSubAgentSystemPrompt(systemPrompt);
+        }
+        return systemPrompt;
+    }
+    public  String evalPrompt(AgentMessage agentMessage){
+        String prompt = this.getPrompt();
+        if(prompt == null){           
+            
+            prompt = agentMessage.getPrompt();
+            
+        }
+        if(prompt != null && this.getParentAgent() != null){
+            this.getParentAgent().setFirstSubAgentPrompt(prompt);
+        }
+        return prompt;
+    }
+
+    private String firstSubAgentPrompt;
+    
+    public String getFirstSubAgentPrompt(){
+        return this.firstSubAgentPrompt;
+    }
+
+    public T setFirstSubAgentPrompt(String firstSubAgentPrompt) {
+        if(firstSubAgentPrompt != null) {
+            this.firstSubAgentPrompt = firstSubAgentPrompt;
+        }
+        return (T)this;
+    }
+
+    private String firstSubAgentSystemPrompt;
+    public T setFirstSubAgentSystemPrompt(String systemPrompt) {
+        if(firstSubAgentSystemPrompt == null){
+            this.firstSubAgentSystemPrompt = systemPrompt;
+        }
+        return (T)this;
+    }
+    public String getFirstSubAgentSystemPrompt(){
+        return this.firstSubAgentSystemPrompt;
+    }
+    
+    
 }

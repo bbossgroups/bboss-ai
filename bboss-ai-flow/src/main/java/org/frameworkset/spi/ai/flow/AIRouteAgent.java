@@ -26,8 +26,7 @@ import java.util.List;
  * @Date 2026/4/14
  */
 public class AIRouteAgent 
-        extends UserAgent<AIRouteAgent> {
-    private AIPlanAgent aiPlanAgent;
+        extends AIBaseNodeAgent<AIRouteAgent> {
     public AIRouteAgent( String prompt ) {
         super( prompt);
         disableGloableStore = true;
@@ -42,15 +41,7 @@ public class AIRouteAgent
         return this;
     }
 
-
-    public AIPlanAgent getAiPlanAgent() {
-        return aiPlanAgent;
-    }
-
-    public AIRouteAgent setAiPlanAgent(AIPlanAgent aiPlanAgent) {
-        this.aiPlanAgent = aiPlanAgent;
-        return this;
-    }
+ 
 
     private List<RouteChoice> routeChoiceList;
 

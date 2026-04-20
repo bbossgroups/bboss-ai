@@ -21,15 +21,15 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class UserRouteChoiceAgent 
-        extends AIBaseRouteChoiceAgent<UserRouteChoiceAgent> {
+public class UserNodeAgent 
+        extends AIBaseNodeAgent<UserNodeAgent> {
  
 
-    public UserRouteChoiceAgent(  ) {
+    public UserNodeAgent(  ) {
         super(  );
     }
 
-    public UserRouteChoiceAgent(ToolsRegist mcpToolsRegist) {
+    public UserNodeAgent(ToolsRegist mcpToolsRegist) {
         super( mcpToolsRegist);
     }
  

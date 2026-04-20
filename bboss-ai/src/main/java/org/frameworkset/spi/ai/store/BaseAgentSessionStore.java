@@ -26,6 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.frameworkset.spi.ai.store.SessionMessage.MESSAGE_TYPE_AGENTRESULTMESSAGE;
+import static org.frameworkset.spi.ai.store.SessionMessage.MESSAGE_TYPE_MIDDLE_MESSAGE;
+
 /**
  * @author biaoping.yin
  * @Date 2026/4/2
@@ -70,6 +73,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return (T)this;
     }
 
+    @Override
     public AIAgent getAiAgent() {
         return aiAgent;
     }
@@ -197,10 +201,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         }
         appendSessionMessage(message);
         if(mainAgentSessionStore != null){
-            mainAgentSessionStore.persistentSessionMessage(message, agentId,this.getParantAgentId(),null,null,"0");
+            mainAgentSessionStore.persistentSessionMessage(message, agentId,this.getParantAgentId(),null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
         }
         else if(this.persistentSessionMemory){
-            persistentSessionMessage(message, agentId,this.getParantAgentId(),null,null,"0");
+            persistentSessionMessage(message, agentId,this.getParantAgentId(),null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
         }
          
     }
@@ -222,7 +226,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
                     lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
                 }
                 else{
-                    parentAgentSessionStore.persistentSessionMessage(assistantMessage, agentId, this.getParantAgentId(),null,null,"1");
+                    parentAgentSessionStore.persistentSessionMessage(assistantMessage, agentId, this.getParantAgentId(),null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
                 }
             }
             else{
@@ -254,12 +258,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
 //            loadSessionMemory(message,  agentId);
             //msgId,createTime,sessionId,seqNo,message,role
-            mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,"1");
+            mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
             
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
 //            loadSessionMemory(message,  agentId);
-            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,null,null,"1");
+            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
             
 
         }
@@ -277,10 +281,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
         if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
             //msgId,createTime,sessionId,seqNo,message,role
-            mainAgentSessionStore.persistentSessionMessage(systemMessage, agentId,parentAgentId,null,null,"0");
+            mainAgentSessionStore.persistentSessionMessage(systemMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
-            persistentSessionMessage(systemMessage, agentId,parentAgentId,null,null,"0");//1 代表子智能体输出结果 0 代表子智能体中间消息
+            persistentSessionMessage(systemMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);//1 代表子智能体输出结果 0 代表子智能体中间消息，3 代表用户输入消息
         }
 //            SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
 //                    SimpleStringUtil.getUUID32(),new Date(),this.getSessionId(),agentId, integerCount.increament(), JsonUtil.object2json(systemMessage),

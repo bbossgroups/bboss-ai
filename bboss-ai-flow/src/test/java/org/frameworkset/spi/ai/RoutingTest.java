@@ -16,10 +16,7 @@ package org.frameworkset.spi.ai;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
-import org.frameworkset.spi.ai.flow.AIPlanAgent;
-import org.frameworkset.spi.ai.flow.AIRouteAgent;
-import org.frameworkset.spi.ai.flow.AIRouteChoiceAgent;
-import org.frameworkset.spi.ai.flow.UserRouteChoiceAgent;
+import org.frameworkset.spi.ai.flow.*;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
@@ -50,11 +47,11 @@ public class RoutingTest {
 //        multiagentWeathor("zhipu","glm-5.1",null);
 //        multiagentWeathor("zhipu","glm-5.1","6021bcca95fe4393bd4726f7b667a75a");
 //        multiuserAgentWeathor("zhipu","glm-5.1","3021bcca95fe4393bd4726f7b667a75a");
-//          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.1",null);
+          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.1",null);
 //        multiagentWeathor("zhipu","创建一篇关于中国首都介绍的飞书文档","glm-5.1",null);
 
 
-        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
+//        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
 
     }
     public static void initDB(){
@@ -86,7 +83,8 @@ public class RoutingTest {
                 .setSessionId(sessionId).setUserId("user123").setSessionSize(100)                 
                 .setStoreType(StoreContext.STORE_TYPE_DB)
                 .setDataSource("visualops"))
-                .setAgentMessage(chatAgentMessage).setAgentName("工作流智能体").setAgentId("workflowAgent")
+                .setAgentMessage(chatAgentMessage)
+                .setAgentName("工作流智能体").setAgentId("workflowAgent")
                  ;
         //构建路由规则智能体
         aiPlanAgent.addAIRouteAgent(new AIRouteAgent()
@@ -97,12 +95,12 @@ public class RoutingTest {
         ); 
 
         //构建天气查询和出现建议智能体：当用户问题匹配上时执行
-        aiPlanAgent.addRouteChoiceAgent(new UserRouteChoiceAgent(new MCPToolsRegist("visualops"))
+        aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(new MCPToolsRegist("visualops"))
                 .setAgentId("weatherAgent").setAgentName("天气查询智能体"));
 
 
         //构建飞书文档操作智能体：当用户问题匹配上时执行
-        aiPlanAgent.addRouteChoiceAgent(new UserRouteChoiceAgent(
+        aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(
                 new FeishuMcpRegist("feishumcp")
                         .setAppId("cli_a9d43b87aff89cd1")
                         .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
@@ -110,7 +108,9 @@ public class RoutingTest {
         ).setAgentId("docAgent").setAgentName("飞书文档智能体"));
 
         //构建默认智能体：当用户问题匹配不上时执行,将直接回答问题
-        aiPlanAgent.addDefaultRouteChoiceAgent(new AIRouteChoiceAgent().setAgentId("defaultAgent").setAgentName("默认智能体"));
+        aiPlanAgent.addDefaultRouteChoiceAgent(new AINodeAgent().setAgentId("defaultAgent").setAgentName("默认智能体"));
+        
+        aiPlanAgent.addJudgeAgent(new AIJudgeAgent("评估结果是否回答了问题,回答请回复：是，否则回复：否").setAgentId("judgeAgent").setAgentName("评估智能体"));
         
         //开始对话，执行对话流程，并返回会话结果
         LastSessionMessage lastSessionMessage = aiPlanAgent.chat();

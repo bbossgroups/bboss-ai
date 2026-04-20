@@ -15,28 +15,33 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.tools.ToolsRegist;
+
 /**
+ * 调取智能体执行记忆，判断输出结果是否满足用户问题
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class AIRouterChoiceNodeBuilder extends AIBaseNodeBuilder {
-   
+public class AIJudgeAgent  
+        extends AIBaseNodeAgent<AIJudgeAgent> {
+    public AIJudgeAgent(ToolsRegist mcpToolsRegist,String prompt ) {
+        super(   mcpToolsRegist);
+        this.setPrompt(prompt);
+        disableGloableStore = true;
+        
+    }
+    public AIJudgeAgent(String prompt  ) {
+        super( prompt );
+        disableGloableStore = true;
+    }
+    public AIJudgeAgent(  ) {
+        super(  );
+        disableGloableStore = true;
+    }
     
-
-    public AIRouterChoiceNodeBuilder(AIBaseNodeAgent agent) {
-        super( agent);
-    }
-    public AIRouterChoiceNodeBuilder(String nodeName) {
-        super(nodeName);
-    }
-
-    public AIRouterChoiceNodeBuilder(String nodeId, String nodeName) {
-        super(nodeId, nodeName);
-    } 
+    
 
  
 
-    
- 
  
 }

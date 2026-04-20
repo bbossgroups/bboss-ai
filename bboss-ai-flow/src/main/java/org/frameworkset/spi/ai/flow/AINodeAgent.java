@@ -21,13 +21,15 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class AIRouteChoiceAgent  
-        extends AIBaseRouteChoiceAgent<AIRouteChoiceAgent> {
-    public AIRouteChoiceAgent(ToolsRegist mcpToolsRegist ) {
+public class AINodeAgent  
+        extends AIBaseNodeAgent<AINodeAgent> {
+    public AINodeAgent(ToolsRegist mcpToolsRegist ) {
         super(   mcpToolsRegist);
     }
-
-    public AIRouteChoiceAgent(  ) {
+    public AINodeAgent(String prompt  ) {
+        super( prompt );
+    }
+    public AINodeAgent(  ) {
         super(  );
     }
 

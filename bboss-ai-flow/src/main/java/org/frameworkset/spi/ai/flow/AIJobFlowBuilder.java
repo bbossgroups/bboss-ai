@@ -15,32 +15,21 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.tools.ToolsRegist;
+import org.frameworkset.tran.jobflow.JobFlow;
+import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
 
 /**
  * @author biaoping.yin
- * @Date 2026/4/14
+ * @Date 2026/4/20
  */
-public class AIBaseRouteChoiceAgent<T extends AIBaseRouteChoiceAgent> 
-        extends AIAgent<T> {
-    protected AIPlanAgent planAgent;
-    public AIBaseRouteChoiceAgent(ToolsRegist mcpToolsRegist ) {
-        super(   mcpToolsRegist);
+public class AIJobFlowBuilder extends JobFlowBuilder {
+    private AIPlanAgent planAgent;
+    public AIJobFlowBuilder(AIPlanAgent planAgent)
+    {
+        this.planAgent = planAgent;
     }
-
-    public AIBaseRouteChoiceAgent(  ) {
-        super(  );
+    @Override
+    protected JobFlow buildJobFlow(){
+        return new AIJobFlow(planAgent);
     }
-
-    public AIPlanAgent getPlanAgent() {
-        return planAgent;
-    }
-
-    public T setPlanAgent(AIPlanAgent aiPlanAgent) {
-        this.planAgent = aiPlanAgent;
-        return (T)this;
-    }
-
- 
 }

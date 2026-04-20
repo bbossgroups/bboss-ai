@@ -45,7 +45,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     boolean loadSessionMemory(String prompt,String agentId);
     
     String getParantAgentId();
-
+    AIAgent getAiAgent();
     T setAIAgent(AIAgent aiAgent);
     T setSessionSize(int sessionSize) ;
     T setAgentId(String agentId) ;

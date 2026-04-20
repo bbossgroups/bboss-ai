@@ -31,7 +31,7 @@ import java.util.List;
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class AIRouterNodeBuilder extends CallableJobFlowNodeBuilder {
+public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
     private String prompt2 = "# 用户问题：${prompt}\r# 根据用户问题，从以下智能体列表中选择一个最合适的智能体记录\r${routeChoiceList}\r# 输出要求：\r" +
             "1.如果匹配到智能体将匹配的智能体JSON串包含在```json和```中输出，将其他文字都去除\r" +
             "2.如果未匹配到智能体，请返回空内容\r" 
@@ -46,15 +46,11 @@ public class AIRouterNodeBuilder extends CallableJobFlowNodeBuilder {
     private String prompt1 = "# 用户问题：${prompt}\r# 根据用户问题，从以下智能体列表中选择一个最合适的智能体记录\r${routeChoiceList}\r# 输出要求：\r" +
             "只返回匹配的智能体JSON串，将其他文字都去除"
             ;
-    private AIPlanAgent aiPlanAgent;
 
-    private  AIRouteAgent aiRouteAgent;
-
-    private AgentMessage agentMessage;
-    public AIRouterNodeBuilder(AIRouteAgent aiRouteAgent ) {
-        super( aiRouteAgent.getAgentId(),aiRouteAgent.getAgentName());        
-        this.aiRouteAgent = aiRouteAgent;
-        this.aiPlanAgent = aiRouteAgent.getAiPlanAgent();
+    private AIRouteAgent routeAgent;
+    public AIRouterNodeBuilder(AIRouteAgent routeAgent) {
+        super( routeAgent);
+        this.routeAgent = routeAgent;
        
     }
     public AIRouterNodeBuilder(String nodeName) {
@@ -65,10 +61,7 @@ public class AIRouterNodeBuilder extends CallableJobFlowNodeBuilder {
         super(nodeId, nodeName);
     }
 
-    public AIRouterNodeBuilder setAgentMessage(AgentMessage agentMessage) {
-        this.agentMessage = agentMessage;
-        return this;
-    }
+ 
 
     public AIRouterNodeBuilder setPrompt(String prompt) {
         this.prompt = prompt;
@@ -78,19 +71,19 @@ public class AIRouterNodeBuilder extends CallableJobFlowNodeBuilder {
     
     @Override
     public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) throws Exception {      
-        List<RouteChoice> routeChoiceList = aiRouteAgent.getRouteChoiceList();
-        String prompt = aiRouteAgent.getPrompt();
+        List<RouteChoice> routeChoiceList = routeAgent.getRouteChoiceList();
+        String prompt = routeAgent.getPrompt();
         if(SimpleStringUtil.isEmpty(prompt)){
             prompt = this.prompt;
             
         }
-        AgentMessage agentMessage = aiRouteAgent.getAgentMessage() != null ? aiRouteAgent.getAgentMessage() : aiPlanAgent.getAgentMessage();
+        AgentMessage agentMessage = routeAgent.getAgentMessage() != null ? routeAgent.getAgentMessage() : planAgent.getAgentMessage();
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
         prompt = prompt.replace("${prompt}",agentMessage.getPrompt()).replace("${routeChoiceList}",JsonUtil.object2json(routeChoiceList));
-        aiRouteAgent.setPrompt(prompt);
-        ServerEvent serverEvent = aiRouteAgent.chat((ChatAgentMessage)agentMessage);
+        routeAgent.setPrompt(prompt);
+        ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage)agentMessage);
         JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
         JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
         String data  = serverEvent.getData();

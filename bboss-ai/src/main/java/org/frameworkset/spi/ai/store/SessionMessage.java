@@ -25,6 +25,20 @@ import java.util.Map;
  * @Date 2026/4/3
  */
 public class SessionMessage {
+    /**
+     * 智能体输出消息
+     */
+    public static final String MESSAGE_TYPE_AGENTRESULTMESSAGE = "1";
+    /**
+     * 智能体输入消息
+     */
+    public static final String MESSAGE_TYPE_USER_MESSAGE = "2";
+
+    /**
+     * 智能体过程消息
+     */
+    public static final String MESSAGE_TYPE_MIDDLE_MESSAGE = "0";
+    
     private String msgId;
     private Date createTime;
     private String sessionId;
@@ -35,7 +49,7 @@ public class SessionMessage {
     private String metadata;
 
     private String parentAgentId;
-    private String agentResultMessage = "0";
+    private String agentResultMessage = MESSAGE_TYPE_MIDDLE_MESSAGE;
     private int seqNo;
     
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.SessionMessageEditor")

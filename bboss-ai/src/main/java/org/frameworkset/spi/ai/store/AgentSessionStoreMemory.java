@@ -19,6 +19,7 @@ import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.util.ArrayList;
@@ -169,7 +170,13 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         SessionMessage sessionMessage = new SessionMessage();
         sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
         sessionMessage.setMessage(message);
-        sessionMessage.setRole((String)message.get("role"));
+        String role = (String) message.get("role");
+        if(agentResultMessage != null && !agentResultMessage.equals("1")){
+            if(role.equals(MessageBuilder.ROLE_USER)){
+                agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
+            }
+        }
+        sessionMessage.setRole(role);
         sessionMessage.setSeqNo(integerCount.increament());
         sessionMessage.setCreateTime(new java.util.Date());
         sessionMessage.setSessionId(this.getSessionId());

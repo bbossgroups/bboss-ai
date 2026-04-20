@@ -19,24 +19,23 @@ package org.frameworkset.spi.ai.flow;
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class AIRouterChoiceNodeBuilder extends AIBaseNodeBuilder {
-   
+public class AINodeBuilder extends AIBaseNodeBuilder {
+  
     
 
-    public AIRouterChoiceNodeBuilder(AIBaseNodeAgent agent) {
+    public AINodeBuilder(AIBaseNodeAgent agent) {
         super( agent);
+        
     }
-    public AIRouterChoiceNodeBuilder(String nodeName) {
+    public AINodeBuilder(String nodeName) {
         super(nodeName);
     }
 
-    public AIRouterChoiceNodeBuilder(String nodeId, String nodeName) {
+    public AINodeBuilder(String nodeId, String nodeName) {
         super(nodeId, nodeName);
     } 
 
  
-
-    
  
  
 }
