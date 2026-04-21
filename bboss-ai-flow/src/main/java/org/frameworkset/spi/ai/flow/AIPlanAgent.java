@@ -160,12 +160,15 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         
         if(jobFlowBuilder != null){
             initSessionStore();
+            this.evalPrompt(this.agentMessage);
+            this.evalSystemPrompt(this.agentMessage);
             JobFlowScheduleConfig jobFlowScheduleConfig = new JobFlowScheduleConfig();
             jobFlowScheduleConfig.setExecuteOneTime(true);
             jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
             jobFlowBuilder.setJobFlowId(this.getAgentId());
             jobFlowBuilder.setJobFlowName(this.getAgentName());
             JobFlow jobflow = jobFlowBuilder.build();
+       
             jobflow.execute();
             return this.getLastSessionMessage();
             

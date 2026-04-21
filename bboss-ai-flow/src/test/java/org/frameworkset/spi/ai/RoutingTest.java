@@ -51,7 +51,10 @@ public class RoutingTest {
 //          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.1",null);
 //        multiagentWeathor("zhipu","创建一篇关于中国首都介绍的飞书文档","glm-5.1",null);
 
-        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.6-plus",null);
+//        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.6-plus",null);
+
+
+        multiagentWeathor("kimi","创建一篇关于中国首都介绍的飞书文档","kimi-k2.6",null);
 //        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
 
     }
@@ -114,7 +117,8 @@ public class RoutingTest {
         aiPlanAgent.addJudgeAgent(new AIJudgeAgent("评估结果是否回答了问题,回答请回复：是，否则回复：否").setAgentId("judgeAgent").setAgentName("评估智能体"));
         
         //构建最终飞书报告创建智能体：添加将问题答案创建为飞书文档的智能体
-        aiPlanAgent.addAgent(new AINodeAgent("将结果创建为飞书文档", feishuMcp), nodeTriggerContext -> {
+        aiPlanAgent.addAgent(new AINodeAgent("将结果创建为飞书文档", feishuMcp).setAgentId("createDocAgent").setAgentName("飞书文档创建智能体"),
+                nodeTriggerContext -> {
             String judgeResult = (String) nodeTriggerContext.getFlowContextData("judgeAgent.judgeResult");
             if("是".equals(judgeResult)){
                 return true;
@@ -126,7 +130,9 @@ public class RoutingTest {
         LastSessionMessage lastSessionMessage = aiPlanAgent.chat();
         
         //输出会话结果        
-        logger.info("serverEvent:{}", lastSessionMessage.getData());
+        if(lastSessionMessage != null) {
+            logger.info("serverEvent:{}", lastSessionMessage.getData());
+        }
 
 
     }

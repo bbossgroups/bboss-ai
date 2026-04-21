@@ -240,7 +240,17 @@ public class AIAgent<T extends AIAgent> {
                         agentId = mainSessionStore.genSubAgentId();
                     }
                 }
-                mainSessionStore.loadSessionMemory(prompt == null ? agentMessage.getPrompt() : prompt, agentId);
+
+                String title  = this.evalPrompt(agentMessage);
+                AIAgent parentAgent = this.getParentAgent();
+                if(parentAgent != null){
+                    String tmp = parentAgent.getFirstSubAgentPrompt();
+                    if(tmp != null){
+                        title = tmp;
+                    }
+                }
+                
+                mainSessionStore.loadSessionMemory(title, agentId);
                 if(agentSessionStore == null){
                     if(parentSessionStore != null)
                         agentSessionStore = new AgentSessionStoreMemory(parentSessionStore,sessionSize);
@@ -694,8 +704,13 @@ public class AIAgent<T extends AIAgent> {
         if(systemPrompt == null){           
             systemPrompt = agentMessage.getSystemPrompt();            
         }
-        if(systemPrompt != null && this.getParentAgent() != null){
-            this.getParentAgent().setFirstSubAgentSystemPrompt(systemPrompt);
+        if(systemPrompt != null ){
+            if(this.getParentAgent() != null) {
+                this.getParentAgent().setFirstSubAgentSystemPrompt(systemPrompt);
+            }
+            else{
+                this.setFirstSubAgentSystemPrompt(systemPrompt);
+            }
         }
         return systemPrompt;
     }
@@ -706,8 +721,13 @@ public class AIAgent<T extends AIAgent> {
             prompt = agentMessage.getPrompt();
             
         }
-        if(prompt != null && this.getParentAgent() != null){
-            this.getParentAgent().setFirstSubAgentPrompt(prompt);
+        if(prompt != null ){
+            if(this.getParentAgent() != null) {
+                this.getParentAgent().setFirstSubAgentPrompt(prompt);
+            }
+            else{
+                this.setFirstSubAgentPrompt(prompt);
+            }
         }
         return prompt;
     }
@@ -719,7 +739,7 @@ public class AIAgent<T extends AIAgent> {
     }
 
     public T setFirstSubAgentPrompt(String firstSubAgentPrompt) {
-        if(firstSubAgentPrompt != null) {
+        if(this.firstSubAgentPrompt == null && firstSubAgentPrompt != null) {
             this.firstSubAgentPrompt = firstSubAgentPrompt;
         }
         return (T)this;
