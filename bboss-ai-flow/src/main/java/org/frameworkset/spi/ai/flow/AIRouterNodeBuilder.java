@@ -24,6 +24,8 @@ import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.tran.jobflow.builder.CallableJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -32,6 +34,7 @@ import java.util.List;
  * @Date 2026/4/14
  */
 public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
+    private static Logger logger = LoggerFactory.getLogger(AIRouterNodeBuilder.class);
     private String prompt2 = "# 用户问题：${prompt}\r# 根据用户问题，从以下智能体列表中选择一个最合适的智能体记录\r${routeChoiceList}\r# 输出要求：\r" +
             "1.如果匹配到智能体将匹配的智能体JSON串包含在```json和```中输出，将其他文字都去除\r" +
             "2.如果未匹配到智能体，请返回空内容\r" 
@@ -84,19 +87,25 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         prompt = prompt.replace("${prompt}",agentMessage.getPrompt()).replace("${routeChoiceList}",JsonUtil.object2json(routeChoiceList));
         routeAgent.setPrompt(prompt);
         ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage)agentMessage);
-        JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
-        JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
-        String data  = serverEvent.getData();
-        RouteChoice result = null;
-        if(data != null){
-            MarkdownJsonExtractor extractor = new MarkdownJsonExtractor();
-            List<String> jsonList = extractor.extractAll(data);
-            if(jsonList != null && jsonList.size() > 0) {
-                result = JsonUtil.json2Object(jsonList.get(jsonList.size() - 1), RouteChoice.class);
-                if (containerJobFlowNodeExecuteContext != null) {
-                    containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
-                } else {
-                    jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+        if(serverEvent != null) {
+            if(logger.isInfoEnabled()){
+                logger.info("agentMessage id :{},agentResult:{}",agent.getAgentId(),serverEvent.getData());
+            }
+            JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
+            JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
+            String data = serverEvent.getData();
+            
+            RouteChoice result = null;
+            if (data != null) {
+                MarkdownJsonExtractor extractor = new MarkdownJsonExtractor();
+                List<String> jsonList = extractor.extractAll(data);
+                if (jsonList != null && jsonList.size() > 0) {
+                    result = JsonUtil.json2Object(jsonList.get(jsonList.size() - 1), RouteChoice.class);
+                    if (containerJobFlowNodeExecuteContext != null) {
+                        containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
+                    } else {
+                        jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+                    }
                 }
             }
         }

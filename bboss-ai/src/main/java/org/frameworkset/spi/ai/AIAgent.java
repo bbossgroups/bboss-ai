@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
@@ -145,6 +146,8 @@ public class AIAgent<T extends AIAgent> {
         if(sessionSize != null ){
             this.sessionSize = sessionSize;
         }
+        this.agentId = SimpleStringUtil.getUUID32();
+        this.agentName = this.getClass().getName();
 //            agentSessionStore = new AgentSessionStoreMemory(sessionSize);
     }
 

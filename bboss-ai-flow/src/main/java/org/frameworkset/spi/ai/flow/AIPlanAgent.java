@@ -24,6 +24,7 @@ import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.tran.jobflow.JobFlow;
 import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
 import org.frameworkset.tran.jobflow.schedule.JobFlowScheduleConfig;
+import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import reactor.core.publisher.Flux;
 
 /**
@@ -139,10 +140,19 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @return
      */
     public AIPlanAgent addAgent(AIBaseNodeAgent aiAgent) {
+        return addAgent(aiAgent,( TriggerScriptAPI )null);
+    }
+
+    /**
+     * 添加工作流节点
+     * @param aiAgent
+     * @return
+     */
+    public AIPlanAgent addAgent(AIBaseNodeAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
         initAIJobFlowBuilder();
         aiAgent.setPlanAgent(this);
         aiAgent.setParentAgent(this);
-        jobFlowBuilder.addJobFlowNodeBuilder(new AINodeBuilder(aiAgent ));
+        jobFlowBuilder.addJobFlowNodeBuilder(new AINodeBuilder(aiAgent ).setTriggerScriptAPI(triggerScriptAPI));
         return this;
     }
 

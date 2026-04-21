@@ -22,12 +22,15 @@ import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.tran.jobflow.builder.CallableJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author biaoping.yin
  * @Date 2026/4/14
  */
 public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
+    private static Logger logger = LoggerFactory.getLogger(AIBaseNodeBuilder.class);
     protected AIPlanAgent planAgent;
 
     protected AIBaseNodeAgent agent;
@@ -61,15 +64,16 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
             throw new AIRuntimeException("agentMessage is null");
         }
         ServerEvent serverEvent = agent.chat((ChatAgentMessage)agentMessage);
-       
         
         if(serverEvent != null){
-            
+            if(logger.isInfoEnabled()){
+                logger.info("agentMessage id :{},agentResult:{}",agent.getAgentId(),serverEvent.getData());
+            }
             if(containerJobFlowNodeExecuteContext != null){
-                containerJobFlowNodeExecuteContext.addContextData("agentResult",serverEvent);
+                containerJobFlowNodeExecuteContext.addContextData(agent.getAgentId()+".agentResult",serverEvent);
             }
             else{
-                jobFlowExecuteContext.addContextData("agentResult",serverEvent);
+                jobFlowExecuteContext.addContextData(agent.getAgentId()+".agentResult",serverEvent);
             }
         }
         return null;

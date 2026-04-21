@@ -26,6 +26,11 @@ public class AINodeAgent
     public AINodeAgent(ToolsRegist mcpToolsRegist ) {
         super(   mcpToolsRegist);
     }
+
+    public AINodeAgent(String prompt,ToolsRegist mcpToolsRegist ) {
+        super(   mcpToolsRegist);
+        this.setPrompt(prompt);
+    }
     public AINodeAgent(String prompt  ) {
         super( prompt );
     }

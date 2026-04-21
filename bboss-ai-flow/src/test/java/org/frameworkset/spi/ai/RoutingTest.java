@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.store.StoreContext;
+import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,10 +48,10 @@ public class RoutingTest {
 //        multiagentWeathor("zhipu","glm-5.1",null);
 //        multiagentWeathor("zhipu","glm-5.1","6021bcca95fe4393bd4726f7b667a75a");
 //        multiuserAgentWeathor("zhipu","glm-5.1","3021bcca95fe4393bd4726f7b667a75a");
-          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.1",null);
+//          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.1",null);
 //        multiagentWeathor("zhipu","创建一篇关于中国首都介绍的飞书文档","glm-5.1",null);
 
-
+        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.6-plus",null);
 //        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
 
     }
@@ -97,20 +98,29 @@ public class RoutingTest {
         //构建天气查询和出现建议智能体：当用户问题匹配上时执行
         aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(new MCPToolsRegist("visualops"))
                 .setAgentId("weatherAgent").setAgentName("天气查询智能体"));
-
+        
+        ToolsRegist feishuMcp = new FeishuMcpRegist("feishumcp")
+                .setAppId("cli_a9d43b87aff89cd1")
+                .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
+                .setTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
 
         //构建飞书文档操作智能体：当用户问题匹配上时执行
-        aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(
-                new FeishuMcpRegist("feishumcp")
-                        .setAppId("cli_a9d43b87aff89cd1")
-                        .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
-                        .setTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments")
-        ).setAgentId("docAgent").setAgentName("飞书文档智能体"));
+        aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(feishuMcp).setAgentId("docAgent").setAgentName("飞书文档智能体"));
 
         //构建默认智能体：当用户问题匹配不上时执行,将直接回答问题
         aiPlanAgent.addDefaultRouteChoiceAgent(new AINodeAgent().setAgentId("defaultAgent").setAgentName("默认智能体"));
         
+        //构建裁判智能体：判断是否回答了问题
         aiPlanAgent.addJudgeAgent(new AIJudgeAgent("评估结果是否回答了问题,回答请回复：是，否则回复：否").setAgentId("judgeAgent").setAgentName("评估智能体"));
+        
+        //构建最终飞书报告创建智能体：添加将问题答案创建为飞书文档的智能体
+        aiPlanAgent.addAgent(new AINodeAgent("将结果创建为飞书文档", feishuMcp), nodeTriggerContext -> {
+            String judgeResult = (String) nodeTriggerContext.getFlowContextData("judgeAgent.judgeResult");
+            if("是".equals(judgeResult)){
+                return true;
+            }
+            return false;
+        });
         
         //开始对话，执行对话流程，并返回会话结果
         LastSessionMessage lastSessionMessage = aiPlanAgent.chat();

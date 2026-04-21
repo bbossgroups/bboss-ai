@@ -104,9 +104,10 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
         }
         ServerEvent serverEvent = judgeAgent.chat((ChatAgentMessage)agentMessage);
         
-        logger.info("{} judge result:{}",judgeAgent.getAgentId(),serverEvent.getData());
         if(serverEvent != null){
-
+            if(logger.isInfoEnabled()) {
+                logger.info("{} judge result:{}", judgeAgent.getAgentId(), serverEvent.getData());
+            }
             if(containerJobFlowNodeExecuteContext != null){
                 containerJobFlowNodeExecuteContext.addContextData(judgeAgent.getAgentId()+".judgeResult",serverEvent.getData());
             }
