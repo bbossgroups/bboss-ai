@@ -197,6 +197,9 @@ public class AIAgent<T extends AIAgent> {
     }
     
     protected void loadHistoryMessages(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
+        if(agentSessionStore == null){
+            return;
+        }
         List<Map<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
         boolean empty = sessionMemory.isEmpty();
 //                sessionAgentMessage.setSessionStore(agentSessionStore);
@@ -532,13 +535,20 @@ public class AIAgent<T extends AIAgent> {
     }
 
     public String getParentAgentId() {
-        
-        return this.agentSessionStore.getParantAgentId();
+        if(parentAgent != null){
+            return parentAgent.getAgentId();
+        }
+        if(agentSessionStore != null) {
+            return this.agentSessionStore.getParantAgentId();
+        }
+        return null;
     }
 
     public List<Map<String, Object>> getSessionMemory() {
-        
-        return this.agentSessionStore.getSessionMemory();
+        if(this.agentSessionStore != null) {
+            return this.agentSessionStore.getSessionMemory();
+        }
+        return null;
     }
 
 
