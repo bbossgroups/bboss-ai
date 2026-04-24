@@ -17,6 +17,7 @@ package org.frameworkset.spi.reactor;
 
 import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Date 2025/10/19
  */
 public class FluxSinkStatus {
+    private static org.slf4j.Logger logger = LoggerFactory.getLogger(FluxSinkStatus.class);
 	private String seqNo;
     private InputStream inputStream = null;
     private InputStreamReader inputStreamReader = null;
@@ -57,6 +59,9 @@ public class FluxSinkStatus {
 	}
 	
 	public String readLine() throws IOException {
+        if(reader == null){
+            logger.info("reader is null");
+        }
         return reader.readLine();
     }
     

@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.model;
  */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.frameworkset.spi.ai.AIAgent;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -109,12 +110,22 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      * 是否是第一个数据报文
      */
     private boolean first;
+    
+    private AIAgent agent;
 
     /**
      * 获取数据报文类型，0表示数据报文，1表示错误报文
      */
     public int getType() {
         return type;
+    }
+    
+    public AIAgent getAgent() {
+        return agent;
+    }
+
+    public void setAgent(AIAgent agent) {
+        this.agent = agent;
     }
 
     /**

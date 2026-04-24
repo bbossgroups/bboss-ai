@@ -37,7 +37,7 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
     
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -47,6 +47,9 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
         StreamDataBuilder streamDataBuilder = null;
 
         parameters = agentAdapter.buildImageVLRequestMap(this,aiAgent);
+        if(!fromStreamAPI){
+            parameters.put("stream",false);
+        }
         setImageVLCompletionsUrl(agentAdapter.getImageVLCompletionsUrl(this));
         stream = (Boolean)parameters.get("stream");
         aiChatRequestType = agentAdapter.getAIImageParserRequestType();

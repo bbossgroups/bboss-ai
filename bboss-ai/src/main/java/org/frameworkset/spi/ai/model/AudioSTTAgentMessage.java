@@ -84,7 +84,7 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
      * @return
      */
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -96,6 +96,9 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
         
         parameters = agentAdapter.buildAudioSTTRequestMap(this,aiAgent);
         this.audioSTTCompletionsUrl = agentAdapter.getAudioSTTCompletionsUrl(this);
+        if(!fromStreamAPI){
+            parameters.put("stream",false);
+        }
         stream = (Boolean)parameters.get("stream");
         aiChatRequestType = agentAdapter.getAIAudioParsertRequestType();
         agentMessage = parameters;

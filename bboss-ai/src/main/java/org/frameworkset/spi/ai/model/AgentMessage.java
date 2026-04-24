@@ -123,7 +123,7 @@ public class AgentMessage<T extends AgentMessage> {
      * @param agentAdapter
      * @return
      */
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent){
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI){
         return null;
     }
     public T setPrompt(String prompt) {

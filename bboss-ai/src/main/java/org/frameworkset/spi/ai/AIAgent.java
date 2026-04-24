@@ -24,6 +24,7 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -78,6 +79,14 @@ public class AIAgent<T extends AIAgent> {
     protected AgentMessage agentMessage;
     public AIAgent(){
         this((String)null);
+    }
+    
+    public FluxSink<ServerEvent> getAgentFluxSink(){
+        return null;
+    }
+    
+    public Flux<ServerEvent> getFlux(){
+        return null;
     }
     
     public AIAgent getParentAgent(){

@@ -66,7 +66,7 @@ public class AIAgentUtil {
     public static Flux<String> streamChatCompletion(String poolName,Object chatMessage, AIAgent aiAgent) {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
-        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent);
+        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true);
         BaseStreamDataHandler<String> streamDataHandler = new BaseStreamDataHandler<String>() {
  
 
@@ -90,7 +90,8 @@ public class AIAgentUtil {
         return buildFlux(  clientConfiguration,   chatObject ,  streamDataHandler);
 
     }
-    
+
+
     
 
     /**
@@ -219,7 +220,7 @@ public class AIAgentUtil {
                                                      FluxSink<T> sink,DisposeEventHandler disposeEventHandler, AIAgent aiAgent) {
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,toolAgentMessage);
 
-        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,toolAgentMessage,   aiAgent);
+        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,toolAgentMessage,   aiAgent,true);
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
  
             @Override
@@ -334,7 +335,7 @@ public class AIAgentUtil {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
          
-        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent);
+        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true);
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
            
             @Override
@@ -361,157 +362,171 @@ public class AIAgentUtil {
      
      
     
-    
-
-    /**
-     * 创建流式调用的Flux,在指定的数据源上执行
-     */
-    public static Flux<ServerEvent> streamChatCompletionEventWithTool(String poolName,AgentMessage chatMessage,boolean toolStream, AIAgent aiAgent) {
-         
-            
-        if(!toolStream) {
-            Boolean stream = chatMessage.getStream();
-            chatMessage.setStream(false);
-            ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(poolName, chatMessage, true,   aiAgent);
-            chatMessage.setStream(stream);
-            List<FunctionTool> functionTools = serverEvent.getFunctionTools();
-            if (functionTools != null && functionTools.size() > 0) {
-                ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
-                _chatMessage.addAssistantSessionMessage(serverEvent,   aiAgent);
-                ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage, functionTools);
-                return streamChatCompletionEvent(poolName, toolAgentMessage,   aiAgent);
-
-            } else {
-                return buildFlux(serverEvent);
-            }
-        }
-        else{
-            Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent(poolName, chatMessage,   aiAgent);
-            return flux;
-//            final Flux<ServerEvent> newflux = flux
-////                    .doOnNext(serverEvent -> {
+//    
+//
+//    /**
+//     * 创建流式调用的Flux,在指定的数据源上执行
+//     */
+//    public static Flux<ServerEvent> streamChatCompletionEventWithTool(String poolName,AgentMessage chatMessage,boolean toolStream, AIAgent aiAgent) {
+//         
+//            
+//        if(!toolStream) {
+//            Boolean stream = chatMessage.getStream();
+//            chatMessage.setStream(false);
+//            ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(poolName, chatMessage, true,   aiAgent);
+//            chatMessage.setStream(stream);
+//            List<FunctionTool> functionTools = serverEvent.getFunctionTools();
+//            if (functionTools != null && functionTools.size() > 0) {
+//                ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
+//                _chatMessage.addAssistantSessionMessage(serverEvent,   aiAgent);
+//                ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage, functionTools);
+//                return streamChatCompletionEvent(poolName, toolAgentMessage,   aiAgent);
+//
+//            } else {
+//                return buildFlux(serverEvent);
+//            }
+//        }
+//        else{
+//            Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent(poolName, chatMessage,   aiAgent);
+//            return flux;
+////            final Flux<ServerEvent> newflux = flux
+//////                    .doOnNext(serverEvent -> {
+////////                System.out.print(serverEvent.getData());
+//////            })
+////            .switchMap(serverEvent -> {
 //////                System.out.print(serverEvent.getData());
-////            })
-//            .switchMap(serverEvent -> {
-////                System.out.print(serverEvent.getData());
-//                List<FunctionTool> functionTools = serverEvent.getFunctionTools();
-//                if(serverEvent.isDone()){
-//                    functionTools = serverEvent.getFunctionTools();
-//                }
-//                if(serverEvent.finished()){
-//                    functionTools = serverEvent.getFunctionTools();
-//                    //
-//                }
-//                
-//                if (functionTools != null && functionTools.size() > 0) {
-////                    ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
-////                    _chatMessage.addAssistantSessionMessage(serverEvent);
-////                    ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage, functionTools);
-////                    Flux<ServerEvent> innerflux = streamChatCompletionEvent(poolName, toolAgentMessage);
-////                    // 使用concatWith确保顺序执行：先完成当前事件，再执行工具调用
-////                    return innerflux;
-//                    return Flux.just(serverEvent);
-//                } else {
-//                    // 如果没有工具调用，直接返回当前事件
-//                    return Flux.just(serverEvent);
-//                }
-//            }); //打印流式调用返回的问题答案片段
-//                   
-//            return newflux;
-           
-            
-        }
+////                List<FunctionTool> functionTools = serverEvent.getFunctionTools();
+////                if(serverEvent.isDone()){
+////                    functionTools = serverEvent.getFunctionTools();
+////                }
+////                if(serverEvent.finished()){
+////                    functionTools = serverEvent.getFunctionTools();
+////                    //
+////                }
+////                
+////                if (functionTools != null && functionTools.size() > 0) {
+//////                    ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
+//////                    _chatMessage.addAssistantSessionMessage(serverEvent);
+//////                    ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage, functionTools);
+//////                    Flux<ServerEvent> innerflux = streamChatCompletionEvent(poolName, toolAgentMessage);
+//////                    // 使用concatWith确保顺序执行：先完成当前事件，再执行工具调用
+//////                    return innerflux;
+////                    return Flux.just(serverEvent);
+////                } else {
+////                    // 如果没有工具调用，直接返回当前事件
+////                    return Flux.just(serverEvent);
+////                }
+////            }); //打印流式调用返回的问题答案片段
+////                   
+////            return newflux;
+//           
+//            
+//        }
+//
+//       
+//
+//    }
+    private static <T> void executeSink(FluxSink<T> sink,ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler,boolean fromAgentFlow){
+        Object data = null;
+        try {
 
-       
+            Object message = chatObject.getMessage();
 
-    }
+            BaseStreamDataBuilder baseStreamDataBuilder = (BaseStreamDataBuilder) streamDataHandler.getStreamDataBuilder();
 
-    private static <T> Flux<T> buildFlux(ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler) {
-        return Flux.<T>create(sink -> {
-            Object data = null;
-            try {
-                   
-				Object message = chatObject.getMessage();
+            DisposeEventHandler disposeEventHandler = new DisposeEventHandler();
 
-				BaseStreamDataBuilder baseStreamDataBuilder = (BaseStreamDataBuilder) streamDataHandler.getStreamDataBuilder();
-			
-				DisposeEventHandler disposeEventHandler = new DisposeEventHandler();
+            BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
+                @Override
+                public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
+                    streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
+                    AIResponseUtil.handleStreamResponse(url, response, sink, streamDataHandler,disposeEventHandler);
+                    return null;
 
-				BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
-					@Override
-					public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
-						streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
-						AIResponseUtil.handleStreamResponse(url, response, sink, streamDataHandler,disposeEventHandler);
-						return null;
+                }
+            };
+            if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)){
+                Map header = new LinkedHashMap();
 
-					}
-				};
-				if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)){
-					Map header = new LinkedHashMap();
-					
-					if (chatObject.isStream()) {
-						chatObject.getSseHeaderSetFunction().setSSEHeaders( header);
+                if (chatObject.isStream()) {
+                    chatObject.getSseHeaderSetFunction().setSSEHeaders( header);
 //                                header.put("Accept", "text/event-stream");
 //                                header.put("X-DashScope-SSE", "enable");
-					}
+                }
 
-					if (message != null) {
-						if (message instanceof String) {
-							data = (String) message;
-						} else {
-							data = SimpleStringUtil.object2json(message);
-						}
-					}
+                if (message != null) {
+                    if (message instanceof String) {
+                        data = (String) message;
+                    } else {
+                        data = SimpleStringUtil.object2json(message);
+                    }
+                }
 
-					HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, chatObject.getCompletionsUrl(), header, responseHandler);
+                HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, chatObject.getCompletionsUrl(), header, responseHandler);
 //                            if(baseStreamDataBuilder.)
-				}
-				else if (chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_POST_FORM)){
-					Map header = new LinkedHashMap();
-					if (chatObject.isStream()) {
+            }
+            else if (chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_POST_FORM)){
+                Map header = new LinkedHashMap();
+                if (chatObject.isStream()) {
 //                                header.put("Accept", "text/event-stream");
-						chatObject.getSseHeaderSetFunction().setSSEHeaders( header);
-					}
-					data = message;
-					Map<String,File> files = chatObject.getFiles();
-					if(files == null) {
-						HttpRequestProxy.httpPost(clientConfiguration, chatObject.getCompletionsUrl(),message,  header, responseHandler);
-					}
-					else{
-						HttpRequestProxy.httpPost(clientConfiguration, chatObject.getCompletionsUrl(),message,files,  header, responseHandler);
-					}
-				}
-				else {
-					throw new ReactorCallException("Unsupported request type: "+chatObject.getAIChatRequestType());
-				}
+                    chatObject.getSseHeaderSetFunction().setSSEHeaders( header);
+                }
+                data = message;
+                Map<String,File> files = chatObject.getFiles();
+                if(files == null) {
+                    HttpRequestProxy.httpPost(clientConfiguration, chatObject.getCompletionsUrl(),message,  header, responseHandler);
+                }
+                else{
+                    HttpRequestProxy.httpPost(clientConfiguration, chatObject.getCompletionsUrl(),message,files,  header, responseHandler);
+                }
+            }
+            else {
+                throw new ReactorCallException("Unsupported request type: "+chatObject.getAIChatRequestType());
+            }
 
-				List<FunctionTool> functionTools = baseStreamDataBuilder.getFunctionTools();
-				
+            List<FunctionTool> functionTools = baseStreamDataBuilder.getFunctionTools();
 
-				if (functionTools != null && functionTools.size() > 0) {
-					streamDataHandler.streamChatCompletionEvent(clientConfiguration,chatObject,baseStreamDataBuilder,sink,disposeEventHandler);
-					
+
+            if (functionTools != null && functionTools.size() > 0) {
+                streamDataHandler.streamChatCompletionEvent(clientConfiguration,chatObject,baseStreamDataBuilder,sink,disposeEventHandler);
+
 //                    Flux<ServerEvent> innerflux = streamChatCompletionEvent(poolName, toolAgentMessage);
 //                    // 使用concatWith确保顺序执行：先完成当前事件，再执行工具调用
 //                    return innerflux;
-					
-				}
-				
-			} catch (ReactorCallException e) {
+
+            }
+
+        } catch (ReactorCallException e) {
 //                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
-				streamDataHandler.handleException(data,e,sink,new NoSynBooleanWrapper( true));
+            streamDataHandler.handleException(data,e,sink,new NoSynBooleanWrapper( true));
 //                        sink.error(e);
-			} catch (Exception e) {
-				streamDataHandler.handleException(data,e,sink,new NoSynBooleanWrapper( true));
+        } catch (Exception e) {
+            streamDataHandler.handleException(data,e,sink,new NoSynBooleanWrapper( true));
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
-			}
-			catch (Throwable e) {
-				streamDataHandler.handleException(data,e,sink,new NoSynBooleanWrapper( true));
+        }
+        catch (Throwable e) {
+            streamDataHandler.handleException(data,e,sink,new NoSynBooleanWrapper( true));
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
-			}
-			finally {
-				sink.complete();
-			}
+        }
+        finally {
+            if(!fromAgentFlow) {
+                sink.complete();
+            }
+        }
+    }
+
+    private static <T> Flux<T> buildFlux(ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler) {
+        AIAgent aiAgent = chatObject.getAiAgent();
+        if(aiAgent != null){
+            FluxSink<ServerEvent> fluxSink = aiAgent.getAgentFluxSink();
+            if(fluxSink != null){
+                executeSink((FluxSink<T>)fluxSink,  clientConfiguration,  chatObject ,  streamDataHandler,true);
+                return aiAgent.getFlux();
+            }
+            
+        }
+        return Flux.<T>create(sink -> {
+            executeSink(sink,  clientConfiguration,  chatObject ,  streamDataHandler,false);
 		}, FluxSink.OverflowStrategy.BUFFER)
 		.subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
 //		.timeout(Duration.ofSeconds(60)) // 设置超时
@@ -745,19 +760,12 @@ public class AIAgentUtil {
 
     }
 
-    /**
-     * 同步调用模型服务，返回问答内容
-     */
-    public static ServerEvent chatCompletionEvent(String poolName,Object chatMessage, AIAgent aiAgent) {
-        return chatCompletionEvent( poolName, chatMessage,false,   aiAgent);
+    
 
-
-    }
-
-    public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage, boolean fromStreamChat, AIAgent aiAgent) {
+    public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent) {
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,chatMessage);
-        ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,aiAgent);
+        ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,aiAgent,false);
         Object message = chatObject.getMessage();
         String data = null;
         ServerEvent serverEvent = null;
@@ -794,8 +802,10 @@ public class AIAgentUtil {
         if(serverEvent == null) {
             throw new ReactorCallException("ServerEvent is null");
         }
-        if(fromStreamChat)
-            return serverEvent;
+        serverEvent.setDone(true);
+        serverEvent.setFirst(true);
+//        if(fromStreamChat)
+//            return serverEvent;
         List<FunctionTool> functionTools = serverEvent.getFunctionTools();
         if(functionTools != null && functionTools.size() > 0){
             ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
@@ -833,7 +843,7 @@ public class AIAgentUtil {
     public static <T> Flux<T> streamChatCompletion(String poolName,Object chatMessage,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent) {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
-        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent);
+        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true);
         streamDataHandler.setStream(chatObject.isStream());
         streamDataHandler.setAgentAdapter(agentAdapter);
         streamDataHandler.setChatObject(chatObject);

@@ -31,7 +31,7 @@ public class ObjectAgentMessage extends AgentMessage<ObjectAgentMessage>{
         this.agentMessage = agentMessage;
     }
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Boolean stream = false;

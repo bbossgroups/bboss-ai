@@ -43,6 +43,7 @@ public class AIConstants {
     public static final String AI_MODEL_TYPE_ZHIPU_URL = "https://open.bigmodel.cn";
     public static final String AI_MODEL_TYPE_MINIMAX_URL = "https://api.minimaxi.com";
     public static final String AI_MODEL_TYPE_HUNYUAN_URL = "https://api.hunyuan.cloud.tencent.com";
+    public static final String AI_MODEL_TYPE_OPENAI_URL = "https://api.openai.com";
     
     
 
@@ -72,6 +73,8 @@ public class AIConstants {
             return AI_MODEL_TYPE_MINIMAX;
         else if(apiurl.startsWith(AI_MODEL_TYPE_HUNYUAN_URL))
             return AI_MODEL_TYPE_HUNYUAN;
+        else if(apiurl.startsWith(AI_MODEL_TYPE_OPENAI_URL))
+            return AI_MODEL_TYPE_OPENAI;
         else
             return null;
     }

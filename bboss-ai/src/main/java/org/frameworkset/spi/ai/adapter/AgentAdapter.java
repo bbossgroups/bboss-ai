@@ -61,16 +61,24 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      */
     protected abstract Map buildGenImageRequestMap(ImageAgentMessage imageAgentMessage,AIAgent aiAgent);
 
+    
+    protected Object convertTools(Object tools){
+        if(tools instanceof String){
+            return SimpleStringUtil.json2ListObject((String)tools,Map.class);
+        }
+        return tools;
+    }
     protected void buildTools(AIAgent aiAgent,Map<String, Object> requestMap){
         aiAgent.init();
         if(aiAgent.getTools() != null){
             Object tools = aiAgent.getTools();
-            if(tools instanceof List){
-                requestMap.put("tools", tools);
-            }
-            else if(tools instanceof String){
-                requestMap.put("tools", SimpleStringUtil.json2ListObject((String)tools,Map.class));
-            }
+            requestMap.put("tools", convertTools(  tools));
+//            if(tools instanceof List){
+//                requestMap.put("tools", tools);
+//            }
+//            else if(tools instanceof String){
+//                requestMap.put("tools", SimpleStringUtil.json2ListObject((String)tools,Map.class));
+//            }
         }
     }
     protected void filterParameters(AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap, Map<String, Object> parameters) {
@@ -553,7 +561,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return SSEHeaderSetFunction.DEFAULT_SSEHEADERSETFUNCTION;
     }
 
-    public ChatObject buildOpenAIRequestParameter(ClientConfiguration clientConfiguration,Object agentMessage, AIAgent aiAgent){
+    public ChatObject buildOpenAIRequestParameter(ClientConfiguration clientConfiguration,Object agentMessage, AIAgent aiAgent,boolean fromStreamAPI){
         AgentMessage _agentMessage = null;
         if(agentMessage instanceof AgentMessage){
             _agentMessage =  ((AgentMessage)agentMessage);
@@ -564,7 +572,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         else{
             _agentMessage = new ObjectAgentMessage(agentMessage);
         }
-        return _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent);
+        return _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent,fromStreamAPI);
          
  
     }

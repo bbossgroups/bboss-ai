@@ -61,7 +61,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
     }
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -70,6 +70,9 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         StreamDataBuilder streamDataBuilder = null;
         Object agentMessage = null;       
         parameters = agentAdapter._buildGenAudioRequestMap(this,clientConfiguration,aiAgent);
+        if(!fromStreamAPI){
+            parameters.put("stream",false);
+        }
         stream = (Boolean)parameters.get("stream");
         aiChatRequestType = agentAdapter.getAIChatRequestType();
         agentMessage = parameters;

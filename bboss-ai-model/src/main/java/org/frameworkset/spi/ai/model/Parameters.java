@@ -30,6 +30,9 @@ public class Parameters {
     private Map<String,Property> properties;
     private List<String> required;
 
+
+    private Boolean additionalProperties;
+
     public String getType() {
         return type;
     }
@@ -99,5 +102,14 @@ public class Parameters {
         properties.put(name,property);
          
 
+    }
+
+
+    public Boolean getAdditionalProperties() {
+        return additionalProperties;
+    }
+
+    public void setAdditionalProperties(Boolean additionalProperties) {
+        this.additionalProperties = additionalProperties;
     }
 }

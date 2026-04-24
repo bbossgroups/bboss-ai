@@ -16,8 +16,10 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.AgentMessage;
+import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 /**
  * @author biaoping.yin
@@ -29,6 +31,12 @@ public class AIBaseNodeAgent<T extends AIBaseNodeAgent>
     public AIBaseNodeAgent(ToolsRegist mcpToolsRegist ) {
         super(   mcpToolsRegist);
     }
+    public FluxSink<ServerEvent> getAgentFluxSink(){
+        return planAgent.getAgentFluxSink();
+    }
+    public Flux<ServerEvent> getAgentFlux(){
+        return planAgent.getFlux();
+    }   
     public AIBaseNodeAgent( String prompt ) {
         super( prompt);
     }

@@ -128,17 +128,24 @@ public class AIResponseUtil {
 
         String error = SimpleStringUtil.exceptionToString(throwable);
         ServerEvent serverEvent = new ServerEvent();
+        ChatObject chatObject = streamDataBuilder.getChatObject();        
+        serverEvent.setAgent(chatObject.getAiAgent());
         if(firstEventTag.get()) {
             firstEventTag.set(false);
             serverEvent.setFirst(true);
         }
-        serverEvent.setToolCallResponse(streamDataBuilder.getChatObject().isToolCall());
+        if(streamDataBuilder != null) {
+            serverEvent.setToolCallResponse(chatObject.isToolCall());
+        }
+        else{
+            serverEvent.setToolCallResponse(false);
+        }
         serverEvent.setData(error);
         serverEvent.setType(ServerEvent.ERROR);
         sink.next(serverEvent);
 
         serverEvent = new ServerEvent();
-
+        serverEvent.setAgent(chatObject.getAiAgent());
         serverEvent.setDone( true);
         sink.next(serverEvent);
 //        sink.complete();
@@ -899,7 +906,9 @@ public class AIResponseUtil {
             if (content != null) {
 
                 serverEvent = new ServerEvent();
-          
+
+                ChatObject chatObject = streamDataBuilder.getChatObject();
+                serverEvent.setAgent(chatObject.getAiAgent());
                 serverEvent.setData(content.getContent());
                 serverEvent.setGenUrl(content.getUrl());
                 serverEvent.setFinishReason(content.getFinishReason());
@@ -911,7 +920,7 @@ public class AIResponseUtil {
                 serverEvent.setRole(content.getRole());
                 serverEvent.setContent(content.getContent());
                 serverEvent.setReasoningContent(content.getReasoningContent());
-                serverEvent.setToolCallResponse(streamDataBuilder.getChatObject().isToolCall());
+                serverEvent.setToolCallResponse(chatObject.isToolCall());
 
             }
 
@@ -964,12 +973,15 @@ public class AIResponseUtil {
             if (streamDataBuilder.isDone( agentAdapter, data)) {
 
                 ServerEvent serverEvent = new ServerEvent();
+
+                ChatObject chatObject = streamDataBuilder.getChatObject();
+                serverEvent.setAgent(chatObject.getAiAgent());
                 if(firstEventTag.get()) {
                     firstEventTag.set(false);
                     serverEvent.setFirst(true);
                 }
                 serverEvent.setType(ServerEvent.DATA);
-                serverEvent.setToolCallResponse(streamDataBuilder.getChatObject().isToolCall());
+                serverEvent.setToolCallResponse(chatObject.isToolCall());
                 serverEvent.setDone(true);
           
                 sink.next(serverEvent);
@@ -1054,6 +1066,9 @@ public class AIResponseUtil {
             return;
         }
         ServerEvent serverEvent = new ServerEvent();
+
+        ChatObject chatObject = streamDataBuilder.getChatObject();
+        serverEvent.setAgent(chatObject.getAiAgent());
         if (firstEventTag.get()) {
             firstEventTag.set(false);
             serverEvent.setFirst(true);
@@ -1066,7 +1081,7 @@ public class AIResponseUtil {
             serverEvent.setFunctionTools(content.getFunctionTools());
             serverEvent.setToolCalls(content.getToolCalls());
         }
-        serverEvent.setToolCallResponse(streamDataBuilder.getChatObject().isToolCall());
+        serverEvent.setToolCallResponse(chatObject.isToolCall());
         serverEvent.setData(content.getContent());
         serverEvent.setGenUrl(content.getUrl());
         serverEvent.setFinishReason(content.getFinishReason());

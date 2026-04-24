@@ -35,8 +35,8 @@ public class ToolAgentMessage extends ChatAgentMessage{
     }
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter,AIAgent aiAgent) {
-        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter,aiAgent);
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter,AIAgent aiAgent,boolean fromStreamAPI) {
+        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter,aiAgent,  fromStreamAPI);
         chatObject.setToolCall(true);
         return chatObject;
     }

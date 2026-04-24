@@ -15,17 +15,39 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreBuilder;
 import org.frameworkset.spi.ai.store.DefaultAgentSessionStoreBuilder;
 import org.frameworkset.spi.ai.store.StoreContext;
+import org.frameworkset.spi.ai.util.AIResponseUtil;
+import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
+import org.frameworkset.spi.reactor.BaseStreamDataHandler;
+import org.frameworkset.spi.reactor.DisposeEventHandler;
+import org.frameworkset.spi.reactor.ReactorCallException;
+import org.frameworkset.spi.remote.http.BaseURLResponseHandler;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.tran.jobflow.JobFlow;
 import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
 import org.frameworkset.tran.jobflow.schedule.JobFlowScheduleConfig;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
+import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.scheduler.Schedulers;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 智能体流程编排
@@ -33,11 +55,11 @@ import reactor.core.publisher.Flux;
  * @Date 2026/4/12
  */
 public class AIPlanAgent extends AIAgent<AIPlanAgent> {
-
+    private static Logger logger = LoggerFactory.getLogger(AIPlanAgent.class);
     private AgentSessionStore mainSessionStore;
     private StoreContext storeContext;
     private AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
-    private JobFlowBuilder jobFlowBuilder;
+    private AIJobFlowBuilder jobFlowBuilder;
     public AIPlanAgent(StoreContext storeContext) {
         this.storeContext = storeContext;
         
@@ -83,8 +105,11 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return this;
     }
 
- 
 
+    @Override
+    public FluxSink<ServerEvent> getAgentFluxSink(){
+        return sink;
+    }
     /**
      * 添加路由节点
      * @param aiRouteChoiceAgent
@@ -176,17 +201,78 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return null;
     }
 
+
     public Flux<ServerEvent> chatStream( ) {
-        if(jobFlowBuilder != null){
-            initSessionStore();
-            JobFlowScheduleConfig jobFlowScheduleConfig = new JobFlowScheduleConfig();
-            jobFlowScheduleConfig.setExecuteOneTime(true);
-            jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
-            JobFlow jobflow = jobFlowBuilder.build();
-            jobflow.execute();
-           
-        }
-        return null;
+        this.stream = true;
+        return flux = buildFlux(  );
+        
+    }
+
+    private FluxSink<ServerEvent> sink;
+    private Flux<ServerEvent> flux;
+    @Override
+    public Flux<ServerEvent> getFlux() {
+        return flux;
+    }
+    private boolean stream;
+
+    public boolean isStream() {
+        return stream;
+    }
+
+    public FluxSink<ServerEvent> getSink() {
+        return sink;
+    }
+
+    public void setSink(FluxSink<ServerEvent> sink) {
+        this.sink = sink;
+    }
+
+    public   Flux<ServerEvent> buildFlux(  ) {
+        return Flux.<ServerEvent>create(sink -> {
+            try {
+                
+                if(jobFlowBuilder != null){
+                    this.setSink(sink);
+                    initSessionStore();
+                    JobFlowScheduleConfig jobFlowScheduleConfig = new JobFlowScheduleConfig();
+                    jobFlowScheduleConfig.setExecuteOneTime(true);
+                    jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
+                    AIJobFlow jobflow = (AIJobFlow)jobFlowBuilder.build();
+
+                    jobflow.execute();
+
+                }
+                
+
+            } catch (ReactorCallException e) {
+//                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
+                AIResponseUtil.handleServerEventExceptionData(  e, sink,   null,new NoSynBooleanWrapper( true));
+//                        sink.error(e);
+            } catch (Exception e) {
+                AIResponseUtil.handleServerEventExceptionData(  e, sink,   null,    new NoSynBooleanWrapper( true));
+//                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
+            }
+            catch (Throwable e) {
+                AIResponseUtil.handleServerEventExceptionData(  e, sink,   null,new NoSynBooleanWrapper( true));
+//                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
+            }
+            finally {
+                sink.complete();
+            }
+        }, FluxSink.OverflowStrategy.BUFFER)
+        .subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
+//		.timeout(Duration.ofSeconds(60)) // 设置超时
+        .onErrorResume(throwable -> {
+//                    String error = SimpleStringUtil.exceptionToString(throwable);
+//                    System.err.println("流式处理错误: " + throwable.getMessage());
+//                    String error = SimpleStringUtil.exceptionToString(throwable);
+            if(logger.isDebugEnabled()) {
+                logger.debug(throwable.getMessage(), throwable);
+            }
+            // 修改此处，将错误信息作为Flux输出
+            return Flux.empty();
+        });
     }
     
     

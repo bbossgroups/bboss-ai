@@ -15,14 +15,21 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * @author biaoping.yin
  * @Date 2026/2/10
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Function {
+    private String type;
     private String name;
     private String description;
     private Parameters parameters;
+
+
+    private Boolean strict;
 
     public String getName() {
         return name;
@@ -100,6 +107,23 @@ public class Function {
         }
         parameters.addParameter(name,property);
         return this;
+    }
+
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Boolean getStrict() {
+        return strict;
+    }
+
+    public void setStrict(Boolean strict) {
+        this.strict = strict;
     }
 
 

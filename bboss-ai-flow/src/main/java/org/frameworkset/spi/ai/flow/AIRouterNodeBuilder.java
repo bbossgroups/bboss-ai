@@ -26,6 +26,7 @@ import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.FluxSink;
 
 import java.util.List;
 
@@ -88,11 +89,18 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         routeAgent.setPrompt(prompt);
         ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage)agentMessage);
         if(serverEvent != null) {
-            if(logger.isInfoEnabled()){
-                logger.info("agentMessage id :{},agentResult:{}",agent.getAgentId(),serverEvent.getData());
+            FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
+            if(fluxSink != null){
+                fluxSink.next(serverEvent);
+            }
+            else {
+                if (logger.isInfoEnabled()) {
+                    logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+                }
             }
             JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
             JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
+            
             String data = serverEvent.getData();
             
             RouteChoice result = null;

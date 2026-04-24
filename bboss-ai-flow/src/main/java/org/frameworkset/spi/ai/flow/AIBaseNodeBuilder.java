@@ -63,18 +63,23 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
-        ServerEvent serverEvent = agent.chat((ChatAgentMessage)agentMessage);
-        
-        if(serverEvent != null){
-            if(logger.isInfoEnabled()){
-                logger.info("agentMessage id :{},agentResult:{}",agent.getAgentId(),serverEvent.getData());
+        if(!planAgent.isStream()) {
+            ServerEvent serverEvent = agent.chat((ChatAgentMessage) agentMessage);
+
+
+            if (serverEvent != null) {
+                if (logger.isInfoEnabled()) {
+                    logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+                }
+                if (containerJobFlowNodeExecuteContext != null) {
+                    containerJobFlowNodeExecuteContext.addContextData(agent.getAgentId() + ".agentResult", serverEvent);
+                } else {
+                    jobFlowExecuteContext.addContextData(agent.getAgentId() + ".agentResult", serverEvent);
+                }
             }
-            if(containerJobFlowNodeExecuteContext != null){
-                containerJobFlowNodeExecuteContext.addContextData(agent.getAgentId()+".agentResult",serverEvent);
-            }
-            else{
-                jobFlowExecuteContext.addContextData(agent.getAgentId()+".agentResult",serverEvent);
-            }
+        }
+        else{
+            agent.streamChat((ChatAgentMessage) agentMessage);
         }
         return null;
     }

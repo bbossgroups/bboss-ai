@@ -22,6 +22,7 @@ import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.FluxSink;
 
 import java.util.List;
 
@@ -105,9 +106,16 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
         ServerEvent serverEvent = judgeAgent.chat((ChatAgentMessage)agentMessage);
         
         if(serverEvent != null){
-            if(logger.isInfoEnabled()) {
-                logger.info("{} judge result:{}", judgeAgent.getAgentId(), serverEvent.getData());
+            FluxSink<ServerEvent> fluxSink = judgeAgent.getAgentFluxSink();
+            if(fluxSink != null){
+                fluxSink.next(serverEvent);
             }
+            else {
+                if(logger.isInfoEnabled()) {
+                    logger.info("{} judge result:{}", judgeAgent.getAgentId(), serverEvent.getData());
+                }
+            }
+           
             if(containerJobFlowNodeExecuteContext != null){
                 containerJobFlowNodeExecuteContext.addContextData(judgeAgent.getAgentId()+".judgeResult",serverEvent.getData());
             }

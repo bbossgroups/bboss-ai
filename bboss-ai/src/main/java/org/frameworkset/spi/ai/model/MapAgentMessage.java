@@ -34,11 +34,14 @@ public class MapAgentMessage extends AgentMessage<MapAgentMessage>{
         this.agentMessage = agentMessage;
     }
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         String aiChatRequestType = null;
         StreamDataBuilder streamDataBuilder = null;
+        if(!fromStreamAPI){
+            agentMessage.put("stream",false);
+        }
         Boolean stream = (Boolean)agentMessage.get("stream");
         streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
@@ -65,8 +68,8 @@ public class MapAgentMessage extends AgentMessage<MapAgentMessage>{
                 return chatObject;
             }
         };
-        
 
+       
 
         if(stream == null){
             stream = false;
