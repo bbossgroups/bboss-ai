@@ -597,7 +597,6 @@ public class AIResponseUtil {
 //            });
             final FluxSinkStatus fluxSinkStatus_ = fluxSinkStatus;
 
-            disposeEventHandler.onDispose(sink);
             disposeEventHandler.addFluxSinkStatus(fluxSinkStatus);
             /*
 			if(!disposeEventHandler.containFluxSinkStatus()) {

@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.frameworkset.spi.ai.AIAgent;
 
@@ -110,7 +111,7 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      * 是否是第一个数据报文
      */
     private boolean first;
-    
+    @JsonIgnore
     private AIAgent agent;
 
     /**
