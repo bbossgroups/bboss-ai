@@ -58,9 +58,14 @@ public class FluxSinkStatus {
 		return seqNo;
 	}
 	
+//    private Exception debugException ;
 	public String readLine() throws IOException {
         if(reader == null){
             logger.info("reader is null");
+//            if(debugException != null){
+//                logger.error("debugException",debugException);
+//            }
+            return null;
         }
         return reader.readLine();
     }
@@ -101,6 +106,7 @@ public class FluxSinkStatus {
             try {
                 reader.close();
 				reader = null;
+//                debugException = new Exception("debug releaseResources reader.");
             } catch (Exception e) {
             }
         }

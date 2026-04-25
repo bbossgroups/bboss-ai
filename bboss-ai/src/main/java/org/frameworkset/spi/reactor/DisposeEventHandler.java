@@ -15,6 +15,10 @@ package org.frameworkset.spi.reactor;
  * limitations under the License.
  */
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.FluxSink;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -23,36 +27,89 @@ import java.util.Map;
  * @Date 2026/3/2
  */
 public class DisposeEventHandler {
-	private Map<String,FluxSinkStatus> fluxSinkStatusIdx;
+    private static Logger logger = LoggerFactory.getLogger(DisposeEventHandler.class);
+	private Map<String,FluxSinkStatus> fluxSinkStatusIdx = new LinkedHashMap<>();
 	private int seqNo;
-	private boolean containFluxSinkStatus;
+//	private volatile boolean containFluxSinkStatus;
+    private boolean disposed;
 	public void dispose(){
-		if(fluxSinkStatusIdx != null) {
-			for (Map.Entry<String, FluxSinkStatus> entry : fluxSinkStatusIdx.entrySet()) {
-				FluxSinkStatus fluxSinkStatus = entry.getValue();
-				fluxSinkStatus.dispose();
-				fluxSinkStatus.releaseResources();
-				
-			}
-			fluxSinkStatusIdx.clear();
-			fluxSinkStatusIdx = null;
-		}
+        if(disposed ){
+            return;
+        }
+       
+        synchronized (lock) {
+            if (disposed)
+                return;
+            if (fluxSinkStatusIdx != null) {
+                for (Map.Entry<String, FluxSinkStatus> entry : fluxSinkStatusIdx.entrySet()) {
+                    FluxSinkStatus fluxSinkStatus = entry.getValue();
+                    fluxSinkStatus.dispose();
+                    fluxSinkStatus.releaseResources();
+
+                }
+                fluxSinkStatusIdx.clear();
+                fluxSinkStatusIdx = null;
+            }
+            disposed = true;
+        }
 	}
-	public boolean containFluxSinkStatus(){
-		return containFluxSinkStatus;
-	}
+    private boolean registedDispose;
+    public boolean onDispose(FluxSink fluxSink){
+        if(disposed){
+            return false;
+        }
+        if(registedDispose ){
+            return false;
+        }
+        synchronized (lock) {
+            if(registedDispose ){
+                return false;
+            }
+            fluxSink.onDispose(() -> {
+                // 当 sink 被处置时执行（包括正常完成、错误和取消）
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Sink disposed");
+                }
+//					fluxSinkStatus_.dispose();
+//					// 执行清理工作
+//					fluxSinkStatus_.releaseResources();
+                dispose();
+
+            });
+            registedDispose = true;
+        }
+        return true;
+    }
+//	public boolean containFluxSinkStatus(){
+//        synchronized (lock) {
+//            return containFluxSinkStatus;
+//        }
+//	}
+    private Object lock = new Object();
 	public void addFluxSinkStatus(FluxSinkStatus fluxSinkStatus){
-		if(fluxSinkStatusIdx == null){
-			fluxSinkStatusIdx = new LinkedHashMap<>();
-		}
-		fluxSinkStatus.setSeqNo(String.valueOf(seqNo++));
-		fluxSinkStatusIdx.put(fluxSinkStatus.getSeqNo(),fluxSinkStatus);
-		containFluxSinkStatus = true;
+        if(disposed)
+            return;
+        if(!registedDispose){
+            return;
+        }
+        synchronized (lock){
+            if(disposed)
+                return;
+            if(!registedDispose){
+                return;
+            }
+			fluxSinkStatus.setSeqNo(String.valueOf(seqNo++));
+			fluxSinkStatusIdx.put(fluxSinkStatus.getSeqNo(),fluxSinkStatus);
+//			containFluxSinkStatus = true;
+        }
 	}
 	public void removeFluxSinkStatus(String seqNo){
-		if(fluxSinkStatusIdx != null) {
-			fluxSinkStatusIdx.remove(seqNo);
-		}
+        synchronized (lock){
+            if(fluxSinkStatusIdx != null) {
+                fluxSinkStatusIdx.remove(seqNo);
+            }
+        }   
+		
 	}
 	
 	

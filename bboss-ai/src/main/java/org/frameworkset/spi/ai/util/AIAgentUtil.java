@@ -426,7 +426,7 @@ public class AIAgentUtil {
 //       
 //
 //    }
-    private static <T> void executeSink(FluxSink<T> sink,ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler,boolean fromAgentFlow){
+    private static <T> void executeSink(DisposeEventHandler disposeEventHandler,FluxSink<T> sink,ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler,boolean fromAgentFlow){
         Object data = null;
         try {
 
@@ -434,7 +434,7 @@ public class AIAgentUtil {
 
             BaseStreamDataBuilder baseStreamDataBuilder = (BaseStreamDataBuilder) streamDataHandler.getStreamDataBuilder();
 
-            DisposeEventHandler disposeEventHandler = new DisposeEventHandler();
+//            DisposeEventHandler disposeEventHandler = new DisposeEventHandler();
 
             BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
                 @Override
@@ -520,13 +520,15 @@ public class AIAgentUtil {
         if(aiAgent != null){
             FluxSink<ServerEvent> fluxSink = aiAgent.getAgentFluxSink();
             if(fluxSink != null){
-                executeSink((FluxSink<T>)fluxSink,  clientConfiguration,  chatObject ,  streamDataHandler,true);
+                executeSink(aiAgent.getDisposeEventHandler(),(FluxSink<T>)fluxSink,  clientConfiguration,  chatObject ,  streamDataHandler,true);
                 return aiAgent.getFlux();
             }
             
         }
         return Flux.<T>create(sink -> {
-            executeSink(sink,  clientConfiguration,  chatObject ,  streamDataHandler,false);
+            DisposeEventHandler disposeEventHandler = new DisposeEventHandler();
+                    disposeEventHandler.onDispose(sink);
+            executeSink(disposeEventHandler,sink,  clientConfiguration,  chatObject ,  streamDataHandler,false);
 		}, FluxSink.OverflowStrategy.BUFFER)
 		.subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
 //		.timeout(Duration.ofSeconds(60)) // 设置超时

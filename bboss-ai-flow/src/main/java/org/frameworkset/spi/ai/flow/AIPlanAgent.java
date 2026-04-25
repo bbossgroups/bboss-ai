@@ -110,6 +110,11 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     public FluxSink<ServerEvent> getAgentFluxSink(){
         return sink;
     }
+
+    @Override
+    public DisposeEventHandler getDisposeEventHandler(){
+        return disposeEventHandler;
+    }
     /**
      * 添加路由节点
      * @param aiRouteChoiceAgent
@@ -209,6 +214,7 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     }
 
     private FluxSink<ServerEvent> sink;
+    private DisposeEventHandler disposeEventHandler;
     private Flux<ServerEvent> flux;
     @Override
     public Flux<ServerEvent> getFlux() {
@@ -228,11 +234,18 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         this.sink = sink;
     }
 
+    public void setDisposeEventHandler(DisposeEventHandler disposeEventHandler) {
+        this.disposeEventHandler = disposeEventHandler;
+    }
+
     public   Flux<ServerEvent> buildFlux(  ) {
         return Flux.<ServerEvent>create(sink -> {
             try {
                 
                 if(jobFlowBuilder != null){
+                    DisposeEventHandler disposeEventHandler = new DisposeEventHandler();
+                    disposeEventHandler.onDispose(sink);
+                    this.setDisposeEventHandler(disposeEventHandler);
                     this.setSink(sink);
                     initSessionStore();
                     JobFlowScheduleConfig jobFlowScheduleConfig = new JobFlowScheduleConfig();

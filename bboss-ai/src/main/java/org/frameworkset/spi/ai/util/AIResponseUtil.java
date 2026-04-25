@@ -596,7 +596,10 @@ public class AIResponseUtil {
 //                // 执行清理工作
 //            });
             final FluxSinkStatus fluxSinkStatus_ = fluxSinkStatus;
-             //添加处置监听器
+
+            disposeEventHandler.onDispose(sink);
+            disposeEventHandler.addFluxSinkStatus(fluxSinkStatus);
+            /*
 			if(!disposeEventHandler.containFluxSinkStatus()) {
 				disposeEventHandler.addFluxSinkStatus(fluxSinkStatus);
 				sink.onDispose(() -> {
@@ -614,6 +617,9 @@ public class AIResponseUtil {
 			else{
 				disposeEventHandler.addFluxSinkStatus(fluxSinkStatus);
 			}
+			*/
+             
+              
             String line;
             boolean needBreak = false;
             BooleanWrapperInf firstEventTag = new NoSynBooleanWrapper(true);
@@ -673,7 +679,7 @@ public class AIResponseUtil {
 
             String line;
            
-            while (  (line = fluxSinkStatus.readLine()) != null ) {
+            while ( !sink.isCancelled() && (line = fluxSinkStatus.readLine()) != null ) {
                 if(fluxSinkStatus.isDispose()){
                     break;
                 }

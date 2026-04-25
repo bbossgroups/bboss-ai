@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.flow;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
+import org.frameworkset.spi.reactor.DisposeEventHandler;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -33,6 +34,11 @@ public class AIBaseNodeAgent<T extends AIBaseNodeAgent>
     }
     public FluxSink<ServerEvent> getAgentFluxSink(){
         return planAgent.getAgentFluxSink();
+    }
+
+    @Override
+    public DisposeEventHandler getDisposeEventHandler(){
+        return planAgent.getDisposeEventHandler();
     }
     public Flux<ServerEvent> getAgentFlux(){
         return planAgent.getFlux();

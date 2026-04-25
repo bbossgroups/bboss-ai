@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
+import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -85,6 +86,10 @@ public class AIAgent<T extends AIAgent> {
         return null;
     }
     
+    public DisposeEventHandler getDisposeEventHandler(){
+        return null;
+    }
+
     public Flux<ServerEvent> getFlux(){
         return null;
     }
