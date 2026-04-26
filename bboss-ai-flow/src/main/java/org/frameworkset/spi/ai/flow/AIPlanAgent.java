@@ -15,9 +15,6 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import com.frameworkset.util.SimpleStringUtil;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.ParseException;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
@@ -25,13 +22,8 @@ import org.frameworkset.spi.ai.store.AgentSessionStoreBuilder;
 import org.frameworkset.spi.ai.store.DefaultAgentSessionStoreBuilder;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
-import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
-import org.frameworkset.spi.reactor.BaseStreamDataHandler;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.spi.reactor.ReactorCallException;
-import org.frameworkset.spi.remote.http.BaseURLResponseHandler;
-import org.frameworkset.spi.remote.http.ClientConfiguration;
-import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.tran.jobflow.JobFlow;
 import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
 import org.frameworkset.tran.jobflow.schedule.JobFlowScheduleConfig;
@@ -42,12 +34,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 智能体流程编排
@@ -165,16 +151,17 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return this;
     }
     /**
-     * 添加工作流节点
+     * 添加智能体工作流节点
      * @param aiAgent
      * @return
      */
     public AIPlanAgent addAgent(AIBaseNodeAgent aiAgent) {
         return addAgent(aiAgent,( TriggerScriptAPI )null);
     }
+    
 
     /**
-     * 添加工作流节点
+     * 添加智能体工作流节点
      * @param aiAgent
      * @return
      */
@@ -182,7 +169,30 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         initAIJobFlowBuilder();
         aiAgent.setPlanAgent(this);
         aiAgent.setParentAgent(this);
-        jobFlowBuilder.addJobFlowNodeBuilder(new AINodeBuilder(aiAgent ).setTriggerScriptAPI(triggerScriptAPI));
+        jobFlowBuilder.addJobFlowNodeBuilder(new AIAgentNodeBuilder(aiAgent ).setTriggerScriptAPI(triggerScriptAPI));
+        return this;
+    }
+
+    /**
+     * 添加工作流节点
+     * @param flowNode
+     * @return
+     */
+    public AIPlanAgent addFlowNode(AIFlowNode flowNode) {
+        return addFlowNode(flowNode,( TriggerScriptAPI )null);
+    }
+
+
+    /**
+     * 添加工作流节点
+     * @param flowNode
+     * @param triggerScriptAPI 
+     * @return
+     */
+    public AIPlanAgent addFlowNode(AIFlowNode flowNode, TriggerScriptAPI triggerScriptAPI) {
+        initAIJobFlowBuilder();
+        flowNode.setPlanAgent(this);
+        jobFlowBuilder.addJobFlowNodeBuilder(new AIFlowNodeBuilder(flowNode ).setTriggerScriptAPI(triggerScriptAPI));
         return this;
     }
 

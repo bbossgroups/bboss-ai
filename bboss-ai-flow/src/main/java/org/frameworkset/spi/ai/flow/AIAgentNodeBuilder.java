@@ -19,19 +19,19 @@ package org.frameworkset.spi.ai.flow;
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class AINodeBuilder extends AIBaseNodeBuilder {
+public class AIAgentNodeBuilder extends AIBaseNodeBuilder {
   
     
 
-    public AINodeBuilder(AIBaseNodeAgent agent) {
+    public AIAgentNodeBuilder(AIBaseNodeAgent agent) {
         super( agent);
         
     }
-    public AINodeBuilder(String nodeName) {
+    public AIAgentNodeBuilder(String nodeName) {
         super(nodeName);
     }
 
-    public AINodeBuilder(String nodeId, String nodeName) {
+    public AIAgentNodeBuilder(String nodeId, String nodeName) {
         super(nodeId, nodeName);
     } 
 
