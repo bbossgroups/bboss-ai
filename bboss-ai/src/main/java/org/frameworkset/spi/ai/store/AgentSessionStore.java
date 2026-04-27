@@ -29,13 +29,12 @@ import java.util.Map;
  */
 public interface AgentSessionStore<T extends AgentSessionStore> {
     void init();
-    String genSubAgentId();
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     String getAgentId();
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
     LastSessionMessage getLastSubAgentSessionMessage();
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
-
+    
     /**
      * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
      * @param prompt

@@ -54,10 +54,10 @@ public class RoutingStreamTest {
 //          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.1",null);
 //        multiagentWeathor("zhipu","创建一篇关于中国首都介绍的飞书文档","glm-5.1",null);
 
-//        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.6-plus",null);
+        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.6-plus",null);
 
 
-        multiagentWeathor("kimi","创建一篇关于中国首都介绍的飞书文档","kimi-k2.6",null);
+//        multiagentWeathor("kimi","创建一篇关于中国首都介绍的飞书文档","kimi-k2.6",null);
 //        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
 
     }
@@ -105,10 +105,7 @@ public class RoutingStreamTest {
         aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(new MCPToolsRegist("visualops"))
                 .setAgentId("weatherAgent").setAgentName("天气查询智能体"));
         
-        ToolsRegist feishuMcp = new FeishuMcpRegist("feishumcp")
-                .setAppId("cli_a9d43b87aff89cd1")
-                .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
-                .setTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
+        ToolsRegist feishuMcp = new FeishuMcpRegist("feishumcp");
 
         //构建飞书文档操作智能体：当用户问题匹配上时执行
         aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(feishuMcp).setAgentId("docAgent").setAgentName("飞书文档智能体"));
@@ -125,6 +122,9 @@ public class RoutingStreamTest {
             String judgeResult = (String) nodeTriggerContext.getFlowContextData("judgeAgent.judgeResult");
             if("是".equals(judgeResult)){
                 return true;
+            }
+            else{
+                logger.info("judgeAgent.judgeResult：{}",judgeResult);
             }
             return false;
         });

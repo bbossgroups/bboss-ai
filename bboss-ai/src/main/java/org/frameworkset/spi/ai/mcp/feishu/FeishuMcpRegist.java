@@ -19,6 +19,8 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.mcp.MCPClient;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.feishu.BaseFeishuConfig;
+import org.frameworkset.spi.feishu.FeishuAuthorTokenFunction;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**
  * @author biaoping.yin
@@ -31,7 +33,10 @@ public class FeishuMcpRegist extends MCPToolsRegist {
     private String appSecret;
     public FeishuMcpRegist(String mcpServer ) {
         super(mcpServer);
-        this.baseFeishuConfig = baseFeishuConfig;
+        ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
+        appId = clientConfiguration.getExtendConfig("appId");
+        appSecret = clientConfiguration.getExtendConfig("appSecret");
+        tools = clientConfiguration.getExtendConfig("tools");
     }
 	public FeishuMcpRegist(String mcpServer,BaseFeishuConfig baseFeishuConfig) {
 		super(mcpServer);
@@ -84,10 +89,22 @@ public class FeishuMcpRegist extends MCPToolsRegist {
                     .addHttpConfig(feishuDatasource+ ".http.connectionRequestTimeout", 10000)
 //                    #socket通讯超时时间，如果在通讯过程中出现sockertimeout异常，可以适当调整timeoutSocket参数值，单位：毫秒
                     .addHttpConfig(feishuDatasource+ ".http.timeoutSocket", 120000)
+                    .addHttpConfig(feishuDatasource+ ".http.authorTokenFunction","org.frameworkset.spi.feishu.FeishuAuthorTokenFunction")
+                    .addHttpConfig(feishuDatasource+ ".http.authorTokenExpiredTime",105*60*1000L)
+                    .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appId",appId)
+                    .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appSecret", appSecret)
+                    
                     .setMcpTools(tools);
             this.baseFeishuConfig = baseFeishuConfig;
         }
         baseFeishuConfig.build();
+        ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
+        if(clientConfiguration != null && clientConfiguration.getAuthorTokenHolder() != null) {
+            FeishuAuthorTokenFunction feishuAuthorTokenFunction = (FeishuAuthorTokenFunction) clientConfiguration.getAuthorTokenHolder().getRefreshTokenFunction();
+            if(feishuAuthorTokenFunction != null) {
+                feishuAuthorTokenFunction.setFeishuDatasource(baseFeishuConfig.getFeishuDataSource());
+            }
+        }
         baseFeishuConfig.initFeishHelper();
         super.init();
         

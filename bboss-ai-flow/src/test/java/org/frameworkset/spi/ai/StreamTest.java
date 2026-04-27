@@ -86,9 +86,6 @@ public class StreamTest {
 
         AIAgent docAgent = new AIAgent("将分析的日志结果创建为飞书文档",
                                     new FeishuMcpRegist("feishumcp")
-                                    .setAppId("cli_a9d43b87aff89cd1")
-                                    .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
-                                    .setTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments")
                                     ,50).setAgentId("docAgent");
         ServerEvent serverEvent = logAgent.chat(chatAgentMessage);
         logger.info(serverEvent.getData());
@@ -123,9 +120,7 @@ public class StreamTest {
 
         AIAgent docAgent = new AIAgent("将杭州市天气查询结果和出穿衣出行建议创建为飞书文档",
                 new FeishuMcpRegist("feishumcp")
-                        .setAppId("cli_a9d43b87aff89cd1")
-                        .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
-                        .setTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments")
+                        
                 ,50);//.setAgentId("docAgent");
         ServerEvent serverEvent = logAgent.chat(chatAgentMessage);
         logger.info(serverEvent.getData());
@@ -163,9 +158,7 @@ public class StreamTest {
         logger.info(serverEvent.getData());
         UserAgent docAgent = new UserAgent("将杭州市天气查询结果和出穿衣出行建议创建为飞书文档："+serverEvent.getData(),
                 new FeishuMcpRegist("feishumcp")
-                        .setAppId("cli_a9d43b87aff89cd1")
-                        .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
-                        .setTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments")
+                       
                 ,50);//.setAgentId("docAgent");
         ServerEvent serverEvent1 = docAgent.chat(chatAgentMessage);
         logger.info("serverEvent:{}", serverEvent1.getData());

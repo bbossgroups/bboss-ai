@@ -102,10 +102,7 @@ public class RoutingTest {
         aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(new MCPToolsRegist("visualops"))
                 .setAgentId("weatherAgent").setAgentName("天气查询智能体"));
         
-        ToolsRegist feishuMcp = new FeishuMcpRegist("feishumcp")
-                .setAppId("cli_a9d43b87aff89cd1")
-                .setAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs")
-                .setTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
+        ToolsRegist feishuMcp = new FeishuMcpRegist("feishumcp");
 
         //构建飞书文档操作智能体：当用户问题匹配上时执行
         aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(feishuMcp).setAgentId("docAgent").setAgentName("飞书文档智能体"));

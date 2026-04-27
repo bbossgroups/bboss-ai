@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.store.AgentIdAssign;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.LinkedHashMap;
@@ -28,7 +29,11 @@ import java.util.Map;
  */
 public class AgentMessage<T extends AgentMessage> {
 
-    
+    protected AgentIdAssign agentIdAssign = new AgentIdAssign();
+    public String genSubAgentId(){
+      
+        return "agentId-"+agentIdAssign.getAgentId();
+    }
     
     private Boolean thinking;
     /**

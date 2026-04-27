@@ -20,6 +20,7 @@ import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
+import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -38,8 +39,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
      * 在内存中持久化用户消息
      */
     protected boolean persistentSessionMemory;
-    
-    protected AgentIdAssign agentIdAssign = new AgentIdAssign();
+     
     /**
      * 用户会话id
      */
@@ -57,6 +57,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     protected AgentSessionStore parentAgentSessionStore;
 
     protected AIAgent aiAgent;
+
+ 
 
 
     protected AgentSessionStore mainAgentSessionStore;
@@ -78,9 +80,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return aiAgent;
     }
 
-    public String genSubAgentId(){
-        return this.agentId + "-"+agentIdAssign.getAgentId();
-    }
+ 
 
     public T setSessionMemory(List<Map<String, Object>> sessionMemory) {
         this.sessionMemory = sessionMemory;

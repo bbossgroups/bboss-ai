@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.AgentIdAssign;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
@@ -69,6 +70,9 @@ public class AIAgent<T extends AIAgent> {
 
     public T setParentAgent(AIAgent parentAgent) {
         this.parentAgent = parentAgent;
+        if(this.agentId == null){
+            agentId = parentAgent.genSubAgentId();
+        }
         return (T)this;
     }
 
@@ -126,6 +130,10 @@ public class AIAgent<T extends AIAgent> {
         return (T)this;
     }
 
+    protected AgentIdAssign agentIdAssign = new AgentIdAssign();
+    public String genSubAgentId(){
+        return this.agentId + "-"+agentIdAssign.getAgentId();
+    }
     public String getPrompt() {
         return prompt;
     }
@@ -160,7 +168,7 @@ public class AIAgent<T extends AIAgent> {
         if(sessionSize != null ){
             this.sessionSize = sessionSize;
         }
-        this.agentId = SimpleStringUtil.getUUID32();
+//        this.agentId = SimpleStringUtil.getUUID32();
         this.agentName = this.getClass().getName();
 //            agentSessionStore = new AgentSessionStoreMemory(sessionSize);
     }
@@ -250,11 +258,11 @@ public class AIAgent<T extends AIAgent> {
             AgentSessionStore mainSessionStore = sessionAgentMessage.getMainSessionStore();
             if(mainSessionStore != null) {
                 if(agentId == null){
-                    if(parentSessionStore != null){
-                        agentId = parentSessionStore.genSubAgentId();
+                    if(parentAgent != null){
+                        agentId = parentAgent.genSubAgentId();
                     }
                     else{
-                        agentId = mainSessionStore.genSubAgentId();
+                        agentId = sessionAgentMessage.genSubAgentId();
                     }
                 }
 
