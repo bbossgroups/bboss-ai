@@ -84,12 +84,12 @@ public class FeishuMcpRegist extends MCPToolsRegist {
             String feishuDatasource = SimpleStringUtil.getUUID32();
             baseFeishuConfig.addHttpConfig("http.poolNames", feishuDatasource)
                     .addHttpConfig(feishuDatasource+ ".http.hosts", "https://open.feishu.cn")
-                    .addHttpConfig(feishuDatasource+ ".http.maxTotal", 100)
-                    .addHttpConfig(feishuDatasource+ ".http.defaultMaxPerRoute", 100)
-                    .addHttpConfig(feishuDatasource+ ".http.timeoutConnection", 15000)
-                    .addHttpConfig(feishuDatasource+ ".http.connectionRequestTimeout", 10000)
+                    .addHttpConfig(feishuDatasource+ ".http.maxTotal", 10)
+                    .addHttpConfig(feishuDatasource+ ".http.defaultMaxPerRoute", 10)
+                    .addHttpConfig(feishuDatasource+ ".http.timeoutConnection", clientConfiguration.getTimeoutConnection())
+                    .addHttpConfig(feishuDatasource+ ".http.connectionRequestTimeout", clientConfiguration.getConnectionRequestTimeout())
 //                    #socket通讯超时时间，如果在通讯过程中出现sockertimeout异常，可以适当调整timeoutSocket参数值，单位：毫秒
-                    .addHttpConfig(feishuDatasource+ ".http.timeoutSocket", 120000)
+                    .addHttpConfig(feishuDatasource+ ".http.timeoutSocket", clientConfiguration.getTimeoutSocket())
                     .addHttpConfig(feishuDatasource+ ".http.authorTokenFunction","org.frameworkset.spi.feishu.FeishuAuthorTokenFunction")
                     .addHttpConfig(feishuDatasource+ ".http.authorTokenExpiredTime",clientConfiguration.getAuthorTokenExpiredTime())
                     .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appId",appId)
