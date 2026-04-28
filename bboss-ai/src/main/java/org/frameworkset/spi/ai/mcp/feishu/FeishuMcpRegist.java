@@ -73,6 +73,7 @@ public class FeishuMcpRegist extends MCPToolsRegist {
     @Override
     public void init() {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
+        clientConfiguration.setAuthorTokenExpiredTime(1500000L);
         if(baseFeishuConfig == null){
             BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
 //            bboss应用
@@ -91,7 +92,7 @@ public class FeishuMcpRegist extends MCPToolsRegist {
 //                    #socket通讯超时时间，如果在通讯过程中出现sockertimeout异常，可以适当调整timeoutSocket参数值，单位：毫秒
                     .addHttpConfig(feishuDatasource+ ".http.timeoutSocket", clientConfiguration.getTimeoutSocket())
                     .addHttpConfig(feishuDatasource+ ".http.authorTokenFunction","org.frameworkset.spi.feishu.FeishuAuthorTokenFunction")
-                    .addHttpConfig(feishuDatasource+ ".http.authorTokenExpiredTime",clientConfiguration.getAuthorTokenExpiredTime())
+                    .addHttpConfig(feishuDatasource+ ".http.authorTokenExpiredTime",1500000L)
                     .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appId",appId)
                     .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appSecret", appSecret)
                     
