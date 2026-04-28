@@ -72,6 +72,7 @@ public class FeishuMcpRegist extends MCPToolsRegist {
 
     @Override
     public void init() {
+        ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
         if(baseFeishuConfig == null){
             BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
 //            bboss应用
@@ -90,7 +91,7 @@ public class FeishuMcpRegist extends MCPToolsRegist {
 //                    #socket通讯超时时间，如果在通讯过程中出现sockertimeout异常，可以适当调整timeoutSocket参数值，单位：毫秒
                     .addHttpConfig(feishuDatasource+ ".http.timeoutSocket", 120000)
                     .addHttpConfig(feishuDatasource+ ".http.authorTokenFunction","org.frameworkset.spi.feishu.FeishuAuthorTokenFunction")
-                    .addHttpConfig(feishuDatasource+ ".http.authorTokenExpiredTime",105*60*1000L)
+                    .addHttpConfig(feishuDatasource+ ".http.authorTokenExpiredTime",clientConfiguration.getAuthorTokenExpiredTime())
                     .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appId",appId)
                     .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appSecret", appSecret)
                     
@@ -98,9 +99,9 @@ public class FeishuMcpRegist extends MCPToolsRegist {
             this.baseFeishuConfig = baseFeishuConfig;
         }
         baseFeishuConfig.build();
-        ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
-        if(clientConfiguration != null && clientConfiguration.getAuthorTokenHolder() != null) {
-            FeishuAuthorTokenFunction feishuAuthorTokenFunction = (FeishuAuthorTokenFunction) clientConfiguration.getAuthorTokenHolder().getRefreshTokenFunction();
+        
+        if(clientConfiguration != null && clientConfiguration.getAuthorTokenFunctionObject() != null) {
+            FeishuMCPAuthorTokenFunction feishuAuthorTokenFunction = (FeishuMCPAuthorTokenFunction) clientConfiguration.getAuthorTokenFunctionObject();
             if(feishuAuthorTokenFunction != null) {
                 feishuAuthorTokenFunction.setFeishuDatasource(baseFeishuConfig.getFeishuDataSource());
             }

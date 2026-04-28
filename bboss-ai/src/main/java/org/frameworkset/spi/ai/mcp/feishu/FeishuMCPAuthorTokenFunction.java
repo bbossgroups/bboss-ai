@@ -15,19 +15,75 @@ package org.frameworkset.spi.ai.mcp.feishu;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.feishu.FeishuAuthorTokenFunction;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.frameworkset.spi.remote.http.auth.AuthorTokenFunction;
 
 /**
+ * 飞书mcp服务是通过开放平台获取飞书令牌，因此直接从内置的飞书开放平台服务配置获取令牌
  * @author biaoping.yin
  * @Date 2026/4/27
  */
-public class FeishuMCPAuthorTokenFunction extends FeishuAuthorTokenFunction {
-    
+public class FeishuMCPAuthorTokenFunction implements AuthorTokenFunction {
+    private String feishuDatasource;
+    private ClientConfiguration feishuClientConfiguration;
+    private Object lock = new Object();
+    public ClientConfiguration getFeishuClientConfiguration( ) {
+        if(feishuClientConfiguration != null){
+            return feishuClientConfiguration;
+        }
+        synchronized (lock) {
+            if (feishuClientConfiguration == null)
+                feishuClientConfiguration = ClientConfiguration.getClientConfiguration(feishuDatasource);
+        }
+        return feishuClientConfiguration;
+        
+    }
+    public void setFeishuDatasource(String feishuDatasource) {
+        this.feishuDatasource = feishuDatasource;
+    }
     public String authorHeaderKey(){
         return "X-Lark-MCP-TAT";
     }
     public String authorTokenPrefix(){
         return null;
+    }
+
+    @Override
+    public boolean directFromFunction() {
+        return true;
+    }
+
+    @Override
+    public String genAuthorToken(ClientConfiguration clientConfiguration) {
+        clientConfiguration = getFeishuClientConfiguration();
+        return clientConfiguration.getAuthorTokenHolder().getToken();
+        /**
+        String feishuDatasource = clientConfiguration.getDatasource() ;
+        String appId = clientConfiguration.getExtendConfig("appId");
+        String appSecret = clientConfiguration.getExtendConfig("appSecret");
+        if(SimpleStringUtil.isEmpty(appId) || SimpleStringUtil.isEmpty(appSecret)){
+            throw new FeishuException("app id or app secret is empty:appId="+appId+",appSecret="+appSecret);
+        }
+        String url = "/open-apis/auth/v3/tenant_access_token/internal";
+        Map<String,Object> params = new LinkedHashMap<>();
+        params.put("app_id",appId);
+        params.put("app_secret",appSecret);
+        Map tenantAccessToken = null;
+        int times = 10;
+        do {
+            try {
+                tenantAccessToken = HttpRequestProxy.sendJsonBody(feishuDatasource,params,url,Map.class);
+                break;
+            } catch (Exception e) {
+                times--;
+                if(times < 0){
+                    throw new FeishuException("get tenant access token failed:",e);
+                }
+//						throw new DataImportException("get tenant access token failed:", e);
+            }
+        }while(true);
+        return (String)tenantAccessToken.get("tenant_access_token");
+         */
     }
    
 }
