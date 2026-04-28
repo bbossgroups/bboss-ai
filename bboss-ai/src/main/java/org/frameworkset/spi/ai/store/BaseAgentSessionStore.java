@@ -45,6 +45,13 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
      */
 
     protected String sessionId;
+
+
+
+    /**
+     * 前端用户请求id，每次请求生成一个
+     */
+    protected String requestId;
     /**
      * 用户id，可选
      */
@@ -121,6 +128,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.sessionId = storeContext.getSessionId();   
         this.userId = storeContext.getUserId();
         this.agentId = storeContext.getAgentId();
+        this.requestId = storeContext.getRequestId();
         if(agentId == null){
             this.agentId = "agentId-0";
         }
@@ -216,6 +224,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(sessionMemory == null){
             lastSubAgentSessionMessage = new LastSessionMessage();
             lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
+            lastSubAgentSessionMessage.setRequestId(this.getRequestId());
             return lastSubAgentSessionMessage;
         }
         appendSessionMessage(assistantMessage);
@@ -238,6 +247,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         else{
             lastSubAgentSessionMessage = new LastSessionMessage();
             lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
+            lastSubAgentSessionMessage.setRequestId(this.getRequestId());
             return lastSubAgentSessionMessage;
         }
 
@@ -411,7 +421,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return (T) this;
     }
 
-    public void setParantAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage){
+    public void setParentAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage){
         if(this.parentAgentSessionStore != null){
             parentAgentSessionStore.setSubAgentLastSessionMessage(lastSubAgentSessionMessage);
         }
@@ -423,6 +433,15 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     public void setSubAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage){
         this.lastSubAgentSessionMessage = lastSubAgentSessionMessage;
         //todo 如果当前子智能体所属的父智能体是父智能体对应的上级智能体的的最后一个子智能体，那么需要级联设置
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public T setRequestId(String requestId) {
+        this.requestId = requestId;
+        return (T) this;
     }
     
 }

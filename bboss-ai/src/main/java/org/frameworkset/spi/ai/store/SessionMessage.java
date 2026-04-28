@@ -40,6 +40,10 @@ public class SessionMessage {
     public static final String MESSAGE_TYPE_MIDDLE_MESSAGE = "0";
     
     private String msgId;
+    /**
+     * 前端用户请求id，每次请求生成一个唯一id
+     */
+    private String requestId;
     private Date createTime;
     private String sessionId;
     private String agentId;
@@ -142,5 +146,13 @@ public class SessionMessage {
 
     public void setMetadata(String metadata) {
         this.metadata = metadata;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 }

@@ -27,6 +27,10 @@ public class LastSessionMessage {
     private String sessionId;
     /**消息id*/
     private String msgId;
+    /**
+     * 前端用户请求id，每次请求生成一个
+     */
+    protected String requestId; 
     /**消息对应智能体id*/
     private String msgAgentId;
     private String msgParentAgentId;    
@@ -38,7 +42,15 @@ public class LastSessionMessage {
      * false 不是最新消息
      */
     private boolean freshMessage;
-    
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
+    }
+
     public String getData(){
         if(lastSessionMessage != null){
             return (String)lastSessionMessage.get("content");

@@ -226,7 +226,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
                     msgId,new Date(),this.getSessionId(),
                     parentAgentId, agentId,agentResultMessage,integerCount.increament(), JsonUtil.object2json(message),
-                    role,marks,metadata);
+                    role,marks,metadata,this.getRequestId());
 
             if(agentResultMessage != null && agentResultMessage.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();
@@ -234,6 +234,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                 lastSessionMessage.setLastSessionMessage(message);
                 lastSessionMessage.setFreshMessage(true);
                 lastSessionMessage.setSessionId(getSessionId());
+                lastSessionMessage.setRequestId(this.getRequestId());
                 lastSessionMessage.setMsgAgentId(agentId);
                 lastSessionMessage.setMsgParentAgentId(parentAgentId);
                 return lastSessionMessage;
@@ -267,7 +268,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         try {
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageRerenceSQL(),
                     lastSessionMessage.getMsgId(),lastSessionMessage.getMsgAgentId(),
-                    refAgentId, getSessionId());
+                    refAgentId, getSessionId(),lastSessionMessage.getRequestId());
         } catch (SQLException e) {
             throw new AIRuntimeException("saveLastSessionMessage error",e);
         }

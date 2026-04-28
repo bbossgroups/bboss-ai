@@ -90,6 +90,7 @@ public class AgentSessionStoreDBConfig {
             .append( "agentId varchar(100),")  //创建消息的agentid
             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中 0：否 1：是
             .append( "sessionId varchar(100),")  //会话id
+            .append( "requestId varchar(100), " )  //请求id
             .append( "seqNo int,")  //消息序号
             .append( "message text,")  //消息正文
             .append( "role varchar(100),")
@@ -100,6 +101,7 @@ public class AgentSessionStoreDBConfig {
     public static final String mysql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL comment '消息id'," )
             .append(" createTime datetime NOT NULL comment '创建时间', " )
             .append( "sessionId varchar(100) NOT NULL, " )  //会话id
+            .append( "requestId varchar(100), " )  //请求id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
@@ -115,6 +117,7 @@ public class AgentSessionStoreDBConfig {
     public static final String oracle_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
+            .append( "requestId varchar2(100), " )  //请求id
             .append( "parentAgentId varchar2(100),")  //父agentid
             .append( "agentId varchar2(100),")  //创建消息的agentid
             .append( "agentResultMessage varchar2(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
@@ -128,6 +131,7 @@ public class AgentSessionStoreDBConfig {
     public static final String dm_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
+            .append( "requestId varchar2(100), " )  //请求id
             .append( "parentAgentId varchar2(100),")  //父agentid
             .append( "agentId varchar2(100),")  //创建消息的agentid
             .append( "agentResultMessage varchar2(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
@@ -141,6 +145,7 @@ public class AgentSessionStoreDBConfig {
     public static final String sqlserver_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL," )
             .append( "createTime datetime NOT NULL,")  //创建时间
             .append("sessionId varchar(100) NOT NULL,") //会话id
+            .append( "requestId varchar(100), " )  //请求id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
@@ -154,6 +159,7 @@ public class AgentSessionStoreDBConfig {
     public static final String postgresql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName (msgId varchar(100) NOT NULL," )
             .append( "createTime timestamp NOT NULL,")  //创建时间
             .append( "sessionId varchar(100) NOT NULL,")  //会话id
+            .append( "requestId varchar(100), " )  //请求id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
@@ -170,7 +176,8 @@ public class AgentSessionStoreDBConfig {
      */
    public static final String sqlite_createSessionMessageReferenceTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageReferenceTableName ( msgId TEXT NOT NULL, " )
            .append(" msgAgentId varchar(100) NOT NULL, " )
-           .append( "refAgentId varchar(100) NOT NULL,)" )   
+           .append( "refAgentId varchar(100) NOT NULL,)" )
+            .append( "requestId varchar(100), " )  //请求id   
             .append("sessionId varchar(100) NOT NULL") //会话id
             .toString();
 
@@ -181,6 +188,7 @@ public class AgentSessionStoreDBConfig {
             .append(" msgAgentId varchar(100) NOT NULL comment '消息所属智能体agentId', " )
             .append( "refAgentId varchar(100) NOT NULL comment '引用消息智能体agentId'," )   
             .append("sessionId varchar(100) NOT NULL,") //会话id
+            .append( "requestId varchar(100), " )  //请求id
              .append("INDEX idx_msgId (msgId), ")
             .append("INDEX idx_msgAgentId (msgAgentId), ")
             .append("INDEX idx_refAgentId (refAgentId), ")
@@ -196,7 +204,8 @@ public class AgentSessionStoreDBConfig {
         .append("msgId VARCHAR2(100) NOT NULL, ")                           // Oracle中使用VARCHAR2而不是varchar
         .append("msgAgentId VARCHAR2(100) NOT NULL, ")                       // 消息所属智能体agentId
         .append("refAgentId VARCHAR2(100) NOT NULL, ")                       // 引用消息智能体agentId
-            .append("sessionId varchar(100) NOT NULL,") //会话id
+            .append("sessionId varchar2(100) NOT NULL,") //会话id
+            .append( "requestId varchar2(100), " )  //请求id
         .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
         .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
         .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")        // 唯一约束
@@ -211,7 +220,8 @@ public class AgentSessionStoreDBConfig {
             .append("msgId VARCHAR2(100) NOT NULL, ")                           // Oracle中使用VARCHAR2而不是varchar
             .append("msgAgentId VARCHAR2(100) NOT NULL, ")                       // 消息所属智能体agentId
             .append("refAgentId VARCHAR2(100) NOT NULL, ")                       // 引用消息智能体agentId
-            .append("sessionId varchar(100) NOT NULL,") //会话id
+            .append("sessionId varchar2(100) NOT NULL,") //会话id
+            .append( "requestId varchar(100), " )  //请求id
             .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
             .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
             .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")        // 唯一约束
@@ -227,6 +237,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         .append("msgAgentId VARCHAR(100) NOT NULL, ")                       // 消息所属智能体agentId
         .append("refAgentId VARCHAR(100) NOT NULL, ")                       // 引用消息智能体agentId
         .append("sessionId varchar(100) NOT NULL,") //会话id
+        .append( "requestId varchar(100), " )  //请求id
         .append("CONSTRAINT uk_ref_agentid UNIQUE (refAgentId), ")        // 唯一约束
         .append("CONSTRAINT uk_msg_agentid UNIQUE (msgAgentId), ")        // 唯一约束    
         .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")     // 唯一约束
@@ -244,6 +255,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
            .append("msgAgentId VARCHAR(100) NOT NULL, ")                       // 消息所属智能体agentId
            .append("refAgentId VARCHAR(100) NOT NULL, ")                       // 引用消息智能体agentId
            .append("sessionId varchar(100) NOT NULL,") //会话id
+           .append( "requestId varchar(100), " )  //请求id
            .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
            .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
            .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId)           ") // 唯一约束
@@ -341,10 +353,10 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
          *             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
          */
         insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
-                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,agentResultMessage,seqNo,message,role,marks,metadata) values(?,?,?,?,?,?,?,?,?,?,?)").toString();
+                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,agentResultMessage,seqNo,message,role,marks,metadata,requestId) values(?,?,?,?,?,?,?,?,?,?,?,?)").toString();
 
-        insertSessionMessageRerenceSQL = "INSERT INTO "+sessionMessageReferenceTableName+" (msgId,msgAgentId,refAgentId,sessionId) " +
-                                                    "VALUES (?, ?, ?, ?)";
+        insertSessionMessageRerenceSQL = "INSERT INTO "+sessionMessageReferenceTableName+" (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
+                                                    "VALUES (?, ?, ?, ?, ?)";
         deleteSessionMessageSQL = "DELETE FROM "+sessionMessageTableName+" where msgId=? and jobType=?";
         deleteSessionMessageByUserIdSQL = new StringBuilder().append("delete from ")
                 .append(sessionMessageTableName).append(" where useId=? ").toString();

@@ -25,7 +25,17 @@ import java.util.Map;
 public class StoreContext {
     public static final String STORE_TYPE_DB = "db";
     public static final String STORE_TYPE_MEMORY = "memory";
+    /**
+     * 会话id
+     */
     private String sessionId;
+
+
+
+    /**
+     * 请求id
+     */
+    private String requestId;
     private String userId;
     private String agentId;
     private String dataSource;
@@ -111,6 +121,14 @@ public class StoreContext {
     }
     public StoreContext setSessionMessageTableName(String sessionMessageTableName) {
         this.sessionMessageTableName = sessionMessageTableName;
+        return this;
+    }
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public StoreContext setRequestId(String requestId) {
+        this.requestId = requestId;
         return this;
     }
 }

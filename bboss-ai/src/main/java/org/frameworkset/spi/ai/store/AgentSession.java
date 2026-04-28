@@ -66,7 +66,7 @@ public class AgentSession {
      */
     private Map<String,List<LastSessionMessage>> agentReferenceSessionMessages = new ConcurrentHashMap();
     
-    public void saveLastSessionMessage(LastSessionMessage lastSessionMessage, String refAgentId) {
+    public void saveLastSessionMessage(LastSessionMessage lastSessionMessage, String refAgentId ) {
         
         
         synchronized (agentReferenceSessionMessages) {

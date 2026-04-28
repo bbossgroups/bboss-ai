@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.flow.*;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
@@ -53,7 +54,7 @@ public class RoutingStreamTest {
 //          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.1",null);
 //        multiagentWeathor("zhipu","创建一篇关于中国首都介绍的飞书文档","glm-5.1",null);
 
-        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.6-plus",null);
+        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.6-plus","0cfd4d5f4f6f4f4f9e1c493f69b72ab3");
 
 
 //        multiagentWeathor("kimi","创建一篇关于中国首都介绍的飞书文档","kimi-k2.6",null);
@@ -86,12 +87,13 @@ public class RoutingStreamTest {
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
         AIPlanAgent aiPlanAgent = new AIPlanAgent(new StoreContext()
-                .setSessionId(sessionId).setUserId("user123").setSessionSize(100)                 
+                .setSessionId(sessionId).setUserId("user123")
+                .setRequestId(SimpleStringUtil.getUUID32())
+                .setSessionSize(100)                 
                 .setStoreType(StoreContext.STORE_TYPE_DB)
                 .setDataSource("visualops"))
                 .setAgentMessage(chatAgentMessage)
-                .setAgentName("工作流智能体").setAgentId("workflowAgent")
-                 ;
+                .setAgentName("工作流智能体").setAgentId("workflowAgent");
         //构建路由规则智能体
         aiPlanAgent.addAIRouteAgent(new AIRouteAgent()
                 .setAgentId("Router").setAgentName("路由规则智能体")

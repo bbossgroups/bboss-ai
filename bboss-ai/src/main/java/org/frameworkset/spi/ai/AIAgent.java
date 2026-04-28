@@ -16,7 +16,6 @@ package org.frameworkset.spi.ai;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.AgentIdAssign;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
@@ -473,7 +472,7 @@ public class AIAgent<T extends AIAgent> {
             if(this.agentSessionStore != null ) {
                 LastSessionMessage lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(serverEvent.getData());
                 if( !disableGloableStore) {
-                    this.agentSessionStore.setParantAgentLastSessionMessage(lastSubAgentSessionMessage);
+                    this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
                 }
             }
             

@@ -158,7 +158,27 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     public AIPlanAgent addAgent(AIBaseNodeAgent aiAgent) {
         return addAgent(aiAgent,( TriggerScriptAPI )null);
     }
-    
+    /**
+     * 添加智能体工作流节点：为当前作业节点添加后续条件分支，可以连续添加多个,通过conditionNodeTrigger指定条件
+     * @param conditionNodeId
+     * @return
+     */
+    public AIPlanAgent addConditionFlowNode(String conditionNodeId, TriggerScriptAPI conditionNodeTrigger){
+        initAIJobFlowBuilder();       
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(conditionNodeId,conditionNodeTrigger);
+        return this;
+    }
+
+    /**
+     * 添加智能体工作流节点：为当前作业节点添加后续条件分支，可以连续添加多个，直接使用conditionNodeId自带条件
+     * @param conditionNodeId
+     * @return
+     */
+    public AIPlanAgent addConditionFlowNode(String conditionNodeId){
+        initAIJobFlowBuilder();
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(conditionNodeId);
+        return this;
+    }
 
     /**
      * 添加智能体工作流节点

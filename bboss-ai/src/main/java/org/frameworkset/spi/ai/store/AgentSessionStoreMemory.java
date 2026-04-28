@@ -180,6 +180,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setSeqNo(integerCount.increament());
         sessionMessage.setCreateTime(new java.util.Date());
         sessionMessage.setSessionId(this.getSessionId());
+        sessionMessage.setRequestId(this.getRequestId());
         sessionMessage.setAgentId(agentId);
         sessionMessage.setParentAgentId(parentAgentId);
         sessionMessage.setAgentResultMessage(agentResultMessage);
@@ -193,6 +194,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             lastSessionMessage.setMsgId(sessionMessage.getMsgId());
             lastSessionMessage.setLastSessionMessage(message);
             lastSessionMessage.setFreshMessage(true);
+            lastSessionMessage.setRequestId(this.getRequestId());
             lastSessionMessage.setSessionId(getSessionId());
             lastSessionMessage.setMsgAgentId(agentId);
             lastSessionMessage.setMsgParentAgentId(parentAgentId);
