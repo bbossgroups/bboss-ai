@@ -30,11 +30,15 @@ public class AIRouteAgent
     public AIRouteAgent( String prompt ) {
         super( prompt);
         disableGloableStore = true;
+        this.disablePush2ParentLastSubMessage = true;
+        this.disableReferenceParentLastSubMessage = true;
     }
 
     public AIRouteAgent(  ) {
         super(  );
         disableGloableStore = true;
+        this.disablePush2ParentLastSubMessage = true;
+        this.disableReferenceParentLastSubMessage = true;
     }
     public AIRouteAgent setAgentMessage(AgentMessage agentMessage) {
         this.agentMessage = agentMessage;

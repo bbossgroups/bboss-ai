@@ -63,7 +63,7 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
-        if(!planAgent.isStream()) {
+        if(!planAgent.isStream() || agent.isDisableStream()) {
             ServerEvent serverEvent = agent.chat((ChatAgentMessage) agentMessage);
 
 
@@ -79,6 +79,7 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
             }
         }
         else{
+            
             agent.streamChat((ChatAgentMessage) agentMessage);
         }
         return null;

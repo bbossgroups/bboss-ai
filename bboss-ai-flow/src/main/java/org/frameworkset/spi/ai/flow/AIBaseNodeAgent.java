@@ -32,6 +32,35 @@ public class AIBaseNodeAgent<T extends AIBaseNodeAgent>
     public AIBaseNodeAgent(ToolsRegist mcpToolsRegist ) {
         super(   mcpToolsRegist);
     }
+    public AIBaseNodeAgent( String prompt ) {
+        super( prompt);
+    }
+    public AIBaseNodeAgent(  ) {
+        super(  );
+    }
+
+    public AIBaseNodeAgent(String prompt, String type, ToolsRegist toolsRegist, Integer sessionSize) {
+        super(prompt, type, toolsRegist, sessionSize);
+    }
+
+    public AIBaseNodeAgent(String prompt, String type, ToolsRegist toolsRegist) {
+        super(prompt, type, toolsRegist);
+    }
+
+    public AIBaseNodeAgent(String prompt, ToolsRegist toolsRegist) {
+        super(prompt, toolsRegist);
+    }
+
+    public AIBaseNodeAgent(String prompt, ToolsRegist toolsRegist, int sessionSize) {
+        super(prompt, toolsRegist, sessionSize);
+    }
+
+    public AIBaseNodeAgent(String prompt, String type) {
+        super(prompt, type);
+    }
+    public AIBaseNodeAgent(String prompt, int sessionSize) {
+        super(prompt, sessionSize);
+    }
     public FluxSink<ServerEvent> getAgentFluxSink(){
         return planAgent.getAgentFluxSink();
     }
@@ -43,12 +72,7 @@ public class AIBaseNodeAgent<T extends AIBaseNodeAgent>
     public Flux<ServerEvent> getAgentFlux(){
         return planAgent.getFlux();
     }   
-    public AIBaseNodeAgent( String prompt ) {
-        super( prompt);
-    }
-    public AIBaseNodeAgent(  ) {
-        super(  );
-    }
+
 
     public AIPlanAgent getPlanAgent() {
         return planAgent;

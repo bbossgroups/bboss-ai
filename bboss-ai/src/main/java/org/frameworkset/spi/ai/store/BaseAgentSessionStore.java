@@ -59,7 +59,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     /**
      * 会话对应的agentId
      */
-    private String agentId;
+    protected String agentId;
     protected StoreContext storeContext;
     protected AgentSessionStore parentAgentSessionStore;
 
@@ -231,7 +231,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
         if(parentAgentSessionStore != null){
             if(aiAgent != null ){
-                if(!aiAgent.isDisableGloableStore()) {
+                if(!aiAgent.isDisablePush2ParentLastSubMessage()) {
+//                if(!aiAgent.isDisableGloableStore()) {
                     lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
                 }
                 else{
@@ -248,7 +249,6 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             lastSubAgentSessionMessage = new LastSessionMessage();
             lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
             lastSubAgentSessionMessage.setRequestId(this.getRequestId());
-            return lastSubAgentSessionMessage;
         }
 
 
@@ -268,7 +268,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
 //            loadSessionMemory(message,  agentId);
             //msgId,createTime,sessionId,seqNo,message,role
-            mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+            lastSessionMessage  = mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
             
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
@@ -349,7 +349,15 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 //    public abstract boolean loadSessionMemory(String prompt,String agentId);
 
     protected LastSessionMessage lastSubAgentSessionMessage;
-    
+
+    /**
+     * 并行节点：所有并行分支执行完毕后的结果集合
+     */
+    protected List<LastSessionMessage> lastSubAgentSessionMessages;
+
+    public List<LastSessionMessage> getLastSubAgentSessionMessages() {
+        return lastSubAgentSessionMessages;
+    }
 
     @Override
     public LastSessionMessage getLastSubAgentSessionMessage(){

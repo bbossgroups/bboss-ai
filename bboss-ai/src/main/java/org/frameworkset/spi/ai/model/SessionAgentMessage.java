@@ -201,7 +201,8 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             return null;
         }
         LastSessionMessage lastSessionMessage = agentSessionStore.addAgentResultSessionMessage(message);
-        if(!aiAgent.isDisableGloableStore()) {
+        if(!aiAgent.isDisablePush2ParentLastSubMessage()) {
+//        if(!aiAgent.isDisableGloableStore()) {
             agentSessionStore.setParentAgentLastSessionMessage(lastSessionMessage);
         }
         return lastSessionMessage;

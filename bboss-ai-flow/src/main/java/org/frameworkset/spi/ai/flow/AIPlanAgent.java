@@ -170,6 +170,47 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     }
 
     /**
+     * 添加智能体工作流节点：为当前作业节点添加后续条件分支，可以连续添加多个,通过conditionNodeTrigger指定条件
+     * @param conditionNodeId
+     * @return
+     */
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger){
+        return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  conditionNodeId,   conditionNodeTrigger,false);
+    }
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
+        initAIJobFlowBuilder();
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,conditionNodeId,conditionNodeTrigger,defautlConditionNode);
+        return this;
+    }
+    /**
+     * 添加智能体工作流节点：为当前作业节点添加后续条件分支，可以连续添加多个,通过conditionNodeTrigger指定条件
+     * @param aiAgent
+     * @return
+     */
+    public AIPlanAgent addConditionFlowNode(AIBaseNodeAgent aiAgent  ){
+        return addConditionFlowNode(  aiAgent , (TriggerScriptAPI)null);
+    }
+    
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+        return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
+    }
+
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
+        initAIJobFlowBuilder();
+        aiAgent.setPlanAgent(this);
+        aiAgent.setParentAgent(this);
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,new AIAgentNodeBuilder(aiAgent),conditionNodeTrigger,defautlConditionNode);
+        return this;
+    }
+    public AIPlanAgent addConditionFlowNode(AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+        initAIJobFlowBuilder();
+        aiAgent.setPlanAgent(this);
+        aiAgent.setParentAgent(this);
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIAgentNodeBuilder(aiAgent),conditionNodeTrigger);
+        return this;
+    }
+
+    /**
      * 添加智能体工作流节点：为当前作业节点添加后续条件分支，可以连续添加多个，直接使用conditionNodeId自带条件
      * @param conditionNodeId
      * @return
@@ -191,6 +232,27 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         aiAgent.setParentAgent(this);
         jobFlowBuilder.addJobFlowNodeBuilder(new AIAgentNodeBuilder(aiAgent ).setTriggerScriptAPI(triggerScriptAPI));
         return this;
+    }
+
+    /**
+     * 添加并行智能体节点
+     */
+    public AIPlanAgent addParrelAgent(AIParrelAgent parrelAgent, TriggerScriptAPI triggerScriptAPI){
+        initAIJobFlowBuilder();
+        parrelAgent.setParentAgent(this);
+        if(parrelAgent.getPlanAgent() == null){
+            parrelAgent.setPlanAgent(this);
+        }
+        jobFlowBuilder.addJobFlowNodeBuilder(parrelAgent.getParrelJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
+        return this;
+    }
+
+    /**
+     * 添加并行智能体节点
+     */
+    public AIPlanAgent addParrelAgent(AIParrelAgent parrelAgent){
+ 
+        return addParrelAgent(  parrelAgent, (TriggerScriptAPI)null);
     }
 
     /**
@@ -256,9 +318,7 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return stream;
     }
 
-    public FluxSink<ServerEvent> getSink() {
-        return sink;
-    }
+ 
 
     public void setSink(FluxSink<ServerEvent> sink) {
         this.sink = sink;

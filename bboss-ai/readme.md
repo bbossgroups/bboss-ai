@@ -1,5 +1,20 @@
 chatobject设置message.getGenAudioCompletionsUrl()地址
 
+消息类型
+/**
+* 智能体输出消息
+*/
+public static final String MESSAGE_TYPE_AGENTRESULTMESSAGE = "1";
+/**
+* 智能体输入消息
+*/
+public static final String MESSAGE_TYPE_USER_MESSAGE = "2";
+
+    /**
+     * 智能体过程消息
+     */
+    public static final String MESSAGE_TYPE_MIDDLE_MESSAGE = "0";
+
 飞书token有效期说明：
 https://open.feishu.cn/document/server-docs/authentication-management/access-token/tenant_access_token_internal
 

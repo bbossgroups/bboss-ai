@@ -33,6 +33,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     String getAgentId();
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
     LastSessionMessage getLastSubAgentSessionMessage();
+    public List<LastSessionMessage> getLastSubAgentSessionMessages();
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
     
     /**

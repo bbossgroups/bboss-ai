@@ -28,15 +28,21 @@ public class AIJudgeAgent
         super(   mcpToolsRegist);
         this.setPrompt(prompt);
         disableGloableStore = true;
+        this.disablePush2ParentLastSubMessage = true;
+        this.disableReferenceParentLastSubMessage = true;
         
     }
     public AIJudgeAgent(String prompt  ) {
         super( prompt );
         disableGloableStore = true;
+        this.disablePush2ParentLastSubMessage = true;
+        this.disableReferenceParentLastSubMessage = true;
     }
     public AIJudgeAgent(  ) {
         super(  );
         disableGloableStore = true;
+        this.disablePush2ParentLastSubMessage = true;
+        this.disableReferenceParentLastSubMessage = true;
     }
     
     

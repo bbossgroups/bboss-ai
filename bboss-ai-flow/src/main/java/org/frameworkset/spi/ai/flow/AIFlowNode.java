@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
 /**
+ * 普通流程节点，非智能体节点
  * @author biaoping.yin
  * @Date 2026/4/14
  */

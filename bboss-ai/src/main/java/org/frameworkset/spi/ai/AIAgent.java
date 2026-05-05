@@ -47,14 +47,33 @@ public class AIAgent<T extends AIAgent> {
     /**
      * true 智能体会话记录不会被记录到父智能体的会议记忆，同时也不会加载父智能体的会话记忆
      * false 会记录
-     * 
+     * 已经废弃
      */
     protected boolean disableGloableStore;
+
+
+    /**
+     * true 智能体会话记录不会被记录到父智能体的会议记忆
+     * false 会记录
+     *
+     */
+    protected boolean disablePush2ParentLastSubMessage;
+
+    /**
+     * true 控制智能体不会加载父智能体的会话记忆
+     * false 会加载
+     *
+     */
+    protected boolean disableReferenceParentLastSubMessage;
 
     /**
      * 工具清单，标准工具规范格式
      */
     protected List<FunctionToolDefine> tools;
+
+
+
+    protected boolean disableStream;
 
     @JsonIgnore
     protected Map<String,FunctionCall> toolCalls;
@@ -109,6 +128,10 @@ public class AIAgent<T extends AIAgent> {
 
     public LastSessionMessage getLastSessionMessage(){
         return agentSessionStore != null?agentSessionStore.getLastSubAgentSessionMessage():null;
+    }
+
+    public List<LastSessionMessage> getLastSessionMessages(){
+        return agentSessionStore != null?agentSessionStore.getLastSubAgentSessionMessages():null;
     }
 
     public T setAgentMessage(AgentMessage agentMessage) {
@@ -225,8 +248,8 @@ public class AIAgent<T extends AIAgent> {
         boolean empty = sessionMemory.isEmpty();
 //                sessionAgentMessage.setSessionStore(agentSessionStore);
         mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
-
-        if(!disableGloableStore) {
+        if(!isDisableReferenceParentLastSubMessage()) {
+//        if(!isDisableGloableStore()) {
             //UserAgent无需追加父智能体中产生的最新的消息作
             LastSessionMessage lastSubAgentSessionMessage = getLastSubAgentSessionMessage(mainSessionStore, agentMessage);
 
@@ -248,7 +271,7 @@ public class AIAgent<T extends AIAgent> {
             }
         }
     }
-    protected void reactMessage(AgentMessage agentMessage){
+    public void reactMessage(AgentMessage agentMessage){
 
          
     
@@ -275,11 +298,14 @@ public class AIAgent<T extends AIAgent> {
                 }
                 
                 mainSessionStore.loadSessionMemory(title, agentId);
+                if(parentSessionStore == null && this.parentAgent != null){
+                    this.parentSessionStore = parentAgent.getAgentSessionStore();
+                }
                 if(agentSessionStore == null){
                     if(parentSessionStore != null)
-                        agentSessionStore = new AgentSessionStoreMemory(parentSessionStore,sessionSize);
+                        agentSessionStore = buildAgentSessionStore(parentSessionStore,sessionSize);
                     else
-                        agentSessionStore = new AgentSessionStoreMemory(mainSessionStore,sessionSize);
+                        agentSessionStore = buildAgentSessionStore(mainSessionStore,sessionSize);
                     agentSessionStore.setAgentId(agentId);
                     agentSessionStore.setAIAgent(this);
                     agentSessionStore.setMainAgentSessionStore(mainSessionStore);
@@ -290,6 +316,10 @@ public class AIAgent<T extends AIAgent> {
             }
         }
         
+    }
+    
+    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore,int sessionSize){
+        return new AgentSessionStoreMemory(parentSessionStore,sessionSize);
     }
     /**
      * 实现图片生成功能
@@ -469,17 +499,23 @@ public class AIAgent<T extends AIAgent> {
         ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this);
         if(serverEvent != null && serverEvent.getData() != null){
 //            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
-            if(this.agentSessionStore != null ) {
-                LastSessionMessage lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(serverEvent.getData());
-                if( !disableGloableStore) {
-                    this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
-                }
-            }
+            addAgentResultSessionMessage(serverEvent.getData());
+            
             
             
         }
         return serverEvent;
 //        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
+    }
+    
+    public void addAgentResultSessionMessage(String message){
+        if(this.agentSessionStore != null ) {
+            LastSessionMessage lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(message);
+//            if( !isDisableGloableStore()) {
+            if( !isDisablePush2ParentLastSubMessage()) {
+                this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
+            }
+        }
     }
 
     /**
@@ -786,6 +822,34 @@ public class AIAgent<T extends AIAgent> {
     public String getFirstSubAgentSystemPrompt(){
         return this.firstSubAgentSystemPrompt;
     }
-    
-    
+    public boolean isDisableStream() {
+        if(disableStream) {
+            return disableStream;
+        }
+        else if(this.parentAgent != null && this.parentAgent.isDisableStream()){
+            return true;
+            
+        }
+        return false;
+    }
+
+    public void setDisableStream(boolean disableStream) {
+        this.disableStream = disableStream;
+    }
+
+    public boolean isDisablePush2ParentLastSubMessage() {
+        return disablePush2ParentLastSubMessage;
+    }
+
+    public void setDisablePush2ParentLastSubMessage(boolean disablePush2ParentLastSubMessage) {
+        this.disablePush2ParentLastSubMessage = disablePush2ParentLastSubMessage;
+    }
+
+    public boolean isDisableReferenceParentLastSubMessage() {
+        return disableReferenceParentLastSubMessage;
+    }
+
+    public void setDisableReferenceParentLastSubMessage(boolean disableReferenceParentLastSubMessage) {
+        this.disableReferenceParentLastSubMessage = disableReferenceParentLastSubMessage;
+    }
 }
