@@ -45,7 +45,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
     public AIParrelAgent( AIPlanAgent planAgent) {
         
         this.planAgent = planAgent;
-        this.disableStream = true;
+//        this.disableStream = true;
         //不引用全局会话存储，但是要保存到全局会话记忆中
 //        this.disableGloableStore = true;
 
@@ -84,7 +84,16 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
                                 builder.append("\n");
                             builder.append(lastSessionMessage.getData());
                         }
-                        AIParrelAgent.this.addAgentResultSessionMessage(builder.toString());
+                        String data = builder.toString();
+                        AIParrelAgent.this.addAgentResultSessionMessage(data);
+                        if(planAgent.isStream() && !isDisableStream()){
+                            ServerEvent serverEvent = new ServerEvent();
+                            serverEvent.setDone(true);
+                            serverEvent.setAgent(AIParrelAgent.this);
+                            serverEvent.setData(data);
+                            serverEvent.setContent(data);
+                            getAgentFluxSink().next(serverEvent);
+                        }
                     }
                 }
 
@@ -129,6 +138,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
         this.initAIParrelJobFlowNodeBuilder();
         aiAgent.setPlanAgent(planAgent);
         aiAgent.setParentAgent(this);
+        aiAgent.setDisableStream(true);
         parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(new AIAgentNodeBuilder(aiAgent ).setTriggerScriptAPI(triggerScriptAPI));
         return this;
     }

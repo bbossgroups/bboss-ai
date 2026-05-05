@@ -69,11 +69,12 @@ public class AIBaseNodeAgent<T extends AIBaseNodeAgent>
     public DisposeEventHandler getDisposeEventHandler(){
         return planAgent.getDisposeEventHandler();
     }
-    public Flux<ServerEvent> getAgentFlux(){
+ 
+
+    @Override
+    public Flux<ServerEvent> getFlux() {
         return planAgent.getFlux();
-    }   
-
-
+    }
     public AIPlanAgent getPlanAgent() {
         return planAgent;
     }

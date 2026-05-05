@@ -30,8 +30,8 @@ import java.io.IOException;
  * @author biaoping.yin
  * @Date 2026/4/13
  */
-public class RoutingParrelTest {
-    private static Logger logger = LoggerFactory.getLogger(RoutingParrelTest.class);
+public class ParrelTest {
+    private static Logger logger = LoggerFactory.getLogger(ParrelTest.class);
     public static void main(String[] args) throws InterruptedException, IOException {
 
 
