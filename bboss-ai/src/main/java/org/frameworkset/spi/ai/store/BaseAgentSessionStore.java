@@ -362,12 +362,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     @Override
     public LastSessionMessage getLastSubAgentSessionMessage(){
 //        this.loadSessionMemory(prompt,agentId);
-        if(lastSubAgentSessionMessage != null){
-            return lastSubAgentSessionMessage;
-        }
-        else{
-            return null;
-        }
+        return lastSubAgentSessionMessage;
+         
         /**
         if(this.loadSessionMemory(prompt,agentId))//如果是从历史数据中加载，则无需返回最近消息，否则需返回最新消息给子智能体
             return null;
@@ -441,6 +437,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     public void setSubAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage){
         this.lastSubAgentSessionMessage = lastSubAgentSessionMessage;
         //todo 如果当前子智能体所属的父智能体是父智能体对应的上级智能体的的最后一个子智能体，那么需要级联设置
+    }
+
+    public void cleanLastSessionMessages(){
+        if(this.lastSubAgentSessionMessages != null){
+            lastSubAgentSessionMessages.clear();
+        }
     }
 
     public String getRequestId() {

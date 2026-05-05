@@ -25,7 +25,11 @@ import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.spi.reactor.ReactorCallException;
 import org.frameworkset.tran.jobflow.JobFlow;
+import org.frameworkset.tran.jobflow.NodeTrigger;
+import org.frameworkset.tran.jobflow.builder.ConditionJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
+import org.frameworkset.tran.jobflow.builder.JobFlowBuilderException;
+import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.schedule.JobFlowScheduleConfig;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
@@ -195,18 +199,33 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
     }
 
-    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode) {
         initAIJobFlowBuilder();
-        aiAgent.setPlanAgent(this);
-        aiAgent.setParentAgent(this);
-        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,new AIAgentNodeBuilder(aiAgent),conditionNodeTrigger,defautlConditionNode);
+
+
+        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
+        if (jobFlowNodeBuilder == null) {
+            aiAgent.setPlanAgent(this);
+            aiAgent.setParentAgent(this);
+            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue, jobFlowNodeBuilder, conditionNodeTrigger, defautlConditionNode);
         return this;
     }
     public AIPlanAgent addConditionFlowNode(AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
         initAIJobFlowBuilder();
-        aiAgent.setPlanAgent(this);
-        aiAgent.setParentAgent(this);
-        jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIAgentNodeBuilder(aiAgent),conditionNodeTrigger);
+        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
+        
+        
+        if(jobFlowNodeBuilder == null){
+            aiAgent.setPlanAgent(this);
+            aiAgent.setParentAgent(this);
+            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
+          
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder, conditionNodeTrigger);
         return this;
     }
 
@@ -221,6 +240,132 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return this;
     }
 
+ 
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * 返回条件复合节点唯一ID
+     * @param baseNodeAgent
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent baseNodeAgent, NodeTrigger conditionNodeTrigger){
+        return addAnotherConditionJobFlowNodeBuilder(baseNodeAgent,   conditionNodeTrigger,false);
+    }
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * 返回条件复合节点唯一ID
+     * @param baseNodeAgent
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger){
+        return addAnotherConditionJobFlowNodeBuilder(  baseNodeAgent,   conditionNodeTrigger,false);
+    }
+
+    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger,boolean defaultConditionNode){
+        return addAnotherConditionJobFlowNodeBuilder(  baseNodeAgent, new NodeTrigger( conditionNodeTrigger), defaultConditionNode);
+    }
+
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * @param baseNodeAgent
+     * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent baseNodeAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(baseNodeAgent.getAgentId());
+
+        String cid = null;
+        if(jobFlowNodeBuilder == null){
+            baseNodeAgent.setPlanAgent(this);
+            baseNodeAgent.setParentAgent(this);
+            jobFlowNodeBuilder = new AIAgentNodeBuilder(baseNodeAgent);
+            
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+        cid = jobFlowBuilder.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
+        return cid;
+    }
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * 返回条件复合节点唯一ID
+     * @param conditionNodeId 条件节点ID
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(String conditionNodeId, NodeTrigger conditionNodeTrigger){
+        return addAnotherConditionJobFlowNodeBuilder(conditionNodeId,   conditionNodeTrigger,false);
+    }
+
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * @param conditionNodeId 条件节点ID
+     * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(String conditionNodeId, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode){
+         
+        return jobFlowBuilder.addAnotherConditionJobFlowNodeBuilder(  conditionNodeId,   conditionNodeTrigger,   defaultConditionNode);
+    }
+
+ 
+
+ 
+
+ 
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * 返回条件复合节点唯一ID
+     * @param jobFlowNodeBuilder
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent jobFlowNodeBuilder){
+        return addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,false);
+    }
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * @param jobFlowNodeBuilder
+     * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent jobFlowNodeBuilder,boolean defaultConditionNode){
+        return addAnotherConditionJobFlowNodeBuilder(  jobFlowNodeBuilder, (NodeTrigger) null,  defaultConditionNode);
+    }
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * 返回条件复合节点唯一ID
+     * @param conditionNodeId 条件节点ID
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(String conditionNodeId){
+        return addAnotherConditionJobFlowNodeBuilder(conditionNodeId,false);
+    }
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * @param conditionNodeId 条件节点ID
+     * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeBuilder(String conditionNodeId,boolean defaultConditionNode){
+     
+        return jobFlowBuilder.addAnotherConditionJobFlowNodeBuilder(  conditionNodeId,  defaultConditionNode);
+    }
+ 
+
+ 
+ 
     /**
      * 添加智能体工作流节点
      * @param aiAgent
@@ -235,7 +380,7 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     }
 
     /**
-     * 添加并行智能体节点
+     * 添加并行智能体节点，并设置条件触发器
      */
     public AIPlanAgent addParrelAgent(AIParrelAgent parrelAgent, TriggerScriptAPI triggerScriptAPI){
         initAIJobFlowBuilder();
@@ -253,6 +398,28 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     public AIPlanAgent addParrelAgent(AIParrelAgent parrelAgent){
  
         return addParrelAgent(  parrelAgent, (TriggerScriptAPI)null);
+    }
+
+
+    /**
+     * 添加串行智能体节点，并设置条件触发器
+     */
+    public AIPlanAgent addSequenceAgent(AISequenceAgent sequenceAgent, TriggerScriptAPI triggerScriptAPI){
+        initAIJobFlowBuilder();
+        sequenceAgent.setParentAgent(this);
+        if(sequenceAgent.getPlanAgent() == null){
+            sequenceAgent.setPlanAgent(this);
+        }
+        jobFlowBuilder.addJobFlowNodeBuilder(sequenceAgent.getSequenceJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
+        return this;
+    }
+
+    /**
+     * 添加串行智能体节点
+     */
+    public AIPlanAgent addSequenceAgent(AISequenceAgent sequenceAgent){
+
+        return addSequenceAgent(  sequenceAgent, (TriggerScriptAPI)null);
     }
 
     /**

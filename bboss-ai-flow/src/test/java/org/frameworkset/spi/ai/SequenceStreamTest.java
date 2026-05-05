@@ -16,15 +16,18 @@ package org.frameworkset.spi.ai;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
+import org.frameworkset.spi.ai.flow.AIBaseNodeAgent;
 import org.frameworkset.spi.ai.flow.AINodeAgent;
-import org.frameworkset.spi.ai.flow.AIParrelAgent;
 import org.frameworkset.spi.ai.flow.AIPlanAgent;
-import org.frameworkset.spi.ai.flow.UserNodeAgent;
+import org.frameworkset.spi.ai.flow.AISequenceAgent;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import org.frameworkset.tran.jobflow.context.NodeTriggerContext;
+import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
+import org.frameworkset.util.concurrent.IntegerCount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -36,8 +39,8 @@ import java.util.concurrent.CountDownLatch;
  * @author biaoping.yin
  * @Date 2026/4/13
  */
-public class ParrelStreamTest {
-    private static Logger logger = LoggerFactory.getLogger(ParrelStreamTest.class);
+public class SequenceStreamTest {
+    private static Logger logger = LoggerFactory.getLogger(SequenceStreamTest.class);
     public static void main(String[] args) throws InterruptedException, IOException {
 
 
@@ -47,9 +50,8 @@ public class ParrelStreamTest {
         HttpRequestProxy.startHttpPools("mcpserver.properties");
 
 
-//        multiagentIntroduceProvinces("kimi","介绍省份智能体","kimi-k2.6",null);
-
         multiagentIntroduceProvinces("qwenvlplus","介绍省份智能体","qwen3.6-plus",null);
+
     }
     public static void initDB(){
 //        SQLUtil.startPool("visualops",//数据源名称
@@ -83,14 +85,29 @@ public class ParrelStreamTest {
                 .setAgentMessage(chatAgentMessage)
                 .setAgentName("工作流智能体").setAgentId("workflowAgent")
                  ;
-
-        aiPlanAgent.addAgent(new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces"));
+        AIBaseNodeAgent introduceProvinces = new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces");
+        aiPlanAgent.addAgent(introduceProvinces);
         //构建并行智能体
-        AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("共享任务节点");
-        aiParrelAgent.addAgent(new AINodeAgent("用50字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
-        aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
-        aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));   
-        aiPlanAgent.addParrelAgent(aiParrelAgent);
+        AISequenceAgent sequenceAgent = new AISequenceAgent(aiPlanAgent).setAgentId("sequenceAgent").setAgentName("串行任务节点");
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
+        sequenceAgent.addAgent(new AINodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
+        aiPlanAgent.addSequenceAgent(sequenceAgent);
+        IntegerCount integerCount = new IntegerCount();
+        aiPlanAgent.addConditionFlowNode(introduceProvinces, new TriggerScriptAPI() {
+            @Override
+            public boolean needTrigger(NodeTriggerContext nodeTriggerContext) throws Exception {
+                int i = integerCount.increament();
+                if(i == 1) {
+                    return true;
+                }
+                else{
+                    return false;
+                }
+            }
+        });
+
 
         //开始对话，执行对话流程，并返回会话结果
         Flux<ServerEvent> flux = aiPlanAgent.chatStream();
@@ -165,7 +182,6 @@ public class ParrelStreamTest {
                 .subscribe();
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         countDownLatch.await();
-
 
     }
 

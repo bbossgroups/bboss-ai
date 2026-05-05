@@ -79,4 +79,6 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     void setParentAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage);
 
     void setSubAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage);
+
+    void cleanLastSessionMessages();
 }

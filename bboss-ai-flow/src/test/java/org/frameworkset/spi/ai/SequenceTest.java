@@ -33,8 +33,8 @@ import java.io.IOException;
  * @author biaoping.yin
  * @Date 2026/4/13
  */
-public class ParrelTest {
-    private static Logger logger = LoggerFactory.getLogger(ParrelTest.class);
+public class SequenceTest {
+    private static Logger logger = LoggerFactory.getLogger(SequenceTest.class);
     public static void main(String[] args) throws InterruptedException, IOException {
 
 
@@ -82,12 +82,12 @@ public class ParrelTest {
         AIBaseNodeAgent introduceProvinces = new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces");
         aiPlanAgent.addAgent(introduceProvinces);
         //构建并行智能体
-        AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("共享任务节点");
-        aiParrelAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
-        aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
-        aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
-        aiParrelAgent.addAgent(new UserNodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
-        aiPlanAgent.addParrelAgent(aiParrelAgent);
+        AISequenceAgent sequenceAgent = new AISequenceAgent(aiPlanAgent).setAgentId("sequenceAgent").setAgentName("串行任务节点");
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
+        sequenceAgent.addAgent(new AINodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
+        aiPlanAgent.addSequenceAgent(sequenceAgent);
         IntegerCount integerCount = new IntegerCount();
         aiPlanAgent.addConditionFlowNode(introduceProvinces, new TriggerScriptAPI() {
             @Override

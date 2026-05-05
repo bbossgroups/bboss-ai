@@ -74,6 +74,7 @@ public class AIAgent<T extends AIAgent> {
 
 
     protected boolean disableStream;
+    protected boolean sequenceHeaderNode;
 
     @JsonIgnore
     protected Map<String,FunctionCall> toolCalls;
@@ -91,6 +92,15 @@ public class AIAgent<T extends AIAgent> {
         if(this.agentId == null){
             agentId = parentAgent.genSubAgentId();
         }
+        return (T)this;
+    }
+
+    public boolean isSequenceHeaderNode() {
+        return sequenceHeaderNode;
+    }
+
+    public T setSequenceHeaderNode(boolean sequenceHeaderNode) {
+        this.sequenceHeaderNode = sequenceHeaderNode;
         return (T)this;
     }
 
@@ -130,6 +140,11 @@ public class AIAgent<T extends AIAgent> {
         return agentSessionStore != null?agentSessionStore.getLastSubAgentSessionMessage():null;
     }
 
+    public void cleanLastSessionMessages(){
+        if(this.agentSessionStore != null){
+            agentSessionStore.cleanLastSessionMessages();
+        }
+    }
     public List<LastSessionMessage> getLastSessionMessages(){
         return agentSessionStore != null?agentSessionStore.getLastSubAgentSessionMessages():null;
     }

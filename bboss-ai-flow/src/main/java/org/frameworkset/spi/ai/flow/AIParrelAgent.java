@@ -16,20 +16,15 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
-import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
-import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.tran.jobflow.JobFlowNode;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.frameworkset.tran.jobflow.listener.JobFlowNodeListener;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 
 import java.util.List;
 
@@ -60,31 +55,40 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
     protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore,int sessionSize){
         return new ParrelAgentSessionStoreMemory(parentSessionStore,sessionSize);
     }
- 
 
+    /**
+     * 默认构造并行任务输出方法，可以重载方法实现自定义输出格式
+     * @param lastSessionMessages
+     * @return
+     */
+    public String buildResult(List<LastSessionMessage> lastSessionMessages){
+        StringBuilder builder = new StringBuilder();
+        for(LastSessionMessage lastSessionMessage:lastSessionMessages){
+            if(builder.length() > 0)
+                builder.append("\n");
+            builder.append(lastSessionMessage.getMsgAgentId()).append(":").append(lastSessionMessage.getData());
+        }
+        String data = builder.toString();
+        return data;
+    }
+    
     private void initAIParrelJobFlowNodeBuilder(){
         if(parrelJobFlowNodeBuilder == null){
             parrelJobFlowNodeBuilder = new AIParrelJobFlowNodeBuilder(this);
-            logger.info("聚合和保存并行智能体任务节点[{},{}]中子智能体节点消息",this.getAgentId(),this.getAgentName());
+            logger.info("聚合、保存和激发并行智能体任务节点[{},{}]中子智能体节点消息",this.getAgentId(),this.getAgentName());
             //聚合和保存并行智能体任务节点中子智能体节点消息
             parrelJobFlowNodeBuilder.addJobFlowNodeListener(new JobFlowNodeListener() {
                 @Override
                 public void beforeExecute(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) {
-                    
+                    cleanLastSessionMessages();
                 }
 
                 @Override
                 public void afterExecute(JobFlowNodeExecuteContext jobFlowNodeExecuteContext, Throwable throwable) {
  
                     List<LastSessionMessage> lastSessionMessages = getLastSessionMessages();
-                    if(SimpleStringUtil.isNotEmpty(lastSessionMessages)) {
-                        StringBuilder builder = new StringBuilder();
-                        for(LastSessionMessage lastSessionMessage:lastSessionMessages){
-                            if(builder.length() > 0)
-                                builder.append("\n");
-                            builder.append(lastSessionMessage.getData());
-                        }
-                        String data = builder.toString();
+                    if(SimpleStringUtil.isNotEmpty(lastSessionMessages)) {                      
+                        String data = buildResult(  lastSessionMessages);
                         AIParrelAgent.this.addAgentResultSessionMessage(data);
                         if(planAgent.isStream() && !isDisableStream()){
                             ServerEvent serverEvent = new ServerEvent();
@@ -108,17 +112,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
     public AIParrelJobFlowNodeBuilder getParrelJobFlowNodeBuilder() {
         return parrelJobFlowNodeBuilder;
     }
-
-    @Override
-    public FluxSink<ServerEvent> getAgentFluxSink(){
-        return planAgent.getAgentFluxSink();
-    }
-
-    @Override
-    public DisposeEventHandler getDisposeEventHandler(){
-        return planAgent.getDisposeEventHandler();
-    }
-      
+ 
     /**
      * 添加智能体工作流节点
      * @param aiAgent
@@ -143,6 +137,50 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
         return this;
     }
 
+
+    /**
+     * 添加并行智能体节点，并设置条件触发器
+     */
+    public AIParrelAgent addParrelAgent(AIParrelAgent parrelAgent, TriggerScriptAPI triggerScriptAPI){
+        initAIParrelJobFlowNodeBuilder();
+        parrelAgent.setParentAgent(this);
+        if(parrelAgent.getPlanAgent() == null){
+            parrelAgent.setPlanAgent(this.getPlanAgent());
+        }
+        parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(parrelAgent.getParrelJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
+        return this;
+    }
+
+    /**
+     * 添加并行智能体节点
+     */
+    public AIParrelAgent addParrelAgent(AIParrelAgent parrelAgent){
+
+        return addParrelAgent(  parrelAgent, (TriggerScriptAPI)null);
+    }
+
+
+    /**
+     * 添加串行智能体节点，并设置条件触发器
+     */
+    public AIParrelAgent addSequenceAgent(AISequenceAgent sequenceAgent, TriggerScriptAPI triggerScriptAPI){
+        initAIParrelJobFlowNodeBuilder();
+        sequenceAgent.setParentAgent(this);
+        if(sequenceAgent.getPlanAgent() == null){
+            sequenceAgent.setPlanAgent(this.getPlanAgent());
+        }
+        parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(sequenceAgent.getSequenceJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
+        return this;
+    }
+
+    /**
+     * 添加串行智能体节点
+     */
+    public AIParrelAgent addSequenceAgent(AISequenceAgent sequenceAgent){
+
+        return addSequenceAgent(  sequenceAgent, (TriggerScriptAPI)null);
+    }
+
     /**
      * 添加工作流节点
      * @param flowNode
@@ -151,12 +189,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
     public AIParrelAgent addFlowNode(AIFlowNode flowNode) {
         return addFlowNode(flowNode,( TriggerScriptAPI )null);
     }
-
-    @Override
-    public void reactMessage(AgentMessage agentMessage) {
-        super.reactMessage(agentMessage);
-    }
-
+ 
   
     
     /**
@@ -172,12 +205,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
         parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(new AIFlowNodeBuilder(flowNode ).setTriggerScriptAPI(triggerScriptAPI));
         return this;
     }
-  
-    @Override
-    public Flux<ServerEvent> getFlux() {
-        return planAgent.getFlux();
-    }
-     
+ 
  
   
     
