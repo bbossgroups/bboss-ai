@@ -794,9 +794,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 rerankDocument = rerankDatas.get(index);
                 rerankedDocument.setDocument(rerankDocument.getDocument());
                 rerankedDocument.setMetadata(rerankDocument.getMetadata());
-                rerankedDocument.setRrfScore(rerankDocument.getRrfScore());
+                rerankedDocument.setVectorScore(rerankDocument.getVectorScore());
+                rerankedDocument.setBm25Score(rerankDocument.getBm25Score());
                 if(logger.isDebugEnabled()) {
-                    logger.debug("[{}] RrfScore: {}, relevance_score: {}, content: {}", i, rerankedDocument.getRrfScore(), relevanceScore,
+                    logger.debug("[{}] RrfScore: {}, relevance_score: {}, content: {}", i, rerankedDocument.getVectorScore(), relevanceScore,
                             rerankedDocument.getDocument());
                 }
                 rerankedDocuments.add(rerankedDocument);

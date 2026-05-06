@@ -24,7 +24,10 @@ import java.util.Map;
 public class RerankedDocument {
     private int index;
     private String document;
-    private double rrfScore;
+    private double vectorScore;
+
+
+    private double bm25Score;
     private Map<String,Object> metadata;
     private double relevanceScore;
 
@@ -44,12 +47,12 @@ public class RerankedDocument {
         this.document = document;
     }
 
-    public double getRrfScore() {
-        return rrfScore;
+    public double getVectorScore() {
+        return vectorScore;
     }
 
-    public void setRrfScore(double rrfScore) {
-        this.rrfScore = rrfScore;
+    public void setVectorScore(double vectorScore) {
+        this.vectorScore = vectorScore;
     }
 
     public double getRelevanceScore() {
@@ -67,4 +70,13 @@ public class RerankedDocument {
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
     }
+
+    public double getBm25Score() {
+        return bm25Score;
+    }
+
+    public void setBm25Score(double bm25Score) {
+        this.bm25Score = bm25Score;
+    }
+
 }

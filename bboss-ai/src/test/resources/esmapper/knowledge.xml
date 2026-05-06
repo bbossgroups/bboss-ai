@@ -1,0 +1,180 @@
+<properties>
+
+
+    <property name="createKnowledgeChunksIndex">
+        <![CDATA[
+        {
+          "settings": {
+            "number_of_shards": 1,
+            "number_of_replicas": 0,
+            "analysis": {
+              "filter": {
+                "cn_stop": {
+                  "type": "stop",
+                  "stopwords": ["的", "了", "是", "在", "和", "或", "与", "对", "中", "也", "都", "就", "而"]
+                }
+              },
+              "analyzer": {
+                "cn_index_analyzer": {
+                  "type": "custom",
+                  "tokenizer": "ik_max_word",
+                  "filter": ["lowercase", "cn_stop"]
+                },
+                "cn_search_analyzer": {
+                  "type": "custom",
+                  "tokenizer": "ik_smart",
+                  "filter": ["lowercase", "cn_stop"]
+                }
+              }
+            }
+          },
+          "mappings": {
+            "properties": {
+              "chunk_id":    { "type": "keyword" },
+              "document_id": { "type": "keyword" },
+              "batch_id":    { "type": "keyword" },
+              "is_active":   { "type": "boolean" },
+              "doc_path":    { "type": "keyword" },
+              "anchor":      { "type": "keyword" },
+              "domain":      { "type": "keyword" },
+              "doc_type":    { "type": "keyword" },
+              "heading_path": {
+                "type": "text",
+                "analyzer": "cn_index_analyzer",
+                "search_analyzer": "cn_search_analyzer",
+                "fields": {
+                  "keyword": { "type": "keyword" }
+                }
+              },
+              "content": {
+                "type": "text",
+                "analyzer": "cn_index_analyzer",
+                "search_analyzer": "cn_search_analyzer",
+                "fields": {
+                  "en": {
+                    "type": "text",
+                    "analyzer": "english"
+                  }
+                }
+              },
+              "embedding": {
+                "type": "dense_vector",
+                "dims": 1024,
+                "index": true,
+                "similarity": "cosine"
+              },
+              "created_at": { "type": "date" }
+            }
+          }
+        }]]>
+    </property>
+     
+    <property name="searchByDomain">
+        <![CDATA[
+        {
+          "size": #[size],
+          "query": {
+            "bool": {
+              "must": [
+                {
+                  "match": {
+                    "content": #[query]
+                  }
+                }
+              ],
+              "filter": [
+                { "term": { "is_active": #[is_active] } },
+                { "term": { "domain": #[domain] } }
+              ]
+            }
+          }
+        }]]>
+    </property>
+
+    
+ 
+    
+    <property name="searchWithScore">
+        <![CDATA[{
+           "size":#[size],
+          "knn": {
+            "field": "embedding",
+            "query_vector": #[embedding,serialJson=true],
+            "k": #[k],
+            "similarity": #[similarity],
+            "num_candidates": 100,
+            "boost": 0.9
+          } 
+        }]]>
+    </property>
+ 
+
+    <!-- BM25 文本检索 -->
+    <property name="searchBM25">
+        <![CDATA[
+        {
+          "size": #[size],
+          "query": {
+            "bool": {
+              "must": [
+                {
+                  "multi_match": {
+                    "query": #[query],
+                    "fields": ["content^3", "heading_path^2"],
+                    "type": "best_fields"
+                  }
+                }
+              ],
+              "filter": [
+                { "term": { "is_active": #[is_active] } }
+              ]
+            }
+          }
+        }]]>
+    </property>
+
+    <!-- 混合检索: 向量检索 + BM25 检索 (RRF 融合) -->
+    <property name="searchHybrid">
+        <![CDATA[
+        {
+          "size": #[size],
+          "query": {
+            "bool": {
+              "must": [
+                {
+                  "multi_match": {
+                    "query": #[query],
+                    "fields": ["content^3", "heading_path^2"],
+                    "type": "best_fields"
+                  }
+                }
+              ],
+              "filter": [
+                { "term": { "is_active": #[is_active] } }
+              ]
+            }
+          },
+          "knn": {
+            "field": "embedding",
+            "query_vector": #[embedding,serialJson=true],
+            "k": #[k],
+            "similarity": #[similarity],
+            "num_candidates": 200,
+            "boost": 0.5,
+              "filter": [
+                { "term": { "is_active": #[is_active] } }
+              ]
+          },
+          "rank": {
+            "rrf": {
+              "window_size": 100,
+              "rank_constant": 60
+            }
+          }
+        }]]>
+    </property>
+     
+
+     
+
+</properties>

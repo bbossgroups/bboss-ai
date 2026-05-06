@@ -24,7 +24,11 @@ import java.util.Map;
  */
 public class RerankDocument implements Serializable {
     private String document;
-    private double rrfScore;
+
+    private double vectorScore;
+
+
+    private double bm25Score;
     private Map<String,Object> metadata;
 
     public String getDocument() {
@@ -34,15 +38,7 @@ public class RerankDocument implements Serializable {
     public void setDocument(String document) {
         this.document = document;
     }
-
-    public double getRrfScore() {
-        return rrfScore;
-    }
-
-    public void setRrfScore(double rrfScore) {
-        this.rrfScore = rrfScore;
-    }
-
+ 
     public Map<String, Object> getMetadata() {
         return metadata;
     }
@@ -50,4 +46,22 @@ public class RerankDocument implements Serializable {
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata;
     }
+
+
+    public double getVectorScore() {
+        return vectorScore;
+    }
+
+    public void setVectorScore(double vectorScore) {
+        this.vectorScore = vectorScore;
+    }
+
+    public double getBm25Score() {
+        return bm25Score;
+    }
+
+    public void setBm25Score(double bm25Score) {
+        this.bm25Score = bm25Score;
+    }
+
 }

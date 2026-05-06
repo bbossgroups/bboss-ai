@@ -57,4 +57,7 @@ dependencies {
 
 
     )
+
+    testCompileOnly group: 'com.bbossgroups.plugins', name: 'bboss-datatran-jdbc', version: bboss_es_version
+
 }
