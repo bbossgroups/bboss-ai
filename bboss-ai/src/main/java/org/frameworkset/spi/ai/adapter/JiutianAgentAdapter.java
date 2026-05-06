@@ -99,7 +99,7 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
      * @param imageData
      * @return
      */
-    public ImageEvent buildGenImageResponse(ClientConfiguration config,ImageAgentMessage imageAgentMessage, Map imageData){
+    public ImageEvent buildGenImageResponse(ClientConfiguration config,ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject, Map imageData){
         ImageEvent imageEvent = null;
         List choices = (List)imageData.get("choices");
         if(choices == null || choices.size() == 0) {
@@ -122,14 +122,14 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
                 Map image = (Map) imageContentData.get(0);
                 String imageUrl = (String) image.get("url");
                 imageEvent.setGenImageUrl(imageUrl);
-                imageEvent.setImageUrl(genFileDownload.downloadImage(config,  imageAgentMessage,downImageUrl,imageUrl));
+                imageEvent.setImageUrl(genFileDownload.downloadImage(config,  imageAgentMessage,storeChatObject,downImageUrl,imageUrl));
 
             } else {
                 for (int i = 0; i < size; i++) {
                     Map image = (Map) imageContentData.get(i);
                     String imageUrl = (String) image.get("url");
                     imageEvent.addImageUrl(imageUrl);
-                    imageEvent.addImageUrl(genFileDownload.downloadImage(config,  imageAgentMessage,downImageUrl,imageUrl));
+                    imageEvent.addImageUrl(genFileDownload.downloadImage(config,  imageAgentMessage,storeChatObject,downImageUrl,imageUrl));
                 }
             }
             imageEvent.setFinishReason(finishReason);

@@ -113,7 +113,12 @@ public class AIAgent<T extends AIAgent> {
     public AIAgent(){
         this((String)null);
     }
-    
+    public float[] embedding(EmbeddingMessage embeddingMessage){
+        return AIAgentUtil.embedding(embeddingMessage,this);
+    }
+    public List<RerankedDocument> rerank(RerankMessage rerankMessage){
+        return AIAgentUtil.rerank(rerankMessage,this);
+    }
     public FluxSink<ServerEvent> getAgentFluxSink(){
         return null;
     }

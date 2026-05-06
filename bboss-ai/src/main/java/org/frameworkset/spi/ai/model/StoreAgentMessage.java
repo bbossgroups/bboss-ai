@@ -23,53 +23,53 @@ import org.frameworkset.spi.ai.material.StoreFilePathFunction;
  * @Date 2026/1/4
  */
 public abstract class StoreAgentMessage<T extends StoreAgentMessage> extends AgentMessage<T>{
-    /**
-     * 图片生成存储目录
-     */
-    protected String genFileStoreDir;
-    protected String endpoint;
-    /**
-     * 存储文件相对路径，包含名称
-     */
-    private String storeFilePath;
-    protected StoreFilePathFunction storeFilePathFunction;
-   
-
-    public  T setStoreFilePath(String storeFilePath) {
-        this.storeFilePath = storeFilePath;
-        return (T)this;
-    }
-
-    public String getStoreFilePath() {
-        return storeFilePath;
-    }
-
-    public String getGenFileStoreDir() {
-        return genFileStoreDir;
-    }
-
-    public T setGenFileStoreDir(String genFileStoreDir) {
-        this.genFileStoreDir = genFileStoreDir;
-        return (T)this;
-    }
-
-    public String getEndpoint() {
-        return endpoint;
-    }
-
-    public T setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
-        return (T)this;
-    }
-
- 
-
-    public StoreFilePathFunction getStoreFilePathFunction() {
-        return storeFilePathFunction;
-    }
-
-    public T setStoreFilePathFunction(StoreFilePathFunction storeFilePathFunction) {
-        this.storeFilePathFunction = storeFilePathFunction;
-        return (T) this;
-    }
+//    /**
+//     * 图片生成存储目录
+//     */
+//    protected String genFileStoreDir;
+//    protected String endpoint;
+//    /**
+//     * 存储文件相对路径，包含名称
+//     */
+//    private String storeFilePath;
+//    protected StoreFilePathFunction storeFilePathFunction;
+//   
+//
+//    public  T setStoreFilePath(String storeFilePath) {
+//        this.storeFilePath = storeFilePath;
+//        return (T)this;
+//    }
+//
+//    public String getStoreFilePath() {
+//        return storeFilePath;
+//    }
+//
+//    public String getGenFileStoreDir() {
+//        return genFileStoreDir;
+//    }
+//
+//    public T setGenFileStoreDir(String genFileStoreDir) {
+//        this.genFileStoreDir = genFileStoreDir;
+//        return (T)this;
+//    }
+//
+//    public String getEndpoint() {
+//        return endpoint;
+//    }
+//
+//    public T setEndpoint(String endpoint) {
+//        this.endpoint = endpoint;
+//        return (T)this;
+//    }
+//
+// 
+//
+//    public StoreFilePathFunction getStoreFilePathFunction() {
+//        return storeFilePathFunction;
+//    }
+//
+//    public T setStoreFilePathFunction(StoreFilePathFunction storeFilePathFunction) {
+//        this.storeFilePathFunction = storeFilePathFunction;
+//        return (T) this;
+//    }
 }

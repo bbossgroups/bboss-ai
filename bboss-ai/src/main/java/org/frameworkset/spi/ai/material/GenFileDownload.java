@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.material;
 
 import org.frameworkset.spi.ai.model.AudioAgentMessage;
 import org.frameworkset.spi.ai.model.ImageAgentMessage;
+import org.frameworkset.spi.ai.model.StoreChatObject;
 import org.frameworkset.spi.ai.model.VideoStoreAgentMessage;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
@@ -26,8 +27,8 @@ import org.frameworkset.spi.remote.http.ClientConfiguration;
  */
 public interface GenFileDownload {
 
-    String downloadImage(ClientConfiguration config, ImageAgentMessage imageAgentMessage, String downUrl, String imageUrl);
-    String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage,  String imageUrl);
-    String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage, String downUrl, String audioUrl);
-    String downloadVideo(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, String downUrl, String videoUrl);
+    String downloadImage(ClientConfiguration config, ImageAgentMessage imageAgentMessage, StoreChatObject storeChatObject, String downUrl, String imageUrl);
+    String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject,  String imageUrl);
+    String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage,StoreChatObject storeChatObject, String downUrl, String audioUrl);
+    String downloadVideo(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject, String downUrl, String videoUrl);
 }

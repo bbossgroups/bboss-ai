@@ -1,6 +1,6 @@
 package org.frameworkset.spi.ai.model;
 /**
- * Copyright 2026 bboss
+ * Copyright 2024 bboss
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,33 +15,39 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.material.StoreFilePathFunction;
-
 /**
- * 图片生成报文
+ * <p>Description: </p>
+ * <p></p>
+ *
  * @author biaoping.yin
- * @Date 2026/1/4
+ * @Date 2024/11/4
  */
-public  class VideoStoreAgentMessage extends StoreAgentMessage<VideoStoreAgentMessage>{
-    private String taskId;
-//    private String videoTaskResultUrl;
+public class EmbeddingData {
+    private int index;
+    private String object;
+    private float[] embedding;
 
-
-
-    public String getTaskId() {
-        return taskId;
+    public int getIndex() {
+        return index;
     }
 
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
+    public void setIndex(int index) {
+        this.index = index;
     }
 
+    public String getObject() {
+        return object;
+    }
 
-//    public String getVideoTaskResultUrl() {
-//        return videoTaskResultUrl;
-//    }
-//
-//    public void setVideoTaskResultUrl(String videoTaskResultUrl) {
-//        this.videoTaskResultUrl = videoTaskResultUrl;
-//    }
+    public void setObject(String object) {
+        this.object = object;
+    }
+
+    public float[] getEmbedding() {
+        return embedding;
+    }
+
+    public void setEmbedding(float[] embedding) {
+        this.embedding = embedding;
+    }
 }

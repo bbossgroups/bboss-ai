@@ -130,7 +130,7 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
 //        }
 //    }
 
-    public ImageEvent buildGenImageResponse(ClientConfiguration config, ImageAgentMessage imageAgentMessage,Map imageData){
+    public ImageEvent buildGenImageResponse(ClientConfiguration config, ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject,Map imageData){
         List data = (List)imageData.get("data");
         if(data == null || data.size() == 0)
             return null;
@@ -142,7 +142,7 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
 
             
             imageEvent.setGenImageUrl(url);
-            imageEvent.setImageUrl(genFileDownload.downloadImage(config,   imageAgentMessage,null,url));
+            imageEvent.setImageUrl(genFileDownload.downloadImage(config,   imageAgentMessage,storeChatObject,null,url));
             imageEvent.setImageSize(size);
             return imageEvent;
         }
@@ -151,7 +151,7 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
                 Map imgInfo = (Map) data.get(i);
                 String url = (String) imgInfo.get("url");
                 String size = (String) imgInfo.get("size");
-                imageEvent.addImageUrl(genFileDownload.downloadImage(config,   imageAgentMessage,null,url));
+                imageEvent.addImageUrl(genFileDownload.downloadImage(config,   imageAgentMessage,storeChatObject,null,url));
                 imageEvent.addImageSize(size);
                 imageEvent.addGenImageUrl(url);
             }
@@ -221,7 +221,7 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
      * @return
      */
     @Override
-    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration, VideoStoreAgentMessage videoStoreAgentMessage, Map taskInfo) {
+    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration, VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject, Map taskInfo) {
         VideoGenResult result = new VideoGenResult();
        
         if(taskInfo != null) {
@@ -232,7 +232,7 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
             if(content != null){
                 result.setVideoGenUrl((String) content.get("video_url"));
                 if(result.getVideoGenUrl() != null && result.getVideoGenUrl().length() > 0) {
-                    result.setVideoUrl(genFileDownload.downloadVideo(clientConfiguration, videoStoreAgentMessage, null, result.getVideoGenUrl()));
+                    result.setVideoUrl(genFileDownload.downloadVideo(clientConfiguration, videoStoreAgentMessage, storeChatObject, null, result.getVideoGenUrl()));
                 }
             }
             Map<String,Object> error = (Map<String, Object>) taskInfo.get("error");

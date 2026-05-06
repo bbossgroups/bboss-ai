@@ -30,7 +30,7 @@ import java.util.Map;
  */
 public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
  
-    private String chatCompletionsUrl;
+//    private String chatCompletionsUrl;
     protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent){
         Map parameters = agentAdapter.buildOpenAIRequestMap(this,   aiAgent);
         return parameters;
@@ -60,7 +60,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         if(!fromStreamAPI){
             parameters.put("stream",false);
         }
-        this.setChatCompletionsUrl(agentAdapter.getChatCompletionsUrl(this));
+//        this.setChatCompletionsUrl(agentAdapter.getChatCompletionsUrl(this));
         stream = (Boolean)parameters.get("stream");
   
         aiChatRequestType = agentAdapter.getAIChatRequestType();
@@ -101,19 +101,19 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         chatObject.setMessage(agentMessage);
         chatObject.setStream(stream);
         chatObject.setAgentMessage(this);
-        chatObject.setCompletionsUrl(this.getChatCompletionsUrl());
+        chatObject.setCompletionsUrl(agentAdapter.getChatCompletionsUrl(this));
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
         chatObject.setAiAgent(aiAgent);
         return chatObject;
     }
 
-    public String getChatCompletionsUrl() {
-        return chatCompletionsUrl;
-    }
-
-    public ChatAgentMessage setChatCompletionsUrl(String chatCompletionsUrl) {
-        this.chatCompletionsUrl = chatCompletionsUrl;
-        return this;
-    }
+//    public String getChatCompletionsUrl() {
+//        return chatCompletionsUrl;
+//    }
+//
+//    public ChatAgentMessage setChatCompletionsUrl(String chatCompletionsUrl) {
+//        this.chatCompletionsUrl = chatCompletionsUrl;
+//        return this;
+//    }
 }

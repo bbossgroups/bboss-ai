@@ -33,6 +33,7 @@ public class AIConstants {
     public static final String AI_MODEL_TYPE_ZHIPU = "zhipu";
     public static final String AI_MODEL_TYPE_MINIMAX = "minimax";    
     public static final String AI_MODEL_TYPE_HUNYUAN = "hunyuan";
+    public static final String AI_MODEL_TYPE_XINFERENCE = "xinference";
 
     public static final String AI_MODEL_TYPE_QWEN_URL = "https://dashscope.aliyuncs.com";
     public static final String AI_MODEL_TYPE_DOUBAO_URL = "https://ark.cn-beijing.volces.com";

@@ -31,34 +31,19 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
-    /**
-     * 存储音频文件类型:
-     * file 下载文件
-     * url 不下载文件
-     */
-    private String storeAudioType;
-    /**
-     * maas平台音频生成服务地址
-     */
-    private String genAudioCompletionsUrl;
-    
-    public String getStoreAudioType() {
-        return storeAudioType;
-    }
 
-    public AudioAgentMessage setStoreAudioType(String storeAudioType) {
-        this.storeAudioType = storeAudioType;
-        return this;
-    }
-
-    public AudioAgentMessage setGenAudioCompletionsUrl(String genAudioCompletionsUrl) {
-        this.genAudioCompletionsUrl = genAudioCompletionsUrl;
-        return this;
-    }
-
-    public String getGenAudioCompletionsUrl() {
-        return genAudioCompletionsUrl;
-    }
+//    /**
+//     * maas平台音频生成服务地址
+//     */
+//    private String genAudioCompletionsUrl;
+//    public AudioAgentMessage setGenAudioCompletionsUrl(String genAudioCompletionsUrl) {
+//        this.genAudioCompletionsUrl = genAudioCompletionsUrl;
+//        return this;
+//    }
+//
+//    public String getGenAudioCompletionsUrl() {
+//        return genAudioCompletionsUrl;
+//    }
 
     @Override
     public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI) {
@@ -69,7 +54,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         String aiChatRequestType = null;
         StreamDataBuilder streamDataBuilder = null;
         Object agentMessage = null;       
-        parameters = agentAdapter._buildGenAudioRequestMap(this,clientConfiguration,aiAgent);
+        parameters = agentAdapter._buildGenAudioRequestMap(this,chatObject,clientConfiguration,aiAgent);
         if(!fromStreamAPI){
             parameters.put("stream",false);
         }
@@ -98,7 +83,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
                 String url = serverEvent.getGenUrl();
                 if(url != null) {
                     GenFileDownload genFileDownload = agentAdapter.getGenFileDownload();
-                    serverEvent.setUrl(genFileDownload.downloadAudio(clientConfiguration, AudioAgentMessage.this, null, url));
+                    serverEvent.setUrl(genFileDownload.downloadAudio(clientConfiguration, AudioAgentMessage.this,chatObject, null, url));
                 }
             }
             @Override
@@ -112,7 +97,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         if(stream == null){
             stream = false;
         }
-        chatObject.setCompletionsUrl(this.getGenAudioCompletionsUrl());
+        chatObject.setCompletionsUrl(agentAdapter.getGenAudioCompletionsUrl(this));
         chatObject.setSseHeaderSetFunction(sseHeaderSetFunction);
         chatObject.setMessage(agentMessage);
         chatObject.setAgentMessage(this);

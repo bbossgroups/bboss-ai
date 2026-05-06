@@ -43,16 +43,7 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
 
     private Map<String, File> files;
 
-    public String getAudioSTTCompletionsUrl() {
-        return audioSTTCompletionsUrl;
-    }
 
-    public AudioSTTAgentMessage setAudioSTTCompletionsUrl(String audioSTTCompletionsUrl) {
-        this.audioSTTCompletionsUrl = audioSTTCompletionsUrl;
-        return this;
-    }
-
-    private String audioSTTCompletionsUrl;
 
     /**
      * 音频数据,支持:url,base64编码数据,MultipartFile,File 对象
@@ -95,7 +86,8 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
 
         
         parameters = agentAdapter.buildAudioSTTRequestMap(this,aiAgent);
-        this.audioSTTCompletionsUrl = agentAdapter.getAudioSTTCompletionsUrl(this);
+//        this.audioSTTCompletionsUrl = agentAdapter.getAudioSTTCompletionsUrl(this);
+        chatObject.setAudioSTTCompletionsUrl(agentAdapter.getAudioSTTCompletionsUrl(this));
         if(!fromStreamAPI){
             parameters.put("stream",false);
         }
@@ -133,7 +125,7 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
         }
         chatObject.setSseHeaderSetFunction(sseHeaderSetFunction);
         chatObject.setMessage(agentMessage);
-        chatObject.setCompletionsUrl(this.getAudioSTTCompletionsUrl());
+        chatObject.setCompletionsUrl(chatObject.getAudioSTTCompletionsUrl());
         chatObject.setStream(stream);
         chatObject.setAgentMessage(this);
         chatObject.setFiles( files);

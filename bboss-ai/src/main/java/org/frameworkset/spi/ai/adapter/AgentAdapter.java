@@ -26,6 +26,7 @@ import org.frameworkset.spi.ai.util.*;
 import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.frameworkset.spi.remote.http.HttpRequestProxy;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,6 +81,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 //                requestMap.put("tools", SimpleStringUtil.json2ListObject((String)tools,Map.class));
 //            }
         }
+    }
+
+    public   float[] embedding(EmbeddingMessage embeddingMessage,AIAgent agent,Map<String,Object> params) {
+        EmbeddingResponse result = HttpRequestProxy.sendJsonBody(embeddingMessage.getMaas(), params, getEmbeddingUrl(embeddingMessage), EmbeddingResponse.class);
+        if(result != null){
+            return result.embedding();
+        }
+        return null;
     }
     protected void filterParameters(AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap, Map<String, Object> parameters) {
         if(SimpleStringUtil.isEmpty( parameters)){
@@ -530,29 +539,28 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         buildTools(aiAgent, requestMap);
         return requestMap;
     }
-    public abstract ImageEvent buildGenImageResponse(ClientConfiguration config, ImageAgentMessage imageAgentMessage,Map imageData);
+    public abstract ImageEvent buildGenImageResponse(ClientConfiguration config, ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject,Map imageData);
    
   
-    public Object buildGenImageRequestParameter(ClientConfiguration clientConfiguration, Object imageAgentMessage,AIAgent aiAgent){
+    public StoreChatObject buildGenImageRequestParameter(ClientConfiguration clientConfiguration, Object imageAgentMessage,AIAgent aiAgent){
+        StoreChatObject storeChatObject = new StoreChatObject();
         if(imageAgentMessage instanceof ImageAgentMessage){
             ImageAgentMessage temp = (ImageAgentMessage)imageAgentMessage;
             imageAgentMessage = buildGenImageRequestMap(temp,aiAgent);
-            temp.setGenImageCompletionsUrl(this.getGenImageCompletionsUrl(temp));
-            if(temp.getGenFileStoreDir() == null)
-                temp.setGenFileStoreDir(clientConfiguration.getExtendConfig("genFileStoreDir"));
-            if(temp.getEndpoint() == null)
-                temp.setEndpoint(clientConfiguration.getExtendConfig("endpoint"));
-            if(temp.getStoreImageType() == null)
-                temp.setStoreImageType(clientConfiguration.getExtendConfig("storeImageType"));
+//            temp.setGenImageCompletionsUrl(this.getGenImageCompletionsUrl(temp));
+            storeChatObject.setGenFileStoreDir(clientConfiguration.getExtendConfig("genFileStoreDir"));
+            storeChatObject.setEndpoint(clientConfiguration.getExtendConfig("endpoint"));
+            storeChatObject.setStoreImageType(clientConfiguration.getExtendConfig("storeImageType"));
 
-            if(temp.getGenFileStoreDir() != null)
-                temp.setGenFileStoreDir(temp.getGenFileStoreDir().trim());
-            if(temp.getEndpoint() != null)
-                temp.setEndpoint(temp.getEndpoint().trim());
-            if(temp.getStoreImageType() != null)
-                temp.setStoreImageType(temp.getStoreImageType().trim());
+            if(storeChatObject.getGenFileStoreDir() != null)
+                storeChatObject.setGenFileStoreDir(storeChatObject.getGenFileStoreDir().trim());
+            if(storeChatObject.getEndpoint() != null)
+                storeChatObject.setEndpoint(storeChatObject.getEndpoint().trim());
+            if(storeChatObject.getStoreImageType() != null)
+                storeChatObject.setStoreImageType(storeChatObject.getStoreImageType().trim());
         }
-        return imageAgentMessage;
+        storeChatObject.setMessage(imageAgentMessage);
+        return storeChatObject;
         
     }
     
@@ -560,7 +568,15 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     public SSEHeaderSetFunction getAudioGenSSEHeaderSetFunction(){
         return SSEHeaderSetFunction.DEFAULT_SSEHEADERSETFUNCTION;
     }
-
+    public Map<String,Object> buildEmbeddingMessage(ClientConfiguration config,EmbeddingMessage embeddingMessage,AIAgent aiAgent){
+        Map params = new HashMap();
+        params.put("input", embeddingMessage.getInput());//设置将要向量化的数据
+        params.put("model", embeddingMessage.getModel());
+        if(embeddingMessage.getParameters() != null && embeddingMessage.getParameters().size() > 0){
+            params.putAll(embeddingMessage.getParameters());
+        }
+        return params;
+    }
     public ChatObject buildOpenAIRequestParameter(ClientConfiguration clientConfiguration,Object agentMessage, AIAgent aiAgent,boolean fromStreamAPI){
         AgentMessage _agentMessage = null;
         if(agentMessage instanceof AgentMessage){
@@ -578,31 +594,31 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     }
     protected abstract Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent);
   
-    public Map<String, Object> _buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,ClientConfiguration clientConfiguration,AIAgent aiAgent){
+    public Map<String, Object> _buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,StoreChatObject storeChatObject,ClientConfiguration clientConfiguration,AIAgent aiAgent){
 
-        if(audioAgentMessage.getGenFileStoreDir() == null)
-            audioAgentMessage.setGenFileStoreDir(clientConfiguration.getExtendConfig("genFileStoreDir"));
-        if(audioAgentMessage.getEndpoint() == null)
-            audioAgentMessage.setEndpoint(clientConfiguration.getExtendConfig("endpoint"));
-        if(audioAgentMessage.getStoreAudioType() == null){
-            audioAgentMessage.setStoreAudioType(clientConfiguration.getExtendConfig("storeAudioType"));
+        if(storeChatObject.getGenFileStoreDir() == null)
+            storeChatObject.setGenFileStoreDir(clientConfiguration.getExtendConfig("genFileStoreDir"));
+        if(storeChatObject.getEndpoint() == null)
+            storeChatObject.setEndpoint(clientConfiguration.getExtendConfig("endpoint"));
+        if(storeChatObject.getStoreAudioType() == null){
+            storeChatObject.setStoreAudioType(clientConfiguration.getExtendConfig("storeAudioType"));
         }
         Map params = buildGenAudioRequestMap(audioAgentMessage,aiAgent);
-        audioAgentMessage.setGenAudioCompletionsUrl(getGenAudioCompletionsUrl(audioAgentMessage));
+//        audioAgentMessage.setGenAudioCompletionsUrl(getGenAudioCompletionsUrl(audioAgentMessage));
         if(audioAgentMessage.getStream() != null){
             params.put("stream", audioAgentMessage.getStream());
         }
         return params;
     }
 
-    public Map<String, Object> _buildGetVideoResultRquestMap(VideoStoreAgentMessage videoStoreAgentMessage,ClientConfiguration clientConfiguration){
+    public Map<String, Object> _buildGetVideoResultRquestMap(VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject,ClientConfiguration clientConfiguration){
 
-        if(videoStoreAgentMessage.getGenFileStoreDir() == null)
-            videoStoreAgentMessage.setGenFileStoreDir(clientConfiguration.getExtendConfig("genFileStoreDir"));
-        if(videoStoreAgentMessage.getEndpoint() == null)
-            videoStoreAgentMessage.setEndpoint(clientConfiguration.getExtendConfig("endpoint"));
-        if(videoStoreAgentMessage.getStoreVideoType() == null){
-            videoStoreAgentMessage.setStoreVideoType(clientConfiguration.getExtendConfig("storeVideoType"));
+        if(storeChatObject.getGenFileStoreDir() == null)
+            storeChatObject.setGenFileStoreDir(clientConfiguration.getExtendConfig("genFileStoreDir"));
+        if(storeChatObject.getEndpoint() == null)
+            storeChatObject.setEndpoint(clientConfiguration.getExtendConfig("endpoint"));
+        if(storeChatObject.getStoreVideoType() == null){
+            storeChatObject.setStoreVideoType(clientConfiguration.getExtendConfig("storeVideoType"));
         }
        
         return buildGetVideoResultRquestMap(  videoStoreAgentMessage);
@@ -616,18 +632,19 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param audioAgentMessage
      * @return
      */
-    public Object buildGenAudioRequestParameter(ClientConfiguration clientConfiguration, Object audioAgentMessage,AIAgent aiAgent) {
+    public StoreChatObject buildGenAudioRequestParameter(ClientConfiguration clientConfiguration, Object audioAgentMessage,AIAgent aiAgent) {
+        StoreChatObject storeChatObject = new StoreChatObject();
         if(audioAgentMessage instanceof AudioAgentMessage){
             AudioAgentMessage temp = (AudioAgentMessage)audioAgentMessage;
-            audioAgentMessage = this._buildGenAudioRequestMap(temp,clientConfiguration,aiAgent);
+            audioAgentMessage = this._buildGenAudioRequestMap(temp,storeChatObject,clientConfiguration,aiAgent);
              
            
         }
-        
-        return audioAgentMessage;
+        storeChatObject.setMessage(audioAgentMessage);
+        return storeChatObject;
     }
 
-    public abstract AudioEvent buildGenAudioResponse(ClientConfiguration config, AudioAgentMessage message, Map data);
+    public abstract AudioEvent buildGenAudioResponse(ClientConfiguration config, AudioAgentMessage message,StoreChatObject storeChatObject, Map data);
 
     public Map buildAudioSTTRequestMap(AudioSTTAgentMessage audioSTTAgentMessage, AIAgent aiAgent) {
 
@@ -704,14 +721,16 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     }
     protected abstract Object buildGenVideoRequestMap(VideoAgentMessage videoAgentMessage,ClientConfiguration clientConfiguration,AIAgent aiAgent);
   
-    public Object buildVideoRequestParameter(ClientConfiguration clientConfiguration, VideoAgentMessage videoAgentMessage,AIAgent aiAgent) {
-        videoAgentMessage.setSubmitVideoTaskUrl(getSubmitVideoTaskUrl(  videoAgentMessage));
-        return this.buildGenVideoRequestMap(videoAgentMessage,clientConfiguration,aiAgent);
+    public StoreChatObject buildVideoRequestParameter(ClientConfiguration clientConfiguration, VideoAgentMessage videoAgentMessage,AIAgent aiAgent) {
+        StoreChatObject storeChatObject = new StoreChatObject();
+        storeChatObject.setSubmitVideoTaskUrl(getSubmitVideoTaskUrl(  videoAgentMessage));
+        storeChatObject.setMessage(this.buildGenVideoRequestMap(videoAgentMessage,clientConfiguration,aiAgent));
+        return storeChatObject;
     }
 
     public abstract VideoTask buildVideoResponseTask(ClientConfiguration clientConfiguration, VideoAgentMessage videoAgentMessage,Map taskInfo);
 
-    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage,Map taskInfo) {
+    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject,Map taskInfo) {
         return null;
     }
 
@@ -734,5 +753,56 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
         }
         return null;
+    }
+
+
+    public Map<String, Object> buildRerankMessage(ClientConfiguration config, RerankMessage rerankMessage, AIAgent agent) {
+        Map rerankParams = new LinkedHashMap();
+        rerankParams.put("model", rerankMessage.getModel());  // 使用项目规范的 rerank 模型
+        rerankParams.put("documents", rerankMessage.convertDocuments());
+        rerankParams.put("query", rerankMessage.getQuery());
+        rerankParams.put("return_documents", rerankMessage.isReturnDocuments());  // 如需返回原始文本可开启
+        if(rerankMessage.getParameters() != null && rerankMessage.getParameters().size() > 0)
+            rerankParams.put("parameters", rerankMessage.getParameters());
+        return rerankParams;
+    }
+
+    public List<RerankedDocument> rerank(RerankMessage rerankMessage, AIAgent agent, Map<String, Object> params) {
+        Map response = HttpRequestProxy.sendJsonBody(rerankMessage.getMaas(), params, this.getRerankUrl(rerankMessage), Map.class);
+        if(logger.isDebugEnabled()) {
+            logger.debug("Rerank 响应: {}", JsonUtil.object2json(response));
+        }
+        List<RerankedDocument> rerankedDocuments = null;
+       
+        // 解析 Rerank 结果
+        if (response != null && response.containsKey("results")) {
+            List<Map<String, Object>> rerankResults = (List<Map<String, Object>>) response.get("results");
+            if(logger.isDebugEnabled()) {
+                logger.debug("========== Rerank 排序结果 ==========");
+            }
+            List<RerankDocument> rerankDatas = rerankMessage.getRerankDocuments();
+            RerankedDocument rerankedDocument = null;
+            RerankDocument rerankDocument = null;
+            rerankedDocuments = new ArrayList<>();
+            for (int i = 0; i < rerankResults.size(); i++) {
+                rerankedDocument = new RerankedDocument();
+                Map<String, Object> result = rerankResults.get(i);
+                int index = (Integer) result.get("index");
+                rerankedDocument.setIndex(index);
+                double relevanceScore = (Double) result.get("relevance_score");
+                rerankedDocument.setRelevanceScore(relevanceScore);
+                rerankDocument = rerankDatas.get(index);
+                rerankedDocument.setDocument(rerankDocument.getDocument());
+                rerankedDocument.setMetadata(rerankDocument.getMetadata());
+                rerankedDocument.setRrfScore(rerankDocument.getRrfScore());
+                if(logger.isDebugEnabled()) {
+                    logger.debug("[{}] RrfScore: {}, relevance_score: {}, content: {}", i, rerankedDocument.getRrfScore(), relevanceScore,
+                            rerankedDocument.getDocument());
+                }
+                rerankedDocuments.add(rerankedDocument);
+                
+            }
+        }
+        return rerankedDocuments;
     }
 }

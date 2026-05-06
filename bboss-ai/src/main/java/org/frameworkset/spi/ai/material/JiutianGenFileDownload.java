@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.material;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.frameworkset.spi.ai.model.AudioAgentMessage;
 import org.frameworkset.spi.ai.model.ImageAgentMessage;
+import org.frameworkset.spi.ai.model.StoreChatObject;
 import org.frameworkset.spi.ai.model.VideoStoreAgentMessage;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -59,27 +60,27 @@ public class JiutianGenFileDownload implements GenFileDownload {
 //    }
     
     @Override
-    public String downloadImage(ClientConfiguration config, ImageAgentMessage imageAgentMessage, String downUrl, String imageUrl) {
+    public String downloadImage(ClientConfiguration config, ImageAgentMessage imageAgentMessage, StoreChatObject storeChatObject, String downUrl, String imageUrl) {
     //    String downUrl = "/largemodel/moma/api/v1/fs/getFile";
         Map<String,Object> params = new LinkedHashMap<>();
         params.put("key", imageUrl);
-        HttpClientResponseHandler<String> httpClientResponseHandler = AIResponseUtil.buildDownImageHttpClientResponseHandler(config,imageAgentMessage,imageUrl);
+        HttpClientResponseHandler<String> httpClientResponseHandler = AIResponseUtil.buildDownImageHttpClientResponseHandler(config,imageAgentMessage,  storeChatObject,imageUrl);
         
         return HttpRequestProxy.httpGet(config, downUrl, httpClientResponseHandler, params);
     }
 
     @Override
-    public String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, String imageUrl) {
+    public String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, StoreChatObject storeChatObject,String imageUrl) {
         return null;
     }
 
     @Override
-    public String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage, String downUrl, String audioUrl) {
+    public String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage,StoreChatObject storeChatObject, String downUrl, String audioUrl) {
         return null;
     }
 
     @Override
-    public String downloadVideo(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, String downUrl, String videoUrl) {
+    public String downloadVideo(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, StoreChatObject storeChatObject,String downUrl, String videoUrl) {
         return null;
     }
 

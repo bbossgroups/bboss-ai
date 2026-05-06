@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.material;
  */
 
 import org.frameworkset.spi.ai.model.StoreAgentMessage;
+import org.frameworkset.spi.ai.model.StoreChatObject;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**
@@ -24,8 +25,8 @@ import org.frameworkset.spi.remote.http.ClientConfiguration;
  */
 public class DownVideoImageFileHttpClientResponseHandler extends DownFileHttpClientResponseHandler {
     
-    public DownVideoImageFileHttpClientResponseHandler(ClientConfiguration clientConfiguration, StoreAgentMessage storeAgentMessage, String url) {
-        super(clientConfiguration, storeAgentMessage, url);
+    public DownVideoImageFileHttpClientResponseHandler(ClientConfiguration clientConfiguration, StoreAgentMessage storeAgentMessage, StoreChatObject storeChatObject, String url) {
+        super(clientConfiguration, storeAgentMessage,  storeChatObject, url);
 
     }
     protected String getStoreFilePath(StoreFilePathFunction storeFilePathFunction,String url){

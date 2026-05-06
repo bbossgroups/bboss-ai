@@ -27,7 +27,7 @@ public class VideoAgentMessage extends AgentMessage<VideoAgentMessage> {
 
     private String audioUrl;
     
-    private String submitVideoTaskUrl;
+//    private String submitVideoTaskUrl;
 
     private String template ;
 
@@ -86,14 +86,14 @@ public class VideoAgentMessage extends AgentMessage<VideoAgentMessage> {
         return this;
     }
 
-    public String getSubmitVideoTaskUrl() {
-        return submitVideoTaskUrl;
-    }
-
-    public VideoAgentMessage setSubmitVideoTaskUrl(String submitVideoTaskUrl) {
-        this.submitVideoTaskUrl = submitVideoTaskUrl;
-        return this;
-    }
+//    public String getSubmitVideoTaskUrl() {
+//        return submitVideoTaskUrl;
+//    }
+//
+//    public VideoAgentMessage setSubmitVideoTaskUrl(String submitVideoTaskUrl) {
+//        this.submitVideoTaskUrl = submitVideoTaskUrl;
+//        return this;
+//    }
 
     public String getTemplate() {
         return template;

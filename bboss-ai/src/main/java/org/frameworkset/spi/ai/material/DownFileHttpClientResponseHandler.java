@@ -20,6 +20,7 @@ import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.frameworkset.spi.ai.model.StoreAgentMessage;
+import org.frameworkset.spi.ai.model.StoreChatObject;
 import org.frameworkset.spi.remote.http.BaseURLResponseHandler;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.ResponseUtil;
@@ -34,10 +35,12 @@ public class DownFileHttpClientResponseHandler extends BaseURLResponseHandler<St
     private ClientConfiguration clientConfiguration;
     private String url;
     private StoreAgentMessage storeAgentMessage;
-    public DownFileHttpClientResponseHandler(ClientConfiguration clientConfiguration, StoreAgentMessage storeAgentMessage, String url) {
+    private StoreChatObject storeChatObject;
+    public DownFileHttpClientResponseHandler(ClientConfiguration clientConfiguration, StoreAgentMessage storeAgentMessage,StoreChatObject storeChatObject, String url) {
         this.clientConfiguration = clientConfiguration;
         this.url = url;
         this.storeAgentMessage = storeAgentMessage;
+        this.storeChatObject = storeChatObject;
 
     }
     protected String getStoreFilePath(StoreFilePathFunction storeFilePathFunction,String url){
@@ -49,11 +52,11 @@ public class DownFileHttpClientResponseHandler extends BaseURLResponseHandler<St
         int status = response.getCode();
         if (status == 200) {
             String storeFilePath = null;
-            if(storeAgentMessage.getStoreFilePathFunction() != null){
-                storeFilePath = getStoreFilePath(storeAgentMessage.getStoreFilePathFunction(),url);
+            if(storeChatObject.getStoreFilePathFunction() != null){
+                storeFilePath = getStoreFilePath(storeChatObject.getStoreFilePathFunction(),url);
             }
             else{
-                storeFilePath = storeAgentMessage.getStoreFilePath();
+                storeFilePath = storeChatObject.getStoreFilePath();
             }
             String targetPath = generateFilePath(url,storeFilePath); // 根据URL生成目标文件路径
             File file = new File(targetPath);
@@ -69,11 +72,11 @@ public class DownFileHttpClientResponseHandler extends BaseURLResponseHandler<St
                 }
                 outputStream.flush();
             }
-            if(storeAgentMessage.getEndpoint() == null) {
+            if(storeChatObject.getEndpoint() == null) {
                 return targetPath; // 返回下载文件路径
             }
             else{
-                return SimpleStringUtil.getRealPath(storeAgentMessage.getEndpoint(),storeFilePath);
+                return SimpleStringUtil.getRealPath(storeChatObject.getEndpoint(),storeFilePath);
             }
         } else {
             throw ResponseUtil.buildException(  url,  response,  status);
@@ -82,7 +85,7 @@ public class DownFileHttpClientResponseHandler extends BaseURLResponseHandler<St
    
     private String generateFilePath(String url,String storeFilePath) {
         // 根据imageUrl生成本地文件路径
-        String fileName = SimpleStringUtil.getRealPath(storeAgentMessage.getGenFileStoreDir(),storeFilePath);
+        String fileName = SimpleStringUtil.getRealPath(storeChatObject.getGenFileStoreDir(),storeFilePath);
         return fileName;
     }
 

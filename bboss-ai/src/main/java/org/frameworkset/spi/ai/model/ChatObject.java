@@ -27,14 +27,13 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public class ChatObject {
+public class ChatObject extends StoreChatObject{
     private boolean stream;
 
 
     private AIAgent aiAgent;
     private boolean thinking;
     private boolean toolCall;
-    private Object message;
     private AgentMessage agentMessage;
     private String aiChatRequestType = AIConstants.AI_CHAT_REQUEST_BODY_JSON;
     private SSEHeaderSetFunction sseHeaderSetFunction;
@@ -98,13 +97,7 @@ public class ChatObject {
         this.stream = stream;
     }
 
-    public Object getMessage() {
-        return message;
-    }
-
-    public void setMessage(Object message) {
-        this.message = message;
-    }
+   
 
     public void setStreamDataBuilder(StreamDataBuilder streamDataBuilder) {
         this.streamDataBuilder = streamDataBuilder;
@@ -144,5 +137,27 @@ public class ChatObject {
 
     public boolean isToolCall() {
         return toolCall;
+    }
+
+    public String getAudioSTTCompletionsUrl() {
+        return audioSTTCompletionsUrl;
+    }
+
+    public void setAudioSTTCompletionsUrl(String audioSTTCompletionsUrl) {
+        this.audioSTTCompletionsUrl = audioSTTCompletionsUrl;
+    }
+
+    private String audioSTTCompletionsUrl;
+
+    /**
+     * maas平台音频生成服务地址
+     */
+    private String genAudioCompletionsUrl;
+    public void setGenAudioCompletionsUrl(String genAudioCompletionsUrl) {
+        this.genAudioCompletionsUrl = genAudioCompletionsUrl;
+    }
+
+    public String getGenAudioCompletionsUrl() {
+        return genAudioCompletionsUrl;
     }
 }

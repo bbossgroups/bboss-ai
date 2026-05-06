@@ -35,6 +35,15 @@ public class QwenAgentAdapter extends AgentAdapter{
     public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
         return "/compatible-mode/v1/chat/completions";
     }
+
+    @Override
+    public String getEmbeddingUrl(AgentMessage agentMessage) {
+        return "/v1/embeddings";
+    }
+    @Override
+    public String getRerankUrl(AgentMessage agentMessage) {
+        return "/v1/rerank";
+    }
     @Override
     public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage){
         if(videoAgentMessage.getFirstFrameUrl() != null) {
@@ -76,7 +85,7 @@ public class QwenAgentAdapter extends AgentAdapter{
     public String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage){
         return "/api/v1/tasks/"+videoStoreAgentMessage.getTaskId();
     }
-    public AudioEvent buildGenAudioResponse(ClientConfiguration config, AudioAgentMessage message, Map data){
+    public AudioEvent buildGenAudioResponse(ClientConfiguration config, AudioAgentMessage message,StoreChatObject storeChatObject, Map data){
         Map output = (Map)data.get("output");
         Map audio = (Map)output.get("audio");
         String finishReason = (String)output.get("finish_reason");
@@ -99,11 +108,11 @@ public class QwenAgentAdapter extends AgentAdapter{
 
         if(audioUrl != null) {
             audioEvent.setGenAudioUrl(audioUrl);
-            audioEvent.setAudioUrl(genFileDownload.downloadAudio(config, message, null, audioUrl));
+            audioEvent.setAudioUrl(genFileDownload.downloadAudio(config, message,storeChatObject, null, audioUrl));
         }
         return audioEvent;
     }
-    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage,Map taskInfo) {
+    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject,Map taskInfo) {
         VideoGenResult result = new VideoGenResult();
         Map output = (Map)taskInfo.get("output");
         if(output != null) {
@@ -111,7 +120,7 @@ public class QwenAgentAdapter extends AgentAdapter{
             result.setTaskStatus((String) output.get("task_status"));
             result.setVideoGenUrl((String) output.get("video_url"));
             if(result.getVideoGenUrl() != null && result.getVideoGenUrl().length() > 0) {
-                result.setVideoUrl(genFileDownload.downloadVideo(clientConfiguration, videoStoreAgentMessage, null, result.getVideoGenUrl()));
+                result.setVideoUrl(genFileDownload.downloadVideo(clientConfiguration, videoStoreAgentMessage, storeChatObject, null, result.getVideoGenUrl()));
             }
             result.setSubmitTime((String) output.get("submit_time"));
             result.setScheduledTime((String) output.get("scheduled_time"));
@@ -214,8 +223,8 @@ public class QwenAgentAdapter extends AgentAdapter{
 
     protected Map<String, Object> buildGetVideoResultRquestMap(VideoStoreAgentMessage videoStoreAgentMessage){
 
-        String requestUrl = getVideoTaskResultUrl(videoStoreAgentMessage);
-        videoStoreAgentMessage.setVideoTaskResultUrl(requestUrl);
+//        String requestUrl = getVideoTaskResultUrl(videoStoreAgentMessage);
+//        videoStoreAgentMessage.setVideoTaskResultUrl(requestUrl);
         return null;
     }
 
@@ -310,7 +319,7 @@ public class QwenAgentAdapter extends AgentAdapter{
         
         return requestMap;
     }
-    public ImageEvent buildGenImageResponse(ClientConfiguration config,ImageAgentMessage imageAgentMessage, Map imageData){
+    public ImageEvent buildGenImageResponse(ClientConfiguration config,ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject, Map imageData){
         Map output = (Map)imageData.get("output");
         List choices = (List)output.get("choices");
         if(choices == null || choices.size() == 0)
@@ -330,14 +339,14 @@ public class QwenAgentAdapter extends AgentAdapter{
                     String imageUrl = (String) image.get("image");
 
                     imageEvent.setGenImageUrl(imageUrl);
-                    imageEvent.setImageUrl(genFileDownload.downloadImage(config,imageAgentMessage,null,imageUrl));
+                    imageEvent.setImageUrl(genFileDownload.downloadImage(config,imageAgentMessage,storeChatObject,null,imageUrl));
                 }
                 else{
                     for(int i = 0; i < size; i++){
                         Map image = (Map) imageContentData.get(i);
                         String imageUrl = (String) image.get("image");
                         imageEvent.addGenImageUrl(imageUrl);
-                        imageEvent.addImageUrl(genFileDownload.downloadImage(config,  imageAgentMessage,null,imageUrl));
+                        imageEvent.addImageUrl(genFileDownload.downloadImage(config,  imageAgentMessage,storeChatObject,null,imageUrl));
                     }
                 }
                 imageEvent.setFinishReason(finishReason);

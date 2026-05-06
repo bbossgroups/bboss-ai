@@ -106,10 +106,10 @@ public class ToolAgentMessage extends ChatAgentMessage{
     public int getSessionSize() {
         return chatAgentMessage.getSessionSize();
     }
-    @Override
-    public String getChatCompletionsUrl() {
-        return chatAgentMessage.getChatCompletionsUrl();
-    }
+//    @Override
+//    public String getChatCompletionsUrl() {
+//        return chatAgentMessage.getChatCompletionsUrl();
+//    }
 
     @Override
     public ChatAgentMessage addSessionMessage(Map<String, Object> message, AIAgent aiAgent) {

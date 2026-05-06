@@ -15,33 +15,20 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.material.StoreFilePathFunction;
+import java.util.List;
 
 /**
- * 图片生成报文
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public  class VideoStoreAgentMessage extends StoreAgentMessage<VideoStoreAgentMessage>{
-    private String taskId;
-//    private String videoTaskResultUrl;
-
-
-
-    public String getTaskId() {
-        return taskId;
+public class RerankResponse {
+    private List<RerankedDocument> rerankedDocuments;
+ 
+    public List<RerankedDocument> getRerankedDocuments() {
+        return rerankedDocuments;
     }
 
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
+    public void setRerankedDocuments(List<RerankedDocument> rerankedDocuments) {
+        this.rerankedDocuments = rerankedDocuments;
     }
-
-
-//    public String getVideoTaskResultUrl() {
-//        return videoTaskResultUrl;
-//    }
-//
-//    public void setVideoTaskResultUrl(String videoTaskResultUrl) {
-//        this.videoTaskResultUrl = videoTaskResultUrl;
-//    }
 }

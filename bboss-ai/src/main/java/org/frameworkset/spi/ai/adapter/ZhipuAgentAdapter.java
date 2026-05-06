@@ -114,7 +114,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
         return AIResponseUtil.parseZhipuAudioGenStreamContentFromData(data);
     }
 
-    public AudioEvent buildGenAudioResponse(ClientConfiguration config, AudioAgentMessage message, Map data){
+    public AudioEvent buildGenAudioResponse(ClientConfiguration config, AudioAgentMessage message,StoreChatObject storeChatObject, Map data){
         Map output = (Map)data.get("output");
         Map audio = (Map)output.get("audio");
         String finishReason = (String)output.get("finish_reason");
@@ -137,7 +137,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
 
         if(audioUrl != null) {
             audioEvent.setGenAudioUrl(audioUrl);
-            audioEvent.setAudioUrl(genFileDownload.downloadAudio(config, message, null, audioUrl));
+            audioEvent.setAudioUrl(genFileDownload.downloadAudio(config, message,  storeChatObject, null, audioUrl));
         }
         return audioEvent;
     }
@@ -336,7 +336,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
      * @return
      */
     @Override
-    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration, VideoStoreAgentMessage videoStoreAgentMessage, Map taskInfo) {
+    public VideoGenResult buildVideoGenResult(ClientConfiguration clientConfiguration, VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject, Map taskInfo) {
         VideoGenResult result = new VideoGenResult();
 
         if(taskInfo != null) {
@@ -354,11 +354,11 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
                 result.setCoverImageGenUrl(coverImageGenUrl);
                 
                 if(videoGenUrl != null && videoGenUrl.length() > 0) {
-                    result.setVideoUrl(genFileDownload.downloadVideo(clientConfiguration, videoStoreAgentMessage, null, videoGenUrl));
+                    result.setVideoUrl(genFileDownload.downloadVideo(clientConfiguration, videoStoreAgentMessage,storeChatObject, null, videoGenUrl));
                 }
                 
                 if(coverImageGenUrl != null && coverImageGenUrl.length() > 0) {
-                    result.setCoverImageUrl(genFileDownload.downloadVideoImage(clientConfiguration, videoStoreAgentMessage,  coverImageGenUrl));
+                    result.setCoverImageUrl(genFileDownload.downloadVideoImage(clientConfiguration, videoStoreAgentMessage,storeChatObject,  coverImageGenUrl));
                 }
             }
 

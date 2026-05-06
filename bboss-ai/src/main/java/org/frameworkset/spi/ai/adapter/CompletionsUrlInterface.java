@@ -29,6 +29,8 @@ public interface CompletionsUrlInterface {
     String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage);
     String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage);
     String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) ;
+    String getRerankUrl(AgentMessage chatAgentMessage) ;
+    String getEmbeddingUrl(AgentMessage chatAgentMessage) ;
     String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage);
 
 }

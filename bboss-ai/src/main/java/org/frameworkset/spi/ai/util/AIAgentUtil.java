@@ -106,10 +106,10 @@ public class AIAgentUtil {
         try {
             ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
             AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,message);
-            Object newmessage = agentAdapter.buildGenImageRequestParameter(config,message,aiAgent);
+            StoreChatObject storeChatObject = agentAdapter.buildGenImageRequestParameter(config,message,aiAgent);
             
-            Map data = HttpRequestProxy.sendJsonBody(config,newmessage,message.getGenImageCompletionsUrl(),Map.class);
-            imageEvent = agentAdapter.buildGenImageResponse(config,message, data);
+            Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(message),Map.class);
+            imageEvent = agentAdapter.buildGenImageResponse(config,message,storeChatObject, data);
         }
         catch(Exception e){
             imageEvent = new ImageEvent();
@@ -153,18 +153,18 @@ public class AIAgentUtil {
         
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config, message);
-        Object newmessage = agentAdapter.buildGenAudioRequestParameter(config, message,aiAgent);
+        StoreChatObject storeChatObject = agentAdapter.buildGenAudioRequestParameter(config, message,aiAgent);
         AudioEvent audioEvent = null;
         try {
-            StoreFilePathFunction storeFilePathFunction = message.getStoreFilePathFunction();
+            StoreFilePathFunction storeFilePathFunction = storeChatObject.getStoreFilePathFunction();
             if (storeFilePathFunction != null && storeFilePathFunction instanceof ReponseStoreFilePathFunction) {
-                String audioUrl = HttpRequestProxy.sendJsonBody(config, newmessage, message.getGenAudioCompletionsUrl(), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message));
+                String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(message), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
                 audioEvent = new AudioEvent();
                 audioEvent.setAudioUrl(audioUrl);
 
             } else {
-                Map data = HttpRequestProxy.sendJsonBody(config, newmessage, message.getGenAudioCompletionsUrl(), Map.class);
-                audioEvent = agentAdapter.buildGenAudioResponse(config, message, data);
+                Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(message), Map.class);
+                audioEvent = agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
 
             }
         }
@@ -855,8 +855,8 @@ public class AIAgentUtil {
     public static VideoTask submitVideoTask(String maasName,  VideoAgentMessage videoAgentMessage,AIAgent aiAgent) {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(maasName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,videoAgentMessage);
-        Object params = agentAdapter.buildVideoRequestParameter(clientConfiguration,videoAgentMessage,  aiAgent);
-        Map taskInfo = HttpRequestProxy.sendJsonBody(maasName,params,videoAgentMessage.getSubmitVideoTaskUrl(),videoAgentMessage.getHeaders(),Map.class);
+        StoreChatObject storeChatObject = agentAdapter.buildVideoRequestParameter(clientConfiguration,videoAgentMessage,  aiAgent);
+        Map taskInfo = HttpRequestProxy.sendJsonBody(maasName,storeChatObject.getMessage(),agentAdapter.getSubmitVideoTaskUrl(videoAgentMessage),videoAgentMessage.getHeaders(),Map.class);
         VideoTask task = agentAdapter.buildVideoResponseTask(clientConfiguration,videoAgentMessage,  taskInfo);
         
         return task;
@@ -869,9 +869,10 @@ public class AIAgentUtil {
     public static VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage) {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(maasName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,null);
-        agentAdapter._buildGetVideoResultRquestMap(videoStoreAgentMessage,clientConfiguration);
-        Map taskInfo = HttpRequestProxy.httpGetforObject(maasName,videoStoreAgentMessage.getVideoTaskResultUrl(),Map.class);
-        VideoGenResult videoGenResult = agentAdapter.buildVideoGenResult(clientConfiguration,videoStoreAgentMessage,taskInfo);
+        StoreChatObject storeChatObject = new StoreChatObject();
+        agentAdapter._buildGetVideoResultRquestMap(videoStoreAgentMessage,storeChatObject,clientConfiguration);
+        Map taskInfo = HttpRequestProxy.httpGetforObject(maasName,agentAdapter.getVideoTaskResultUrl(videoStoreAgentMessage),Map.class);
+        VideoGenResult videoGenResult = agentAdapter.buildVideoGenResult(clientConfiguration,videoStoreAgentMessage,storeChatObject,taskInfo);
         
 //        Map output = (Map)taskInfo.get("output");
 //        result.put("taskId",output.get("task_id"));
@@ -979,6 +980,24 @@ public class AIAgentUtil {
         return stream(  poolName,  url,null ,  method);
 
     }
-	
- 
+
+
+    public static float[] embedding(EmbeddingMessage embeddingMessage,AIAgent agent) {
+        ClientConfiguration config = ClientConfiguration.getClientConfiguration(embeddingMessage.getMaas());
+        AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,embeddingMessage);
+        Map<String,Object> params = agentAdapter.buildEmbeddingMessage(config,embeddingMessage,agent);
+        return agentAdapter.embedding(embeddingMessage,agent,params);
+//        EmbeddingResponse result = HttpRequestProxy.sendJsonBody(embeddingMessage.getMaas(), params, agentAdapter.getEmbeddingUrl(embeddingMessage), EmbeddingResponse.class);
+//        if(result != null){
+//            return result.embedding();
+//        }
+//        return null;
+    }
+
+    public static   List<RerankedDocument> rerank(RerankMessage rerankMessage, AIAgent  agent) {
+        ClientConfiguration config = ClientConfiguration.getClientConfiguration(rerankMessage.getMaas());
+        AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,rerankMessage);
+        Map<String,Object> params = agentAdapter.buildRerankMessage(config,rerankMessage,agent);
+        return agentAdapter.rerank(rerankMessage,agent,params);
+    }
 }

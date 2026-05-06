@@ -33,7 +33,7 @@ import java.util.Map;
  */
 public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage>{
     private List<String> videoUrls;
-    private String videoVLCompletionsUrl;
+//    private String videoVLCompletionsUrl;
     
 
     @Override
@@ -47,7 +47,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         StreamDataBuilder streamDataBuilder = null;
 
         parameters = agentAdapter.buildVideoVLRequestMap(this,aiAgent);
-        setVideoVLCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(this));
+//        setVideoVLCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(this));
         if(!fromStreamAPI){
             parameters.put("stream",false);
         }
@@ -87,7 +87,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         chatObject.setMessage(agentMessage);
         chatObject.setStream(stream);
         chatObject.setAgentMessage(this);
-        chatObject.setCompletionsUrl(this.getVideoVLCompletionsUrl());
+        chatObject.setCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(this));
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
         chatObject.setAiAgent(aiAgent);
@@ -113,12 +113,12 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         return videoUrls;
     }
 
-    public String getVideoVLCompletionsUrl() {
-        return videoVLCompletionsUrl;
-    }
-
-    public VideoVLAgentMessage setVideoVLCompletionsUrl(String videoVLCompletionsUrl) {
-        this.videoVLCompletionsUrl = videoVLCompletionsUrl;
-        return this;
-    }
+//    public String getVideoVLCompletionsUrl() {
+//        return videoVLCompletionsUrl;
+//    }
+//
+//    public VideoVLAgentMessage setVideoVLCompletionsUrl(String videoVLCompletionsUrl) {
+//        this.videoVLCompletionsUrl = videoVLCompletionsUrl;
+//        return this;
+//    }
 }

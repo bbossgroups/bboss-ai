@@ -49,14 +49,14 @@ public class AIResponseUtil {
  
 
 
-  public static HttpClientResponseHandler<String>  buildDownImageHttpClientResponseHandler(ClientConfiguration config, ImageAgentMessage imageAgentMessage, String imageUrl){
-      String type  = imageAgentMessage.getStoreImageType();
+  public static HttpClientResponseHandler<String>  buildDownImageHttpClientResponseHandler(ClientConfiguration config, ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject, String imageUrl){
+      String type  = storeChatObject.getStoreImageType();
       HttpClientResponseHandler<String> handler = null;
       if(type == null || type.equals(AIConstants.STORETYPE_BASE64) || type.equals(AIConstants.STORETYPE_URL)){
           handler = new DownImageBase64HttpClientResponseHandler();
       }
       else if(type.equals(AIConstants.STORETYPE_FILE)){
-          handler = new DownFileHttpClientResponseHandler( config,imageAgentMessage,  imageUrl);
+          handler = new DownFileHttpClientResponseHandler( config,imageAgentMessage,  storeChatObject,  imageUrl);
       }
       if(handler == null){
           logger.warn("unsupport StoreImageType:{}", type);
@@ -66,14 +66,14 @@ public class AIResponseUtil {
       
   }
 
-    public static HttpClientResponseHandler<String>  buildDownVideoImageHttpClientResponseHandler(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, String imageUrl){
-        String type  = videoStoreAgentMessage.getStoreVideoType();
+    public static HttpClientResponseHandler<String>  buildDownVideoImageHttpClientResponseHandler(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, StoreChatObject storeChatObject,String imageUrl){
+        String type  = storeChatObject.getStoreVideoType();
         HttpClientResponseHandler<String> handler = null;
         if(type == null || type.equals(AIConstants.STORETYPE_BASE64) || type.equals(AIConstants.STORETYPE_URL)){
             handler = new DownImageBase64HttpClientResponseHandler();
         }
         else if(type.equals(AIConstants.STORETYPE_FILE)){
-            handler = new DownVideoImageFileHttpClientResponseHandler( config,videoStoreAgentMessage,  imageUrl);
+            handler = new DownVideoImageFileHttpClientResponseHandler( config,videoStoreAgentMessage, storeChatObject,  imageUrl);
         }
         if(handler == null){
             logger.warn("unsupport StoreImageType:{}", type);
@@ -83,24 +83,24 @@ public class AIResponseUtil {
 
     }
 
-    public static HttpClientResponseHandler<String>  buildDownAudioHttpClientResponseHandler(ClientConfiguration config, AudioAgentMessage audioAgentMessage, String audioUrl){
+    public static HttpClientResponseHandler<String>  buildDownAudioHttpClientResponseHandler(ClientConfiguration config, AudioAgentMessage audioAgentMessage, StoreChatObject storeChatObject,String audioUrl){
          
-        return new DownFileHttpClientResponseHandler( config,audioAgentMessage,  audioUrl);
+        return new DownFileHttpClientResponseHandler( config,audioAgentMessage, storeChatObject, audioUrl);
         
 
     }
 
     public static HttpClientResponseHandler<String>  buildDownVideoHttpClientResponseHandler(ClientConfiguration config, 
-                                                                                             VideoStoreAgentMessage videoStoreAgentMessage, String videoUrl){
+                                                                                             VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject, String videoUrl){
 
-        return new DownFileHttpClientResponseHandler( config,videoStoreAgentMessage,  videoUrl);
+        return new DownFileHttpClientResponseHandler( config,videoStoreAgentMessage, storeChatObject, videoUrl);
 
 
     }
 
-    public static HttpClientResponseHandler<String>  buildDownAudioHttpClientResponseHandler(ClientConfiguration config, AudioAgentMessage audioAgentMessage){
+    public static HttpClientResponseHandler<String>  buildDownAudioHttpClientResponseHandler(ClientConfiguration config, AudioAgentMessage audioAgentMessage,StoreChatObject storeChatObject){
 
-        return new DownFileHttpClientResponseHandler( config,audioAgentMessage,  (String)null);
+        return new DownFileHttpClientResponseHandler( config,audioAgentMessage, storeChatObject, (String)null);
 
 
     }

@@ -15,10 +15,7 @@ package org.frameworkset.spi.ai.material;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.model.AIConstants;
-import org.frameworkset.spi.ai.model.AudioAgentMessage;
-import org.frameworkset.spi.ai.model.ImageAgentMessage;
-import org.frameworkset.spi.ai.model.VideoStoreAgentMessage;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
@@ -32,37 +29,37 @@ public class GenMaterialFileDownload implements GenFileDownload {
 
     
     @Override
-    public String downloadImage(ClientConfiguration config, ImageAgentMessage imageAgentMessage, String downUrl, String imageUrl) {
+    public String downloadImage(ClientConfiguration config, ImageAgentMessage imageAgentMessage, StoreChatObject storeChatObject, String downUrl, String imageUrl) {
     //    String downUrl = "/largemodel/moma/api/v1/fs/getFile";
-        if(imageAgentMessage.getStoreImageType() == null || imageAgentMessage.getStoreImageType().equals(AIConstants.STORETYPE_URL)){
+        if(storeChatObject.getStoreImageType() == null || storeChatObject.getStoreImageType().equals(AIConstants.STORETYPE_URL)){
             return imageUrl;
         }
-        return HttpRequestProxy.httpGet(config, imageUrl, AIResponseUtil.buildDownImageHttpClientResponseHandler(config,imageAgentMessage,imageUrl));
+        return HttpRequestProxy.httpGet(config, imageUrl, AIResponseUtil.buildDownImageHttpClientResponseHandler(config,imageAgentMessage,storeChatObject,imageUrl));
     }
 
 
     @Override
-    public String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage,  String imageUrl){
-        if(videoStoreAgentMessage.getStoreVideoType() == null || videoStoreAgentMessage.getStoreVideoType().equals(AIConstants.STORETYPE_URL)){
+    public String downloadVideoImage(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, StoreChatObject storeChatObject, String imageUrl){
+        if(storeChatObject.getStoreVideoType() == null || storeChatObject.getStoreVideoType().equals(AIConstants.STORETYPE_URL)){
             return imageUrl;
         }
-        return HttpRequestProxy.httpGet(config, imageUrl, AIResponseUtil.buildDownVideoImageHttpClientResponseHandler(config,videoStoreAgentMessage,imageUrl));
+        return HttpRequestProxy.httpGet(config, imageUrl, AIResponseUtil.buildDownVideoImageHttpClientResponseHandler(config,videoStoreAgentMessage,storeChatObject,imageUrl));
     }
 
     @Override
-    public String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage, String downUrl, String audioUrl) {
-        if(audioAgentMessage.getStoreAudioType() == null || audioAgentMessage.getStoreAudioType().equals(AIConstants.STORETYPE_URL)){
+    public String downloadAudio(ClientConfiguration config, AudioAgentMessage audioAgentMessage,StoreChatObject storeChatObject, String downUrl, String audioUrl) {
+        if(storeChatObject.getStoreAudioType() == null || storeChatObject.getStoreAudioType().equals(AIConstants.STORETYPE_URL)){
             return audioUrl;
         }
-        return HttpRequestProxy.httpGet(config, audioUrl, AIResponseUtil.buildDownAudioHttpClientResponseHandler(config,audioAgentMessage,audioUrl));
+        return HttpRequestProxy.httpGet(config, audioUrl, AIResponseUtil.buildDownAudioHttpClientResponseHandler(config,audioAgentMessage,storeChatObject,audioUrl));
     }
 
     @Override
-    public String downloadVideo(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage, String downUrl, String videoUrl) {
-        if(videoStoreAgentMessage.getStoreVideoType() == null || videoStoreAgentMessage.getStoreVideoType().equals(AIConstants.STORETYPE_URL)){
+    public String downloadVideo(ClientConfiguration config, VideoStoreAgentMessage videoStoreAgentMessage,StoreChatObject storeChatObject, String downUrl, String videoUrl) {
+        if(storeChatObject.getStoreVideoType() == null || storeChatObject.getStoreVideoType().equals(AIConstants.STORETYPE_URL)){
             return videoUrl;
         }
-        return HttpRequestProxy.httpGet(config, videoUrl, AIResponseUtil.buildDownVideoHttpClientResponseHandler(config,videoStoreAgentMessage,videoUrl));
+        return HttpRequestProxy.httpGet(config, videoUrl, AIResponseUtil.buildDownVideoHttpClientResponseHandler(config,videoStoreAgentMessage,storeChatObject,videoUrl));
     }
 
 }

@@ -87,7 +87,7 @@ public class SequenceStreamTest {
                  ;
         AIBaseNodeAgent introduceProvinces = new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces");
         aiPlanAgent.addAgent(introduceProvinces);
-        //构建并行智能体
+        //构建串行智能体
         AISequenceAgent sequenceAgent = new AISequenceAgent(aiPlanAgent).setAgentId("sequenceAgent").setAgentName("串行任务节点");
         sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
         sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));

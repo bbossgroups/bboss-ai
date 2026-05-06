@@ -15,8 +15,6 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.material.StoreFilePathFunction;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,22 +25,22 @@ import java.util.List;
  */
 public class ImageAgentMessage extends StoreAgentMessage<ImageAgentMessage>{
    
-    private String storeImageType ;
+    
     private List<String> imageUrls;
 
-    public String getGenImageCompletionsUrl() {
-        return genImageCompletionsUrl;
-    }
-
-    public ImageAgentMessage setGenImageCompletionsUrl(String genImageCompletionsUrl) {
-        this.genImageCompletionsUrl = genImageCompletionsUrl;
-        return this;
-    }
-
-    /**
-     * maas平台图片生成接口地址
-     */
-    private String genImageCompletionsUrl;
+//    public String getGenImageCompletionsUrl() {
+//        return genImageCompletionsUrl;
+//    }
+//
+//    public ImageAgentMessage setGenImageCompletionsUrl(String genImageCompletionsUrl) {
+//        this.genImageCompletionsUrl = genImageCompletionsUrl;
+//        return this;
+//    }
+//
+//    /**
+//     * maas平台图片生成接口地址
+//     */
+//    private String genImageCompletionsUrl;
     public ImageAgentMessage setImageUrls(List<String> imageUrls) {
         this.imageUrls = imageUrls;
         return this;
@@ -61,14 +59,14 @@ public class ImageAgentMessage extends StoreAgentMessage<ImageAgentMessage>{
     }
      
 
-    public String getStoreImageType() {
-        return storeImageType;
-    }
-
-    public ImageAgentMessage setStoreImageType(String storeImageType) {
-        this.storeImageType = storeImageType;
-        return this;
-    }
+//    public String getStoreImageType() {
+//        return storeImageType;
+//    }
+//
+//    public ImageAgentMessage setStoreImageType(String storeImageType) {
+//        this.storeImageType = storeImageType;
+//        return this;
+//    }
 
  
 }

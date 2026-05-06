@@ -43,6 +43,9 @@ public class AgentAdapterFactory {
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_ZHIPU,new ZhipuAgentAdapter().initAgentAdapter());
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_MINIMAX,new MiniMaxAgentAdapter().initAgentAdapter());
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_HUNYUAN,new TencentHYAgentAdapter().initAgentAdapter());
+        agentAdapters.put(AIConstants.AI_MODEL_TYPE_XINFERENCE,new XinferenceAgentAdapter().initAgentAdapter());
+        
+        
 
     }
 

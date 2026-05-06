@@ -33,7 +33,7 @@ import java.util.Map;
  */
 public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage>{
     private List<String> imageUrls;
-    private String imageVLCompletionsUrl;
+//    private String imageVLCompletionsUrl;
     
 
     @Override
@@ -50,7 +50,7 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
         if(!fromStreamAPI){
             parameters.put("stream",false);
         }
-        setImageVLCompletionsUrl(agentAdapter.getImageVLCompletionsUrl(this));
+//        setImageVLCompletionsUrl(agentAdapter.getImageVLCompletionsUrl(this));
         stream = (Boolean)parameters.get("stream");
         aiChatRequestType = agentAdapter.getAIImageParserRequestType();
         agentMessage = parameters;
@@ -87,21 +87,21 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
         chatObject.setMessage(agentMessage);
         chatObject.setAgentMessage(this);
         chatObject.setStream(stream);
-        chatObject.setCompletionsUrl(this.getImageVLCompletionsUrl());
+        chatObject.setCompletionsUrl(agentAdapter.getImageVLCompletionsUrl(this));
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
         chatObject.setAiAgent(aiAgent);
         return chatObject;
     }
 
-    public String getImageVLCompletionsUrl() {
-        return imageVLCompletionsUrl;
-    }
-
-    public ImageVLAgentMessage setImageVLCompletionsUrl(String imageVLCompletionsUrl) {
-        this.imageVLCompletionsUrl = imageVLCompletionsUrl;
-        return this;
-    }
+//    public String getImageVLCompletionsUrl() {
+//        return imageVLCompletionsUrl;
+//    }
+//
+//    public ImageVLAgentMessage setImageVLCompletionsUrl(String imageVLCompletionsUrl) {
+//        this.imageVLCompletionsUrl = imageVLCompletionsUrl;
+//        return this;
+//    }
 
     public ImageVLAgentMessage setImageUrls(List<String> imageUrls) {
         this.imageUrls = imageUrls;
