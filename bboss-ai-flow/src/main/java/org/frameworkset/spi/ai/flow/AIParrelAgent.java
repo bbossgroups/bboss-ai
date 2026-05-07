@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
@@ -66,7 +67,8 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
         for(LastSessionMessage lastSessionMessage:lastSessionMessages){
             if(builder.length() > 0)
                 builder.append("\n");
-            builder.append(lastSessionMessage.getMsgAgentId()).append(":").append(lastSessionMessage.getData());
+//            builder.append(lastSessionMessage.getMsgAgentId()).append(":").append(lastSessionMessage.getData());
+            builder.append(lastSessionMessage.getData());
         }
         String data = builder.toString();
         return data;
@@ -90,12 +92,14 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
                     if(SimpleStringUtil.isNotEmpty(lastSessionMessages)) {                      
                         String data = buildResult(  lastSessionMessages);
                         AIParrelAgent.this.addAgentResultSessionMessage(data);
+                        ServerEvent serverEvent = new ServerEvent();
+                        serverEvent.setDone(true);
+                        serverEvent.setAgent(AIParrelAgent.this);
+                        serverEvent.setData(data);
+                        serverEvent.setContent(data);
+                        AIFlowUtil.outputResult(AIParrelAgent.this, serverEvent,  jobFlowNodeExecuteContext);
                         if(planAgent.isStream() && !isDisableStream()){
-                            ServerEvent serverEvent = new ServerEvent();
-                            serverEvent.setDone(true);
-                            serverEvent.setAgent(AIParrelAgent.this);
-                            serverEvent.setData(data);
-                            serverEvent.setContent(data);
+                            
                             getAgentFluxSink().next(serverEvent);
                         }
                     }

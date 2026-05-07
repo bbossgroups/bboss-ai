@@ -31,6 +31,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     void init();
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     String getAgentId();
+    String genSubAgentId();
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
     LastSessionMessage getLastSubAgentSessionMessage();
     public List<LastSessionMessage> getLastSubAgentSessionMessages();

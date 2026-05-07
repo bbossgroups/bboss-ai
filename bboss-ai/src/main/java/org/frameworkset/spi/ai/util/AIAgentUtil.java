@@ -100,13 +100,14 @@ public class AIAgentUtil {
      * @param message
      * @return
      */
-    public static ImageEvent multimodalImageGeneration(String poolName,  ImageAgentMessage message,AIAgent aiAgent) {
+    public static ImageEvent multimodalImageGeneration(String poolName,  ImageAgentMessage message, StoreFilePathFunction storeFilePathFunction,AIAgent aiAgent) {
         ImageEvent imageEvent = null;       
 
         try {
             ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
             AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,message);
             StoreChatObject storeChatObject = agentAdapter.buildGenImageRequestParameter(config,message,aiAgent);
+            storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
             
             Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(message),Map.class);
             imageEvent = agentAdapter.buildGenImageResponse(config,message,storeChatObject, data);
@@ -128,7 +129,7 @@ public class AIAgentUtil {
      */
     public static ImageEvent multimodalImageGeneration( ImageAgentMessage message,AIAgent aiAgent) {
 
-        return multimodalImageGeneration(null,  message,  aiAgent) ;
+        return multimodalImageGeneration(null,  message,  (StoreFilePathFunction) null,aiAgent) ;
     }
     /**
      * 调用音频合成模型，流式生成音频，实时播放
@@ -136,10 +137,10 @@ public class AIAgentUtil {
      * @param audioAgentMessage
      * @return
      */
-    public static Flux<ServerEvent> streamAudioGenerationEvent(String poolName,   AudioAgentMessage audioAgentMessage, AIAgent aiAgent) {       
+    public static Flux<ServerEvent> streamAudioGenerationEvent(String poolName,   AudioAgentMessage audioAgentMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent) {       
       
 
-            return AIAgentUtil.streamChatCompletionEvent(poolName,   audioAgentMessage,   aiAgent);
+            return AIAgentUtil.streamChatCompletionEvent(poolName,   audioAgentMessage,   storeFilePathFunction,   aiAgent);
             
     }
 
@@ -149,14 +150,15 @@ public class AIAgentUtil {
      * @param message
      * @return
      */
-    public static AudioEvent multimodalAudioGeneration(String poolName,  AudioAgentMessage message,AIAgent aiAgent) {
+    public static AudioEvent multimodalAudioGeneration(String poolName,  AudioAgentMessage message, StoreFilePathFunction storeFilePathFunction,AIAgent aiAgent) {
         
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config, message);
         StoreChatObject storeChatObject = agentAdapter.buildGenAudioRequestParameter(config, message,aiAgent);
+        storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
         AudioEvent audioEvent = null;
         try {
-            StoreFilePathFunction storeFilePathFunction = storeChatObject.getStoreFilePathFunction();
+//            StoreFilePathFunction storeFilePathFunction = storeChatObject.getStoreFilePathFunction();
             if (storeFilePathFunction != null && storeFilePathFunction instanceof ReponseStoreFilePathFunction) {
                 String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(message), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
                 audioEvent = new AudioEvent();
@@ -207,13 +209,13 @@ public class AIAgentUtil {
      */
     public static AudioEvent multimodalAudioGeneration( AudioAgentMessage message,AIAgent aiAgent) {
 
-        return multimodalAudioGeneration(null,  message,  aiAgent) ;
+        return multimodalAudioGeneration(null,  message, (StoreFilePathFunction) null,  aiAgent) ;
     }
     /**
      * 创建流式调用的Flux，使用默认数据源
      */
     public static Flux<ServerEvent> streamChatCompletionEvent( Object message, AIAgent aiAgent) {
-        return streamChatCompletionEvent((String)null , message,   aiAgent);
+        return streamChatCompletionEvent((String)null , message, (StoreFilePathFunction) null,   aiAgent);
     }
 
     public static <T> void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ToolAgentMessage toolAgentMessage,
@@ -327,15 +329,19 @@ public class AIAgentUtil {
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
         }
     }
+    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent){
+        return  streamChatCompletionEvent(poolName,chatMessage,(StoreFilePathFunction) null, aiAgent);
+    }
     /**
      * 创建流式调用的Flux,在指定的数据源上执行
      */
-    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, AIAgent aiAgent) {
+    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent) {
  
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
          
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true);
+        chatObject.setStoreFilePathFunction(storeFilePathFunction);
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
            
             @Override
@@ -866,11 +872,12 @@ public class AIAgentUtil {
         return submitVideoTask(null,   videoAgentMessage,  aiAgent) ;
     }
     
-    public static VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage) {
+    public static VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage, StoreFilePathFunction storeFilePathFunction) {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(maasName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,null);
         StoreChatObject storeChatObject = new StoreChatObject();
         agentAdapter._buildGetVideoResultRquestMap(videoStoreAgentMessage,storeChatObject,clientConfiguration);
+        storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
         Map taskInfo = HttpRequestProxy.httpGetforObject(maasName,agentAdapter.getVideoTaskResultUrl(videoStoreAgentMessage),Map.class);
         VideoGenResult videoGenResult = agentAdapter.buildVideoGenResult(clientConfiguration,videoStoreAgentMessage,storeChatObject,taskInfo);
         

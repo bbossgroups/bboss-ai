@@ -46,12 +46,11 @@ import reactor.core.scheduler.Schedulers;
  */
 public class AIPlanAgent extends AIAgent<AIPlanAgent> {
     private static Logger logger = LoggerFactory.getLogger(AIPlanAgent.class);
-    private AgentSessionStore mainSessionStore;
-    private StoreContext storeContext;
-    private AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
+    
+    
     private AIJobFlowBuilder jobFlowBuilder;
     public AIPlanAgent(StoreContext storeContext) {
-        this.storeContext = storeContext;
+        super(storeContext);
         
     }
     
@@ -68,15 +67,7 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         return jobFlowBuilder;
     }
 
-    private void initSessionStore(){
-        if(mainSessionStore == null && storeContext != null){
-            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
-            mainSessionStore.setAIAgent(this);
-            if(agentMessage != null && agentMessage instanceof SessionAgentMessage){
-                ((SessionAgentMessage)agentMessage).setMainSessionStore(mainSessionStore);
-            }
-        }
-    }
+
 
  
 

@@ -16,10 +16,10 @@ package org.frameworkset.spi.ai;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.ai.store.AgentIdAssign;
-import org.frameworkset.spi.ai.store.AgentSessionStore;
-import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
+import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
@@ -44,6 +44,41 @@ public class AIAgent<T extends AIAgent> {
     private String type;
     protected int sessionSize;
 
+
+    /**
+     * 输出变量名
+     */
+    protected String outputVaribleName;
+
+    /**
+     * 输出变量名
+     */
+    protected int outputVaribleScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+
+    protected AgentSessionStore mainSessionStore;
+    protected StoreContext storeContext;
+
+    public AIAgent(StoreContext storeContext) {
+        this.storeContext = storeContext;
+
+    }
+    private Object mainSessionStoreLock = new Object();
+    protected void initSessionStore(){
+        if(mainSessionStore != null)
+            return;
+        synchronized (mainSessionStoreLock) {
+            if(mainSessionStore != null)
+                return;
+            if (mainSessionStore == null && storeContext != null) {
+                AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
+                mainSessionStore = agentSessionStoreBuilder.build(storeContext);
+                mainSessionStore.setAIAgent(this);
+                if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
+                    ((SessionAgentMessage) agentMessage).setMainSessionStore(mainSessionStore);
+                }
+            }
+        }
+    }
     /**
      * true 智能体会话记录不会被记录到父智能体的会议记忆，同时也不会加载父智能体的会话记忆
      * false 会记录
@@ -202,6 +237,18 @@ public class AIAgent<T extends AIAgent> {
         return agentSessionStore;
     }
 
+    public AgentSessionStore getMainSessionStore() {
+        if(mainSessionStore != null)
+            return mainSessionStore;
+        if(parentAgent != null){
+            return parentAgent.getMainSessionStore();
+        }
+        if(storeContext != null){
+            initSessionStore();
+        }
+        return mainSessionStore;
+    }
+
     public AIAgent(String prompt, String type, ToolsRegist toolsRegist, Integer sessionSize){
         this.prompt = prompt;
         this.type = type;
@@ -293,47 +340,53 @@ public class AIAgent<T extends AIAgent> {
     }
     public void reactMessage(AgentMessage agentMessage){
 
-         
-    
-        if(agentMessage instanceof SessionAgentMessage) {
-            SessionAgentMessage sessionAgentMessage = (SessionAgentMessage)agentMessage;
-            AgentSessionStore mainSessionStore = sessionAgentMessage.getMainSessionStore();
-            if(mainSessionStore != null) {
-                if(agentId == null){
-                    if(parentAgent != null){
-                        agentId = parentAgent.genSubAgentId();
-                    }
-                    else{
-                        agentId = sessionAgentMessage.genSubAgentId();
-                    }
-                }
-
-                String title  = this.evalPrompt(agentMessage);
-                AIAgent parentAgent = this.getParentAgent();
-                if(parentAgent != null){
-                    String tmp = parentAgent.getFirstSubAgentPrompt();
-                    if(tmp != null){
-                        title = tmp;
-                    }
-                }
-                
-                mainSessionStore.loadSessionMemory(title, agentId);
-                if(parentSessionStore == null && this.parentAgent != null){
-                    this.parentSessionStore = parentAgent.getAgentSessionStore();
-                }
-                if(agentSessionStore == null){
-                    if(parentSessionStore != null)
-                        agentSessionStore = buildAgentSessionStore(parentSessionStore,sessionSize);
-                    else
-                        agentSessionStore = buildAgentSessionStore(mainSessionStore,sessionSize);
-                    agentSessionStore.setAgentId(agentId);
-                    agentSessionStore.setAIAgent(this);
-                    agentSessionStore.setMainAgentSessionStore(mainSessionStore);
-                }
-                loadHistoryMessages(  mainSessionStore,  agentMessage);
-                
-                 
+        AgentSessionStore mainSessionStore = this.getMainSessionStore();
+        SessionAgentMessage sessionAgentMessage = null;
+        if( agentMessage instanceof SessionAgentMessage) {
+            sessionAgentMessage = (SessionAgentMessage)agentMessage;
+            if(mainSessionStore == null) {
+                mainSessionStore = sessionAgentMessage.getMainSessionStore();
+                this.mainSessionStore = mainSessionStore;
             }
+            
+        }
+        
+        if(agentId == null){
+            if(parentAgent != null){
+                agentId = parentAgent.genSubAgentId();
+            }
+            else{
+                agentId = mainSessionStore != null?mainSessionStore.genSubAgentId(): SimpleStringUtil.getUUID32();
+            }
+        }
+        if(mainSessionStore != null) {
+             
+
+            String title  = this.evalPrompt(agentMessage);
+            AIAgent parentAgent = this.getParentAgent();
+            if(parentAgent != null){
+                String tmp = parentAgent.getFirstSubAgentPrompt();
+                if(tmp != null){
+                    title = tmp;
+                }
+            }
+
+            mainSessionStore.loadSessionMemory(title, agentId);
+            if(parentSessionStore == null && this.parentAgent != null){
+                this.parentSessionStore = parentAgent.getAgentSessionStore();
+            }
+            if(agentSessionStore == null){
+                if(parentSessionStore != null)
+                    agentSessionStore = buildAgentSessionStore(parentSessionStore,sessionSize);
+                else
+                    agentSessionStore = buildAgentSessionStore(mainSessionStore,sessionSize);
+                agentSessionStore.setAgentId(agentId);
+                agentSessionStore.setAIAgent(this);
+                agentSessionStore.setMainAgentSessionStore(mainSessionStore);
+            }
+            loadHistoryMessages(  mainSessionStore,  agentMessage);
+
+
         }
         
     }
@@ -341,19 +394,28 @@ public class AIAgent<T extends AIAgent> {
     protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore,int sessionSize){
         return new AgentSessionStoreMemory(parentSessionStore,sessionSize);
     }
+
     /**
      * 实现图片生成功能
      * @param maasName
      * @param imageAgentMessage
      * @return
      */
-    public ImageEvent genImage(String maasName, ImageAgentMessage imageAgentMessage){
+    public ImageEvent genImage(String maasName, ImageAgentMessage imageAgentMessage ){
+        return genImage(  maasName,   imageAgentMessage, (StoreFilePathFunction)null);
+    }
+    /**
+     * 实现图片生成功能
+     * @param maasName
+     * @param imageAgentMessage
+     * @return
+     */
+    public ImageEvent genImage(String maasName, ImageAgentMessage imageAgentMessage, StoreFilePathFunction storeFilePathFunction){
         reactMessage(  imageAgentMessage);
-        return AIAgentUtil.multimodalImageGeneration(maasName, imageAgentMessage,this);
+        return AIAgentUtil.multimodalImageGeneration(maasName, imageAgentMessage,   storeFilePathFunction,this);
     }
     public ImageEvent genImage( ImageAgentMessage imageAgentMessage){
-        reactMessage(  imageAgentMessage);
-        return AIAgentUtil.multimodalImageGeneration(imageAgentMessage.getMaas(), imageAgentMessage,this);
+        return genImage(imageAgentMessage.getMaas(), imageAgentMessage );
     }
 
     /**
@@ -371,12 +433,16 @@ public class AIAgent<T extends AIAgent> {
         return AIAgentUtil.submitVideoTask(videoAgentMessage.getMaas(),videoAgentMessage,this);
     }
 
-    public VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage){
-        return AIAgentUtil.getVideoTaskResult(maasName,videoStoreAgentMessage);
+    public VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage ){
+        return getVideoTaskResult(  maasName,  videoStoreAgentMessage, (StoreFilePathFunction)null);
     }
+    public VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage, StoreFilePathFunction storeFilePathFunction){
+        return    AIAgentUtil.getVideoTaskResult(videoStoreAgentMessage.getMaas(),videoStoreAgentMessage,storeFilePathFunction);
+    }
+    
 
     public VideoGenResult getVideoTaskResult( VideoStoreAgentMessage videoStoreAgentMessage){
-        return AIAgentUtil.getVideoTaskResult(videoStoreAgentMessage.getMaas(),videoStoreAgentMessage);
+        return AIAgentUtil.getVideoTaskResult(videoStoreAgentMessage.getMaas(),videoStoreAgentMessage,(StoreFilePathFunction)null);
     }
     /**
      * 调用音频合成模型，生成音频
@@ -385,9 +451,11 @@ public class AIAgent<T extends AIAgent> {
      */
     public AudioEvent genAudio(  AudioAgentMessage audioAgentMessage){
         reactMessage(  audioAgentMessage);
-        return AIAgentUtil.multimodalAudioGeneration( audioAgentMessage.getMaas(),audioAgentMessage,this);
+        return AIAgentUtil.multimodalAudioGeneration( audioAgentMessage.getMaas(),audioAgentMessage,(StoreFilePathFunction)null,this);
     }
-
+    public AudioEvent genAudio(  AudioAgentMessage audioAgentMessage, StoreFilePathFunction storeFilePathFunction){
+        return genAudio(  audioAgentMessage.getMaas(),  audioAgentMessage,   storeFilePathFunction);
+    }
     /**
      * 调用音频合成模型，生成音频
      * @param audioAgentMessage
@@ -395,7 +463,7 @@ public class AIAgent<T extends AIAgent> {
      */
     public Flux<ServerEvent> streamAudioGen(AudioAgentMessage audioAgentMessage){
         reactMessage(  audioAgentMessage);
-        return AIAgentUtil.streamAudioGenerationEvent(audioAgentMessage.getMaas(),audioAgentMessage,this);
+        return AIAgentUtil.streamAudioGenerationEvent(audioAgentMessage.getMaas(),audioAgentMessage,(StoreFilePathFunction)null,this);
     }
 
     /**
@@ -404,9 +472,12 @@ public class AIAgent<T extends AIAgent> {
      * @param audioAgentMessage
      * @return
      */
-    public Flux<ServerEvent> streamAudioGen(String maasName,  AudioAgentMessage audioAgentMessage){
+    public Flux<ServerEvent> streamAudioGen(String maasName,  AudioAgentMessage audioAgentMessage, StoreFilePathFunction storeFilePathFunction){
         reactMessage(  audioAgentMessage);
-        return AIAgentUtil.streamAudioGenerationEvent(maasName,audioAgentMessage,this);
+        return AIAgentUtil.streamAudioGenerationEvent(maasName,audioAgentMessage,storeFilePathFunction,this);
+    }
+    public Flux<ServerEvent> streamAudioGen(String maasName,  AudioAgentMessage audioAgentMessage ){
+        return streamAudioGen(maasName, audioAgentMessage, (StoreFilePathFunction)null);
     }
     /**
      * 调用音频合成模型，生成音频
@@ -415,8 +486,17 @@ public class AIAgent<T extends AIAgent> {
      * @return
      */
     public AudioEvent genAudio(String maasName,   AudioAgentMessage audioAgentMessage){
+        return genAudio(  maasName,     audioAgentMessage, (StoreFilePathFunction)null);
+    }
+    /**
+     * 调用音频合成模型，生成音频
+     * @param maasName
+     * @param audioAgentMessage
+     * @return
+     */
+    public AudioEvent genAudio(String maasName,   AudioAgentMessage audioAgentMessage, StoreFilePathFunction storeFilePathFunction){
         reactMessage(  audioAgentMessage);
-        return AIAgentUtil.multimodalAudioGeneration(maasName, audioAgentMessage,this);
+        return AIAgentUtil.multimodalAudioGeneration(maasName, audioAgentMessage,storeFilePathFunction,this);
     }
 
     /**
@@ -872,4 +952,43 @@ public class AIAgent<T extends AIAgent> {
     public void setDisableReferenceParentLastSubMessage(boolean disableReferenceParentLastSubMessage) {
         this.disableReferenceParentLastSubMessage = disableReferenceParentLastSubMessage;
     }
+
+    public String getOutputVaribleName() {
+        return outputVaribleName;
+    }
+    
+    public void setOutputVaribleName(String outputVaribleName, int outputVaribleScope) {
+        this.outputVaribleName = outputVaribleName;
+        this.outputVaribleScope = outputVaribleScope;
+    }
+
+    public int getOutputVaribleScope() {
+        return outputVaribleScope;
+    }
+
+    /**
+     * 变量范围：流程
+     * @return
+     */
+    public boolean isFlowOutputVaribleScope(){
+        return outputVaribleScope == AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+    }
+
+    /**
+     * 变量范围：容器级别
+     * @return
+     */
+    public boolean isContainerOutputVaribleScope(){
+        return outputVaribleScope == AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER;
+    }
+
+    /**
+     * 变量范围：节点级别
+     * @return
+     */
+    public boolean isNodeOutputVaribleScope(){
+        return outputVaribleScope == AIFlowConst.AIFLOW_VAR_SCOPE_NODE;
+    }
+    
+ 
 }

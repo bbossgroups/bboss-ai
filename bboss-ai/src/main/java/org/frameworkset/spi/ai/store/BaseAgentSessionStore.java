@@ -65,8 +65,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
     protected AIAgent aiAgent;
 
- 
 
+    protected AgentIdAssign agentIdAssign = new AgentIdAssign();
+    public String genSubAgentId(){
+
+        return "agentId-"+agentIdAssign.getAgentId();
+    }
 
     protected AgentSessionStore mainAgentSessionStore;
     /** 短期记忆：使用静态变量存储会话记忆（实际项目中建议使用缓存或数据库）*/

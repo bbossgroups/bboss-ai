@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
@@ -80,12 +81,14 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent> {
                          
                         String data = lastSessionMessage.getData();
                         AISequenceAgent.this.addAgentResultSessionMessage(data);
+                        ServerEvent serverEvent = new ServerEvent();
+                        serverEvent.setDone(true);
+                        serverEvent.setAgent(AISequenceAgent.this);
+                        serverEvent.setData(data);
+                        serverEvent.setContent(data);
+                        AIFlowUtil.outputResult(AISequenceAgent.this, serverEvent,  jobFlowNodeExecuteContext);
                         if(planAgent.isStream() && !isDisableStream()){
-                            ServerEvent serverEvent = new ServerEvent();
-                            serverEvent.setDone(true);
-                            serverEvent.setAgent(AISequenceAgent.this);
-                            serverEvent.setData(data);
-                            serverEvent.setContent(data);
+                            
                             getAgentFluxSink().next(serverEvent);
                         }
                     }

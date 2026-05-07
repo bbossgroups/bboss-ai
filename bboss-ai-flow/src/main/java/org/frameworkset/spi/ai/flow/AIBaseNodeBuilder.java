@@ -15,6 +15,9 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
@@ -57,32 +60,20 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
     public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) throws Exception {      
       
         
-        JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
-        JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getJobFlowExecuteContext();
+        
         AgentMessage agentMessage = agent.getAgentMessage() != null ? agent.getAgentMessage() : planAgent.getAgentMessage();
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
         if(!planAgent.isStream() || agent.isDisableStream()) {
             ServerEvent serverEvent = agent.chat((ChatAgentMessage) agentMessage);
-
-
-            if (serverEvent != null) {
-                if (logger.isInfoEnabled()) {
-                    logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
-                }
-                if (containerJobFlowNodeExecuteContext != null) {
-                    containerJobFlowNodeExecuteContext.addContextData(agent.getAgentId() + ".agentResult", serverEvent);
-                } else {
-                    jobFlowExecuteContext.addContextData(agent.getAgentId() + ".agentResult", serverEvent);
-                }
-            }
+            AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext); 
         }
-        else{
-            
+        else{            
             agent.streamChat((ChatAgentMessage) agentMessage);
         }
         return null;
     }
+   
  
 }

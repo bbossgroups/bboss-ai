@@ -29,11 +29,7 @@ import java.util.Map;
  */
 public class AgentMessage<T extends AgentMessage> {
 
-    protected AgentIdAssign agentIdAssign = new AgentIdAssign();
-    public String genSubAgentId(){
-      
-        return "agentId-"+agentIdAssign.getAgentId();
-    }
+
     
     private Boolean thinking;
     /**

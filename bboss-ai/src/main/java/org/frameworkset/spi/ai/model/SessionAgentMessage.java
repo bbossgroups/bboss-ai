@@ -191,7 +191,8 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     }
     
     public LastSessionMessage addAgentResultSessionMessage(String message,AIAgent aiAgent){
-        initSessionStore();
+        AgentSessionStore mainSessionStore = aiAgent.getMainSessionStore();
+//        initSessionStore();
         if(mainSessionStore == null){
             return null;
         }
