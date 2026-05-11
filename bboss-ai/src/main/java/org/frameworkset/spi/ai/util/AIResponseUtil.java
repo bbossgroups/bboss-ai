@@ -23,10 +23,9 @@ import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.material.DownImageBase64HttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownFileHttpClientResponseHandler;
+import org.frameworkset.spi.ai.material.DownImageBase64HttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownVideoImageFileHttpClientResponseHandler;
-import org.frameworkset.spi.ai.mcp.DataCollector;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -36,9 +35,9 @@ import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
 import reactor.core.publisher.FluxSink;
 
 import java.io.IOException;
-import java.util.*;
-
-import static java.lang.Thread.sleep;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -376,6 +375,15 @@ public class AIResponseUtil {
     public static StreamData parseStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data) {
         try {
             Map map = SimpleStringUtil.json2Object(data,Map.class);
+            String model = (String) map.get("model");
+            Map usage = (Map) map.get("usage");
+            TokenMetrics tokenMetrics = null;
+            if(usage != null)
+            {
+                tokenMetrics = streamDataBuilder.buildTokenMetrics(usage);
+                tokenMetrics.setModel(model);
+            }
+            
             Object choices_ = map.get("choices");
      
             if (choices_ != null ) {
@@ -392,13 +400,13 @@ public class AIResponseUtil {
                                String content = (String) delta.get("content");
                                Object tool_call = delta.get("tool_calls");
                                if(tool_call != null){
-                                   return streamDataBuilder.functionToolsChunk((List<Map>) tool_call, finishReason);
+                                   return streamDataBuilder.functionToolsChunk((List<Map>) tool_call, finishReason).setStreamTokenMetrics(tokenMetrics);
                                }
                                 
                                else if (SimpleStringUtil.isNotEmpty(reasoning_content)) {
-                                   return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason);
+                                   return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
                                } else {
-                                   return new StreamData(ServerEvent.CONTENT, content, finishReason);
+                                   return new StreamData(ServerEvent.CONTENT, content, finishReason).setStreamTokenMetrics(tokenMetrics);
                                }
 
                            } else {
@@ -407,9 +415,9 @@ public class AIResponseUtil {
                                    String reasoning_content = (String) message.get("reasoning_content");
                                    String content = (String) message.get("content");
                                    if (SimpleStringUtil.isNotEmpty(reasoning_content)) {
-                                       return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason);
+                                       return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
                                    } else {
-                                       return new StreamData(ServerEvent.CONTENT, content, finishReason);
+                                       return new StreamData(ServerEvent.CONTENT, content, finishReason).setStreamTokenMetrics(tokenMetrics);
                                    }
                                }
                                if (logger.isDebugEnabled())
@@ -422,11 +430,11 @@ public class AIResponseUtil {
                                Object tool_call = delta.get("tool_calls");
                                if(tool_call != null){
                                    List<Map> tool_call_ = (List<Map>) tool_call;
-                                   return new StreamData( tool_call_.get(0), finishReason);
+                                   return new StreamData( tool_call_.get(0), finishReason).setStreamTokenMetrics(tokenMetrics)   ;
 //                                   return streamDataBuilder.functionToolsChunk((List<Map>) tool_call, finishReason);
                                }
                                else{
-                                    return new StreamData( (List<FunctionTool>)null,(List<Map>)null, finishReason);
+                                     return new StreamData( (List<FunctionTool>)null,(List<Map>)null, finishReason).setStreamTokenMetrics(tokenMetrics);
                                }
                            }
                            else {
@@ -438,12 +446,12 @@ public class AIResponseUtil {
                                        if (reasoning_content == null) {
                                            return streamData
                                                    .setContent((String) message.get("content"))
-                                                   .setRole((String) message.get("role"));
+                                                   .setRole((String) message.get("role")).setStreamTokenMetrics(tokenMetrics);
                                        } else {
                                            return streamData
                                                    .setContent((String) message.get("content"))
                                                    .setReasoningContent(reasoning_content)
-                                                   .setRole((String) message.get("role"));
+                                                   .setRole((String) message.get("role")).setStreamTokenMetrics(tokenMetrics);
                                        }
                                    } else {
                                        if (logger.isDebugEnabled())
@@ -472,7 +480,7 @@ public class AIResponseUtil {
                 String code =  (String)map.get("code");
                 String message = (String) map.get("message");
                 if(SimpleStringUtil.isNotEmpty(code)) {
-                    return new StreamData(ServerEvent.CONTENT, message, code);
+                    return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
                 }
                 else {
                     if(logger.isDebugEnabled())
@@ -883,7 +891,7 @@ public class AIResponseUtil {
                 if(firstEventTag.get()) {
                     firstEventTag.set(false);
                 }
-                StreamData content = streamDataBuilder.build(agentAdapter,data);
+                StreamData content = streamDataBuilder.buildWrapped(agentAdapter,data);
                 if (content != null && !content.isEmpty()) {
                     sink.next(content.getContent());
                 }
@@ -907,7 +915,7 @@ public class AIResponseUtil {
         }
         ServerEvent serverEvent = null;
         if (SimpleStringUtil.isNotEmpty(line)) {
-            StreamData content = streamDataBuilder.build(agentAdapter,line);
+            StreamData content = streamDataBuilder.buildWrapped(agentAdapter,line);
             if (content != null) {
 
                 serverEvent = new ServerEvent();
@@ -992,7 +1000,7 @@ public class AIResponseUtil {
                 sink.next(serverEvent);
                 return true;
             }
-            StreamData content = streamDataBuilder.build(agentAdapter,data);
+            StreamData content = streamDataBuilder.buildWrapped(agentAdapter,data);
             if (content != null) {
                 if( !content.isEmpty()) {
                     buildServerEvent(   firstEventTag,  content,

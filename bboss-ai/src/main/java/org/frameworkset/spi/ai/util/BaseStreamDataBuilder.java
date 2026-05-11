@@ -16,8 +16,10 @@ package org.frameworkset.spi.ai.util;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.model.StreamData;
+import org.frameworkset.spi.ai.model.TokenMetrics;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.Map;
  * @Date 2026/2/24
  */
 public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
+    private TokenMetrics tokenMetrics;
     /**
      * stream模式下工具识别对象
      */
@@ -43,9 +46,90 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
      * stream模式下工具识别过程对象
      */
     private StringBuilder toolCallContentStreamData;
+    /**
+     * stream模式下完整返回消息对象
+     */
+    private StringBuilder fullStreamData;
+
+    /**
+     * stream模式下完整返回思考推理消息对象
+     */
+    private StringBuilder fullReasoningStreamData;
 
     public StreamData getToolCallsStreamData() {
         return toolCallsStreamData;
+    }
+    
+    public void appendFullStreamData(StreamData streamData){
+        if(fullStreamData == null)
+            fullStreamData = new StringBuilder();
+        if(streamData.getContent() != null) {
+            fullStreamData.append(streamData.getContent());
+        }
+    }
+
+    public void appendFullReasoningStreamData(StreamData streamData){
+        if(fullReasoningStreamData == null)
+            fullReasoningStreamData = new StringBuilder();
+        if(streamData.getReasoningContent() != null)
+            fullReasoningStreamData.append(streamData.getReasoningContent());
+    }
+    
+    public String getFullStreamData() {
+        if(fullStreamData != null) {
+            return fullStreamData.toString();
+        }
+        return null;
+    }
+    public String getFullReasoningStreamData() {
+        if(fullReasoningStreamData != null) {
+            return fullReasoningStreamData.toString();
+        }
+        return null;
+    }
+
+    public TokenMetrics getTokenMetrics() {
+        return tokenMetrics;
+    }
+    public TokenMetrics buildTokenMetrics(Map usage){
+        TokenMetrics tokenMetrics = new TokenMetrics();
+        tokenMetrics.setUsage(usage);
+        tokenMetrics.setTotalTokens((Integer)usage.get("total_tokens"));
+        tokenMetrics.setPromptTokens((Integer)usage.get("prompt_tokens"));
+        tokenMetrics.setCompletionTokens((Integer)usage.get("completion_tokens"));
+        Map completion_tokens_details = (Map)usage.get("completion_tokens_details");
+        
+        tokenMetrics.setReasoningTokens((Integer)completion_tokens_details.get("reasoning_tokens"));
+        
+        Map prompt_tokens_details = (Map)usage.get("prompt_tokens_details");
+        tokenMetrics.setCachedTokens((Integer)prompt_tokens_details.get("cached_tokens"));
+        return tokenMetrics;
+    }
+
+    public StreamData buildWrapped(AgentAdapter agentAdapter , String line){
+        StreamData streamData = build(agentAdapter,line);
+        if(streamData.isContent()){
+            appendFullStreamData(streamData);
+        }
+        else if(streamData.isReasoning()){
+            appendFullReasoningStreamData(streamData);
+        }
+        computeTokens(streamData);
+        return streamData;
+    }
+    
+    private void computeTokens(StreamData streamData){
+        TokenMetrics streamTokenMetrics = streamData.getStreamTokenMetrics();
+        if(streamTokenMetrics != null) {
+            if(tokenMetrics == null)
+                tokenMetrics = new TokenMetrics();
+            tokenMetrics.increaseTotalTokens(streamTokenMetrics.getTotalTokens());
+            tokenMetrics.increasePromptTokens(streamTokenMetrics.getPromptTokens());
+            tokenMetrics.increaseCompletionTokens(streamTokenMetrics.getCompletionTokens());
+            tokenMetrics.increaseReasoningTokens(streamTokenMetrics.getReasoningTokens());
+            tokenMetrics.increaseCachedTokens(streamTokenMetrics.getCachedTokens());
+        }
+        streamData.setTotalTokenMetrics(tokenMetrics);
     }
     public void appendToolCallThinkingStreamData(StreamData streamData){
        String thinkContent = null;

@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.flow;
 
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -98,7 +99,6 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
         judgeAgent.setPrompt(judgePrompt);
         
         JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
-        JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getJobFlowExecuteContext();
         AgentMessage agentMessage = judgeAgent.getAgentMessage() != null ? judgeAgent.getAgentMessage() : planAgent.getAgentMessage();
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
@@ -115,13 +115,21 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
                     logger.info("{} judge result:{}", judgeAgent.getAgentId(), serverEvent.getData());
                 }
             }
-           
-            if(containerJobFlowNodeExecuteContext != null){
-                containerJobFlowNodeExecuteContext.addContextData(judgeAgent.getAgentId()+".judgeResult",serverEvent.getData());
+           String varName = judgeAgent.getOutputVaribleName();
+            
+            if(SimpleStringUtil.isEmpty(varName )){
+                varName = judgeAgent.getAgentId()+".judgeResult";
+                int varScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+                if(containerJobFlowNodeExecuteContext != null){
+                    varScope = AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER;
+                }
+                else{
+                    varScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+                }
+                judgeAgent.setOutputVaribleName(varName,varScope);
+                
             }
-            else{
-                jobFlowExecuteContext.addContextData(judgeAgent.getAgentId()+".judgeResult",serverEvent.getData());
-            }
+            AIFlowUtil.outputResult( judgeAgent, serverEvent,  jobFlowNodeExecuteContext);
         }
         return null;
     }

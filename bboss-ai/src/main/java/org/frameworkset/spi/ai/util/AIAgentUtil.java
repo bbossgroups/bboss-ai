@@ -15,9 +15,7 @@ package org.frameworkset.spi.ai.util;
  * limitations under the License.
  */
 
-import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
-import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.frameworkset.spi.ai.AIAgent;
@@ -25,11 +23,10 @@ import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
-import org.frameworkset.spi.ai.mcp.DataCollector;
+import org.frameworkset.spi.reactor.DataCollector;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
-import org.frameworkset.util.annotations.HttpMethod;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
 import org.slf4j.Logger;
@@ -39,7 +36,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -818,22 +815,14 @@ public class AIAgentUtil {
         if(functionTools != null && functionTools.size() > 0){
             ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
             _chatMessage.addAssistantSessionMessage(serverEvent ,aiAgent);
-            if(serverEvent.getData() != null && serverEvent.getData().length() > 0)
-			    logger.info(serverEvent.getData());
+            if(serverEvent.getData() != null && serverEvent.getData().length() > 0) {
+                if(logger.isDebugEnabled()) {
+                    logger.debug(serverEvent.getData());
+                }
+            }
             ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage,functionTools);
             return chatCompletionEvent(  poolName,toolAgentMessage,aiAgent);
-            /**
-             FunctionTool tool = functionTools.get(0);
-             String toolId = tool.getId();
-             String functionName = tool.getFunctionName();
-             FunctionCall functionCall = chatMessage.getFunctionCall(functionName);
-             try {
-             Object result = functionCall.call(tool);
-             Map<String,Object> toolMessage =MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId);
-             } catch (Exception e) {
-             throw new RuntimeException(e);
-             }
-             */
+
         }
         else {
             return serverEvent;
@@ -1005,6 +994,42 @@ public class AIAgentUtil {
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(rerankMessage.getMaas());
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,rerankMessage);
         Map<String,Object> params = agentAdapter.buildRerankMessage(config,rerankMessage,agent);
-        return agentAdapter.rerank(rerankMessage,agent,params);
+        List<RerankedDocument> rerankedDocuments = agentAdapter.rerank(rerankMessage,agent,params);
+        List<RerankedDocument> relevanceScoreDocuments = new ArrayList<>();
+        List<RerankedDocument> topKDocuments = new ArrayList<>();
+        if(rerankedDocuments != null && rerankedDocuments.size() > 0) {
+           
+            Double relevanceScore = rerankMessage.getRelevanceScore();
+            if (relevanceScore != null && relevanceScore > 0d) {
+                rerankedDocuments.forEach(rerankedDocument -> {
+                    if(rerankedDocument.getRelevanceScore() >= relevanceScore)
+                        relevanceScoreDocuments.add(rerankedDocument);
+                });
+            }
+            Integer topK = rerankMessage.getTopK();
+            if(topK != null && topK > 0){
+               
+                if(relevanceScoreDocuments.size() > 0){
+                    for( int i = 0; i < topK && i < relevanceScoreDocuments.size(); i++){
+                        topKDocuments.add(relevanceScoreDocuments.get(i));
+                    }
+                }
+                else{
+                    for( int i = 0; i < topK && i < rerankedDocuments.size(); i++){
+                        topKDocuments.add(rerankedDocuments.get(i));
+                    }
+                }
+            }
+            
+        }
+        if(topKDocuments.size() > 0){
+            return topKDocuments;
+        }
+        else if(relevanceScoreDocuments.size() > 0) {
+            return relevanceScoreDocuments;
+        }
+        else{
+            return rerankedDocuments;
+        }
     }
 }

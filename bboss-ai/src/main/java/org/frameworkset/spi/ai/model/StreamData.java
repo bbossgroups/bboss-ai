@@ -24,6 +24,8 @@ import java.util.Map;
  * @Date 2025/10/29
  */
 public class StreamData {
+    private TokenMetrics streamTokenMetrics;
+    private TokenMetrics totalTokenMetrics;
 
     private int type = ServerEvent.CONTENT;
 //    private String data;
@@ -66,6 +68,25 @@ public class StreamData {
  
         this.url = url;
     }
+
+    public TokenMetrics getStreamTokenMetrics() {
+        return streamTokenMetrics;
+    }
+
+    public StreamData setStreamTokenMetrics(TokenMetrics streamTokenMetrics) {
+        this.streamTokenMetrics = streamTokenMetrics;
+        return this;
+    }
+
+    public TokenMetrics getTotalTokenMetrics() {
+        return totalTokenMetrics;
+    }
+
+    public StreamData setTotalTokenMetrics(TokenMetrics totalTokenMetrics) {
+        this.totalTokenMetrics = totalTokenMetrics;
+        return this;
+    }
+
     public StreamData(int type, String data, String finishReason){
         this.type = type;
         this.content = data;

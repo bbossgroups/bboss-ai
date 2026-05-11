@@ -37,11 +37,13 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     public static final int ERROR = 1;
 
     /**
-     * 数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，默认值为0
+     * 数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0
      */
     public static final int CONTENT = 0;
     public static final int REASONING_CONTENT = 1;
     public static final int TOOL_CALLS = 2;
+
+    public static final int TOKEN_METRICS = 5;
     public static final int MCP_TOOL_CALLS = 3;
     /**
      * 字段包含数据内容，当type为0时，data字段包含数据内容，当type为1时，data字段包含错误信息

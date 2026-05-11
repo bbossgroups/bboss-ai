@@ -26,6 +26,10 @@ import org.frameworkset.spi.ai.model.StreamData;
  */
 public interface StreamDataBuilder {
     StreamData build(AgentAdapter agentAdapter , String line);
+    default StreamData buildWrapped(AgentAdapter agentAdapter , String line){
+        return build(agentAdapter,line);
+    }
+
     boolean isDone(AgentAdapter agentAdapter,String data);
     String getDoneData(AgentAdapter agentAdapter);
     void handleServerEvent(AgentAdapter agentAdapter,ServerEvent serverEvent);

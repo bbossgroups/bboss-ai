@@ -47,8 +47,10 @@ public class KnowledgeEmbeddingService {
     private float[] text2embedding(String text){
         EmbeddingMessage embeddingMessage = new EmbeddingMessage();
 		embeddingMessage.setInput(text);//设置将要向量化的数据
-		embeddingMessage.setModel("bge-m3");
-		embeddingMessage.setMaas("embedding_model");
+//		embeddingMessage.setModel("bge-m3");
+//		embeddingMessage.setMaas("embedding_model");
+        embeddingMessage.setModel("10086/bge-m3");
+        embeddingMessage.setMaas("aigw");
 //        params.put("model", "bge-large-zh-v1.5");//指定Xinference向量模型id
         //                   {"input": ["\\u5411\\u91cf\\u8f6c\\u6362"], "model": "custom-bge-large-zh-v1.5", "encoding_format": "base64"}
 //                   String params = "{\"input\": [\"\\u5411\\u91cf\\u8f6c\\u6362\"], \"model\": \"custom-bge-large-zh-v1.5\", \"encoding_format\": \"base64\"}";
@@ -76,9 +78,9 @@ public class KnowledgeEmbeddingService {
     }
       
 
-    public void searchVectorAndRerank(){
+    public void searchVectorAndRerank(String query){
         ClientInterface clientUtil = ElasticSearchHelper.getConfigRestClientUtil("esmapper/knowledge.xml");
-        String query = "Spring AOP";
+//        String query = "Spring AOP";
         
         // ============ 方案1: 使用 ES 原生混合检索 (推荐) ============
 		 /*
@@ -103,9 +105,9 @@ public class KnowledgeEmbeddingService {
         // 1. 向量检索
         Map vectorParams = new LinkedHashMap();
         vectorParams.put("embedding", text2embedding(query));
-        vectorParams.put("k", 100);
-        vectorParams.put("size", 50);
-        vectorParams.put("similarity", 0.5);
+        vectorParams.put("k", 60);
+        vectorParams.put("size", 30);
+        vectorParams.put("similarity", 0.9);
         ESDatas<MetaMap> vectorDatas = clientUtil.searchList("/knowledge_chunks/_search", "searchWithScore", vectorParams, MetaMap.class);
 		List<MetaMap> vectorResults = vectorDatas.getDatas();
       
@@ -113,7 +115,7 @@ public class KnowledgeEmbeddingService {
         // 2. BM25 检索
         Map bm25Params = new LinkedHashMap();
         bm25Params.put("query", query);
-        bm25Params.put("size", 50);
+        bm25Params.put("size", 30);
         bm25Params.put("is_active", true);
         ESDatas<MetaMap> bm25Datas = clientUtil.searchList("/knowledge_chunks/_search", "searchBM25", bm25Params, MetaMap.class);
 		List<MetaMap> bm25Results = bm25Datas.getDatas();
@@ -167,7 +169,9 @@ public class KnowledgeEmbeddingService {
 			rerankMessage.setModel("10086/bge-reranker-v2-m3");  // 使用项目规范的 rerank 模型
             rerankMessage.setRerankDocuments(rerankDatas);
             rerankMessage.setQuery(query);
-			rerankMessage.setReturnDocuments(false);  // 如需返回原始文本可开启
+            rerankMessage.setTopK(5);
+            rerankMessage.setRelevanceScore(0.9d);
+//			rerankMessage.setReturnDocuments(false);  // 如需返回原始文本可开启
 			AIAgent aiAgent = new AIAgent();
 			List<RerankedDocument> rerankedDocuments = aiAgent.rerank(rerankMessage);
             

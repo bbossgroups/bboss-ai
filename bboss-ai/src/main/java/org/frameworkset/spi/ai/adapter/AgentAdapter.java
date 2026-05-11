@@ -471,6 +471,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
         String agentId = aiAgent.getAgentId();
         String message = getPrompt(  chatAgentMessage,   aiAgent);
+        if(SimpleStringUtil.isEmpty(message)){
+            throw new AIRuntimeException("Prompt message is empty.");
+        }
         Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
         Map<String,Object> systemMessage = null;
         Map<String, Object> requestMap = new HashMap<>();
