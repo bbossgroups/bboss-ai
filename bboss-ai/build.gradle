@@ -50,7 +50,6 @@ dependencies {
 //    }
     api group: 'com.bbossgroups', name: 'bboss-feishu', version: BBOSS_HTTP5_VERSION
     api group: 'com.bbossgroups', name: 'bboss-persistent', version: BBOSS_VERSION
-    api group: 'io.projectreactor', name: 'reactor-core', version: reactor
     testCompileOnly  (
 //				[group: 'mysql', name: 'mysql-connector-java', version: "${mysqlconnectorversion}", transitive: true]
             [group: 'com.mysql', name: 'mysql-connector-j', version: mysqlconnectorversion, transitive: false],
