@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.List;
@@ -35,8 +36,8 @@ public class ToolAgentMessage extends ChatAgentMessage{
     }
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter,AIAgent aiAgent,boolean fromStreamAPI) {
-        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter,aiAgent,  fromStreamAPI);
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter,AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback) {
+        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter,aiAgent,  fromStreamAPI,chatCallback);
         chatObject.setToolCall(true);
         return chatObject;
     }
@@ -59,8 +60,8 @@ public class ToolAgentMessage extends ChatAgentMessage{
 //    }
 
     @Override
-    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent){
-        Map parameters = agentAdapter.buildOpenAIRequestMapWithTool(this,aiAgent);
+    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent,ChatContext chatContext){
+        Map parameters = agentAdapter.buildOpenAIRequestMapWithTool(this,aiAgent,  chatContext);
         return parameters;
     }
     

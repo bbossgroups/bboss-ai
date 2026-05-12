@@ -39,6 +39,10 @@ public class StoreContext {
     private String userId;
     private String agentId;
     private String dataSource;
+
+
+
+    private String traceId;
     /**
      * 会话基本信息存储表名称
      */
@@ -130,5 +134,12 @@ public class StoreContext {
     public StoreContext setRequestId(String requestId) {
         this.requestId = requestId;
         return this;
+    }
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
     }
 }

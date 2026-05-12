@@ -109,12 +109,24 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 
 
 
+    private TokenMetrics tokenMetrics;
+
+
+
     /**
      * 是否是第一个数据报文
      */
     private boolean first;
     @JsonIgnore
     private AIAgent agent;
+    
+    private String fullStreamData;
+    public String getFullStreamData() {
+        return fullStreamData;
+    }
+    public void setFullStreamData(String fullStreamData) {
+        this.fullStreamData = fullStreamData;
+    }
 
     /**
      * 获取数据报文类型，0表示数据报文，1表示错误报文
@@ -300,5 +312,12 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 
     public void setToolCallResponse(boolean toolCallResponse) {
         this.toolCallResponse = toolCallResponse;
+    }
+    public TokenMetrics getTokenMetrics() {
+        return tokenMetrics;
+    }
+
+    public void setTokenMetrics(TokenMetrics tokenMetrics) {
+        this.tokenMetrics = tokenMetrics;
     }
 }

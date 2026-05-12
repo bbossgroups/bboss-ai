@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.adapter;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -255,7 +256,7 @@ public class QwenAgentAdapter extends AgentAdapter{
     }
     
     @Override
-    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent) {
+    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent, ChatContext chatCallback) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioAgentMessage.getModel());
 
@@ -263,7 +264,11 @@ public class QwenAgentAdapter extends AgentAdapter{
 
 
         Map<String,Object> inputVoice = new LinkedHashMap();
-        inputVoice.put("text",getPrompt(  audioAgentMessage,   aiAgent));
+        String prompt = getPrompt(  audioAgentMessage,   aiAgent);
+        if(chatCallback != null){
+            prompt = chatCallback.evalPrompt(prompt);
+        }
+        inputVoice.put("text",prompt);
         if(audioAgentMessage.getParameters() != null){
             inputVoice.putAll(audioAgentMessage.getParameters());
         }

@@ -180,13 +180,14 @@ public class RoutingStreamTest {
 
                             if( completeAnswer.length() > 0) {
                                 // 当收到完成信号且有累积内容时，将完整回答添加到会话记忆
-                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
+//                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
                                 completeAnswer.setLength(0);
 
 
                             }
                             else if(event.getData() != null){
-                                chatAgentMessage.addAgentResultSessionMessage(event.getData(),event.getAgent());
+                                logger.info("{}",event.getData());
+//                                chatAgentMessage.addAgentResultSessionMessage(event.getData(),event.getAgent());
                             }  
 
                         }

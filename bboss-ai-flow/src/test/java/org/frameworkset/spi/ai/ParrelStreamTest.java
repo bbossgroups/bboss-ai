@@ -20,6 +20,7 @@ import org.frameworkset.spi.ai.flow.AINodeAgent;
 import org.frameworkset.spi.ai.flow.AIParrelAgent;
 import org.frameworkset.spi.ai.flow.AIPlanAgent;
 import org.frameworkset.spi.ai.flow.UserNodeAgent;
+import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
@@ -84,10 +85,13 @@ public class ParrelStreamTest {
                 .setAgentName("工作流智能体").setAgentId("workflowAgent")
                  ;
 
-        aiPlanAgent.addAgent(new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces"));
+        aiPlanAgent.addAgent(new AINodeAgent("用200字介绍中国有多少个省份和直辖市")
+                .setOutputVaribleName("provinces", AIFlowConst.AIFLOW_VAR_SCOPE_FLOW)
+                .setAgentName("介绍中国省份和直辖市")
+                .setAgentId("introduceProvinces") );
         //构建并行智能体
         AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("共享任务节点");
-        aiParrelAgent.addAgent(new AINodeAgent("用50字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
+        aiParrelAgent.addAgent(new AINodeAgent("同时结合中国省份特点：\r\n#[provinces],\r\n用300字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));   
         aiPlanAgent.addParrelAgent(aiParrelAgent);
@@ -142,7 +146,7 @@ public class ParrelStreamTest {
 
                             if( completeAnswer.length() > 0) {
                                 // 当收到完成信号且有累积内容时，将完整回答添加到会话记忆
-                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
+//                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
                                 completeAnswer.setLength(0);
 
 

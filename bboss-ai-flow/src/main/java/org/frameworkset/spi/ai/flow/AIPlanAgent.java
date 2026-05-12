@@ -25,6 +25,7 @@ import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.spi.reactor.ReactorCallException;
 import org.frameworkset.tran.jobflow.JobFlow;
+import org.frameworkset.tran.jobflow.JobParams;
 import org.frameworkset.tran.jobflow.NodeTrigger;
 import org.frameworkset.tran.jobflow.builder.ConditionJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
@@ -38,6 +39,9 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 智能体流程编排
@@ -440,16 +444,22 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
         
         if(jobFlowBuilder != null){
             initSessionStore();
-            this.evalPrompt(this.agentMessage);
-            this.evalSystemPrompt(this.agentMessage);
+            String inputMessage = this.evalPrompt(this.agentMessage);
+            String inputSystemMessage = this.evalSystemPrompt(this.agentMessage);
             JobFlowScheduleConfig jobFlowScheduleConfig = new JobFlowScheduleConfig();
             jobFlowScheduleConfig.setExecuteOneTime(true);
             jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
             jobFlowBuilder.setJobFlowId(this.getAgentId());
             jobFlowBuilder.setJobFlowName(this.getAgentName());
             JobFlow jobflow = jobFlowBuilder.build();
-       
-            jobflow.execute();
+            JobParams jobParams = null;
+            if(inputMessage != null || inputSystemMessage != null){
+                jobParams = new JobParams();
+                jobParams.addParam("input.query", inputMessage);
+                jobParams.addParam("input.system", inputSystemMessage);
+                
+            }
+            jobflow.execute(jobParams);
             return this.getLastSessionMessage();
             
         }

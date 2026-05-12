@@ -35,8 +35,12 @@ public class AIFlowUtil {
                 logger.debug("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
             }
             String outputVaribleName = agent.getOutputVaribleName();
-            String data = serverEvent.getData();
             if(SimpleStringUtil.isNotEmpty(outputVaribleName)) {
+
+                String data = serverEvent.getData();
+                if(data == null){
+                    data = serverEvent.getFullStreamData();
+                }
                 if(agent.isFlowOutputVaribleScope()){
                     jobFlowExecuteContext.addContextData(outputVaribleName, data);
                 }

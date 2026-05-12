@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.*;
@@ -555,18 +556,18 @@ public class AIAgent<T extends AIAgent> {
         reactMessage(  imageVLAgentMessage);
         return AIAgentUtil.streamChatCompletionEvent(imageVLAgentMessage.getMaas(), imageVLAgentMessage,this);
     }
-    /**
-     * 实现流式智能问答功能,在指定的数据源上执行
-     */
-    public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage){
-    
-        return streamChat(  maasName,     chatAgentMessage,true);
-    }
+//    /**
+//     * 实现流式智能问答功能,在指定的数据源上执行
+//     */
+//    public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage){
+//    
+//        return streamChat(  maasName,     chatAgentMessage,true);
+//    }
 
     /**
      * 实现流式智能问答功能,在指定的数据源上执行
      */
-    public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage,boolean toolStream){
+    public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage ){
         reactMessage(  chatAgentMessage);
 //        chatAgentMessage.init();
 
@@ -582,6 +583,23 @@ public class AIAgent<T extends AIAgent> {
     }
 
     /**
+     * 实现流式智能问答功能,在指定的数据源上执行
+     */
+    public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage, ChatContext chatStreamCallback ){
+        reactMessage(  chatAgentMessage);
+//        chatAgentMessage.init();
+
+        return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this,chatStreamCallback);
+    }
+
+    /**
+     * 实现流式智能问答功能,在指定的数据源上执行
+     */
+    public Flux<ServerEvent> streamChat(ChatAgentMessage chatAgentMessage, ChatContext chatStreamCallback){
+        return streamChat(chatAgentMessage.getMaas(),   chatAgentMessage, chatStreamCallback );
+    }
+    
+    /**
      * 实现同步智能问答,在指定的数据源上执行
      * @deprecated 请使用chat方法
      */
@@ -591,31 +609,38 @@ public class AIAgent<T extends AIAgent> {
         return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this);
     }
 
+
+    public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage ){
+        return chat(  maasName,   chatAgentMessage,(ChatContext)null);
+    }
     /**
      * 实现同步智能问答,在指定的数据源上执行
      */
-    public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage){
+    public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage,ChatContext chatCallback){
         reactMessage(  chatAgentMessage);
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this);
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this,chatCallback);
         if(serverEvent != null && serverEvent.getData() != null){
 //            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
             addAgentResultSessionMessage(serverEvent.getData());
             
-            
-            
+            if(chatCallback.getChatStreamCallback() != null){
+                chatCallback.getChatStreamCallback().streamDone(serverEvent);
+            }
         }
         return serverEvent;
 //        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
     }
     
-    public void addAgentResultSessionMessage(String message){
+    public LastSessionMessage addAgentResultSessionMessage(String message){
+        LastSessionMessage lastSubAgentSessionMessage = null;
         if(this.agentSessionStore != null ) {
-            LastSessionMessage lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(message);
+            lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(message);
 //            if( !isDisableGloableStore()) {
             if( !isDisablePush2ParentLastSubMessage()) {
                 this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
             }
         }
+        return  lastSubAgentSessionMessage;
     }
 
     /**
@@ -635,6 +660,16 @@ public class AIAgent<T extends AIAgent> {
         return chat(chatAgentMessage.getMaas(),    chatAgentMessage);
        
     }
+
+    /**
+     * 实现同步智能问答,在指定的数据源上执行
+     */
+    public ServerEvent chat(ChatAgentMessage chatAgentMessage, ChatContext chatCallback){
+        return chat(chatAgentMessage.getMaas(),    chatAgentMessage, chatCallback);
+
+    }
+
+    
 
     /**
      * 实现同步图片识别处理
@@ -957,9 +992,10 @@ public class AIAgent<T extends AIAgent> {
         return outputVaribleName;
     }
     
-    public void setOutputVaribleName(String outputVaribleName, int outputVaribleScope) {
+    public T setOutputVaribleName(String outputVaribleName, int outputVaribleScope) {
         this.outputVaribleName = outputVaribleName;
         this.outputVaribleScope = outputVaribleScope;
+        return (T)this;
     }
 
     public int getOutputVaribleScope() {

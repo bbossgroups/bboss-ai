@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.adapter;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -77,10 +78,15 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
      *           "volume": 1.0
      *     }' \
      */
-    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent) {
+    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent, ChatContext chatContext) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioAgentMessage.getModel());
-        requestMap.put("input", getPrompt(  audioAgentMessage,   aiAgent));
+        String prompt = getPrompt(  audioAgentMessage,   aiAgent);
+        if(chatContext != null){
+            prompt = chatContext.evalPrompt(prompt);
+
+        }
+        requestMap.put("input", prompt);
     
         if(audioAgentMessage.getParameters() != null && audioAgentMessage.getParameters().size() > 0){
             requestMap.putAll(audioAgentMessage.getParameters());
@@ -159,21 +165,26 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
         return AIResponseUtil.parseZhipuAudioStreamContentFromData(  streamDataBuilder,data);
     }
     @Override
-    public Map buildAudioSTTRequestMap(AudioSTTAgentMessage audioSTTAgentMessage, AIAgent aiAgent) {
+    public Map buildAudioSTTRequestMap(AudioSTTAgentMessage audioSTTAgentMessage, AIAgent aiAgent,ChatContext chatContext) {
 
         String agentId = aiAgent.getAgentId();
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioSTTAgentMessage.getModel());
-        requestMap.put("prompt", getPrompt(  audioSTTAgentMessage,   aiAgent));
+        String prompt = getPrompt(  audioSTTAgentMessage,   aiAgent);
+        if(chatContext != null)
+        {
+            prompt = chatContext.evalPrompt(prompt);
+        }
+        requestMap.put("prompt", prompt);
         
         Object audio = audioSTTAgentMessage.getAudio();
         // 添加当前用户消息
         Map<String, Object> userMessage = null;
         if(audio != null) {
-            userMessage = MessageBuilder.buildAudioSystemMessage(getPrompt(  audioSTTAgentMessage,   aiAgent));
+            userMessage = MessageBuilder.buildAudioSystemMessage(prompt);
         }
         else{
-            userMessage = MessageBuilder.buildAudioUserMessage(getPrompt(  audioSTTAgentMessage,   aiAgent));
+            userMessage = MessageBuilder.buildAudioUserMessage(prompt);
         }
         
         audioSTTAgentMessage.addSessionMessage(userMessage,aiAgent);

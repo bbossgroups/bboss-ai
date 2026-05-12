@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.store.AgentIdAssign;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.LinkedHashMap;
@@ -124,7 +124,7 @@ public class AgentMessage<T extends AgentMessage> {
      * @param agentAdapter
      * @return
      */
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI){
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, boolean fromStreamAPI, ChatContext chatCallback){
         return null;
     }
     public T setPrompt(String prompt) {
@@ -237,5 +237,27 @@ public class AgentMessage<T extends AgentMessage> {
     public T setMaas(String maas) {
         this.maas = maas;
         return (T)this;
+    }
+
+    public LastSessionMessage addAgentResultSessionMessage(String message,AIAgent aiAgent){
+        return aiAgent.addAgentResultSessionMessage(message);
+        /**
+         AgentSessionStore mainSessionStore = aiAgent.getMainSessionStore();
+         //        initSessionStore();
+         if(mainSessionStore == null){
+         return null;
+         }
+         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
+         AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+         if(agentSessionStore == null){
+         return null;
+         }
+         LastSessionMessage lastSessionMessage = agentSessionStore.addAgentResultSessionMessage(message);
+         if(!aiAgent.isDisablePush2ParentLastSubMessage()) {
+         //        if(!aiAgent.isDisableGloableStore()) {
+         agentSessionStore.setParentAgentLastSessionMessage(lastSessionMessage);
+         }
+         return lastSessionMessage;
+         */
     }
 }

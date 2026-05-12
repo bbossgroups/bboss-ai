@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
@@ -31,8 +32,8 @@ import java.util.Map;
 public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
  
 //    private String chatCompletionsUrl;
-    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent){
-        Map parameters = agentAdapter.buildOpenAIRequestMap(this,   aiAgent);
+    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent,ChatContext chatContext){
+        Map parameters = agentAdapter.buildOpenAIRequestMap(this,   aiAgent,chatContext);
         return parameters;
     }
 
@@ -45,7 +46,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
             thinking = _thinking;
         chatObject.setThinking(thinking);
     }
-    public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI){
+    public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback){
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -55,7 +56,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
         
-        parameters = buildOpenAIRequestMap(agentAdapter,   aiAgent);
+        parameters = buildOpenAIRequestMap(agentAdapter,   aiAgent,chatCallback);
         buildThinking(  chatObject,  agentAdapter,   parameters);
         if(!fromStreamAPI){
             parameters.put("stream",false);

@@ -21,9 +21,9 @@ import org.apache.hc.core5.http.ParseException;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
-import org.frameworkset.spi.reactor.DataCollector;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
@@ -56,14 +56,16 @@ public class AIAgentUtil {
     public static Flux<String> streamChatCompletion(Object message, AIAgent aiAgent) {
         return streamChatCompletion((String)null , message,   aiAgent);
     }
-
+    public static Flux<String> streamChatCompletion(String poolName,Object chatMessage, AIAgent aiAgent ){
+        return streamChatCompletion(  poolName,  chatMessage,   aiAgent,(ChatContext)null);
+    }
     /**
      * 创建流式调用的Flux,在指定的数据源上执行
      */
-    public static Flux<String> streamChatCompletion(String poolName,Object chatMessage, AIAgent aiAgent) {
+    public static Flux<String> streamChatCompletion(String poolName,Object chatMessage, AIAgent aiAgent,ChatContext chatContext) {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
-        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true);
+        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true,chatContext);
         BaseStreamDataHandler<String> streamDataHandler = new BaseStreamDataHandler<String>() {
  
 
@@ -140,7 +142,6 @@ public class AIAgentUtil {
             return AIAgentUtil.streamChatCompletionEvent(poolName,   audioAgentMessage,   storeFilePathFunction,   aiAgent);
             
     }
-
     /**
      * 调用音频合成模型，生成音频
      * @param poolName
@@ -148,10 +149,19 @@ public class AIAgentUtil {
      * @return
      */
     public static AudioEvent multimodalAudioGeneration(String poolName,  AudioAgentMessage message, StoreFilePathFunction storeFilePathFunction,AIAgent aiAgent) {
+        return multimodalAudioGeneration(  poolName,    message,   storeFilePathFunction,  aiAgent,(ChatContext)null);
+    }
+        /**
+         * 调用音频合成模型，生成音频
+         * @param poolName
+         * @param message
+         * @return
+         */
+    public static AudioEvent multimodalAudioGeneration(String poolName,  AudioAgentMessage message, StoreFilePathFunction storeFilePathFunction,AIAgent aiAgent,ChatContext chatContext) {
         
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config, message);
-        StoreChatObject storeChatObject = agentAdapter.buildGenAudioRequestParameter(config, message,aiAgent);
+        StoreChatObject storeChatObject = agentAdapter.buildGenAudioRequestParameter(config, message,aiAgent,  chatContext);
         storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
         AudioEvent audioEvent = null;
         try {
@@ -216,10 +226,16 @@ public class AIAgentUtil {
     }
 
     public static <T> void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ToolAgentMessage toolAgentMessage,
-                                                     FluxSink<T> sink,DisposeEventHandler disposeEventHandler, AIAgent aiAgent) {
+                                                     FluxSink<T> sink,DisposeEventHandler disposeEventHandler, AIAgent aiAgent ){
+        streamChatCompletionEvent(  clientConfiguration,   toolAgentMessage,
+                 sink,  disposeEventHandler,   aiAgent,(ChatContext)null);
+    }
+
+    public static <T> void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ToolAgentMessage toolAgentMessage,
+                                                     FluxSink<T> sink,DisposeEventHandler disposeEventHandler, AIAgent aiAgent,ChatContext chatContext) {
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,toolAgentMessage);
 
-        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,toolAgentMessage,   aiAgent,true);
+        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,toolAgentMessage,   aiAgent,true,chatContext);
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
  
             @Override
@@ -327,18 +343,25 @@ public class AIAgentUtil {
         }
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent){
-        return  streamChatCompletionEvent(poolName,chatMessage,(StoreFilePathFunction) null, aiAgent);
+        return  streamChatCompletionEvent(  poolName,  chatMessage,    aiAgent, (ChatContext)null);
+    }
+    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent, ChatContext chatStreamCallback){
+        return  streamChatCompletionEvent(poolName,chatMessage,(StoreFilePathFunction) null, aiAgent,chatStreamCallback);
+    }
+    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent) {
+        return  streamChatCompletionEvent(poolName,chatMessage,storeFilePathFunction, aiAgent,(ChatContext)null);
     }
     /**
      * 创建流式调用的Flux,在指定的数据源上执行
      */
-    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent) {
+    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent, ChatContext chatStreamCallback) {
  
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
          
-        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true);
+        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true,chatStreamCallback);
         chatObject.setStoreFilePathFunction(storeFilePathFunction);
+        chatObject.setChatContext(chatStreamCallback);
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
            
             @Override
@@ -764,13 +787,15 @@ public class AIAgentUtil {
 
 
     }
-
+    public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent ) {
+        return chatCompletionEvent(  poolName,   chatMessage ,   aiAgent,(ChatContext)null);
+    }
     
 
-    public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent) {
+    public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent,ChatContext chatContext) {
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,chatMessage);
-        ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,aiAgent,false);
+        ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,aiAgent,false,chatContext);
         Object message = chatObject.getMessage();
         String data = null;
         ServerEvent serverEvent = null;
@@ -833,14 +858,20 @@ public class AIAgentUtil {
     public static <T> Flux<T> streamChatCompletion(Object message,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent){
         return streamChatCompletion((String)null ,   message, streamDataHandler,   aiAgent);
     }
+    /**
+     * 创建流式调用的Flux,在指定的数据源上执行
+     */
+    public static <T> Flux<T> streamChatCompletion(String poolName,Object chatMessage,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent){
+        return streamChatCompletion(poolName,chatMessage,streamDataHandler, aiAgent,(ChatContext)null);
+    }
 
     /**
      * 创建流式调用的Flux,在指定的数据源上执行
      */
-    public static <T> Flux<T> streamChatCompletion(String poolName,Object chatMessage,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent) {
+    public static <T> Flux<T> streamChatCompletion(String poolName,Object chatMessage,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent,ChatContext chatContext) {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
-        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true);
+        final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true,chatContext);
         streamDataHandler.setStream(chatObject.isStream());
         streamDataHandler.setAgentAdapter(agentAdapter);
         streamDataHandler.setChatObject(chatObject);
@@ -995,18 +1026,22 @@ public class AIAgentUtil {
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,rerankMessage);
         Map<String,Object> params = agentAdapter.buildRerankMessage(config,rerankMessage,agent);
         List<RerankedDocument> rerankedDocuments = agentAdapter.rerank(rerankMessage,agent,params);
-        List<RerankedDocument> relevanceScoreDocuments = new ArrayList<>();
-        List<RerankedDocument> topKDocuments = new ArrayList<>();
+       
         if(rerankedDocuments != null && rerankedDocuments.size() > 0) {
-           
+            List<RerankedDocument> relevanceScoreDocuments = new ArrayList<>();
+            List<RerankedDocument> topKDocuments = new ArrayList<>();
             Double relevanceScore = rerankMessage.getRelevanceScore();
+            Integer topK = rerankMessage.getTopK();
+            if(relevanceScore == null && topK == null){
+                return rerankedDocuments;
+            }
             if (relevanceScore != null && relevanceScore > 0d) {
                 rerankedDocuments.forEach(rerankedDocument -> {
                     if(rerankedDocument.getRelevanceScore() >= relevanceScore)
                         relevanceScoreDocuments.add(rerankedDocument);
                 });
             }
-            Integer topK = rerankMessage.getTopK();
+            
             if(topK != null && topK > 0){
                
                 if(relevanceScoreDocuments.size() > 0){
@@ -1020,16 +1055,16 @@ public class AIAgentUtil {
                     }
                 }
             }
+            if(topKDocuments.size() > 0){
+                return topKDocuments;
+            }
+            else if(relevanceScoreDocuments.size() > 0) {
+                return relevanceScoreDocuments;
+            }
             
         }
-        if(topKDocuments.size() > 0){
-            return topKDocuments;
-        }
-        else if(relevanceScoreDocuments.size() > 0) {
-            return relevanceScoreDocuments;
-        }
-        else{
-            return rerankedDocuments;
-        }
+        return null;
+        
+        
     }
 }

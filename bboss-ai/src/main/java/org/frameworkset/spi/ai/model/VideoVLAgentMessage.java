@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
@@ -37,7 +38,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
     
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -46,7 +47,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
 
-        parameters = agentAdapter.buildVideoVLRequestMap(this,aiAgent);
+        parameters = agentAdapter.buildVideoVLRequestMap(this,aiAgent,chatCallback);
 //        setVideoVLCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(this));
         if(!fromStreamAPI){
             parameters.put("stream",false);

@@ -190,24 +190,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         return (T)this;
     }
     
-    public LastSessionMessage addAgentResultSessionMessage(String message,AIAgent aiAgent){
-        AgentSessionStore mainSessionStore = aiAgent.getMainSessionStore();
-//        initSessionStore();
-        if(mainSessionStore == null){
-            return null;
-        }
-        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
-        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
-        if(agentSessionStore == null){
-            return null;
-        }
-        LastSessionMessage lastSessionMessage = agentSessionStore.addAgentResultSessionMessage(message);
-        if(!aiAgent.isDisablePush2ParentLastSubMessage()) {
-//        if(!aiAgent.isDisableGloableStore()) {
-            agentSessionStore.setParentAgentLastSessionMessage(lastSessionMessage);
-        }
-        return lastSessionMessage;
-    }
+    
     public Map<String,Object> addAssistantSessionMessage(String message,AIAgent aiAgent){
         initSessionStore();
         if(mainSessionStore == null){

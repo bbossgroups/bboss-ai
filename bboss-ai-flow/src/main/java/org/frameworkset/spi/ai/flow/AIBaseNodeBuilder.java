@@ -17,11 +17,14 @@ package org.frameworkset.spi.ai.flow;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.prompt.PromptEval;
 import org.frameworkset.tran.jobflow.builder.CallableJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -65,12 +68,33 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
+        ChatContext chatContext = new ChatContext();
+        chatContext.setChatStreamCallback(new ChatStreamCallback() {
+            /**
+             * 提示词预处理
+             *
+             * @param prompt
+             * @return
+             */
+            @Override
+            public String evalPrompt(String prompt) {
+                PromptEval promptEval = new PromptEval();
+                return promptEval.eval(prompt, jobFlowNodeExecuteContext);
+            }
+
+            @Override
+            public void streamDone(ServerEvent serverEvent) {
+                AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext);
+            }
+        });
         if(!planAgent.isStream() || agent.isDisableStream()) {
-            ServerEvent serverEvent = agent.chat((ChatAgentMessage) agentMessage);
-            AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext); 
+           
+            ServerEvent serverEvent = agent.chat((ChatAgentMessage) agentMessage,chatContext);
+//            AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext); 
         }
-        else{            
-            agent.streamChat((ChatAgentMessage) agentMessage);
+        else{
+            
+            agent.streamChat((ChatAgentMessage) agentMessage, chatContext);
         }
         return null;
     }

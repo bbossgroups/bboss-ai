@@ -25,9 +25,18 @@ public class TokenMetrics {
     private String model;
     private long totalTokens;
     private long promptTokens;
-    private long cachedTokens;
+    private long promptCachedTokens;
+
+    private long promptTextTokens;
     private long completionTokens;
-    private long reasoningTokens;
+    private long completionReasoningTokens;
+
+
+
+    private long completionTextTokens;
+    
+    private long startTime;
+    private long endTime;
     /**
      * 非stream模式下，有值
      */
@@ -62,15 +71,32 @@ public class TokenMetrics {
         this.promptTokens = promptTokens;
     }
 
-    public long getCachedTokens() {
-        return cachedTokens;
+    public long getPromptCachedTokens() {
+        return promptCachedTokens;
     }
 
-    public void setCachedTokens(long cachedTokens) {
-        this.cachedTokens = cachedTokens;
+    public void setPromptCachedTokens(long promptCachedTokens) {
+        this.promptCachedTokens = promptCachedTokens;
     }
-    public void increaseCachedTokens(long cachedTokens) {
-        this.cachedTokens += cachedTokens;
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
+    }
+
+    public long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(long endTime) {
+        this.endTime = endTime;
+    }
+
+    public void increasePromptCachedTokens(long cachedTokens) {
+        this.promptCachedTokens += cachedTokens;
     }
     public long getCompletionTokens() {
         return completionTokens;
@@ -82,15 +108,23 @@ public class TokenMetrics {
     public void increaseCompletionTokens(long completionTokens) {
         this.completionTokens += completionTokens;
     }
-    public long getReasoningTokens() {
-        return reasoningTokens;
+    public long getCompletionReasoningTokens() {
+        return completionReasoningTokens;
     }
 
-    public void setReasoningTokens(long reasoningTokens) {
-        this.reasoningTokens = reasoningTokens;
+    public void setCompletionReasoningTokens(long completionReasoningTokens) {
+        this.completionReasoningTokens = completionReasoningTokens;
     }
-    public void increaseReasoningTokens(long reasoningTokens) {
-        this.reasoningTokens += reasoningTokens;
+    public void increaseCompletionReasoningTokens(long reasoningTokens) {
+        this.completionReasoningTokens += reasoningTokens;
+    }
+
+    public void increaseCompletionTextTokens(long textTokens) {
+        this.completionTextTokens += textTokens;
+    }
+
+    public void increasePromptTextTokens(long promptTextTokens) {
+        this.promptTextTokens += promptTextTokens;
     }
 
     public Map getUsage() {
@@ -99,5 +133,20 @@ public class TokenMetrics {
 
     public void setUsage(Map usage) {
         this.usage = usage;
+    }
+    public long getCompletionTextTokens() {
+        return completionTextTokens;
+    }
+
+    public void setCompletionTextTokens(long completionTextTokens) {
+        this.completionTextTokens = completionTextTokens;
+    }
+
+    public long getPromptTextTokens() {
+        return promptTextTokens;
+    }
+
+    public void setPromptTextTokens(long promptTextTokens) {
+        this.promptTextTokens = promptTextTokens;
     }
 }

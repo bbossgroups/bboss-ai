@@ -16,9 +16,8 @@ package org.frameworkset.spi.ai.adapter;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.ai.util.AIResponseUtil;
-import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -73,10 +72,14 @@ public class MiniMaxAgentAdapter extends DoubaoAgentAdapter{
      *           "volume": 1.0
      *     }' \
      */
-    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage, AIAgent aiAgent) {
+    protected Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage, AIAgent aiAgent, ChatContext chatCallback) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioAgentMessage.getModel());
-        requestMap.put("input", getPrompt(  audioAgentMessage,   aiAgent));
+        String prompt = getPrompt(  audioAgentMessage,   aiAgent);
+        if(chatCallback != null){
+            prompt = chatCallback.evalPrompt(prompt);
+        }
+        requestMap.put("input", prompt);
     
         if(audioAgentMessage.getParameters() != null && audioAgentMessage.getParameters().size() > 0){
             requestMap.putAll(audioAgentMessage.getParameters());

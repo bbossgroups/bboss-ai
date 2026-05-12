@@ -19,6 +19,7 @@ import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.StreamData;
+import org.frameworkset.spi.ai.model.TokenMetrics;
 
 /**
  * @author biaoping.yin
@@ -35,5 +36,9 @@ public interface StreamDataBuilder {
     void handleServerEvent(AgentAdapter agentAdapter,ServerEvent serverEvent);
     ChatObject getChatObject();
 
-   
+
+
+    String addAgentResultSessionMessage();
+    TokenMetrics getTokenMetrics();
+    void setTokenMetrics(TokenMetrics tokenMetrics);
 }

@@ -159,7 +159,7 @@ public class SequenceStreamTest {
 
                             if( completeAnswer.length() > 0) {
                                 // 当收到完成信号且有累积内容时，将完整回答添加到会话记忆
-                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
+//                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
                                 completeAnswer.setLength(0);
 
 

@@ -43,6 +43,10 @@ public class LastSessionMessage {
      */
     private boolean freshMessage;
 
+
+
+    private TokenMetrics tokenMetrics;
+
     public String getRequestId() {
         return requestId;
     }
@@ -105,5 +109,12 @@ public class LastSessionMessage {
 
     public void setMsgParentAgentId(String msgParentAgentId) {
         this.msgParentAgentId = msgParentAgentId;
+    }
+    public TokenMetrics getTokenMetrics() {
+        return tokenMetrics;
+    }
+
+    public void setTokenMetrics(TokenMetrics tokenMetrics) {
+        this.tokenMetrics = tokenMetrics;
     }
 }

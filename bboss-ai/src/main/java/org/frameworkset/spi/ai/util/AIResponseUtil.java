@@ -23,6 +23,7 @@ import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.material.DownFileHttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownImageBase64HttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownVideoImageFileHttpClientResponseHandler;
@@ -127,6 +128,7 @@ public class AIResponseUtil {
 
         String error = SimpleStringUtil.exceptionToString(throwable);
         ServerEvent serverEvent = new ServerEvent();
+        serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
         ChatObject chatObject = streamDataBuilder.getChatObject();        
         serverEvent.setAgent(chatObject.getAiAgent());
         if(firstEventTag.get()) {
@@ -146,6 +148,7 @@ public class AIResponseUtil {
         serverEvent = new ServerEvent();
         serverEvent.setAgent(chatObject.getAiAgent());
         serverEvent.setDone( true);
+        serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
         sink.next(serverEvent);
 //        sink.complete();
         return true;
@@ -487,6 +490,9 @@ public class AIResponseUtil {
                         logger.debug("-----------no choices:{}",data);
                 }
 
+            }
+            if(tokenMetrics != null){
+                streamDataBuilder.setTokenMetrics(tokenMetrics);
             }
         } catch (Exception e) {
             throw new ReactorCallException(data,e);
@@ -885,6 +891,7 @@ public class AIResponseUtil {
             String data = line.substring(5).trim();
 
             if (streamDataBuilder.isDone( agentAdapter,   data)) {
+                streamDataBuilder.addAgentResultSessionMessage();
                 return true;
             }
             if (!data.isEmpty()) {
@@ -934,6 +941,7 @@ public class AIResponseUtil {
                 serverEvent.setContent(content.getContent());
                 serverEvent.setReasoningContent(content.getReasoningContent());
                 serverEvent.setToolCallResponse(chatObject.isToolCall());
+                serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
 
             }
 
@@ -996,7 +1004,18 @@ public class AIResponseUtil {
                 serverEvent.setType(ServerEvent.DATA);
                 serverEvent.setToolCallResponse(chatObject.isToolCall());
                 serverEvent.setDone(true);
-          
+                TokenMetrics tokenMetrics = streamDataBuilder.getTokenMetrics();
+                serverEvent.setTokenMetrics(tokenMetrics);
+                serverEvent.setFullStreamData(streamDataBuilder.addAgentResultSessionMessage());
+                try {
+                    ChatStreamCallback chatStreamCallback = chatObject.getChatStreamCallback();
+                    if (chatStreamCallback != null) {
+                        chatStreamCallback.streamDone(serverEvent);
+                    }
+                }
+                catch (Exception e){
+                    logger.error("chatStreamCallback streamDone error",e);
+                }
                 sink.next(serverEvent);
                 return true;
             }
@@ -1080,6 +1099,7 @@ public class AIResponseUtil {
         }
         ServerEvent serverEvent = new ServerEvent();
 
+        serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
         ChatObject chatObject = streamDataBuilder.getChatObject();
         serverEvent.setAgent(chatObject.getAiAgent());
         if (firstEventTag.get()) {

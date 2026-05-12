@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.util.AudioDataBuilder;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
@@ -75,7 +76,7 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
      * @return
      */
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback) {
         ChatObject chatObject = new ChatObject();
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
@@ -85,7 +86,7 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
         StreamDataBuilder streamDataBuilder = null;
 
         
-        parameters = agentAdapter.buildAudioSTTRequestMap(this,aiAgent);
+        parameters = agentAdapter.buildAudioSTTRequestMap(this,aiAgent,chatCallback);
 //        this.audioSTTCompletionsUrl = agentAdapter.getAudioSTTCompletionsUrl(this);
         chatObject.setAudioSTTCompletionsUrl(agentAdapter.getAudioSTTCompletionsUrl(this));
         if(!fromStreamAPI){

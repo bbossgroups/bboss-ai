@@ -19,11 +19,12 @@ import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.ai.material.GenMaterialFileDownload;
 import org.frameworkset.spi.ai.mcp.model.MCPToolCallResponse;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.*;
-import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
@@ -130,7 +131,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     protected String getPrompt(AgentMessage agentMessage, AIAgent aiAgent){
         return aiAgent.evalPrompt(agentMessage);
     }
-    public Map buildVideoVLRequestMap(VideoVLAgentMessage videoVLAgentMessage, AIAgent aiAgent) {
+    public Map buildVideoVLRequestMap(VideoVLAgentMessage videoVLAgentMessage, AIAgent aiAgent,ChatContext chatContext) {
 
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoVLAgentMessage.getModel());
@@ -138,11 +139,16 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
         Map<String, Object> userMessage = null;
         Map<String, Object> systemMessage = null;
+        String prompt = getPrompt(  videoVLAgentMessage,   aiAgent);
+        if(chatContext != null){
+            prompt = chatContext.evalPrompt(prompt);
+            
+        }
         if(videoUrls != null && videoUrls.size() > 0) {
-            userMessage = buildInputVideosMessage(getPrompt(  videoVLAgentMessage,   aiAgent), videoUrls.toArray(new String[]{}));
+            userMessage = buildInputVideosMessage(prompt, videoUrls.toArray(new String[]{}));
         }
         else{
-            userMessage = buildInputVideosMessage(getPrompt(  videoVLAgentMessage,   aiAgent), (String[])null);
+            userMessage = buildInputVideosMessage(prompt, (String[])null);
         }
         // 构建消息历史列表，包含之前的会话记忆
 
@@ -152,6 +158,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             if(sessionMemory.size() == 0){
                 String systemPrompt = getSystemPrompt(videoVLAgentMessage,aiAgent);
                 if(systemPrompt != null){
+                    if(chatContext != null){
+                        systemPrompt = chatContext.evalPrompt(systemPrompt);
+
+                    }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     videoVLAgentMessage.addSessionMessage(systemMessage,aiAgent);
                 }
@@ -163,6 +173,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             messages = new ArrayList<>();
             String systemPrompt = getSystemPrompt(videoVLAgentMessage,aiAgent);
             if(systemPrompt != null){
+                if(chatContext != null){
+                    systemPrompt = chatContext.evalPrompt(systemPrompt);
+
+                }
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                 messages.add(systemMessage);
             }
@@ -178,7 +192,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return requestMap;
     }
     
-    public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent) {
+    public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
 
         
         Map<String, Object> requestMap = new HashMap<>();
@@ -187,11 +201,15 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
         Map<String, Object> userMessage = null;
         Map<String, Object> systemMessage = null;
-        if(imageUrls != null && imageUrls.size() > 0) {
-            userMessage = buildInputImagesMessage(getPrompt(  imageAgentMessage,   aiAgent), imageUrls.toArray(new String[]{}));
+        String prompt = getPrompt(  imageAgentMessage,   aiAgent);
+        if(chatContext != null){
+            prompt = chatContext.evalPrompt(prompt);
+        }
+        if(imageUrls != null && imageUrls.size() > 0) {           
+            userMessage = buildInputImagesMessage(prompt, imageUrls.toArray(new String[]{}));
         }
         else{
-            userMessage = buildInputImagesMessage(getPrompt(  imageAgentMessage,   aiAgent), (String[])null);
+            userMessage = buildInputImagesMessage(prompt, (String[])null);
         }
         // 构建消息历史列表，包含之前的会话记忆
 
@@ -201,6 +219,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             if(sessionMemory.size() == 0){
                 String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
                 if(systemPrompt != null){
+                    if(chatContext != null){
+                        systemPrompt = chatContext.evalPrompt(systemPrompt);
+                    }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     imageAgentMessage.addSessionMessage(systemMessage,aiAgent);
                 }
@@ -212,6 +233,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             messages = new ArrayList<>();
             String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
             if(systemPrompt != null){
+                if(chatContext != null){
+                    systemPrompt = chatContext.evalPrompt(systemPrompt);
+                }
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                 messages.add(systemMessage);
             }
@@ -377,7 +401,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param toolAgentMessage
      * @return
      */
-    public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent aiAgent){
+    public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent aiAgent,ChatContext chatContext){
         Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
        
         Map<String, Object> requestMap = new HashMap<>();
@@ -467,12 +491,15 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param chatAgentMessage
      * @return
      */
-    public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage,AIAgent aiAgent) {
+    public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
 
         String agentId = aiAgent.getAgentId();
         String message = getPrompt(  chatAgentMessage,   aiAgent);
         if(SimpleStringUtil.isEmpty(message)){
             throw new AIRuntimeException("Prompt message is empty.");
+        }
+        if(chatContext != null){
+            message = chatContext.evalPrompt(message);
         }
         Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
         Map<String,Object> systemMessage = null;
@@ -487,6 +514,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             if(sessionMemory.size() == 0){
                 String systemPrompt = getSystemPrompt(chatAgentMessage,aiAgent);
                 if(systemPrompt != null){
+                    if(chatContext != null){
+                        systemPrompt = chatContext.evalPrompt(systemPrompt);
+                    }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     chatAgentMessage.addSessionMessage(systemMessage,message,aiAgent);
                 }
@@ -501,6 +531,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             messages = new ArrayList<>();
             String systemPrompt = getSystemPrompt(chatAgentMessage,aiAgent);
             if(systemPrompt != null){
+                if(chatContext != null){
+                    systemPrompt = chatContext.evalPrompt(systemPrompt);
+                }
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);                 
                 messages.add(systemMessage);
             }
@@ -580,7 +613,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
         return params;
     }
-    public ChatObject buildOpenAIRequestParameter(ClientConfiguration clientConfiguration,Object agentMessage, AIAgent aiAgent,boolean fromStreamAPI){
+    public ChatObject buildOpenAIRequestParameter(ClientConfiguration clientConfiguration,Object agentMessage, AIAgent aiAgent,boolean fromStreamAPI,ChatContext chatCallback){
         AgentMessage _agentMessage = null;
         if(agentMessage instanceof AgentMessage){
             _agentMessage =  ((AgentMessage)agentMessage);
@@ -591,13 +624,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         else{
             _agentMessage = new ObjectAgentMessage(agentMessage);
         }
-        return _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent,fromStreamAPI);
+        return _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent,fromStreamAPI,  chatCallback);
          
  
     }
-    protected abstract Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent);
+    protected abstract Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent, ChatContext chatCallback);
   
-    public Map<String, Object> _buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,StoreChatObject storeChatObject,ClientConfiguration clientConfiguration,AIAgent aiAgent){
+    public Map<String, Object> _buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,StoreChatObject storeChatObject,
+                                                        ClientConfiguration clientConfiguration,AIAgent aiAgent, ChatContext chatCallback){
 
         if(storeChatObject.getGenFileStoreDir() == null)
             storeChatObject.setGenFileStoreDir(clientConfiguration.getExtendConfig("genFileStoreDir"));
@@ -606,7 +640,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(storeChatObject.getStoreAudioType() == null){
             storeChatObject.setStoreAudioType(clientConfiguration.getExtendConfig("storeAudioType"));
         }
-        Map params = buildGenAudioRequestMap(audioAgentMessage,aiAgent);
+        Map params = buildGenAudioRequestMap(audioAgentMessage,aiAgent,   chatCallback);
 //        audioAgentMessage.setGenAudioCompletionsUrl(getGenAudioCompletionsUrl(audioAgentMessage));
         if(audioAgentMessage.getStream() != null){
             params.put("stream", audioAgentMessage.getStream());
@@ -635,11 +669,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param audioAgentMessage
      * @return
      */
-    public StoreChatObject buildGenAudioRequestParameter(ClientConfiguration clientConfiguration, Object audioAgentMessage,AIAgent aiAgent) {
+    public StoreChatObject buildGenAudioRequestParameter(ClientConfiguration clientConfiguration, Object audioAgentMessage,AIAgent aiAgent, ChatContext chatCallback) {
         StoreChatObject storeChatObject = new StoreChatObject();
         if(audioAgentMessage instanceof AudioAgentMessage){
             AudioAgentMessage temp = (AudioAgentMessage)audioAgentMessage;
-            audioAgentMessage = this._buildGenAudioRequestMap(temp,storeChatObject,clientConfiguration,aiAgent);
+            audioAgentMessage = this._buildGenAudioRequestMap(temp,storeChatObject,clientConfiguration,aiAgent,   chatCallback);
              
            
         }
@@ -649,7 +683,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
     public abstract AudioEvent buildGenAudioResponse(ClientConfiguration config, AudioAgentMessage message,StoreChatObject storeChatObject, Map data);
 
-    public Map buildAudioSTTRequestMap(AudioSTTAgentMessage audioSTTAgentMessage, AIAgent aiAgent) {
+    public Map buildAudioSTTRequestMap(AudioSTTAgentMessage audioSTTAgentMessage, AIAgent aiAgent,ChatContext chatContext) {
 
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioSTTAgentMessage.getModel());
@@ -660,11 +694,15 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         Object audio = audioSTTAgentMessage.getAudio();
         // 添加当前用户消息
         Map<String, Object> userMessage = null;
+        String prompt = getPrompt(  audioSTTAgentMessage,   aiAgent);
+        if(chatContext != null){
+            prompt = chatContext.evalPrompt(prompt);
+        }
         if(audio != null) {
-            userMessage = MessageBuilder.buildAudioSystemMessage(getPrompt(  audioSTTAgentMessage,   aiAgent));
+            userMessage = MessageBuilder.buildAudioSystemMessage(prompt);
         }
         else{
-            userMessage = MessageBuilder.buildAudioUserMessage(getPrompt(  audioSTTAgentMessage,   aiAgent));
+            userMessage = MessageBuilder.buildAudioUserMessage(prompt);
         }
         messages.add(userMessage);
         audioSTTAgentMessage.addSessionMessage(userMessage,aiAgent);

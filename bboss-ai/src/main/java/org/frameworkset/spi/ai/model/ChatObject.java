@@ -17,6 +17,8 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 
@@ -39,6 +41,8 @@ public class ChatObject extends StoreChatObject{
     private SSEHeaderSetFunction sseHeaderSetFunction;
     private StreamDataBuilder streamDataBuilder;
     private Map<String, File> files;
+    private ChatContext chatContext;
+
 
 
     private String completionsUrl;
@@ -159,5 +163,15 @@ public class ChatObject extends StoreChatObject{
 
     public String getGenAudioCompletionsUrl() {
         return genAudioCompletionsUrl;
+    }
+    public ChatStreamCallback getChatStreamCallback() {
+        if(chatContext == null){
+            return null;
+        }
+        return chatContext.getChatStreamCallback();
+    }
+
+    public void setChatContext(ChatContext chatContext) {
+        this.chatContext = chatContext;
     }
 }

@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.adapter;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.JiutianGenFileDownload;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
@@ -139,20 +140,25 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
     }
 
     @Override
-    public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent) {
+    public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
 
         Map<String, Object> requestMap = new HashMap<>();
         
         requestMap.put("model", imageAgentMessage.getModel());
         List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory();
         List<String> imageUrls = imageAgentMessage.getImageUrls();
+        String prompt = getPrompt(  imageAgentMessage,   aiAgent);
+        if(chatContext != null)
+        {
+            prompt = chatContext.evalPrompt(prompt);
+        }
         if(sessionMemory == null || (sessionMemory != null && sessionMemory.size() == 0)) {
             
 
             if (imageUrls != null && imageUrls.size() > 0) {
                 requestMap.put("image", imageUrls.get(0));
             }
-            requestMap.put("prompt",  getPrompt(  imageAgentMessage,   aiAgent));
+            requestMap.put("prompt",  prompt);
         }
 // 构建消息历史列表，包含之前的会话记忆
 
@@ -162,9 +168,9 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
             Map<String, Object> userMessage = null;
             Map<String, Object> systemMessage = null;
             if (imageUrls != null && imageUrls.size() > 0) {
-                userMessage = buildInputImagesMessage( getPrompt(  imageAgentMessage,   aiAgent), imageUrls.toArray(new String[]{}));
+                userMessage = buildInputImagesMessage( prompt, imageUrls.toArray(new String[]{}));
             } else {
-                userMessage = buildInputImagesMessage( getPrompt(  imageAgentMessage,   aiAgent), (String[]) null);
+                userMessage = buildInputImagesMessage( prompt, (String[]) null);
             }
 
             List<Map<String, Object>> messages = null;
@@ -172,6 +178,10 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
                 if (sessionMemory.size() == 0) {
                     String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
                     if(systemPrompt != null){
+                        if(chatContext != null)
+                        {
+                            systemPrompt = chatContext.evalPrompt(systemPrompt);
+                        }
                         systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                         imageAgentMessage.addSessionMessage(systemMessage,aiAgent);
                     }
@@ -182,6 +192,10 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
                 messages = new ArrayList<>();
                 String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
                 if(systemPrompt != null){
+                    if(chatContext != null)
+                    {
+                        systemPrompt = chatContext.evalPrompt(systemPrompt);
+                    }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     messages.add(systemMessage);
                 }

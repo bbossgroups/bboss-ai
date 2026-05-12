@@ -17,9 +17,7 @@ package org.frameworkset.spi.ai.util;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.model.FunctionTool;
-import org.frameworkset.spi.ai.model.StreamData;
-import org.frameworkset.spi.ai.model.TokenMetrics;
+import org.frameworkset.spi.ai.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,18 +59,22 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
     }
     
     public void appendFullStreamData(StreamData streamData){
-        if(fullStreamData == null)
-            fullStreamData = new StringBuilder();
+        
         if(streamData.getContent() != null) {
+            if(fullStreamData == null)
+                fullStreamData = new StringBuilder();
             fullStreamData.append(streamData.getContent());
         }
     }
 
     public void appendFullReasoningStreamData(StreamData streamData){
-        if(fullReasoningStreamData == null)
-            fullReasoningStreamData = new StringBuilder();
-        if(streamData.getReasoningContent() != null)
+        
+        if(streamData.getReasoningContent() != null) {
+            if (fullReasoningStreamData == null) {
+                fullReasoningStreamData = new StringBuilder();
+            }
             fullReasoningStreamData.append(streamData.getReasoningContent());
+        }
     }
     
     public String getFullStreamData() {
@@ -94,20 +96,46 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
     public TokenMetrics buildTokenMetrics(Map usage){
         TokenMetrics tokenMetrics = new TokenMetrics();
         tokenMetrics.setUsage(usage);
-        tokenMetrics.setTotalTokens((Integer)usage.get("total_tokens"));
-        tokenMetrics.setPromptTokens((Integer)usage.get("prompt_tokens"));
-        tokenMetrics.setCompletionTokens((Integer)usage.get("completion_tokens"));
+        Integer total_tokens = (Integer)usage.get("total_tokens");
+        if(total_tokens != null) {
+            tokenMetrics.setTotalTokens(total_tokens);
+        }
+        Integer prompt_tokens = (Integer)usage.get("prompt_tokens");
+        if(prompt_tokens != null) {
+            tokenMetrics.setPromptTokens(prompt_tokens);
+        }
+        Integer completion_tokens = (Integer)usage.get("completion_tokens");
+        if(completion_tokens != null) {
+            tokenMetrics.setCompletionTokens(completion_tokens);
+        }
         Map completion_tokens_details = (Map)usage.get("completion_tokens_details");
-        
-        tokenMetrics.setReasoningTokens((Integer)completion_tokens_details.get("reasoning_tokens"));
+        if(completion_tokens_details != null) {
+            Integer reasoning_tokens = (Integer) completion_tokens_details.get("reasoning_tokens");
+            if(reasoning_tokens != null)
+                tokenMetrics.setCompletionReasoningTokens(reasoning_tokens);
+            Integer text_tokens = (Integer) completion_tokens_details.get("text_tokens");
+            if(text_tokens != null)
+                tokenMetrics.setCompletionTextTokens(text_tokens);
+        }
         
         Map prompt_tokens_details = (Map)usage.get("prompt_tokens_details");
-        tokenMetrics.setCachedTokens((Integer)prompt_tokens_details.get("cached_tokens"));
+        if(prompt_tokens_details != null) {
+            Integer cached_tokens = (Integer) prompt_tokens_details.get("cached_tokens");
+            if(cached_tokens != null)
+                tokenMetrics.setPromptCachedTokens(cached_tokens);
+
+            Integer text_tokens = (Integer) prompt_tokens_details.get("text_tokens");
+            if(text_tokens != null)
+                tokenMetrics.setPromptTextTokens(text_tokens);
+        }
         return tokenMetrics;
     }
 
     public StreamData buildWrapped(AgentAdapter agentAdapter , String line){
         StreamData streamData = build(agentAdapter,line);
+        if(streamData == null){
+            return null;
+        }
         if(streamData.isContent()){
             appendFullStreamData(streamData);
         }
@@ -117,20 +145,46 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         computeTokens(streamData);
         return streamData;
     }
-    
+
+    public String addAgentResultSessionMessage(){
+        String data = null;
+        StringBuilder newData = new StringBuilder();
+        if(fullReasoningStreamData != null){
+            newData.append("<reasoning>").append(fullReasoningStreamData.toString()).append("</reasoning>\r\n");
+        }
+        if(this.fullStreamData != null){
+            newData. append(fullStreamData.toString());
+           
+        }
+        if(newData.length() > 0) {
+            AgentMessage agentMessage =   this.getChatObject().getAgentMessage();
+            data = newData.toString();
+            agentMessage.addAgentResultSessionMessage(data, this.getChatObject().getAiAgent());
+        }
+        return data;
+    }
     private void computeTokens(StreamData streamData){
         TokenMetrics streamTokenMetrics = streamData.getStreamTokenMetrics();
         if(streamTokenMetrics != null) {
-            if(tokenMetrics == null)
+            if(tokenMetrics == null) {
                 tokenMetrics = new TokenMetrics();
+                tokenMetrics.setModel(streamTokenMetrics.getModel());
+            }
             tokenMetrics.increaseTotalTokens(streamTokenMetrics.getTotalTokens());
             tokenMetrics.increasePromptTokens(streamTokenMetrics.getPromptTokens());
             tokenMetrics.increaseCompletionTokens(streamTokenMetrics.getCompletionTokens());
-            tokenMetrics.increaseReasoningTokens(streamTokenMetrics.getReasoningTokens());
-            tokenMetrics.increaseCachedTokens(streamTokenMetrics.getCachedTokens());
+            tokenMetrics.increaseCompletionReasoningTokens(streamTokenMetrics.getCompletionReasoningTokens());
+            tokenMetrics.increaseCompletionTextTokens(streamTokenMetrics.getCompletionTextTokens());
+            tokenMetrics.increasePromptCachedTokens(streamTokenMetrics.getPromptCachedTokens());
+            tokenMetrics.increasePromptTextTokens(streamTokenMetrics.getPromptTextTokens());
         }
         streamData.setTotalTokenMetrics(tokenMetrics);
     }
+
+    public void setTokenMetrics(TokenMetrics tokenMetrics) {
+        this.tokenMetrics = tokenMetrics;
+    }
+
     public void appendToolCallThinkingStreamData(StreamData streamData){
        String thinkContent = null;
         String content = null;
