@@ -76,8 +76,11 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
   
 
 
-    public static void removeSession(String sessionId){
-        agentSessions.remove(sessionId);
+    @Override
+    public void removeSession(String sessionId){
+        if(agentSessions != null) {
+            agentSessions.remove(sessionId);
+        }
     }
 
 

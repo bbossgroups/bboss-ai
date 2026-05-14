@@ -30,6 +30,12 @@ public class StoreContext {
      */
     private String sessionId;
 
+    /**
+     * 是否重置session
+     */
+    private boolean resetSession;
+    
+
 
 
     /**
@@ -141,5 +147,12 @@ public class StoreContext {
 
     public void setTraceId(String traceId) {
         this.traceId = traceId;
+    }
+    public boolean isResetSession() {
+        return resetSession;
+    }
+    public StoreContext setResetSession(boolean resetSession) {
+        this.resetSession = resetSession;
+        return this;
     }
 }

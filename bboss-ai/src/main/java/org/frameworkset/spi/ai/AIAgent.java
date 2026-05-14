@@ -77,6 +77,9 @@ public class AIAgent<T extends AIAgent> {
                 if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
                     ((SessionAgentMessage) agentMessage).setMainSessionStore(mainSessionStore);
                 }
+                if(storeContext.isResetSession() && storeContext.getSessionId() != null){
+                    mainSessionStore.removeSession(storeContext.getSessionId());
+                }
             }
         }
     }

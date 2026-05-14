@@ -273,8 +273,16 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             throw new AIRuntimeException("saveLastSessionMessage error",e);
         }
     }
-   
-    
+
+    public void removeSession(String sessionId){
+        try {
+            SQLExecutor.deleteWithDBName(dataSource, agentSessionStoreDBConfig.getDeleteSessionBySessionIdSQL(), sessionId);
+            SQLExecutor.deleteWithDBName(dataSource, agentSessionStoreDBConfig.getDeleteSessionMessageBySessionIdSQL(), sessionId);
+            SQLExecutor.deleteWithDBName(dataSource, agentSessionStoreDBConfig.getDeleteSessionMessageRerenceBySessionIdSQL(), sessionId);
+        } catch (SQLException e) {
+            throw new AIRuntimeException("removeSession error",e);
+        }
+    }
  
     
 

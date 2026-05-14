@@ -274,8 +274,12 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     private String deleteSessionMessageSQL;
     private String deleteSessionMessageByUserIdSQL;
     private String deleteSessionMessageBySessionIdSQL;
+    
+    
+    
     private String selectSessionMessageByUserIdSQL;
     private String selectSessionMessageBySessionIdSQL;
+    
 
     private String selectMaxSeqNoBySessionIdSQL;
 
@@ -292,6 +296,11 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     }
 
     private String insertSessionMessageRerenceSQL;
+
+
+
+
+    private String deleteSessionMessageRerenceBySessionIdSQL;
     private String dataSource;
     /**
      * 会话基本信息存储表名称
@@ -327,7 +336,9 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     public String getSessionTableName() {
         return sessionTableName;
     }
-
+    public String getDeleteSessionMessageRerenceBySessionIdSQL() {
+        return deleteSessionMessageRerenceBySessionIdSQL;
+    }
     public void init(){
         existSQL = new StringBuilder().append("select 1 from ").append(sessionTableName).toString();
         existMessageSQL = new StringBuilder().append("select 1 from ").append(sessionMessageTableName).toString();
@@ -363,6 +374,9 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 
         deleteSessionMessageBySessionIdSQL = new StringBuilder().append("delete from ")
                 .append(sessionMessageTableName).append(" where sessionId=? ").toString();
+
+        deleteSessionMessageRerenceBySessionIdSQL = new StringBuilder().append("delete from ")
+                .append(sessionMessageReferenceTableName).append(" where sessionId=? ").toString();
 
         selectSessionMessageByUserIdSQL = new StringBuilder().append("select *  from ")
                 .append(sessionMessageTableName).append(" where useId=? order by createTime,seqNo desc").toString();
