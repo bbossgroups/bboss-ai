@@ -623,7 +623,7 @@ public class AIAgent<T extends AIAgent> {
 //            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
             addAgentResultSessionMessage(serverEvent.getData());
             
-            if(chatCallback.getChatStreamCallback() != null){
+            if(chatCallback != null && chatCallback.getChatStreamCallback() != null){
                 chatCallback.getChatStreamCallback().streamDone(serverEvent);
             }
         }

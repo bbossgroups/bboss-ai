@@ -87,7 +87,7 @@ public class ParrelTest {
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
         aiParrelAgent.addAgent(new UserNodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
-        aiPlanAgent.addParrelAgent(aiParrelAgent);
+        aiPlanAgent.addAgent(aiParrelAgent);
         IntegerCount integerCount = new IntegerCount();
         aiPlanAgent.addConditionFlowNode(introduceProvinces, new TriggerScriptAPI() {
             @Override

@@ -87,7 +87,7 @@ public class SequenceTest {
         sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
         sequenceAgent.addAgent(new AINodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
         sequenceAgent.addAgent(new AINodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
-        aiPlanAgent.addSequenceAgent(sequenceAgent);
+        aiPlanAgent.addAgent(sequenceAgent);
         IntegerCount integerCount = new IntegerCount();
         aiPlanAgent.addConditionFlowNode(introduceProvinces, new TriggerScriptAPI() {
             @Override

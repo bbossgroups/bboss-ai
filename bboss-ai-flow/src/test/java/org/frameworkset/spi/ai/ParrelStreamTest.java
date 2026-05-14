@@ -94,7 +94,7 @@ public class ParrelStreamTest {
         aiParrelAgent.addAgent(new AINodeAgent("同时结合中国省份特点：\r\n#[provinces],\r\n用300字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));   
-        aiPlanAgent.addParrelAgent(aiParrelAgent);
+        aiPlanAgent.addAgent(aiParrelAgent);
 
         //开始对话，执行对话流程，并返回会话结果
         Flux<ServerEvent> flux = aiPlanAgent.chatStream();

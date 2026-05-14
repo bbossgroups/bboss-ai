@@ -16,13 +16,14 @@ package org.frameworkset.spi.ai;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
+import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.flow.AIBaseNodeAgent;
 import org.frameworkset.spi.ai.flow.AINodeAgent;
 import org.frameworkset.spi.ai.flow.AIPlanAgent;
 import org.frameworkset.spi.ai.flow.AISequenceAgent;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
-import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.TokenMetrics;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.tran.jobflow.context.NodeTriggerContext;
@@ -93,7 +94,7 @@ public class SequenceStreamTest {
         sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
         sequenceAgent.addAgent(new AINodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
         sequenceAgent.addAgent(new AINodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
-        aiPlanAgent.addSequenceAgent(sequenceAgent);
+        aiPlanAgent.addAgent(sequenceAgent);
         IntegerCount integerCount = new IntegerCount();
         aiPlanAgent.addConditionFlowNode(introduceProvinces, new TriggerScriptAPI() {
             @Override
@@ -111,8 +112,6 @@ public class SequenceStreamTest {
 
         //开始对话，执行对话流程，并返回会话结果
         Flux<ServerEvent> flux = aiPlanAgent.chatStream();
-// 用于累积完整的回答
-        StringBuilder completeAnswer = new StringBuilder();
         CountDownLatch countDownLatch = new CountDownLatch(1);
         flux
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
@@ -134,6 +133,12 @@ public class SequenceStreamTest {
                         if(event.isDone()){
                             event.addExtendData("url", "https://www.bbossgroups.com");
                             event.addExtendData("title", "bboss官网");
+                            /**
+                             * 完成消息报文
+                             */
+//                            String fullData = event.getFullStreamData();
+                            TokenMetrics tokenMetrics = event.getTokenMetrics();
+                            logger.info("Token Metrics: {}", JsonUtil.object2jsonPretty(tokenMetrics));
                         }
                         if(event.getData() != null)
                             System.out.print(event.getData());
@@ -150,26 +155,7 @@ public class SequenceStreamTest {
                         if(event.isDone() || event.finished()){
                             System.out.println();
                         }
-                        if(!event.isDone() ) {
-                            // 累积回答内容
-                            if(event.getData() != null) {
-                                completeAnswer.append(event.getData());
-                            }
-                        } else  {
-
-                            if( completeAnswer.length() > 0) {
-                                // 当收到完成信号且有累积内容时，将完整回答添加到会话记忆
-//                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
-                                completeAnswer.setLength(0);
-
-
-                            }
-                            //完整的事件消息框架内部已经添加到会话记忆，无需再次添加到会话记忆
-//                            else if(event.getData() != null){
-//                                chatAgentMessage.addAgentResultSessionMessage(event.getData(),event.getAgent());
-//                            }
-
-                        }
+                        
                     }
                 }).doOnComplete(() -> {
                     logger.info("\n=== 流完成 ===");

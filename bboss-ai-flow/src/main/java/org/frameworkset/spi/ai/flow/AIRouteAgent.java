@@ -15,8 +15,8 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.UserAgent;
 import org.frameworkset.spi.ai.model.AgentMessage;
+import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +53,11 @@ public class AIRouteAgent
         this.routeChoiceList = routeChoiceList;
         return this;
     }
+    @Override
+    protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
+        return new AIRouterNodeBuilder(this );
+    }
+    
 
     public AIRouteAgent addRoutingChoice(String agentId, String description){
         if(routeChoiceList == null){

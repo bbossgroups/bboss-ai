@@ -31,14 +31,13 @@ public class AINodeAgent
         super(   mcpToolsRegist);
         this.setPrompt(prompt);
     }
+
+     
+
     public AINodeAgent(String prompt  ) {
         super( prompt );
     }
     public AINodeAgent(  ) {
         super(  );
-    }
-
- 
-
- 
+    } 
 }

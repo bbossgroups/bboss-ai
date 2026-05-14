@@ -16,10 +16,8 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.ai.store.AgentSessionStore;
-import org.frameworkset.spi.ai.store.AgentSessionStoreBuilder;
-import org.frameworkset.spi.ai.store.DefaultAgentSessionStoreBuilder;
+import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
@@ -27,9 +25,7 @@ import org.frameworkset.spi.reactor.ReactorCallException;
 import org.frameworkset.tran.jobflow.JobFlow;
 import org.frameworkset.tran.jobflow.JobParams;
 import org.frameworkset.tran.jobflow.NodeTrigger;
-import org.frameworkset.tran.jobflow.builder.ConditionJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
-import org.frameworkset.tran.jobflow.builder.JobFlowBuilderException;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.schedule.JobFlowScheduleConfig;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
@@ -40,15 +36,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
  * 智能体流程编排
  * @author biaoping.yin
  * @Date 2026/4/12
  */
-public class AIPlanAgent extends AIAgent<AIPlanAgent> {
+public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgent<AIPlanAgent> {
     private static Logger logger = LoggerFactory.getLogger(AIPlanAgent.class);
     
     
@@ -77,18 +70,18 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
 
  
 
-    /**
-     * 添加路由网关节点：负责根据用户问题决定后续的路由节点，AI进行自主决策
-     * @param aiRouteAgent
-     * @return
-     */
-    public AIPlanAgent addAIRouteAgent(AIRouteAgent aiRouteAgent) {
-        initAIJobFlowBuilder();
-        aiRouteAgent.setPlanAgent(this);
-        aiRouteAgent.setParentAgent(this);
-        jobFlowBuilder.addJobFlowNodeBuilder(new AIRouterNodeBuilder(aiRouteAgent));
-        return this;
-    }
+//    /**
+//     * 添加路由网关节点：负责根据用户问题决定后续的路由节点，AI进行自主决策
+//     * @param aiRouteAgent
+//     * @return
+//     */
+//    public AIPlanAgent addAIRouteAgent(AIRouteAgent aiRouteAgent) {
+//        initAIJobFlowBuilder();
+//        aiRouteAgent.setPlanAgent(this);
+//        aiRouteAgent.setParentAgent(this);
+//        jobFlowBuilder.addJobFlowNodeBuilder(new AIRouterNodeBuilder(aiRouteAgent));
+//        return this;
+//    }
 
 
     @Override
@@ -105,22 +98,32 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param aiRouteChoiceAgent
      * @return
      */
-    public AIPlanAgent addRouteChoiceAgent(AIBaseNodeAgent aiRouteChoiceAgent) {
+    public AIPlanAgent addRouteChoiceAgent(AppendToParentAgent aiRouteChoiceAgent) {
         initAIJobFlowBuilder();
-        aiRouteChoiceAgent.setPlanAgent(this);
-        aiRouteChoiceAgent.setParentAgent(this);
-       
-        jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(aiRouteChoiceAgent )
-                .setTriggerScriptAPI(nodeTriggerContext -> {
-                    String agentId = (String) nodeTriggerContext.getContainerContextData("routeChoice",true);
-                    if(agentId == null){
-                        agentId = (String) nodeTriggerContext.getFlowContextData("routeChoice");
-                    }
-                    if(agentId != null && agentId.equals(aiRouteChoiceAgent.getAgentId())){
-                        return true;
-                    }
-                    return false;
-                }));
+        aiRouteChoiceAgent.appendConditionJobFlowNodeToParentAgent(this,nodeTriggerContext -> {
+            String agentId = (String) nodeTriggerContext.getContainerContextData("routeChoice",true);
+            if(agentId == null){
+                agentId = (String) nodeTriggerContext.getFlowContextData("routeChoice");
+            }
+            if(agentId != null && agentId.equals(aiRouteChoiceAgent.getAgentId())){
+                return true;
+            }
+            return false;
+        });
+//        aiRouteChoiceAgent.setPlanAgent(this);
+//        aiRouteChoiceAgent.setParentAgent(this);
+//        
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(aiRouteChoiceAgent )
+//                .setTriggerScriptAPI(nodeTriggerContext -> {
+//                    String agentId = (String) nodeTriggerContext.getContainerContextData("routeChoice",true);
+//                    if(agentId == null){
+//                        agentId = (String) nodeTriggerContext.getFlowContextData("routeChoice");
+//                    }
+//                    if(agentId != null && agentId.equals(aiRouteChoiceAgent.getAgentId())){
+//                        return true;
+//                    }
+//                    return false;
+//                }));
         return this;
     }
 
@@ -130,31 +133,32 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param defaultRouteChoiceAgent
      * @return
      */
-    public AIPlanAgent addDefaultRouteChoiceAgent(AINodeAgent defaultRouteChoiceAgent) {
+    public AIPlanAgent addDefaultRouteChoiceAgent(AppendToParentAgent defaultRouteChoiceAgent) {
         initAIJobFlowBuilder();
-        defaultRouteChoiceAgent.setPlanAgent(this);
-        defaultRouteChoiceAgent.setParentAgent(this);
-        jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(defaultRouteChoiceAgent ),true);
+        defaultRouteChoiceAgent.appendConditionJobFlowNodeToParentAgent(this,true);
+//        defaultRouteChoiceAgent.setPlanAgent(this);
+//        defaultRouteChoiceAgent.setParentAgent(this);
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(defaultRouteChoiceAgent ),true);
         return this;
     }
-    /**
-     * 添加工作流节点
-     * @param judgeAgent
-     * @return
-     */
-    public AIPlanAgent addJudgeAgent(AIJudgeAgent judgeAgent) {
-        initAIJobFlowBuilder();
-        judgeAgent.setPlanAgent(this);
-        judgeAgent.setParentAgent(this);
-        jobFlowBuilder.addJobFlowNodeBuilder(new AIJudgeNodeBuilder(judgeAgent ));
-        return this;
-    }
+//    /**
+//     * 添加工作流节点
+//     * @param judgeAgent
+//     * @return
+//     */
+//    public AIPlanAgent addJudgeAgent(AIJudgeAgent judgeAgent) {
+//        initAIJobFlowBuilder();
+//        judgeAgent.setPlanAgent(this);
+//        judgeAgent.setParentAgent(this);
+//        jobFlowBuilder.addJobFlowNodeBuilder(new AIJudgeNodeBuilder(judgeAgent ));
+//        return this;
+//    }
     /**
      * 添加智能体工作流节点
      * @param aiAgent
      * @return
      */
-    public AIPlanAgent addAgent(AIBaseNodeAgent aiAgent) {
+    public AIPlanAgent addAgent(AppendToParentAgent aiAgent) {
         return addAgent(aiAgent,( TriggerScriptAPI )null);
     }
     /**
@@ -186,41 +190,42 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param aiAgent
      * @return
      */
-    public AIPlanAgent addConditionFlowNode(AIBaseNodeAgent aiAgent  ){
+    public AIPlanAgent addConditionFlowNode(AppendToParentAgent aiAgent  ){
         return addConditionFlowNode(  aiAgent , (TriggerScriptAPI)null);
     }
     
-    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
         return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
     }
 
-    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode) {
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode) {
         initAIJobFlowBuilder();
+        aiAgent.appendConditionJobFlowNodeToParentAgent(allCondtionNodeMathfailedContinue,this,conditionNodeTrigger,defautlConditionNode);
 
-
-        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
-        if (jobFlowNodeBuilder == null) {
-            aiAgent.setPlanAgent(this);
-            aiAgent.setParentAgent(this);
-            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
-//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
-        }
-        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue, jobFlowNodeBuilder, conditionNodeTrigger, defautlConditionNode);
+//        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
+//        if (jobFlowNodeBuilder == null) {
+//            aiAgent.setPlanAgent(this);
+//            aiAgent.setParentAgent(this);
+//            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
+////            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+//        }
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue, jobFlowNodeBuilder, conditionNodeTrigger, defautlConditionNode);
         return this;
     }
-    public AIPlanAgent addConditionFlowNode(AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+    public AIPlanAgent addConditionFlowNode(AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
         initAIJobFlowBuilder();
-        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
-        
-        
-        if(jobFlowNodeBuilder == null){
-            aiAgent.setPlanAgent(this);
-            aiAgent.setParentAgent(this);
-            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
-          
-//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
-        }
-        jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder, conditionNodeTrigger);
+//        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
+//        
+//        
+//        if(jobFlowNodeBuilder == null){
+//            aiAgent.setPlanAgent(this);
+//            aiAgent.setParentAgent(this);
+//            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
+//          
+////            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+//        }
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder, conditionNodeTrigger);
+        aiAgent.appendConditionJobFlowNodeToParentAgent(this,conditionNodeTrigger);
         return this;
     }
 
@@ -243,8 +248,8 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param baseNodeAgent
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent baseNodeAgent, NodeTrigger conditionNodeTrigger){
-        return addAnotherConditionJobFlowNodeBuilder(baseNodeAgent,   conditionNodeTrigger,false);
+    public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent baseNodeAgent, NodeTrigger conditionNodeTrigger){
+        return addAnotherConditionJobFlowNodeAgent(baseNodeAgent,   conditionNodeTrigger,false);
     }
 
     /**
@@ -254,12 +259,12 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param baseNodeAgent
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger){
-        return addAnotherConditionJobFlowNodeBuilder(  baseNodeAgent,   conditionNodeTrigger,false);
+    public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger){
+        return addAnotherConditionJobFlowNodeAgent(  baseNodeAgent,   conditionNodeTrigger,false);
     }
 
-    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger,boolean defaultConditionNode){
-        return addAnotherConditionJobFlowNodeBuilder(  baseNodeAgent, new NodeTrigger( conditionNodeTrigger), defaultConditionNode);
+    public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger,boolean defaultConditionNode){
+        return addAnotherConditionJobFlowNodeAgent(  baseNodeAgent, new NodeTrigger( conditionNodeTrigger), defaultConditionNode);
     }
 
 
@@ -270,19 +275,21 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent baseNodeAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
-        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(baseNodeAgent.getAgentId());
-
-        String cid = null;
-        if(jobFlowNodeBuilder == null){
-            baseNodeAgent.setPlanAgent(this);
-            baseNodeAgent.setParentAgent(this);
-            jobFlowNodeBuilder = new AIAgentNodeBuilder(baseNodeAgent);
-            
-//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
-        }
-        cid = jobFlowBuilder.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
-        return cid;
+    public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent baseNodeAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+        this.initAIJobFlowBuilder();
+        return baseNodeAgent.addAnotherConditionJobFlowNodeAgent(this, conditionNodeTrigger, defaultConditionNode);
+//        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(baseNodeAgent.getAgentId());
+//
+//        String cid = null;
+//        if(jobFlowNodeBuilder == null){
+//            baseNodeAgent.(this);
+//            baseNodeAgent.setParentAgent(this);
+//            jobFlowNodeBuilder = new AIAgentNodeBuilder(baseNodeAgent);
+//            
+////            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+//        }
+//        cid = jobFlowBuilder.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
+//        return cid;
     }
 
     /**
@@ -292,8 +299,8 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param conditionNodeId 条件节点ID
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(String conditionNodeId, NodeTrigger conditionNodeTrigger){
-        return addAnotherConditionJobFlowNodeBuilder(conditionNodeId,   conditionNodeTrigger,false);
+    public String addAnotherConditionJobFlowNodeAgent(String conditionNodeId, NodeTrigger conditionNodeTrigger){
+        return addAnotherConditionJobFlowNodeAgent(conditionNodeId,   conditionNodeTrigger,false);
     }
 
 
@@ -304,8 +311,8 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(String conditionNodeId, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode){
-         
+    public String addAnotherConditionJobFlowNodeAgent(String conditionNodeId, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode){
+         this.initAIJobFlowBuilder();
         return jobFlowBuilder.addAnotherConditionJobFlowNodeBuilder(  conditionNodeId,   conditionNodeTrigger,   defaultConditionNode);
     }
 
@@ -319,11 +326,11 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
      * addConditionJobFlowNodeBuilder方法添加
      * 返回条件复合节点唯一ID
-     * @param jobFlowNodeBuilder
+     * @param baseNodeAgent
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent jobFlowNodeBuilder){
-        return addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,false);
+    public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent baseNodeAgent){
+        return addAnotherConditionJobFlowNodeAgent(baseNodeAgent,false);
     }
     /**
      * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
@@ -332,8 +339,8 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(AIBaseNodeAgent jobFlowNodeBuilder,boolean defaultConditionNode){
-        return addAnotherConditionJobFlowNodeBuilder(  jobFlowNodeBuilder, (NodeTrigger) null,  defaultConditionNode);
+    public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent jobFlowNodeBuilder,boolean defaultConditionNode){
+        return addAnotherConditionJobFlowNodeAgent(  jobFlowNodeBuilder, (NodeTrigger) null,  defaultConditionNode);
     }
 
     /**
@@ -343,8 +350,8 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param conditionNodeId 条件节点ID
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(String conditionNodeId){
-        return addAnotherConditionJobFlowNodeBuilder(conditionNodeId,false);
+    public String addAnotherConditionJobFlowNodeAgent(String conditionNodeId){
+        return addAnotherConditionJobFlowNodeAgent(conditionNodeId,false);
     }
     /**
      * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
@@ -353,7 +360,7 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
      * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
      * @return 条件复合节点唯一ID
      */
-    public String addAnotherConditionJobFlowNodeBuilder(String conditionNodeId,boolean defaultConditionNode){
+    public String addAnotherConditionJobFlowNodeAgent(String conditionNodeId,boolean defaultConditionNode){
      
         return jobFlowBuilder.addAnotherConditionJobFlowNodeBuilder(  conditionNodeId,  defaultConditionNode);
     }
@@ -361,84 +368,90 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
 
  
  
-    /**
-     * 添加智能体工作流节点
-     * @param aiAgent
-     * @return
-     */
-    public AIPlanAgent addAgent(AIBaseNodeAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
+//    /**
+//     * 添加智能体工作流节点
+//     * @param aiAgent
+//     * @return
+//     */
+//    public AIPlanAgent addAgent(AIBaseNodeAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
+//        initAIJobFlowBuilder();
+//        aiAgent.setPlanAgent(this);
+//        aiAgent.setParentAgent(this);
+//        jobFlowBuilder.addJobFlowNodeBuilder(new AIAgentNodeBuilder(aiAgent ).setTriggerScriptAPI(triggerScriptAPI));
+//        return this;
+//    }
+
+//    /**
+//     * 添加并行智能体节点，并设置条件触发器
+//     */
+//    public AIPlanAgent addParrelAgent(AIParrelAgent parrelAgent, TriggerScriptAPI triggerScriptAPI){
+//        initAIJobFlowBuilder();
+//        parrelAgent.setParentAgent(this);
+//        if(parrelAgent.getPlanAgent() == null){
+//            parrelAgent.setPlanAgent(this);
+//        }
+//        jobFlowBuilder.addJobFlowNodeBuilder(parrelAgent.getParrelJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
+//        return this;
+//    }
+    
+    public AIPlanAgent addAgent(AppendToParentAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
         initAIJobFlowBuilder();
-        aiAgent.setPlanAgent(this);
-        aiAgent.setParentAgent(this);
-        jobFlowBuilder.addJobFlowNodeBuilder(new AIAgentNodeBuilder(aiAgent ).setTriggerScriptAPI(triggerScriptAPI));
+        aiAgent.appendToParentAgent(this,triggerScriptAPI);
         return this;
     }
 
-    /**
-     * 添加并行智能体节点，并设置条件触发器
-     */
-    public AIPlanAgent addParrelAgent(AIParrelAgent parrelAgent, TriggerScriptAPI triggerScriptAPI){
-        initAIJobFlowBuilder();
-        parrelAgent.setParentAgent(this);
-        if(parrelAgent.getPlanAgent() == null){
-            parrelAgent.setPlanAgent(this);
-        }
-        jobFlowBuilder.addJobFlowNodeBuilder(parrelAgent.getParrelJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
-        return this;
-    }
-
-    /**
-     * 添加并行智能体节点
-     */
-    public AIPlanAgent addParrelAgent(AIParrelAgent parrelAgent){
- 
-        return addParrelAgent(  parrelAgent, (TriggerScriptAPI)null);
-    }
+//    /**
+//     * 添加并行智能体节点
+//     */
+//    public AIPlanAgent addParrelAgent(AIParrelAgent parrelAgent){
+// 
+//        return addParrelAgent(  parrelAgent, (TriggerScriptAPI)null);
+//    }
 
 
-    /**
-     * 添加串行智能体节点，并设置条件触发器
-     */
-    public AIPlanAgent addSequenceAgent(AISequenceAgent sequenceAgent, TriggerScriptAPI triggerScriptAPI){
-        initAIJobFlowBuilder();
-        sequenceAgent.setParentAgent(this);
-        if(sequenceAgent.getPlanAgent() == null){
-            sequenceAgent.setPlanAgent(this);
-        }
-        jobFlowBuilder.addJobFlowNodeBuilder(sequenceAgent.getSequenceJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
-        return this;
-    }
+//    /**
+//     * 添加串行智能体节点，并设置条件触发器
+//     */
+//    public AIPlanAgent addSequenceAgent(AISequenceAgent sequenceAgent, TriggerScriptAPI triggerScriptAPI){
+//        initAIJobFlowBuilder();
+//        sequenceAgent.setParentAgent(this);
+//        if(sequenceAgent.getPlanAgent() == null){
+//            sequenceAgent.setPlanAgent(this);
+//        }
+//        jobFlowBuilder.addJobFlowNodeBuilder(sequenceAgent.getSequenceJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
+//        return this;
+//    }
 
-    /**
-     * 添加串行智能体节点
-     */
-    public AIPlanAgent addSequenceAgent(AISequenceAgent sequenceAgent){
+//    /**
+//     * 添加串行智能体节点
+//     */
+//    public AIPlanAgent addSequenceAgent(AISequenceAgent sequenceAgent){
+//
+//        return addSequenceAgent(  sequenceAgent, (TriggerScriptAPI)null);
+//    }
 
-        return addSequenceAgent(  sequenceAgent, (TriggerScriptAPI)null);
-    }
-
-    /**
-     * 添加工作流节点
-     * @param flowNode
-     * @return
-     */
-    public AIPlanAgent addFlowNode(AIFlowNode flowNode) {
-        return addFlowNode(flowNode,( TriggerScriptAPI )null);
-    }
+//    /**
+//     * 添加工作流节点
+//     * @param flowNode
+//     * @return
+//     */
+//    public AIPlanAgent addFlowNode(AIFlowNode flowNode) {
+//        return addFlowNode(flowNode,( TriggerScriptAPI )null);
+//    }
 
 
-    /**
-     * 添加工作流节点
-     * @param flowNode
-     * @param triggerScriptAPI 
-     * @return
-     */
-    public AIPlanAgent addFlowNode(AIFlowNode flowNode, TriggerScriptAPI triggerScriptAPI) {
-        initAIJobFlowBuilder();
-        flowNode.setPlanAgent(this);
-        jobFlowBuilder.addJobFlowNodeBuilder(new AIFlowNodeBuilder(flowNode ).setTriggerScriptAPI(triggerScriptAPI));
-        return this;
-    }
+//    /**
+//     * 添加工作流节点
+//     * @param flowNode
+//     * @param triggerScriptAPI 
+//     * @return
+//     */
+//    public AIPlanAgent addFlowNode(AIFlowNode flowNode, TriggerScriptAPI triggerScriptAPI) {
+//        initAIJobFlowBuilder();
+//        flowNode.setPlanAgent(this);
+//        jobFlowBuilder.addJobFlowNodeBuilder(new AIFlowNodeBuilder(flowNode ).setTriggerScriptAPI(triggerScriptAPI));
+//        return this;
+//    }
 
     public LastSessionMessage chat( ) {
         
@@ -545,6 +558,52 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> {
             return Flux.empty();
         });
     }
-    
-    
+
+
+    @Override
+    public AIPlanAgent addJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI) {
+        initAIJobFlowBuilder();
+        this.jobFlowBuilder.addJobFlowNodeBuilder(jobFlowNodeBuilder.setTriggerScriptAPI(triggerScriptAPI));
+        return this;
+    }
+
+
+    @Override
+    public String addConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI){
+        initAIJobFlowBuilder();
+        return this.jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder.setTriggerScriptAPI(triggerScriptAPI));
+    }
+
+    @Override
+    public String  addConditionJobFlowNodeBuilder(boolean allCondtionNodeMathfailedContinue,JobFlowNodeBuilder jobFlowNodeBuilder,TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode){
+        initAIJobFlowBuilder();
+        return this.jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,jobFlowNodeBuilder,triggerScriptAPI,defautlConditionNode);
+    }
+    @Override
+    public String  addConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, boolean defaultNode){
+        initAIJobFlowBuilder();
+        return this.jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder,defaultNode);
+    }
+
+    @Override
+    public String addAnotherConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode){
+        initAIJobFlowBuilder();
+        return this.jobFlowBuilder.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,conditionNodeTrigger,defaultConditionNode);
+    }
+    @Override
+    public AIPlanAgent addJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder) {
+        initAIJobFlowBuilder();
+        this.jobFlowBuilder.addJobFlowNodeBuilder(jobFlowNodeBuilder);
+        return this;
+    }
+
+    @Override
+    public AIPlanAgent getPlanAgent() {
+        return this;
+    }
+
+    @Override
+    public JobFlowNodeBuilder getJobFlowNodeBuilder(String nodeId) {
+        return jobFlowBuilder.getJobFlowNodeBuilder(nodeId);
+    }
 }

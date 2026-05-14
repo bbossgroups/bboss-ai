@@ -15,17 +15,16 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
+import org.frameworkset.spi.ai.prompt.PromptEval;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
-
-import java.util.List;
 
 /**
  * @author biaoping.yin
@@ -97,13 +96,31 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
         }
 
         judgeAgent.setPrompt(judgePrompt);
-        
+        ChatContext chatContext = new ChatContext();
+        chatContext.setChatStreamCallback(new ChatStreamCallback() {
+            /**
+             * 提示词预处理
+             *
+             * @param prompt
+             * @return
+             */
+            @Override
+            public String evalPrompt(String prompt) {
+                PromptEval promptEval = new PromptEval();
+                return promptEval.eval(prompt, jobFlowNodeExecuteContext);
+            }
+
+            @Override
+            public void streamDone(ServerEvent serverEvent) {
+                AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext);
+            }
+        });
         JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
         AgentMessage agentMessage = judgeAgent.getAgentMessage() != null ? judgeAgent.getAgentMessage() : planAgent.getAgentMessage();
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
-        ServerEvent serverEvent = judgeAgent.chat((ChatAgentMessage)agentMessage);
+        ServerEvent serverEvent = judgeAgent.chat((ChatAgentMessage)agentMessage,chatContext);
         
         if(serverEvent != null){
             FluxSink<ServerEvent> fluxSink = judgeAgent.getAgentFluxSink();

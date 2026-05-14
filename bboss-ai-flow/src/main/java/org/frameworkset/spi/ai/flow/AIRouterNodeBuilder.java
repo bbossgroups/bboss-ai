@@ -17,10 +17,14 @@ package org.frameworkset.spi.ai.flow;
 
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.callback.ChatStreamCallback;
+import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.prompt.PromptEval;
 import org.frameworkset.tran.jobflow.builder.CallableJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -87,7 +91,26 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         }
         prompt = prompt.replace("${prompt}",agentMessage.getPrompt()).replace("${routeChoiceList}",JsonUtil.object2json(routeChoiceList));
         routeAgent.setPrompt(prompt);
-        ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage)agentMessage);
+        ChatContext chatContext = new ChatContext();
+        chatContext.setChatStreamCallback(new ChatStreamCallback() {
+            /**
+             * 提示词预处理
+             *
+             * @param prompt
+             * @return
+             */
+            @Override
+            public String evalPrompt(String prompt) {
+                PromptEval promptEval = new PromptEval();
+                return promptEval.eval(prompt, jobFlowNodeExecuteContext);
+            }
+
+            @Override
+            public void streamDone(ServerEvent serverEvent) {
+                AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext);
+            }
+        });
+        ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage)agentMessage,chatContext);
         if(serverEvent != null) {
             FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
             if(fluxSink != null){

@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import org.frameworkset.spi.ai.tools.ToolsRegist;
+import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 
 /**
  * 调取智能体执行记忆，判断输出结果是否满足用户问题
@@ -44,10 +45,11 @@ public class AIJudgeAgent
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
     }
-    
+    @Override
+    protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
+        return new AIJudgeNodeBuilder(this );
+    }
+
     
 
- 
-
- 
 }

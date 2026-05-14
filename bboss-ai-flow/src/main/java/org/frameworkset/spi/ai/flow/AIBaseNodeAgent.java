@@ -19,6 +19,9 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
+import org.frameworkset.tran.jobflow.NodeTrigger;
+import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
+import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -26,8 +29,8 @@ import reactor.core.publisher.FluxSink;
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class AIBaseNodeAgent<T extends AIBaseNodeAgent> 
-        extends AIAgent<T> {
+public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent> 
+        extends AIAgent<T> implements AppendToParentAgent{
     protected AIPlanAgent planAgent;
     public AIBaseNodeAgent(ToolsRegist mcpToolsRegist ) {
         super(   mcpToolsRegist);
@@ -83,44 +86,148 @@ public class AIBaseNodeAgent<T extends AIBaseNodeAgent>
         this.planAgent = aiPlanAgent;
         return (T)this;
     }
+    
+    protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
+        return new AIAgentNodeBuilder(this );
+    }
+
+    /**
+     * 添加并行智能体节点，并设置条件触发器
+     *
+     * @param parentAgent
+     * @param triggerScriptAPI
+     */
+    @Override
+    public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
+        if(this.getPlanAgent() == null){
+
+            this.setPlanAgent(parentAgent.getPlanAgent());
+
+        }
+        
+        this.setParentAgent((AIAgent) parentAgent);
+        parentAgent.addJobFlowNodeBuilder(builderJobFlowNodeBuilder(),triggerScriptAPI);
+    }
+
+    @Override
+    public String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, boolean defaultNode) {
+        JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
 
-//    public  String evalSystemPrompt(AgentMessage agentMessage){
-//        String systemPrompt = this.getSystemPrompt();
-//        if(systemPrompt == null){
-////            AIAgent parent = this.getParentAgent();
-////            if(parent != null) {
-////                systemPrompt = parent.evalSystemPrompt(agentMessage);
-////            }
-////            else {
-////                systemPrompt = this.planAgent.getSystemPrompt();
-////                if(systemPrompt == null) {
-//                    systemPrompt = agentMessage.getSystemPrompt();
-////                }
-////            }
-//            
-//        }
-//        if(this.getParentAgent() != null) {
-//            this.getParentAgent().setFirstSubAgentSystemPrompt(systemPrompt);
-//        }
-//        return systemPrompt;
-//    }
-//    public  String evalPrompt(AgentMessage agentMessage){
-//        String prompt = this.getPrompt();
-//        if(prompt == null){
-////            AIAgent parent = this.getParentAgent();
-////            if(parent != null) {
-////                prompt = parent.evalPrompt(agentMessage);
-////            }
-////            else {
-////                prompt = this.planAgent.getPrompt();
-////                if(prompt == null) {
-//                    prompt = agentMessage.getPrompt();
-////                }
-////            }
-//        }
-//        return prompt;
-//    }
+        if(jobFlowNodeBuilder == null){
+           
+            if(this.getPlanAgent() == null){
 
- 
+                this.setPlanAgent(parentAgent.getPlanAgent());
+
+            }
+            this.setParentAgent((AIAgent)parentAgent);
+            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder, conditionNodeTrigger);
+
+
+       return parentAgent.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder,defaultNode);
+    }
+
+    @Override
+    public String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
+
+        JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
+
+
+        if(jobFlowNodeBuilder == null){
+             
+            if(this.getPlanAgent() == null){
+
+                this.setPlanAgent(parentAgent.getPlanAgent());
+
+            }
+            this.setParentAgent((AIAgent)parentAgent);
+            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder, conditionNodeTrigger);
+        
+      
+        return parentAgent.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder,triggerScriptAPI);
+    }
+    
+    
+
+    @Override
+    public String appendConditionJobFlowNodeToParentAgent(boolean allCondtionNodeMathfailedContinue,AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode){
+        JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
+
+
+        if(jobFlowNodeBuilder == null){
+           
+            if(this.getPlanAgent() == null){
+
+                this.setPlanAgent(parentAgent.getPlanAgent());
+
+            }
+            this.setParentAgent((AIAgent)parentAgent);
+            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder, conditionNodeTrigger);
+
+
+        return parentAgent.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,jobFlowNodeBuilder,triggerScriptAPI,defautlConditionNode);
+    }
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * 返回条件复合节点唯一ID
+     * @return 条件复合节点唯一ID
+     */
+    @Override
+    public String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent){
+        return addAnotherConditionJobFlowNodeAgent(parentAgent,false);
+    }
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * @param parentAgent
+     * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
+     * @return 条件复合节点唯一ID
+     */
+    
+    @Override
+    public String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent,boolean defaultConditionNode){
+        return addAnotherConditionJobFlowNodeAgent(  parentAgent, (NodeTrigger) null,  defaultConditionNode);
+    }
+
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * @param parentAgent
+     * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
+     * @return 条件复合节点唯一ID
+     */
+    @Override
+    public String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+        JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
+
+        if(jobFlowNodeBuilder == null){
+            
+            this.setPlanAgent(parentAgent.getPlanAgent());
+            this.setParentAgent((AIAgent) parentAgent);
+            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+        return parentAgent.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
+    }
+
+
+
+
 }

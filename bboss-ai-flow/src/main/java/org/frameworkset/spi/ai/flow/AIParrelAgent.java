@@ -16,11 +16,14 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.tran.jobflow.JobFlowNode;
+import org.frameworkset.tran.jobflow.NodeTrigger;
+import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.frameworkset.tran.jobflow.listener.JobFlowNodeListener;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
@@ -35,7 +38,7 @@ import java.util.List;
  * @author biaoping.yin
  * @Date 2026/4/12
  */
-public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
+public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AIContainerAgent<AIParrelAgent>{
     private static Logger logger = LoggerFactory.getLogger(AIParrelAgent.class);
     private AIParrelJobFlowNodeBuilder parrelJobFlowNodeBuilder;
     public AIParrelAgent( AIPlanAgent planAgent) {
@@ -116,6 +119,8 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
     public AIParrelJobFlowNodeBuilder getParrelJobFlowNodeBuilder() {
         return parrelJobFlowNodeBuilder;
     }
+
+
  
     /**
      * 添加智能体工作流节点
@@ -125,93 +130,286 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent> {
     public AIParrelAgent addAgent(AIBaseNodeAgent aiAgent) {
         return addAgent(aiAgent,( TriggerScriptAPI )null);
     }
-     
+    public AIParrelAgent addAgent(AppendToParentAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
+        initAIParrelJobFlowNodeBuilder();
+        aiAgent.setDisableStream(true);
+        aiAgent.appendToParentAgent(this,triggerScriptAPI);
+        return  this;
+    }
 
+
+
+
+
+
+
+ 
+
+
+
+    ////////////////////////////原生工作流节点添加方法：开始/////////////////////////
+    public AIParrelAgent addJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder){
+        this.initAIParrelJobFlowNodeBuilder();
+        parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(jobFlowNodeBuilder);
+        return this;
+    }
+
+    public AIParrelAgent addJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder,TriggerScriptAPI triggerScriptAPI){
+        this.initAIParrelJobFlowNodeBuilder();
+        parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(jobFlowNodeBuilder.setTriggerScriptAPI(triggerScriptAPI));
+        return this;
+    }
+
+    public AIParrelAgent addJobFlowNodeListener(JobFlowNodeListener jobFlowNodeListener){
+        this.initAIParrelJobFlowNodeBuilder();
+        parrelJobFlowNodeBuilder.addJobFlowNodeListener(jobFlowNodeListener);
+        return this;
+    }
+
+    ////////////////////////////原生工作流节点添加方法：结束/////////////////////////
+    @Override
+    protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
+        return this.getParrelJobFlowNodeBuilder();
+    }
+    /**
+     * 添加并行智能体节点，并设置条件触发器
+     */
+    public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI){
+        this.setParentAgent((AIAgent)parentAgent);
+        if(this.getPlanAgent() == null){
+             
+             this.setPlanAgent(parentAgent.getPlanAgent());
+             
+        }
+        parentAgent.addJobFlowNodeBuilder(this.getParrelJobFlowNodeBuilder(),triggerScriptAPI);
+    }
+    
+    /**1111111111111111111111111*/
+
+ 
+
+ 
+
+
+
+
+    //*************************************//
+
+
+
+
+//    /**
+//     * 添加路由网关节点：负责根据用户问题决定后续的路由节点，AI进行自主决策
+//     * @param aiRouteAgent
+//     * @return
+//     */
+//    public AISequenceAgent addAIRouteAgent(AIRouteAgent aiRouteAgent) {
+//        this.initAISequenceJobFlowNodeBuilder( );
+//        setHeaderAgent(aiRouteAgent);
+//        aiRouteAgent.setPlanAgent(planAgent);
+//        aiRouteAgent.setParentAgent(this);
+//        aiRouteAgent.setDisableStream(true);
+//        sequenceJobFlowNodeBuilder.addJobFlowNodeBuilder(new AIRouterNodeBuilder(aiRouteAgent));
+//        return this;
+//    }
+
+// 
+//    /**
+//     * 添加路由节点
+//     * @param aiRouteChoiceAgent
+//     * @return
+//     */
+//    public AISequenceAgent addRouteChoiceAgent(AIBaseNodeAgent aiRouteChoiceAgent) {
+//        this.initAISequenceJobFlowNodeBuilder( );
+//        setHeaderAgent(aiRouteChoiceAgent);
+//        aiRouteChoiceAgent.setPlanAgent(planAgent);
+//        aiRouteChoiceAgent.setParentAgent(this);
+////        aiRouteChoiceAgent.setDisableStream(true);
+//        sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(aiRouteChoiceAgent )
+//                .setTriggerScriptAPI(nodeTriggerContext -> {
+//                    String agentId = (String) nodeTriggerContext.getContainerContextData("routeChoice",true);
+//                    if(agentId == null){
+//                        agentId = (String) nodeTriggerContext.getFlowContextData("routeChoice");
+//                    }
+//                    if(agentId != null && agentId.equals(aiRouteChoiceAgent.getAgentId())){
+//                        return true;
+//                    }
+//                    return false;
+//                }));
+//        return this;
+//    }
+
+
+//    /**
+//     * 添加默认路由节点
+//     * @param defaultRouteChoiceAgent
+//     * @return
+//     */
+//    public AISequenceAgent addDefaultRouteChoiceAgent(AINodeAgent defaultRouteChoiceAgent) {
+//        this.initAISequenceJobFlowNodeBuilder( );
+//        setHeaderAgent(defaultRouteChoiceAgent);
+//        defaultRouteChoiceAgent.setPlanAgent(planAgent);
+//        defaultRouteChoiceAgent.setParentAgent(this);
+////        aiAgent.setDisableStream(true);
+//        sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(new AIRouterChoiceNodeBuilder(defaultRouteChoiceAgent ),true);
+//        return this;
+//    }
+//    /**
+//     * 添加工作流节点
+//     * @param judgeAgent
+//     * @return
+//     */
+//    public AISequenceAgent addJudgeAgent(AIJudgeAgent judgeAgent) {
+//        this.initAISequenceJobFlowNodeBuilder( );
+//        setHeaderAgent(judgeAgent);
+//        judgeAgent.setPlanAgent(planAgent);
+//        judgeAgent.setParentAgent(this);
+//        judgeAgent.setDisableStream(true);
+//        sequenceJobFlowNodeBuilder.addJobFlowNodeBuilder(new AIJudgeNodeBuilder(judgeAgent ));
+//        return this;
+//    }
+
+ 
+
+
+//    /**
+//     * 添加智能体工作流节点：为当前作业节点添加后续条件分支，可以连续添加多个,通过conditionNodeTrigger指定条件
+//     * @param aiAgent
+//     * @return
+//     */
+//    public AISequenceAgent addConditionFlowNode(AIBaseNodeAgent aiAgent  ){
+//        return addConditionFlowNode(  aiAgent , (TriggerScriptAPI)null);
+//    }
+//
+//    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+//        return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
+//    }
+//
+//    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
+//        this.initAISequenceJobFlowNodeBuilder( );
+//        JobFlowNodeBuilder jobFlowNodeBuilder = sequenceJobFlowNodeBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
+//        if(jobFlowNodeBuilder == null) {
+//            setHeaderAgent(aiAgent);
+//            aiAgent.setPlanAgent(planAgent);
+//            aiAgent.setParentAgent(this);
+//            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
+//        }
+////        aiAgent.setDisableStream(true);
+//        sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,jobFlowNodeBuilder,conditionNodeTrigger,defautlConditionNode);
+//        
+//        return this;
+//    }
+//    public AISequenceAgent addConditionFlowNode(AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+//        this.initAISequenceJobFlowNodeBuilder( );
+//        JobFlowNodeBuilder jobFlowNodeBuilder = sequenceJobFlowNodeBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
+//        if(jobFlowNodeBuilder == null) {
+//            setHeaderAgent(aiAgent);
+//            aiAgent.setPlanAgent(planAgent);
+//            aiAgent.setParentAgent(this);
+//            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
+////        aiAgent.setDisableStream(true);
+//        }
+//        sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder,conditionNodeTrigger);
+//        return this;
+//    }
+
+
+
+
+//
+//    /**
+//     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+//     * addConditionJobFlowNodeBuilder方法添加
+//     * @param baseNodeAgent
+//     * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
+//     * @return 条件复合节点唯一ID
+//     */
+//    public String addAnotherConditionJobFlowNodeAgent(AIBaseNodeAgent baseNodeAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+//        this.initAISequenceJobFlowNodeBuilder( );
+//        JobFlowNodeBuilder jobFlowNodeBuilder = sequenceJobFlowNodeBuilder.getJobFlowNodeBuilder(baseNodeAgent.getAgentId());
+//
+//        String cid = null;
+//        if(jobFlowNodeBuilder == null){
+//            
+//            setHeaderAgent(baseNodeAgent);
+//            baseNodeAgent.setPlanAgent(planAgent);
+//            baseNodeAgent.setParentAgent(this);
+//            jobFlowNodeBuilder = new AIAgentNodeBuilder(baseNodeAgent);
+//           
+////            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+//        }
+//        cid = sequenceJobFlowNodeBuilder.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
+//        return cid;
+//    }
+
+
+
+
+
+
+
+
+  
+//    /**
+//     * 添加工作流节点
+//     * @param judgeAgent
+//     * @return
+//     */
+//    public AIPlanAgent addJudgeAgent(AIJudgeAgent judgeAgent) {
+//        initAIContainerJobFlowNodeBuilder();
+//        judgeAgent.setPlanAgent(this);
+//        judgeAgent.setParentAgent(this);
+//        jobFlowBuilder.addJobFlowNodeBuilder(new AIJudgeNodeBuilder(judgeAgent ));
+//        return this;
+//    }
     /**
      * 添加智能体工作流节点
      * @param aiAgent
      * @return
      */
-    public AIParrelAgent addAgent(AIBaseNodeAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
-        this.initAIParrelJobFlowNodeBuilder();
-        aiAgent.setPlanAgent(planAgent);
-        aiAgent.setParentAgent(this);
-        aiAgent.setDisableStream(true);
-        parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(new AIAgentNodeBuilder(aiAgent ).setTriggerScriptAPI(triggerScriptAPI));
-        return this;
+    public AIParrelAgent addAgent(AppendToParentAgent aiAgent) {
+        return addAgent(aiAgent,(TriggerScriptAPI)null);
     }
 
 
-    /**
-     * 添加并行智能体节点，并设置条件触发器
-     */
-    public AIParrelAgent addParrelAgent(AIParrelAgent parrelAgent, TriggerScriptAPI triggerScriptAPI){
-        initAIParrelJobFlowNodeBuilder();
-        parrelAgent.setParentAgent(this);
-        if(parrelAgent.getPlanAgent() == null){
-            parrelAgent.setPlanAgent(this.getPlanAgent());
-        }
-        parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(parrelAgent.getParrelJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
-        return this;
-    }
-
-    /**
-     * 添加并行智能体节点
-     */
-    public AIParrelAgent addParrelAgent(AIParrelAgent parrelAgent){
-
-        return addParrelAgent(  parrelAgent, (TriggerScriptAPI)null);
-    }
-
-
-    /**
-     * 添加串行智能体节点，并设置条件触发器
-     */
-    public AIParrelAgent addSequenceAgent(AISequenceAgent sequenceAgent, TriggerScriptAPI triggerScriptAPI){
-        initAIParrelJobFlowNodeBuilder();
-        sequenceAgent.setParentAgent(this);
-        if(sequenceAgent.getPlanAgent() == null){
-            sequenceAgent.setPlanAgent(this.getPlanAgent());
-        }
-        parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(sequenceAgent.getSequenceJobFlowNodeBuilder().setTriggerScriptAPI(triggerScriptAPI));
-        return this;
-    }
-
-    /**
-     * 添加串行智能体节点
-     */
-    public AIParrelAgent addSequenceAgent(AISequenceAgent sequenceAgent){
-
-        return addSequenceAgent(  sequenceAgent, (TriggerScriptAPI)null);
-    }
-
-    /**
-     * 添加工作流节点
-     * @param flowNode
-     * @return
-     */
-    public AIParrelAgent addFlowNode(AIFlowNode flowNode) {
-        return addFlowNode(flowNode,( TriggerScriptAPI )null);
-    }
  
-  
-    
-    /**
-     * 添加工作流节点
-     * @param flowNode
-     * @param triggerScriptAPI 
-     * @return
-     */
-    public AIParrelAgent addFlowNode(AIFlowNode flowNode, TriggerScriptAPI triggerScriptAPI) {
-        initAIParrelJobFlowNodeBuilder();
-        flowNode.setPlanAgent(planAgent);
-        
-        parrelJobFlowNodeBuilder.addJobFlowNodeBuilder(new AIFlowNodeBuilder(flowNode ).setTriggerScriptAPI(triggerScriptAPI));
-        return this;
+   
+ 
+
+
+
+////////////////////////////原生工作流节点添加方法：开始/////////////////////////
+ 
+
+ 
+
+    @Override
+    public String addConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, boolean defaultNode) {
+        throw new UnsupportedOperationException("AI parrel agent Not supported addConditionJobFlowNodeBuilder.");
     }
- 
- 
-  
-    
+
+    @Override
+    public String addConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI) {
+        throw new UnsupportedOperationException("AI parrel agent Not supported addConditionJobFlowNodeBuilder.");
+    }
+
+    @Override
+    public String addConditionJobFlowNodeBuilder(boolean allCondtionNodeMathfailedContinue, JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI, boolean defautlConditionNode) {
+        throw new UnsupportedOperationException("AI parrel agent Not supported addConditionJobFlowNodeBuilder.");
+    }
+
+    @Override
+    public JobFlowNodeBuilder getJobFlowNodeBuilder(String nodeId) {
+        throw new UnsupportedOperationException("AI parrel agent Not supported getJobFlowNodeBuilder.");
+    }
+
+    @Override
+    public String addAnotherConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode) {
+        throw new UnsupportedOperationException("AI parrel agent Not supported addAnotherConditionJobFlowNodeBuilder.");
+    }
+
+
+
+    ////////////////////////////原生工作流节点添加方法：结束/////////////////////////
     
 }
