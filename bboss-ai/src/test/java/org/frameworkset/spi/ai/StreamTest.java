@@ -148,7 +148,7 @@ public class StreamTest {
 
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库飞书定制开发和应用中的文档",true);
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
-//        streamDBStoreChatWithMcpTools("deepseek","feishumcp","deepseek-chat","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
+        streamDBStoreChatWithMcpTools("deepseek","feishumcp","deepseek-v4-pro","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
 //        streamDBStoreChatWithMcpTools("qwenvlplus","feishumcp","qwen3.6-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
         
 //        streamChatWithMcpTools("openai","feishumcp","gpt-5.4","列出知识库飞书定制开发和应用中的文档",true);
@@ -161,7 +161,7 @@ public class StreamTest {
 //        qwenvlCompare("qwen3-vl-plus","qwenvlplus");
 //        qwenvlCompare("MiniMax-M2.7","minimax");
 //        callChatDeepseekSimple();
-          callChatDeepseekSimple("openai","gpt-5.4");
+//          callChatDeepseekSimple("openai","gpt-5.4");
 //        callChatDeepseekSimple("minimax","MiniMax-M2.7");
 //        callMinimaxSimple();
 //        qwenvJiutian();
@@ -590,16 +590,8 @@ public class StreamTest {
             mcpToolsRegist = new MCPToolsRegist(mcpServer);
         }
         else{
-            BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
-//            bboss应用
-            baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd0")
-                    .setFeishAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs");
-
-            baseFeishuConfig
-                    .setMcpTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
-            ;
-
-            mcpToolsRegist = new FeishuMcpRegist("feishumcp", baseFeishuConfig);
+           
+            mcpToolsRegist = new FeishuMcpRegist("feishumcp");
         }
         aiAgent.setToolsRegist(mcpToolsRegist);
 
@@ -655,7 +647,13 @@ public class StreamTest {
                 .setMaxTokens(65536L);
         chatAgentMessage.setThinking(thinking);
         AIAgent aiAgent = new AIAgent();
-        MCPToolsRegist mcpToolsRegist = new MCPToolsRegist(mcpServer);
+        MCPToolsRegist mcpToolsRegist = null;
+        if(!mcpServer.equals("feishumcp")) {
+            mcpToolsRegist = new MCPToolsRegist(mcpServer);
+        }
+        else{
+            mcpToolsRegist = new FeishuMcpRegist(mcpServer);
+        }
         
         aiAgent.setToolsRegist(mcpToolsRegist);
 
