@@ -277,13 +277,13 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
      * @param conditionNodeId
      * @return
      */
-    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger){
-        return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  conditionNodeId,   conditionNodeTrigger,false);
+    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger){
+        return addConditionFlowNode(  allCondtionNodeMatchedfailedContinue,  conditionNodeId,   conditionNodeTrigger,false);
     }
-    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
+    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
         this.initAISequenceJobFlowNodeBuilder( );
        
-        sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,conditionNodeId,conditionNodeTrigger,defautlConditionNode);
+        sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMatchedfailedContinue,conditionNodeId,conditionNodeTrigger,defautlConditionNode);
         return this;
     }
 //    /**
@@ -295,11 +295,11 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
 //        return addConditionFlowNode(  aiAgent , (TriggerScriptAPI)null);
 //    }
 //
-//    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
-//        return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
+//    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+//        return addConditionFlowNode(  allCondtionNodeMatchedfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
 //    }
 //
-//    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
+//    public AISequenceAgent addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,AIBaseNodeAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
 //        this.initAISequenceJobFlowNodeBuilder( );
 //        JobFlowNodeBuilder jobFlowNodeBuilder = sequenceJobFlowNodeBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
 //        if(jobFlowNodeBuilder == null) {
@@ -309,7 +309,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
 //            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
 //        }
 ////        aiAgent.setDisableStream(true);
-//        sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,jobFlowNodeBuilder,conditionNodeTrigger,defautlConditionNode);
+//        sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMatchedfailedContinue,jobFlowNodeBuilder,conditionNodeTrigger,defautlConditionNode);
 //        
 //        return this;
 //    }
@@ -496,15 +496,15 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
         return addConditionFlowNode(  aiAgent , (TriggerScriptAPI)null);
     }
 
-    public String addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
-        return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
+    public String addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+        return addConditionFlowNode(  allCondtionNodeMatchedfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
     }
 
-    public String addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode) {
+    public String addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode) {
         this.initAISequenceJobFlowNodeBuilder();
 
         setHeaderAgent(this);
-        return aiAgent.appendConditionJobFlowNodeToParentAgent(allCondtionNodeMathfailedContinue,this,conditionNodeTrigger,defautlConditionNode);
+        return aiAgent.appendConditionJobFlowNodeToParentAgent(allCondtionNodeMatchedfailedContinue,this,conditionNodeTrigger,defautlConditionNode);
 
 //        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
 //        if (jobFlowNodeBuilder == null) {
@@ -513,7 +513,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
 //            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
 ////            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
 //        }
-//        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue, jobFlowNodeBuilder, conditionNodeTrigger, defautlConditionNode);
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMatchedfailedContinue, jobFlowNodeBuilder, conditionNodeTrigger, defautlConditionNode);
     }
     public String addConditionFlowNode(AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
         this.initAISequenceJobFlowNodeBuilder();
@@ -670,9 +670,9 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     }
 
     @Override
-    public String addConditionJobFlowNodeBuilder(boolean allCondtionNodeMathfailedContinue, JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI, boolean defautlConditionNode) {
+    public String addConditionJobFlowNodeBuilder(boolean allCondtionNodeMatchedfailedContinue, JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI, boolean defautlConditionNode) {
         initAISequenceJobFlowNodeBuilder();
-        return this.sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue, jobFlowNodeBuilder, triggerScriptAPI, defautlConditionNode);
+        return this.sequenceJobFlowNodeBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMatchedfailedContinue, jobFlowNodeBuilder, triggerScriptAPI, defautlConditionNode);
     }
 
     @Override
@@ -687,11 +687,11 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
         return this.sequenceJobFlowNodeBuilder.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder, conditionNodeTrigger, defaultConditionNode);
     }
 
-    public AISequenceAgent addJobFlowNodeListener(JobFlowNodeListener jobFlowNodeListener){
-        this.initAISequenceJobFlowNodeBuilder();
-        sequenceJobFlowNodeBuilder.addJobFlowNodeListener(jobFlowNodeListener);
-        return this;
-    }
+//    public AISequenceAgent addJobFlowNodeListener(JobFlowNodeListener jobFlowNodeListener){
+//        this.initAISequenceJobFlowNodeBuilder();
+//        sequenceJobFlowNodeBuilder.addJobFlowNodeListener(jobFlowNodeListener);
+//        return this;
+//    }
 
     ////////////////////////////原生工作流节点添加方法：结束/////////////////////////
     protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){

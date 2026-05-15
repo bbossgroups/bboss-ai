@@ -21,9 +21,13 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.tran.jobflow.NodeTrigger;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
+import org.frameworkset.tran.jobflow.listener.JobFlowNodeListener;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author biaoping.yin
@@ -64,6 +68,14 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
     public AIBaseNodeAgent(String prompt, int sessionSize) {
         super(prompt, sessionSize);
     }
+    protected List<JobFlowNodeListener> jobFlowNodeListeners;
+    public T addJobFlowNodeListener(JobFlowNodeListener jobFlowNodeListener){
+        if(this.jobFlowNodeListeners == null){
+            this.jobFlowNodeListeners = new ArrayList<JobFlowNodeListener>();
+        }
+        this.jobFlowNodeListeners.add(jobFlowNodeListener);
+        return (T)this;
+    }
     public FluxSink<ServerEvent> getAgentFluxSink(){
         return planAgent.getAgentFluxSink();
     }
@@ -88,8 +100,20 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
     }
     
     protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
-        return new AIAgentNodeBuilder(this );
+        AIAgentNodeBuilder aiAgentNodeBuilder = new AIAgentNodeBuilder(this);
+       
+        return aiAgentNodeBuilder;
     }
+
+
+    protected JobFlowNodeBuilder _builderJobFlowNodeBuilder(){
+        JobFlowNodeBuilder aiAgentNodeBuilder = builderJobFlowNodeBuilder();
+        if(this.jobFlowNodeListeners != null)
+            aiAgentNodeBuilder.addJobFlowNodeListeners(this.jobFlowNodeListeners);
+        return aiAgentNodeBuilder;
+    }
+    
+    
 
     /**
      * 添加并行智能体节点，并设置条件触发器
@@ -106,7 +130,7 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
         }
         
         this.setParentAgent((AIAgent) parentAgent);
-        parentAgent.addJobFlowNodeBuilder(builderJobFlowNodeBuilder(),triggerScriptAPI);
+        parentAgent.addJobFlowNodeBuilder(_builderJobFlowNodeBuilder(),triggerScriptAPI);
     }
 
     @Override
@@ -122,7 +146,7 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
             }
             this.setParentAgent((AIAgent)parentAgent);
-            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+            jobFlowNodeBuilder = _builderJobFlowNodeBuilder();
 
 //            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
         }
@@ -146,7 +170,7 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
             }
             this.setParentAgent((AIAgent)parentAgent);
-            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+            jobFlowNodeBuilder = _builderJobFlowNodeBuilder();
 
 //            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
         }
@@ -171,7 +195,7 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
             }
             this.setParentAgent((AIAgent)parentAgent);
-            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+            jobFlowNodeBuilder = _builderJobFlowNodeBuilder();
 
 //            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
         }
@@ -220,7 +244,7 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
             
             this.setPlanAgent(parentAgent.getPlanAgent());
             this.setParentAgent((AIAgent) parentAgent);
-            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+            jobFlowNodeBuilder = _builderJobFlowNodeBuilder();
 
 //            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
         }

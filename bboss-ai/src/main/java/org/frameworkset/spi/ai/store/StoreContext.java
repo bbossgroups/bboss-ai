@@ -25,6 +25,7 @@ import java.util.Map;
 public class StoreContext {
     public static final String STORE_TYPE_DB = "db";
     public static final String STORE_TYPE_MEMORY = "memory";
+    private AgentSessionStore mainSessionStore;
     /**
      * 会话id
      */
@@ -154,5 +155,13 @@ public class StoreContext {
     public StoreContext setResetSession(boolean resetSession) {
         this.resetSession = resetSession;
         return this;
+    }
+
+    public AgentSessionStore getMainSessionStore() {
+        return mainSessionStore;
+    }
+
+    public void setMainSessionStore(AgentSessionStore mainSessionStore) {
+        this.mainSessionStore = mainSessionStore;
     }
 }

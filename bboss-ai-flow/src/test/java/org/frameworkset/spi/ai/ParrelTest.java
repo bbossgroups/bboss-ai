@@ -21,6 +21,7 @@ import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.frameworkset.tran.jobflow.context.NodeTriggerContext;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import org.frameworkset.util.concurrent.IntegerCount;
@@ -89,7 +90,7 @@ public class ParrelTest {
         aiParrelAgent.addAgent(new UserNodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
         aiPlanAgent.addAgent(aiParrelAgent);
         IntegerCount integerCount = new IntegerCount();
-        aiPlanAgent.addConditionFlowNode(introduceProvinces, new TriggerScriptAPI() {
+        aiPlanAgent.addConditionFlowNode(true,introduceProvinces, new TriggerScriptAPI() {
             @Override
             public boolean needTrigger(NodeTriggerContext nodeTriggerContext) throws Exception {
                 int i = integerCount.increament();
@@ -101,8 +102,24 @@ public class ParrelTest {
                 }
             }
         });
-        
-        
+
+        aiPlanAgent.addAgent(new AIFlowNode() {
+            @Override
+            public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
+                logger.info("call 自定义节点1。");
+                jobFlowNodeExecuteContext.addJobFlowContextData("customNode", "customNodeData");
+                return null;
+            }
+        });
+
+        aiPlanAgent.addAgent(new AIFlowNode() {
+            @Override
+            public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
+                logger.info("call 自定义节点2。");
+                logger.info("call 自定义节点2。customNode:{}", jobFlowNodeExecuteContext.getJobFlowContextData("customNode"));
+                return null;
+            }
+        });
         //开始对话，执行对话流程，并返回会话结果   
         LastSessionMessage lastSessionMessage = aiPlanAgent.chat();
         

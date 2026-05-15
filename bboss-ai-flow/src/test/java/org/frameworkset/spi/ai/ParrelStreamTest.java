@@ -91,15 +91,16 @@ public class ParrelStreamTest {
                 .setAgentId("introduceProvinces") );
         //构建并行智能体
         AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("共享任务节点");
-        aiParrelAgent.addAgent(new AINodeAgent("同时结合中国省份特点：\r\n#[provinces],\r\n用300字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
+        //scope=flow|node|container
+        aiParrelAgent.addAgent(new AINodeAgent("同时结合中国省份特点：\r\n#[provinces,scope=flow],\r\n用300字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));   
         aiPlanAgent.addAgent(aiParrelAgent);
 
+
         //开始对话，执行对话流程，并返回会话结果
         Flux<ServerEvent> flux = aiPlanAgent.chatStream();
 // 用于累积完整的回答
-        StringBuilder completeAnswer = new StringBuilder();
         CountDownLatch countDownLatch = new CountDownLatch(1);
         flux
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
@@ -137,26 +138,7 @@ public class ParrelStreamTest {
                         if(event.isDone() || event.finished()){
                             System.out.println();
                         }
-                        if(!event.isDone() ) {
-                            // 累积回答内容
-                            if(event.getData() != null) {
-                                completeAnswer.append(event.getData());
-                            }
-                        } else  {
-
-                            if( completeAnswer.length() > 0) {
-                                // 当收到完成信号且有累积内容时，将完整回答添加到会话记忆
-//                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
-                                completeAnswer.setLength(0);
-
-
-                            }
-                            //完整的事件消息框架内部已经添加到会话记忆，无需再次添加到会话记忆
-//                            else if(event.getData() != null){
-//                                chatAgentMessage.addAgentResultSessionMessage(event.getData(),event.getAgent());
-//                            }
-
-                        }
+                       
                     }
                 }).doOnComplete(() -> {
                     logger.info("\n=== 流完成 ===");

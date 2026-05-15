@@ -29,6 +29,9 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
 
     @Override
     public AgentSessionStore build(StoreContext storeContext) {
+        if(storeContext.getMainSessionStore() != null){
+            return storeContext.getMainSessionStore();
+        }
         AgentSessionStore agentSessionStore = null;
         if(storeContext.getStoreType() == null || storeContext.getStoreType().equals(StoreContext.STORE_TYPE_MEMORY)) {
             agentSessionStore = new AgentSessionStoreMemory(storeContext);
@@ -37,9 +40,11 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
         else if(storeContext.getStoreType().equals(StoreContext.STORE_TYPE_DB)) {
             agentSessionStore = new AgentSessionStoreDB(storeContext);
         }
-        agentSessionStore.init();
         if(agentSessionStore == null)
             throw new AIRuntimeException("Invalid store type: " + storeContext.getStoreType())  ;
+
+        agentSessionStore.init();
+        storeContext.setMainSessionStore(agentSessionStore);
         return agentSessionStore;
     }
 }

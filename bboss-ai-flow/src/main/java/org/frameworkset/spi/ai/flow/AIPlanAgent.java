@@ -27,6 +27,7 @@ import org.frameworkset.tran.jobflow.JobParams;
 import org.frameworkset.tran.jobflow.NodeTrigger;
 import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
+import org.frameworkset.tran.jobflow.listener.JobFlowListener;
 import org.frameworkset.tran.jobflow.schedule.JobFlowScheduleConfig;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
@@ -177,12 +178,12 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
      * @param conditionNodeId
      * @return
      */
-    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger){
-        return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  conditionNodeId,   conditionNodeTrigger,false);
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger){
+        return addConditionFlowNode(  allCondtionNodeMatchedfailedContinue,  conditionNodeId,   conditionNodeTrigger,false);
     }
-    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,String conditionNodeId, TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode){
         initAIJobFlowBuilder();
-        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,conditionNodeId,conditionNodeTrigger,defautlConditionNode);
+        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMatchedfailedContinue,conditionNodeId,conditionNodeTrigger,defautlConditionNode);
         return this;
     }
     /**
@@ -194,13 +195,13 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
         return addConditionFlowNode(  aiAgent , (TriggerScriptAPI)null);
     }
     
-    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
-        return addConditionFlowNode(  allCondtionNodeMathfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
+        return addConditionFlowNode(  allCondtionNodeMatchedfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
     }
 
-    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode) {
+    public AIPlanAgent addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode) {
         initAIJobFlowBuilder();
-        aiAgent.appendConditionJobFlowNodeToParentAgent(allCondtionNodeMathfailedContinue,this,conditionNodeTrigger,defautlConditionNode);
+        aiAgent.appendConditionJobFlowNodeToParentAgent(allCondtionNodeMatchedfailedContinue,this,conditionNodeTrigger,defautlConditionNode);
 
 //        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
 //        if (jobFlowNodeBuilder == null) {
@@ -209,7 +210,7 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
 //            jobFlowNodeBuilder = new AIAgentNodeBuilder(aiAgent);
 ////            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
 //        }
-//        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue, jobFlowNodeBuilder, conditionNodeTrigger, defautlConditionNode);
+//        jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMatchedfailedContinue, jobFlowNodeBuilder, conditionNodeTrigger, defautlConditionNode);
         return this;
     }
     public AIPlanAgent addConditionFlowNode(AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
@@ -559,6 +560,11 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
         });
     }
 
+    public AIPlanAgent addJobFlowListener(JobFlowListener jobFlowListener) {
+        initAIJobFlowBuilder();
+        this.jobFlowBuilder.addJobFlowListener(jobFlowListener);
+        return this;
+    }
 
     @Override
     public AIPlanAgent addJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI) {
@@ -575,9 +581,9 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
     }
 
     @Override
-    public String  addConditionJobFlowNodeBuilder(boolean allCondtionNodeMathfailedContinue,JobFlowNodeBuilder jobFlowNodeBuilder,TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode){
+    public String  addConditionJobFlowNodeBuilder(boolean allCondtionNodeMatchedfailedContinue,JobFlowNodeBuilder jobFlowNodeBuilder,TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode){
         initAIJobFlowBuilder();
-        return this.jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,jobFlowNodeBuilder,triggerScriptAPI,defautlConditionNode);
+        return this.jobFlowBuilder.addConditionJobFlowNodeBuilder(allCondtionNodeMatchedfailedContinue,jobFlowNodeBuilder,triggerScriptAPI,defautlConditionNode);
     }
     @Override
     public String  addConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, boolean defaultNode){

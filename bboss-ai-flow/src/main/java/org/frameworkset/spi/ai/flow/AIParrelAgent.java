@@ -122,14 +122,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
 
 
  
-    /**
-     * 添加智能体工作流节点
-     * @param aiAgent
-     * @return
-     */
-    public AIParrelAgent addAgent(AIBaseNodeAgent aiAgent) {
-        return addAgent(aiAgent,( TriggerScriptAPI )null);
-    }
+ 
     public AIParrelAgent addAgent(AppendToParentAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
         initAIParrelJobFlowNodeBuilder();
         aiAgent.setDisableStream(true);
@@ -160,11 +153,11 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
         return this;
     }
 
-    public AIParrelAgent addJobFlowNodeListener(JobFlowNodeListener jobFlowNodeListener){
-        this.initAIParrelJobFlowNodeBuilder();
-        parrelJobFlowNodeBuilder.addJobFlowNodeListener(jobFlowNodeListener);
-        return this;
-    }
+//    public AIParrelAgent addJobFlowNodeListener(JobFlowNodeListener jobFlowNodeListener){
+//        this.initAIParrelJobFlowNodeBuilder();
+//        parrelJobFlowNodeBuilder.addJobFlowNodeListener(jobFlowNodeListener);
+//        return this;
+//    }
 
     ////////////////////////////原生工作流节点添加方法：结束/////////////////////////
     @Override

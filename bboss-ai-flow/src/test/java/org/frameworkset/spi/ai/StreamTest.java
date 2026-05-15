@@ -115,14 +115,14 @@ public class StreamTest {
 
         
 
-        AIAgent logAgent = new AIAgent("查询杭州市天气，并给出穿衣出行建议",new MCPToolsRegist("visualops"),50)
-                ;//.setAgentId("logAgent");
+        AIAgent weatherAgent = new AIAgent("查询杭州市天气，并给出穿衣出行建议",new MCPToolsRegist("visualops"),50)
+                ; 
 
         AIAgent docAgent = new AIAgent("将杭州市天气查询结果和出穿衣出行建议创建为飞书文档",
                 new FeishuMcpRegist("feishumcp")
                         
                 ,50);//.setAgentId("docAgent");
-        ServerEvent serverEvent = logAgent.chat(chatAgentMessage);
+        ServerEvent serverEvent = weatherAgent.chat(chatAgentMessage);
         logger.info(serverEvent.getData());
         ServerEvent serverEvent1 = docAgent.chat(chatAgentMessage);
         logger.info("serverEvent:{}", serverEvent1.getData());

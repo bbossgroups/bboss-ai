@@ -22,9 +22,13 @@ import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.tran.jobflow.NodeTrigger;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
+import org.frameworkset.tran.jobflow.listener.JobFlowNodeListener;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 普通流程节点，非智能体节点
@@ -222,8 +226,23 @@ public abstract   class AIFlowNode<T extends AIFlowNode> implements AppendToPare
         return parentAgent.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
     }
 
+
+    protected List<JobFlowNodeListener> jobFlowNodeListeners;
+    public T addJobFlowNodeListener(JobFlowNodeListener jobFlowNodeListener){
+        if(this.jobFlowNodeListeners == null){
+            this.jobFlowNodeListeners = new ArrayList<JobFlowNodeListener>();
+        }
+        this.jobFlowNodeListeners.add(jobFlowNodeListener);
+        return (T)this;
+    }
+
     public JobFlowNodeBuilder builderJobFlowNodeBuilder(){
-        return new AIFlowNodeBuilder(this );
+        AIFlowNodeBuilder aiFlowNodeBuilder = new  AIFlowNodeBuilder(this);
+        if(jobFlowNodeListeners != null) {
+            aiFlowNodeBuilder.addJobFlowNodeListeners(jobFlowNodeListeners);
+        }
+        return aiFlowNodeBuilder;
+        
     }
     /**
      * 添加并行智能体节点，并设置条件触发器

@@ -40,6 +40,10 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         return (T)this;
     }
 
+    public StoreContext getStoreContext() {
+        return storeContext;
+    }
+
     public T setSessionMemory(List<Map<String,Object>> session) {
 
         if(mainSessionStore == null) {
