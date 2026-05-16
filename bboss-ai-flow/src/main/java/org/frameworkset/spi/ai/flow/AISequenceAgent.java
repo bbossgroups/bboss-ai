@@ -583,6 +583,13 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
         return addAnotherConditionJobFlowNodeAgent( allCondtionNodeMathfailedContinue, baseNodeAgent,  nodeTrigger, defaultConditionNode);
     }
 
+    public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger){
+        NodeTrigger nodeTrigger = null;
+        if(conditionNodeTrigger != null)
+            nodeTrigger = new NodeTrigger(conditionNodeTrigger);
+        return addAnotherConditionJobFlowNodeAgent( allCondtionNodeMathfailedContinue, baseNodeAgent,  nodeTrigger, false);
+    }
+
 
     /**
      * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用

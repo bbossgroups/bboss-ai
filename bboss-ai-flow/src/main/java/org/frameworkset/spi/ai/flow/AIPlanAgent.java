@@ -289,6 +289,14 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
         return addAnotherConditionJobFlowNodeAgent(  baseNodeAgent, nodeTrigger, defaultConditionNode);
     }
 
+    public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMatchedfailedContinue,AppendToParentAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger,boolean defaultConditionNode){
+        NodeTrigger nodeTrigger = null;
+        if(conditionNodeTrigger != null){
+            nodeTrigger = new NodeTrigger(conditionNodeTrigger);
+        }
+        return addAnotherConditionJobFlowNodeAgent(   allCondtionNodeMatchedfailedContinue, baseNodeAgent, nodeTrigger, defaultConditionNode);
+    }
+
     public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent baseNodeAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
         return  addAnotherConditionJobFlowNodeAgent(false,  baseNodeAgent,  conditionNodeTrigger,  defaultConditionNode);
     }
