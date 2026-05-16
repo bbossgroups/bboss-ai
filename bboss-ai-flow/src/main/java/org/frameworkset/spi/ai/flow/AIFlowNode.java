@@ -213,7 +213,7 @@ public abstract   class AIFlowNode<T extends AIFlowNode> implements AppendToPare
      * @return 条件复合节点唯一ID
      */
     @Override
-    public String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+    public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMatchfailedContinue,AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
         if(jobFlowNodeBuilder == null){
@@ -223,7 +223,12 @@ public abstract   class AIFlowNode<T extends AIFlowNode> implements AppendToPare
 
 //            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
         }
-        return parentAgent.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
+        return parentAgent.addAnotherConditionJobFlowNodeBuilder(allCondtionNodeMatchfailedContinue,jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
+    }
+
+    @Override
+    public String addAnotherConditionJobFlowNodeAgent( AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode) {
+        return addAnotherConditionJobFlowNodeAgent(false,  parentAgent,  conditionNodeTrigger,  defaultConditionNode);
     }
 
 

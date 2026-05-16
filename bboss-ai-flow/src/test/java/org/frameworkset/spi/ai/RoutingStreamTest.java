@@ -86,7 +86,7 @@ public class RoutingStreamTest {
 
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
-        AIPlanAgent aiPlanAgent = new AIPlanAgent(new StoreContext()
+        AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()
                 .setSessionId(sessionId).setUserId("user123")
                 .setRequestId(SimpleStringUtil.getUUID32())
                 .setSessionSize(100)                 
@@ -95,7 +95,7 @@ public class RoutingStreamTest {
                 .setAgentMessage(chatAgentMessage)
                 .setAgentName("工作流智能体").setAgentId("workflowAgent");
         //构建路由规则智能体
-        aiPlanAgent.addAgent(new AIRouteAgent()
+        planAgent.addAgent(new AIRouteAgent()
                 .setAgentId("Router").setAgentName("路由规则智能体")
                 .setSystemPrompt("你是一个路由智能体。你的目标是将用户查询路由到正确的后续任务，注意你不需要回答用户的问题。")                
                 .addRoutingChoice("weatherAgent","查询城市天气，并给出穿衣出行建议")
@@ -103,22 +103,24 @@ public class RoutingStreamTest {
         ); 
 
         //构建天气查询和出现建议智能体：当用户问题匹配上时执行
-        aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(new MCPToolsRegist("visualops"))
+        planAgent.addRouteChoiceAgent(new UserNodeAgent(new MCPToolsRegist("visualops"))
                 .setAgentId("weatherAgent").setAgentName("天气查询智能体"));
         
         ToolsRegist feishuMcp = new FeishuMcpRegist("feishumcp");
 
         //构建飞书文档操作智能体：当用户问题匹配上时执行
-        aiPlanAgent.addRouteChoiceAgent(new UserNodeAgent(feishuMcp).setAgentId("docAgent").setAgentName("飞书文档智能体"));
+        planAgent.addRouteChoiceAgent(new UserNodeAgent(feishuMcp).setAgentId("docAgent").setAgentName("飞书文档智能体"));
 
         //构建默认智能体：当用户问题匹配不上时执行,将直接回答问题
-        aiPlanAgent.addDefaultRouteChoiceAgent(new AINodeAgent().setAgentId("defaultAgent").setAgentName("默认智能体"));
+        planAgent.addDefaultRouteChoiceAgent(new AINodeAgent().setAgentId("defaultAgent").setAgentName("默认智能体"));
+
+
         
         //构建裁判智能体：判断是否回答了问题
-        aiPlanAgent.addAgent(new AIJudgeAgent("评估结果是否回答了问题,回答请回复：是，否则回复：否").setAgentId("judgeAgent").setAgentName("评估智能体"));
+        planAgent.addAgent(new AIJudgeAgent("评估结果是否回答了问题,回答请回复：是，否则回复：否").setAgentId("judgeAgent").setAgentName("评估智能体"));
         
         //构建最终飞书报告创建智能体：添加将问题答案创建为飞书文档的智能体
-        aiPlanAgent.addAgent(new AINodeAgent("将结果创建为飞书文档", feishuMcp).setAgentId("createDocAgent").setAgentName("飞书文档创建智能体"),
+        planAgent.addAgent(new AINodeAgent("将结果创建为飞书文档", feishuMcp).setAgentId("createDocAgent").setAgentName("飞书文档创建智能体"),
                 nodeTriggerContext -> {
             String judgeResult = (String) nodeTriggerContext.getFlowContextData("judgeAgent.judgeResult");
             if("是".equals(judgeResult)){
@@ -131,7 +133,7 @@ public class RoutingStreamTest {
         });
         
         //开始对话，执行对话流程，并返回会话结果
-        Flux<ServerEvent> flux = aiPlanAgent.chatStream();
+        Flux<ServerEvent> flux = planAgent.chatStream();
 // 用于累积完整的回答
         StringBuilder completeAnswer = new StringBuilder();
         CountDownLatch countDownLatch = new CountDownLatch(1);

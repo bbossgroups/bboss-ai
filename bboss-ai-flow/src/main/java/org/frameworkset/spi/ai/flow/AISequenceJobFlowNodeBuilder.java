@@ -16,7 +16,6 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import org.frameworkset.tran.jobflow.SequenceJobFlowNode;
-import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.builder.SequenceJobFlowNodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,5 +38,6 @@ public class AISequenceJobFlowNodeBuilder extends SequenceJobFlowNodeBuilder {
         return new AISequenceJobFlowNode(sequenceAgent);
     }
 
- 
+
+
 }

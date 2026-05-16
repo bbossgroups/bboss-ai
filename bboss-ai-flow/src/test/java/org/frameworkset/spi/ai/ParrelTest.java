@@ -73,7 +73,7 @@ public class ParrelTest {
 
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
-        AIPlanAgent aiPlanAgent = new AIPlanAgent(new StoreContext()
+        AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()
                 .setSessionId(sessionId).setUserId("user123").setSessionSize(100)                 
                 .setStoreType(StoreContext.STORE_TYPE_DB).setRequestId("request123")
                 .setDataSource("visualops"))
@@ -81,16 +81,16 @@ public class ParrelTest {
                 .setAgentName("工作流智能体").setAgentId("workflowAgent")
                  ;
         AIBaseNodeAgent introduceProvinces = new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces");
-        aiPlanAgent.addAgent(introduceProvinces);
+        planAgent.addAgent(introduceProvinces);
         //构建并行智能体
-        AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("共享任务节点");
+        AIParrelAgent aiParrelAgent = new AIParrelAgent(planAgent).setAgentId("aiParrelAgent").setAgentName("并行智能体");
         aiParrelAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
         aiParrelAgent.addAgent(new UserNodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
-        aiPlanAgent.addAgent(aiParrelAgent);
+        planAgent.addAgent(aiParrelAgent);
         IntegerCount integerCount = new IntegerCount();
-        aiPlanAgent.addConditionFlowNode(true,introduceProvinces, new TriggerScriptAPI() {
+        planAgent.addConditionFlowNode(true,introduceProvinces, new TriggerScriptAPI() {
             @Override
             public boolean needTrigger(NodeTriggerContext nodeTriggerContext) throws Exception {
                 int i = integerCount.increament();
@@ -103,7 +103,7 @@ public class ParrelTest {
             }
         });
 
-        aiPlanAgent.addAgent(new AIFlowNode() {
+        planAgent.addAgent(new AIFlowNode() {
             @Override
             public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
                 logger.info("call 自定义节点1。");
@@ -112,7 +112,7 @@ public class ParrelTest {
             }
         });
 
-        aiPlanAgent.addAgent(new AIFlowNode() {
+        planAgent.addAgent(new AIFlowNode() {
             @Override
             public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
                 logger.info("call 自定义节点2。");
@@ -121,7 +121,7 @@ public class ParrelTest {
             }
         });
         //开始对话，执行对话流程，并返回会话结果   
-        LastSessionMessage lastSessionMessage = aiPlanAgent.chat();
+        LastSessionMessage lastSessionMessage = planAgent.chat();
         
         //输出会话结果        
         if(lastSessionMessage != null) {

@@ -401,6 +401,10 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
         throw new UnsupportedOperationException("AI parrel agent Not supported addAnotherConditionJobFlowNodeBuilder.");
     }
 
+    @Override
+    public String addAnotherConditionJobFlowNodeBuilder(boolean allCondtionNodeMathfailedContinue, JobFlowNodeBuilder jobFlowNodeBuilder, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode) {
+        throw new UnsupportedOperationException("AI parrel agent Not supported addAnotherConditionJobFlowNodeBuilder.");
+    }
 
 
     ////////////////////////////原生工作流节点添加方法：结束/////////////////////////

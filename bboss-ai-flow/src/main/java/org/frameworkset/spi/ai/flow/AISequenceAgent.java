@@ -495,7 +495,13 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     public String addConditionFlowNode(AppendToParentAgent aiAgent  ){
         return addConditionFlowNode(  aiAgent , (TriggerScriptAPI)null);
     }
+    public void addConditionFlowNode(AppendToParentAgent agent, boolean defaultConditionNode) {
+        initAISequenceJobFlowNodeBuilder();
 
+        setHeaderAgent(this);
+        agent.appendConditionJobFlowNodeToParentAgent(this,defaultConditionNode);
+
+    }
     public String addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
         return addConditionFlowNode(  allCondtionNodeMatchedfailedContinue,  aiAgent ,   conditionNodeTrigger,false);
     }
@@ -546,6 +552,12 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
         return addAnotherConditionJobFlowNodeAgent(baseNodeAgent,   conditionNodeTrigger,false);
     }
 
+    public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent baseNodeAgent, NodeTrigger conditionNodeTrigger){
+        return addAnotherConditionJobFlowNodeAgent(  allCondtionNodeMathfailedContinue,baseNodeAgent,   conditionNodeTrigger,false);
+    }
+    
+
+
     /**
      * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
      * addConditionJobFlowNodeBuilder方法添加
@@ -558,7 +570,17 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     }
 
     public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger,boolean defaultConditionNode){
-        return addAnotherConditionJobFlowNodeAgent(  baseNodeAgent, new NodeTrigger( conditionNodeTrigger), defaultConditionNode);
+        NodeTrigger nodeTrigger = null;
+        if(conditionNodeTrigger != null)
+            nodeTrigger = new NodeTrigger(conditionNodeTrigger);
+        return addAnotherConditionJobFlowNodeAgent(  baseNodeAgent,  nodeTrigger, defaultConditionNode);
+    }
+
+    public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent baseNodeAgent, TriggerScriptAPI conditionNodeTrigger,boolean defaultConditionNode){
+        NodeTrigger nodeTrigger = null;
+        if(conditionNodeTrigger != null)
+            nodeTrigger = new NodeTrigger(conditionNodeTrigger);
+        return addAnotherConditionJobFlowNodeAgent( allCondtionNodeMathfailedContinue, baseNodeAgent,  nodeTrigger, defaultConditionNode);
     }
 
 
@@ -576,8 +598,20 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
         return baseNodeAgent.addAnotherConditionJobFlowNodeAgent(this,   conditionNodeTrigger,  defaultConditionNode);
     }
 
-    
 
+    /**
+     * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
+     * addConditionJobFlowNodeBuilder方法添加
+     * @param baseNodeAgent
+     * @param defaultConditionNode 是否默认条件节点,条件节点必须配置一个默认流程节点
+     * @return 条件复合节点唯一ID
+     */
+    public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent baseNodeAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+        this.initAISequenceJobFlowNodeBuilder();
+        setHeaderAgent(this);
+
+        return baseNodeAgent.addAnotherConditionJobFlowNodeAgent(allCondtionNodeMathfailedContinue,this,   conditionNodeTrigger,  defaultConditionNode);
+    }
 
 
 
@@ -685,6 +719,12 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     public String addAnotherConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode) {
         initAISequenceJobFlowNodeBuilder();
         return this.sequenceJobFlowNodeBuilder.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder, conditionNodeTrigger, defaultConditionNode);
+    }
+
+    @Override
+    public String addAnotherConditionJobFlowNodeBuilder(boolean allCondtionNodeMathfailedContinue, JobFlowNodeBuilder jobFlowNodeBuilder, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode) {
+        initAISequenceJobFlowNodeBuilder();
+        return this.sequenceJobFlowNodeBuilder.addAnotherConditionJobFlowNodeBuilder(allCondtionNodeMathfailedContinue,jobFlowNodeBuilder, conditionNodeTrigger, defaultConditionNode);
     }
 
 //    public AISequenceAgent addJobFlowNodeListener(JobFlowNodeListener jobFlowNodeListener){

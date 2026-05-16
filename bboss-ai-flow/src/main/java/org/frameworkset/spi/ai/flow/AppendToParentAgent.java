@@ -52,7 +52,8 @@ public interface AppendToParentAgent {
      * @return 条件复合节点唯一ID
      */
     String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode);
-    String appendConditionJobFlowNodeToParentAgent(boolean allCondtionNodeMathfailedContinue,AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode);
+    String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMatchfailedContinue,AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode);
+    String appendConditionJobFlowNodeToParentAgent(boolean allCondtionNodeMatchfailedContinue,AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode);
     String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI);
     String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, boolean defaultNode);
     /**

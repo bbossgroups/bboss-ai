@@ -35,4 +35,7 @@ public interface AIContainerAgent<T extends AIContainerAgent> {
     JobFlowNodeBuilder getJobFlowNodeBuilder(String nodeId);
 
     String addAnotherConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode);
+
+
+    String addAnotherConditionJobFlowNodeBuilder(boolean allCondtionNodeMathfailedContinue,JobFlowNodeBuilder jobFlowNodeBuilder, NodeTrigger conditionNodeTrigger, boolean defaultConditionNode);
 }

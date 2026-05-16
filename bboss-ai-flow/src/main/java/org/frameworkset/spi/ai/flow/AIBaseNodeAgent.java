@@ -251,6 +251,22 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
         return parentAgent.addAnotherConditionJobFlowNodeBuilder(jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
     }
 
+    @Override
+    public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMatchfailedContinue,AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+        JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
+
+        if(jobFlowNodeBuilder == null){
+
+            this.setPlanAgent(parentAgent.getPlanAgent());
+            this.setParentAgent((AIAgent) parentAgent);
+            jobFlowNodeBuilder = _builderJobFlowNodeBuilder();
+
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+        return parentAgent.addAnotherConditionJobFlowNodeBuilder(allCondtionNodeMatchfailedContinue,jobFlowNodeBuilder,   conditionNodeTrigger,  defaultConditionNode);
+    }
+    
+
 
 
 
