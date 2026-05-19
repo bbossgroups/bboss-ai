@@ -34,8 +34,8 @@ import java.io.IOException;
  * @author biaoping.yin
  * @Date 2026/4/13
  */
-public class ParrelTest {
-    private static Logger logger = LoggerFactory.getLogger(ParrelTest.class);
+public class ParrelJumpConditionTest {
+    private static Logger logger = LoggerFactory.getLogger(ParrelJumpConditionTest.class);
     public static void main(String[] args) throws InterruptedException, IOException {
 
 
@@ -82,8 +82,73 @@ public class ParrelTest {
                  ;
         AIBaseNodeAgent introduceProvinces = new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces");
         planAgent.addAgent(introduceProvinces);
+        planAgent.addAgent(new AIFlowNode() {
+            /**
+             * 由子类继承和实现
+             *
+             * @param jobFlowNodeExecuteContext
+             * @return
+             */
+            @Override
+            public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) {
+                //生成一个10以内的随机整数，如果随机数是偶数则触发节点
+                int randomInt = 9;//(int) (Math.random() * 10);
+                logger.info("randomInt:{}", randomInt);
+                jobFlowNodeExecuteContext.addJobFlowContextData("randomInt", randomInt);
+                return null;
+            }
+        });
         
-     
+        AIFlowNode aiFlowNode = new AIFlowNode() {
+            @Override
+            public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
+                logger.info("call 自定义节点customNode。");
+                jobFlowNodeExecuteContext.addJobFlowContextData("customNode", "customNodeData");
+                return null;
+            }
+        };
+        
+        planAgent.addConditionFlowNode(true,aiFlowNode, new TriggerScriptAPI() {
+            @Override
+            public boolean needTrigger(NodeTriggerContext nodeTriggerContext) throws Exception {
+                int randomInt = (int) nodeTriggerContext.getFlowContextData("randomInt");
+                
+                if (randomInt % 2 == 0) {
+                    return true;
+                }
+                return false;
+            }
+        });
+        
+        AIFlowNode aiFlowNode1 = new AIFlowNode() {
+            @Override
+            public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
+                logger.info("call 自定义节点customNode1。");
+                jobFlowNodeExecuteContext.addJobFlowContextData("customNode", "customNodeData1");
+                return null;
+            }
+        };
+        planAgent.addConditionFlowNode(aiFlowNode1, new TriggerScriptAPI() {
+            @Override
+            public boolean needTrigger(NodeTriggerContext nodeTriggerContext) throws Exception {
+                //生成一个10以内的随机整数，如果随机数是奇数则触发节点
+                int randomInt = (int) nodeTriggerContext.getFlowContextData("randomInt");
+                if (randomInt % 2 != 0) {
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        AIFlowNode aiFlowNode2 = new AIFlowNode() {
+            @Override
+            public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
+                logger.info("call 自定义节点customNode2。");
+                jobFlowNodeExecuteContext.addJobFlowContextData("customNode", "customNodeData2");
+                return null;
+            }
+        };
+        planAgent.addConditionFlowNode(aiFlowNode2, true);
         //构建并行智能体
         AIParrelAgent aiParrelAgent = new AIParrelAgent(planAgent).setAgentId("aiParrelAgent").setAgentName("并行智能体");
         aiParrelAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
@@ -104,7 +169,15 @@ public class ParrelTest {
                 }
             }
         });
-       
+        planAgent.addAgent(aiFlowNode);
+        planAgent.addAgent(new AIFlowNode() {
+            @Override
+            public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
+                logger.info("call 自定义节点3。");
+                jobFlowNodeExecuteContext.addJobFlowContextData("customNode", "customNodeData3");
+                return null;
+            }
+        });
 
         planAgent.addAgent(new AIFlowNode() {
             @Override

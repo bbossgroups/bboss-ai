@@ -123,14 +123,22 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
      */
     @Override
     public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
-        if(this.getPlanAgent() == null){
+        JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
+        if(jobFlowNodeBuilder == null){
 
-            this.setPlanAgent(parentAgent.getPlanAgent());
+            if(this.getPlanAgent() == null){
 
+                this.setPlanAgent(parentAgent.getPlanAgent());
+
+            }
+
+            this.setParentAgent((AIAgent) parentAgent);
+            jobFlowNodeBuilder = _builderJobFlowNodeBuilder();
+
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
         }
         
-        this.setParentAgent((AIAgent) parentAgent);
-        parentAgent.addJobFlowNodeBuilder(_builderJobFlowNodeBuilder(),triggerScriptAPI);
+        parentAgent.addJobFlowNodeBuilder(jobFlowNodeBuilder,triggerScriptAPI);
     }
 
     @Override

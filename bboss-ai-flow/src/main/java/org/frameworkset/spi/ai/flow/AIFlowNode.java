@@ -257,10 +257,17 @@ public abstract   class AIFlowNode<T extends AIFlowNode> implements AppendToPare
      */
     @Override
     public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
-        this.setPlanAgent(parentAgent.getPlanAgent());
-        this.setParentAgent((AIAgent) parentAgent);
+       
+        JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
-        parentAgent.addJobFlowNodeBuilder(builderJobFlowNodeBuilder(),triggerScriptAPI);
+        if(jobFlowNodeBuilder == null){
+            this.setPlanAgent(parentAgent.getPlanAgent());
+            this.setParentAgent((AIAgent) parentAgent);
+            jobFlowNodeBuilder = builderJobFlowNodeBuilder();
+
+//            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
+        }
+        parentAgent.addJobFlowNodeBuilder(jobFlowNodeBuilder,triggerScriptAPI);
 
     }
 }

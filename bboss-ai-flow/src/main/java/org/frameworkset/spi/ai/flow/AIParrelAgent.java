@@ -393,7 +393,8 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
 
     @Override
     public JobFlowNodeBuilder getJobFlowNodeBuilder(String nodeId) {
-        throw new UnsupportedOperationException("AI parrel agent Not supported getJobFlowNodeBuilder.");
+//        throw new UnsupportedOperationException("AI parrel agent Not supported getJobFlowNodeBuilder.");
+        return null;
     }
 
     @Override

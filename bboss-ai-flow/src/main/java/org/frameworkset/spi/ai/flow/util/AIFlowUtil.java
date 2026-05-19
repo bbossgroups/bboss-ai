@@ -35,25 +35,33 @@ public class AIFlowUtil {
                 logger.debug("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
             }
             String outputVaribleName = agent.getOutputVaribleName();
-            if(SimpleStringUtil.isNotEmpty(outputVaribleName)) {
-
-                String data = serverEvent.getData();
-                if(data == null){
-                    data = serverEvent.getFullStreamData();
-                }
-                if(agent.isFlowOutputVaribleScope()){
-                    jobFlowExecuteContext.addContextData(outputVaribleName, data);
-                }
-                else if(agent.isContainerOutputVaribleScope()){
-                    if (containerJobFlowNodeExecuteContext != null) {
-                        containerJobFlowNodeExecuteContext.addContextData(outputVaribleName, data);
+            String data = serverEvent.getData();
+            if(data == null){
+                data = serverEvent.getFullStreamData();
+            }
+            if(data != null) {
+                if(agent.getAgentOutput() != null){
+                    try {
+                        agent.getAgentOutput().output(serverEvent);
+                    }
+                    catch (Exception e) {
+                        logger.error("Output agent[id="+agent.getAgentId()+",name="+agent.getAgentName()+"] result error:",e);
                     }
                 }
-                else if(agent.isNodeOutputVaribleScope()){
-                    jobFlowNodeExecuteContext.addContextData(outputVaribleName, data);
-                }
-                else {//默认将变量输出到作业流作用域
-                    jobFlowExecuteContext.addContextData(outputVaribleName, data);
+                if (SimpleStringUtil.isNotEmpty(outputVaribleName)) {
+
+
+                    if (agent.isFlowOutputVaribleScope()) {
+                        jobFlowExecuteContext.addContextData(outputVaribleName, data);
+                    } else if (agent.isContainerOutputVaribleScope()) {
+                        if (containerJobFlowNodeExecuteContext != null) {
+                            containerJobFlowNodeExecuteContext.addContextData(outputVaribleName, data);
+                        }
+                    } else if (agent.isNodeOutputVaribleScope()) {
+                        jobFlowNodeExecuteContext.addContextData(outputVaribleName, data);
+                    } else {//默认将变量输出到作业流作用域
+                        jobFlowExecuteContext.addContextData(outputVaribleName, data);
+                    }
                 }
             }
         }

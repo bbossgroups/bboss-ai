@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
+import org.frameworkset.tran.jobflow.ExecuteResult;
 import org.frameworkset.tran.jobflow.JobFlowCyclicBarrier;
 import org.frameworkset.tran.jobflow.SequenceJobFlowNode;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -38,9 +39,9 @@ public class AISequenceJobFlowNode extends SequenceJobFlowNode {
      * 启动流程当前节点
      */
     @Override
-    public boolean execute(JobFlowNodeExecuteContext jobFlowNodeExecuteContext, JobFlowCyclicBarrier barrier){
+    public ExecuteResult execute(JobFlowNodeExecuteContext jobFlowNodeExecuteContext, JobFlowCyclicBarrier barrier){
         sequenceAgent.reactMessage(sequenceAgent.getPlanAgent().getAgentMessage());
-        boolean result = super.execute(jobFlowNodeExecuteContext,barrier);       
+        ExecuteResult result = super.execute(jobFlowNodeExecuteContext,barrier);       
         
         return result;
 

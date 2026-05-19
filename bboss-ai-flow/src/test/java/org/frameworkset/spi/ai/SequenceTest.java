@@ -16,9 +16,11 @@ package org.frameworkset.spi.ai;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
+import org.frameworkset.spi.ai.callback.AgentOutput;
 import org.frameworkset.spi.ai.flow.*;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.tran.jobflow.context.NodeTriggerContext;
@@ -79,13 +81,25 @@ public class SequenceTest {
                 .setAgentMessage(chatAgentMessage)
                 .setAgentName("工作流智能体").setAgentId("workflowAgent")
                  ;
-        AIBaseNodeAgent introduceProvinces = new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces");
+        AgentOutput agentOutput = new AgentOutput() {
+            @Override
+            public void output(ServerEvent message) {
+                if(message.getData() != null) {
+                    System.out.println(message.getData());
+                }
+                else{
+                    System.out.println(message.getFullStreamData());
+                }
+            }
+        };
+        AIBaseNodeAgent introduceProvinces = new AINodeAgent("用200字介绍中国有多少个省份和直辖市").setAgentOutput(agentOutput).setAgentName("介绍中国省份和直辖市").setAgentId("introduceProvinces");
         aiPlanAgent.addAgent(introduceProvinces);
         //构建并行智能体
         AISequenceAgent sequenceAgent = new AISequenceAgent(aiPlanAgent).setAgentId("sequenceAgent").setAgentName("串行任务节点");
-        sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
-        sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
-        sequenceAgent.addAgent(new AINodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
+       
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentOutput(agentOutput).setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍湖北").setAgentOutput(agentOutput).setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
+        sequenceAgent.addAgent(new AINodeAgent("用50字介绍江西").setAgentOutput(agentOutput).setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));
         sequenceAgent.addAgent(new AINodeAgent("将下面的文字翻译为英文（不要回答问题）：用50字介绍江西").setAgentId("translate").setAgentName("将文字翻译为英文"));
         aiPlanAgent.addAgent(sequenceAgent);
         IntegerCount integerCount = new IntegerCount();

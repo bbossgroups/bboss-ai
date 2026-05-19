@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.callback.AgentOutput;
 import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
@@ -34,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 智能体工具包
+ * 多模态智能体对象
  * @author biaoping.yin
  * @Date 2026/1/4
  */
@@ -55,6 +56,8 @@ public class AIAgent<T extends AIAgent> {
      * 输出变量名
      */
     protected int outputVaribleScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+    
+    protected AgentOutput agentOutput;
 
     protected AgentSessionStore mainSessionStore;
     protected StoreContext storeContext;
@@ -1028,6 +1031,13 @@ public class AIAgent<T extends AIAgent> {
     public boolean isNodeOutputVaribleScope(){
         return outputVaribleScope == AIFlowConst.AIFLOW_VAR_SCOPE_NODE;
     }
-    
- 
+
+    public T setAgentOutput(AgentOutput agentOutput) {
+        this.agentOutput = agentOutput;
+        return (T)this;
+    }
+
+    public AgentOutput getAgentOutput() {
+        return agentOutput;
+    }
 }
