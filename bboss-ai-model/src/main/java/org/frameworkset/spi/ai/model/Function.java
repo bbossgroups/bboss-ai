@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Function {
-    private String type;
+//    private String type;
     private String name;
     private String description;
     private Parameters parameters;
@@ -110,13 +110,13 @@ public class Function {
     }
 
 
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
+//    public String getType() {
+//        return type;
+//    }
+//
+//    public void setType(String type) {
+//        this.type = type;
+//    }
 
     public Boolean getStrict() {
         return strict;
@@ -127,4 +127,11 @@ public class Function {
     }
 
 
+    public Function additionalProperties(boolean additionalProperties) {
+        if(parameters == null){
+            parameters = new Parameters();
+        }
+        parameters.setAdditionalProperties(additionalProperties);
+        return this;
+    }
 }

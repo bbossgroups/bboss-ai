@@ -17,11 +17,13 @@ package org.frameworkset.spi.ai;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.frameworkset.spi.ai.callback.AgentOutput;
 import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.*;
+import org.frameworkset.spi.ai.tool.BeanToolHandle;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
@@ -869,6 +871,19 @@ public class AIAgent<T extends AIAgent> {
                 toolInited = false;
             }
         }
+    }
+    public T registBeanTool(Object beanTool) {
+        List<FunctionToolDefine> functionToolDefines = BeanToolHandle.parserTools(beanTool);
+        if(CollectionUtils.isNotEmpty(functionToolDefines)){
+            reset();
+            if (this.tools == null) {
+                tools = new ArrayList<>();
+            }
+            tools.addAll(functionToolDefines);
+        }
+        
+
+        return (T) this;
     }
     public T registTool(FunctionToolDefine functionToolDefine) {
         reset();

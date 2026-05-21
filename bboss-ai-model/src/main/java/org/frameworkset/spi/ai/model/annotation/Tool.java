@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.flow;
+package org.frameworkset.spi.ai.model.annotation;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -15,28 +15,19 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
+import java.lang.annotation.*;
+
 /**
  * @author biaoping.yin
- * @Date 2026/4/14
+ * @Date 2026/5/20
  */
-public class AIRouterChoiceNodeBuilder extends AIBaseNodeBuilder {
-   
-    
-
-    public AIRouterChoiceNodeBuilder(AIBaseNodeAgent agent) {
-        super( agent);
-    }
-    public AIRouterChoiceNodeBuilder(String nodeName) {
-        super(nodeName);
-    }
-
-    public AIRouterChoiceNodeBuilder(String nodeId, String nodeName) {
-        super(nodeId, nodeName);
-    } 
-
- 
-
-    
- 
- 
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Tool {
+    String name() default "";
+    String description();
+    String type() default "function";
+    boolean strict() default true;
+    boolean additionalProperties() default false;
 }

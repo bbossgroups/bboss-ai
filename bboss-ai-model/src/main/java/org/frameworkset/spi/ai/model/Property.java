@@ -18,7 +18,6 @@ package org.frameworkset.spi.ai.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,6 +30,16 @@ import java.util.Map;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Property {
+    /**
+     * object
+     * string
+     * number
+     * integer
+     * boolean
+     * array
+     * enum
+     * anyOf
+     */
     private String type = "object";
     private String description;
     private String format;
@@ -38,12 +47,52 @@ public class Property {
 
 
     @JsonProperty("enum")
-    private List<String> enumValue;
+    private String[] enumValue;
 
 
     @JsonProperty("default")
     private Object defaultValue;
     private Map<String,Property> properties;
+
+    /**
+     * number/integer 类型
+     * 支持的参数
+     * const：固定数字为常数
+     * default：数字的默认值
+     * minimum：最小值
+     * maximum：最大值
+     * exclusiveMinimum：不小于
+     * exclusiveMaximum：不大于
+     * multipleOf：数字输出为这个值的倍数
+     */
+    private Integer minimum;
+    private Integer maximum;
+    private Integer exclusiveMinimum;
+    private Integer exclusiveMaximum;
+    private Integer multipleOf;
+    @JsonProperty("const")
+    private Integer constValue;
+
+    /**
+     * type为array 类型，指定数组元素的类型
+     * {
+     *     "type": "object",
+     *     "properties": {
+     *         "keywords": {
+     *             "type": "array",
+     *             "description": "Five keywords of the article, sorted by importance",
+     *             "items": {
+     *                 "type": "string",
+     *                 "description": "A concise and accurate keyword or phrase."
+     *             }
+     *         }
+     *     },
+     *     "required": ["keywords"],
+     *     "additionalProperties": false
+     * }
+     */
+    private Property items;
+ 
 
     public Property() {
     }
@@ -107,11 +156,11 @@ public class Property {
         this.pattern = pattern;
     }
 
-    public List<String> getEnumValue() {
+    public String[] getEnumValue() {
         return enumValue;
     }
 
-    public void setEnumValue(List<String> enumValue) {
+    public void setEnumValue(String[] enumValue) {
         this.enumValue = enumValue;
     }
     public Object getDefaultValue() {
@@ -122,4 +171,59 @@ public class Property {
         this.defaultValue = defaultValue;
     }
 
+    public Integer getMinimum() {
+        return minimum;
+    }
+
+    public void setMinimum(Integer minimum) {
+        this.minimum = minimum;
+    }
+
+    public Integer getMaximum() {
+        return maximum;
+    }
+
+    public void setMaximum(Integer maximum) {
+        this.maximum = maximum;
+    }
+
+    public Integer getExclusiveMinimum() {
+        return exclusiveMinimum;
+    }
+
+    public void setExclusiveMinimum(Integer exclusiveMinimum) {
+        this.exclusiveMinimum = exclusiveMinimum;
+    }
+
+    public Integer getExclusiveMaximum() {
+        return exclusiveMaximum;
+    }
+
+    public void setExclusiveMaximum(Integer exclusiveMaximum) {
+        this.exclusiveMaximum = exclusiveMaximum;
+    }
+
+    public Integer getMultipleOf() {
+        return multipleOf;
+    }
+
+    public void setMultipleOf(Integer multipleOf) {
+        this.multipleOf = multipleOf;
+    }
+
+    public Integer getConstValue() {
+        return constValue;
+    }
+
+    public void setConstValue(Integer constValue) {
+        this.constValue = constValue;
+    }
+
+    public Property getItems() {
+        return items;
+    }
+
+    public void setItems(Property items) {
+        this.items = items;
+    }
 }

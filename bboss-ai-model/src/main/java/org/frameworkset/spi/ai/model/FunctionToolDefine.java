@@ -59,6 +59,21 @@ public class FunctionToolDefine {
         return function;
     }
 
+    public FunctionToolDefine strict(boolean strict){
+        if(function == null){
+            function = new Function();
+        }
+        function.setStrict(strict);
+        return this;
+    }
+    public FunctionToolDefine additionalProperties(boolean additionalProperties){
+        if(function == null){
+            function = new Function();
+        }
+        function.additionalProperties(additionalProperties);
+        return this;
+    }
+    
     public void setFunction(Function function) {
         this.function = function;
     }

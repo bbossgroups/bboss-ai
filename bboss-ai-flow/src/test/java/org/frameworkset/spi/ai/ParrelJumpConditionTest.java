@@ -92,22 +92,22 @@ public class ParrelJumpConditionTest {
             @Override
             public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) {
                 //生成一个10以内的随机整数，如果随机数是偶数则触发节点
-                int randomInt = 9;//(int) (Math.random() * 10);
+                int randomInt = (int) (Math.random() * 10);
                 logger.info("randomInt:{}", randomInt);
                 jobFlowNodeExecuteContext.addJobFlowContextData("randomInt", randomInt);
                 return null;
             }
         });
-        
+        //1.定义一个后序条件跳转节点
         AIFlowNode aiFlowNode = new AIFlowNode() {
             @Override
             public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext)   {
-                logger.info("call 自定义节点customNode。");
+                logger.info("call 自定义节点customNode（满足条件时，会直接跳转到这个节点执行，绕过aiParrelAgent和循环跳转节点introduceProvinces，直接执行aiFlowNode后续流程节点）。");
                 jobFlowNodeExecuteContext.addJobFlowContextData("customNode", "customNodeData");
                 return null;
             }
         };
-        
+        //2.添加后序条件跳转节点
         planAgent.addConditionFlowNode(true,aiFlowNode, new TriggerScriptAPI() {
             @Override
             public boolean needTrigger(NodeTriggerContext nodeTriggerContext) throws Exception {
@@ -149,7 +149,7 @@ public class ParrelJumpConditionTest {
             }
         };
         planAgent.addConditionFlowNode(aiFlowNode2, true);
-        //构建并行智能体
+        //构建并行子智能体
         AIParrelAgent aiParrelAgent = new AIParrelAgent(planAgent).setAgentId("aiParrelAgent").setAgentName("并行智能体");
         aiParrelAgent.addAgent(new AINodeAgent("用50字介绍湖南，并且和介绍中国省份和直辖市内容合并输出").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
@@ -169,6 +169,7 @@ public class ParrelJumpConditionTest {
                 }
             }
         });
+        //3.添加后序条件跳转节点到主流程中，前面的条件分支节点会直接跳转的本节点
         planAgent.addAgent(aiFlowNode);
         planAgent.addAgent(new AIFlowNode() {
             @Override
