@@ -489,14 +489,15 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
         
         if(jobFlowBuilder != null){
             initSessionStore();
-            String inputMessage = this.evalPrompt(this.agentMessage);
-            String inputSystemMessage = this.evalSystemPrompt(this.agentMessage);
+          
             JobFlowScheduleConfig jobFlowScheduleConfig = new JobFlowScheduleConfig();
             jobFlowScheduleConfig.setExecuteOneTime(true);
             jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
             jobFlowBuilder.setJobFlowId(this.getAgentId());
             jobFlowBuilder.setJobFlowName(this.getAgentName());
             JobFlow jobflow = jobFlowBuilder.build();
+            String inputMessage = this.evalPrompt(this.agentMessage);
+            String inputSystemMessage = this.evalSystemPrompt(this.agentMessage);
             JobParams jobParams = null;
             if(inputMessage != null || inputSystemMessage != null){
                 jobParams = new JobParams();
@@ -555,8 +556,16 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
                     jobFlowScheduleConfig.setExecuteOneTime(true);
                     jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
                     AIJobFlow jobflow = (AIJobFlow)jobFlowBuilder.build();
+                    String inputMessage = this.evalPrompt(this.agentMessage);
+                    String inputSystemMessage = this.evalSystemPrompt(this.agentMessage);
+                    JobParams jobParams = null;
+                    if(inputMessage != null || inputSystemMessage != null){
+                        jobParams = new JobParams();
+                        jobParams.addParam("input.query", inputMessage);
+                        jobParams.addParam("input.system", inputSystemMessage);
 
-                    jobflow.execute();
+                    }
+                    jobflow.execute(jobParams);
 
                 }
                 
