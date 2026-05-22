@@ -80,9 +80,7 @@ public class FeishuMcpRegist extends MCPToolsRegist {
 //            bboss应用
             baseFeishuConfig.setFeishuAppId(appId)
                     .setFeishAppSecret(appSecret);
-            //企业关怀应用
-//            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
-//                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
+ 
             String feishuDatasource = SimpleStringUtil.getUUID32();
             baseFeishuConfig.addHttpConfig("http.poolNames", feishuDatasource)
                     .addHttpConfig(feishuDatasource+ ".http.hosts", "https://open.feishu.cn")
