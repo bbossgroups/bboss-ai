@@ -78,7 +78,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
                     if(lastSessionMessage != null) {
                          
                         String data = lastSessionMessage.getData();
-                        AISequenceAgent.this.addAgentResultSessionMessage(data);
+                        AISequenceAgent.this.addAgentResultSessionMessage(null,data);
                         ServerEvent serverEvent = new ServerEvent();
                         serverEvent.setDone(true);
                         serverEvent.setAgent(AISequenceAgent.this);

@@ -146,7 +146,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         return streamData;
     }
 
-    public String addAgentResultSessionMessage(){
+    public String addAgentResultSessionMessage(TokenMetrics tokenMetrics){
         String data = null;
         StringBuilder newData = new StringBuilder();
         if(fullReasoningStreamData != null){
@@ -159,7 +159,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         if(newData.length() > 0) {
             AgentMessage agentMessage =   this.getChatObject().getAgentMessage();
             data = newData.toString();
-            agentMessage.addAgentResultSessionMessage(data, this.getChatObject().getAiAgent());
+            agentMessage.addAgentResultSessionMessage(  tokenMetrics,data, this.getChatObject().getAiAgent());
         }
         return data;
     }

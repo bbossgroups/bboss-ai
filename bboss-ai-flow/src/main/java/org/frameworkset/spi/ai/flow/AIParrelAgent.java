@@ -94,7 +94,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
                     List<LastSessionMessage> lastSessionMessages = getLastSessionMessages();
                     if(SimpleStringUtil.isNotEmpty(lastSessionMessages)) {                      
                         String data = buildResult(  lastSessionMessages);
-                        AIParrelAgent.this.addAgentResultSessionMessage(data);
+                        AIParrelAgent.this.addAgentResultSessionMessage(null,data);
                         ServerEvent serverEvent = new ServerEvent();
                         serverEvent.setDone(true);
                         serverEvent.setAgent(AIParrelAgent.this);

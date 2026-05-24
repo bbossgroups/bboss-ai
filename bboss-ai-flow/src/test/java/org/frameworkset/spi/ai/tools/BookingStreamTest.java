@@ -21,6 +21,8 @@ import org.frameworkset.spi.ai.flow.AINodeAgent;
 import org.frameworkset.spi.ai.flow.AIParrelAgent;
 import org.frameworkset.spi.ai.flow.AIPlanAgent;
 import org.frameworkset.spi.ai.flow.AIRouteAgent;
+import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
+import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
@@ -101,7 +103,8 @@ public class BookingStreamTest {
                 .setAgentMessage(chatAgentMessage)
                 .setAgentName("预定工作流智能体").setAgentId("bookingWorkflowAgent");
 
-        // ==================== 阶段1：路由智能体 ====================
+        // ====================  路由智能体（判断用户意图） ====================
+        
         // 路由智能体判断用户意图：酒店、机票、都要
         planAgent.addAgent(new AIRouteAgent()
                 .setAgentId("bookingRouter").setAgentName("预定路由智能体")
@@ -110,6 +113,7 @@ public class BookingStreamTest {
                 .addRoutingChoice("flightAgent", "用户只需要预定机票")
                 .addRoutingChoice("bothAgent", "用户需要同时预定酒店和机票")
         );
+        // 定义注册工具
         ToolsRegist toolsRegist = new BeanToolsRegist(new PreOrderTool());
         // ==================== 阶段2：分支查询智能体 ====================
         // 酒店查询智能体（当路由到hotelAgent时执行）
@@ -165,8 +169,15 @@ public class BookingStreamTest {
                 "请综合前面的查询结果，为用户提供一份完整的预定建议报告。" +
                         "报告需要包含：1)推荐的酒店及理由 2)推荐的航班及理由 3)总预算估算 4)最终操作建议。" +
                         "请用清晰的中文输出。")
-                .setAgentId("summaryAgent").setAgentName("汇总建议智能体") );
+                .setAgentId("summaryAgent").setAgentName("汇总建议智能体").setOutputVaribleName("aaaa", AIFlowConst.AIFLOW_VAR_SCOPE_FLOW) );
 
+        // 通过飞书mcp接口，将汇总智能体结果创建为飞书文档
+        ToolsRegist mcpToolsRegist = new FeishuMcpRegist("feishumcp");
+        planAgent.addAgent(new AINodeAgent(
+                "请根据用户的问题:#[input.query]，以及前面的汇总建议，创建一份详细的飞书报告。" +
+                        "报告需要包含：1)推荐的酒店及理由 2)推荐的航班及理由 3)总预算估算 4)最终操作建议。" +
+                        "请用清晰的中文输出。")
+                .setAgentId("feishudocAgent").setAgentName("飞书文档智能体").setToolsRegist(mcpToolsRegist) );
         // ==================== 阶段6：流式执行工作流 ====================
         Flux<ServerEvent> flux = planAgent.chatStream();
         CountDownLatch countDownLatch = new CountDownLatch(1);

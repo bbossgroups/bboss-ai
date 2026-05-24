@@ -202,23 +202,25 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(agentSessionStore == null){
             return (T)this;
         }
-        agentSessionStore.addSessionMessage(message);         
+        PersistentMessage persistentMessage = new PersistentMessage();
+        persistentMessage.setMessage(message);
+        agentSessionStore.addSessionMessage(persistentMessage);         
         return (T)this;
     }
     
     
-    public Map<String,Object> addAssistantSessionMessage(String message,AIAgent aiAgent){
-        initSessionStore();
-        if(mainSessionStore == null){
-            return null;
-        }
-        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
-        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
-        if(agentSessionStore == null){
-            return null;
-        }
-        return agentSessionStore.addAssistantSessionMessage(message);
-    }
+//    public Map<String,Object> addAssistantSessionMessage(String message,AIAgent aiAgent){
+//        initSessionStore();
+//        if(mainSessionStore == null){
+//            return null;
+//        }
+//        String agentId = aiAgent != null ?aiAgent.getAgentId():null;
+//        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+//        if(agentSessionStore == null){
+//            return null;
+//        }
+//        return agentSessionStore.addAssistantSessionMessage(message);
+//    }
 
     public Map<String,Object> addAssistantSessionMessage(ServerEvent serverEvent, AIAgent aiAgent){
         initSessionStore();

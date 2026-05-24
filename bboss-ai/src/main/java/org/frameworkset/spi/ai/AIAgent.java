@@ -629,7 +629,8 @@ public class AIAgent<T extends AIAgent> {
         ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this,chatCallback);
         if(serverEvent != null && serverEvent.getData() != null){
 //            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
-            addAgentResultSessionMessage(serverEvent.getData());
+//            addAgentResultSessionMessage(serverEvent.getData());
+            addAgentResultSessionMessage(serverEvent);
             
             if(chatCallback != null && chatCallback.getChatStreamCallback() != null){
                 chatCallback.getChatStreamCallback().streamDone(serverEvent);
@@ -639,10 +640,24 @@ public class AIAgent<T extends AIAgent> {
 //        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
     }
     
-    public LastSessionMessage addAgentResultSessionMessage(String message){
+    public LastSessionMessage addAgentResultSessionMessage(TokenMetrics tokenMetrics,String message){
         LastSessionMessage lastSubAgentSessionMessage = null;
         if(this.agentSessionStore != null ) {
-            lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(message);
+
+            lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(  tokenMetrics,message);
+//            if( !isDisableGloableStore()) {
+            if( !isDisablePush2ParentLastSubMessage()) {
+                this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
+            }
+        }
+        return  lastSubAgentSessionMessage;
+    }
+
+    public LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent){
+        LastSessionMessage lastSubAgentSessionMessage = null;
+        if(this.agentSessionStore != null ) {
+
+            lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(serverEvent);
 //            if( !isDisableGloableStore()) {
             if( !isDisablePush2ParentLastSubMessage()) {
                 this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);

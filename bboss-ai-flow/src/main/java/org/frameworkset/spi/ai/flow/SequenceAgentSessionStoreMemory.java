@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.flow;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.model.PersistentMessage;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.StoreContext;
@@ -87,26 +88,27 @@ public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<Seq
 
     /**
      * 添加子智能体结果消息
-     * @param message
+     * @param persistentMessage
      * @param agentId
      * @param parentAgentId
      */
     @Override
-    public LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId){
+    public LastSessionMessage addAgentResultSessionMessage( Map<String, Object> persistentMessage,
+                                                           String agentId, String parentAgentId){
 
         LastSessionMessage lastSessionMessage = null;
-        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
-//            loadSessionMemory(message,  agentId);
-            //msgId,createTime,sessionId,seqNo,message,role
-            lastSessionMessage  = mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
-
-        }
-        else if(this.persistentSessionMemory){//主智能体直接持久化消息
-//            loadSessionMemory(message,  agentId);
-            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
-
-
-        }
+//        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
+////            loadSessionMemory(message,  agentId);
+//            //msgId,createTime,sessionId,seqNo,message,role
+//            lastSessionMessage  = mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+//
+//        }
+//        else if(this.persistentSessionMemory){//主智能体直接持久化消息
+////            loadSessionMemory(message,  agentId);
+//            lastSessionMessage  = persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+//
+//
+//        }
         //msgId,createTime,sessionId,seqNo,message,role
 
 

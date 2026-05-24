@@ -53,12 +53,7 @@ public class ParrelStreamTest {
         multiagentIntroduceProvinces("qwenvlplus","介绍省份智能体","qwen3.6-plus",null);
     }
     public static void initDB(){
-//        SQLUtil.startPool("visualops",//数据源名称
-//                "com.mysql.cj.jdbc.Driver",//oracle驱动
-//                "jdbc:mysql://10.13.6.127:3306/visualops?useUnicode=true&characterEncoding=utf-8&useSSL=false",//mysql链接串
-//                "root","passwd",//数据库账号和口令
-//                "select 1 " //数据库连接校验sql
-//        );
+
 
         SQLUtil.startPool("visualops",//数据源名称
                 "com.mysql.cj.jdbc.Driver",//oracle驱动

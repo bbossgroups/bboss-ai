@@ -93,6 +93,8 @@ public class AgentSessionStoreDBConfig {
             .append( "requestId varchar(100), " )  //请求id
             .append( "seqNo int,")  //消息序号
             .append( "message text,")  //消息正文
+
+            .append( "tokenMetrics text, " )  //token消耗统计
             .append( "role varchar(100),")
             .append( "marks varchar(500),")
             .append( "metadata text,")
@@ -108,6 +110,7 @@ public class AgentSessionStoreDBConfig {
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, " )  //消息正文
             .append( "role varchar(100) NOT NULL, " )
+            .append( "tokenMetrics LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, " )  //token消耗统计
 
             .append( "marks varchar(500),")
             .append( "metadata  LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,")
@@ -123,6 +126,8 @@ public class AgentSessionStoreDBConfig {
             .append( "agentResultMessage varchar2(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
+            .append( "tokenMetrics clob , " )  //token消耗统计
+            
             .append( "role varchar2(100) NOT NULL, " )
 
             .append( "marks varchar2(500),")
@@ -137,6 +142,7 @@ public class AgentSessionStoreDBConfig {
             .append( "agentResultMessage varchar2(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
+            .append( "tokenMetrics clob , " )  //token消耗统计
             .append( "role varchar2(100) NOT NULL, " )
 
             .append( "marks varchar2(500),")
@@ -151,6 +157,7 @@ public class AgentSessionStoreDBConfig {
             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message nvarchar(max) NOT NULL,")  //消息正文
+            .append( "tokenMetrics nvarchar(max),")  //token消耗统计
             .append( "role varchar(100) NOT NULL,")
 
             .append( "marks varchar(500),")
@@ -165,6 +172,7 @@ public class AgentSessionStoreDBConfig {
             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message text NOT NULL,")  //消息正文
+            .append( "tokenMetrics text,")  //token消耗统计
 
             .append( "role varchar(100) NOT NULL,")
             .append( "marks varchar(500),")
@@ -364,7 +372,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
          *             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
          */
         insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
-                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,agentResultMessage,seqNo,message,role,marks,metadata,requestId) values(?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,agentResultMessage,seqNo,message,role,marks,metadata,requestId,tokenMetrics) values(?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
 
         insertSessionMessageRerenceSQL = "INSERT INTO "+sessionMessageReferenceTableName+" (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
                                                     "VALUES (?, ?, ?, ?, ?)";

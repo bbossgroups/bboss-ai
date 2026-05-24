@@ -15,12 +15,16 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Map;
 
 /**
  * @author biaoping.yin
  * @Date 2026/5/7
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TokenMetrics {
     private String model;
     private long totalTokens;

@@ -28,8 +28,8 @@ public class PreOrderTool {
     @Tool(name="hotelBook",description = "请根据用户的行程需求，查询并推荐合适的酒店。" +
             "需要考虑：地理位置、价格区间、用户评分、配套设施等因素。" +
             "给出至少3个推荐选项，并说明理由。")
-    public List<Map> hotelBook(@ToolParam(name="startDay",description = "入驻时间,例如：5月25日") String startDay,
-                         @ToolParam(name="endDay",description = "离房时间,例如：5月28日") String endDay){
+    public List<Map> hotelBook(@ToolParam(name="startDay",description = "入驻时间,例如：5月25日",required = true) String startDay,
+                         @ToolParam(name="endDay",description = "离房时间,例如：5月28日",required = true) String endDay){
         List<Map> hotels = new ArrayList<>();
         Map hotelData = new LinkedHashMap();
         hotelData.put("name","迁移山水酒店");
@@ -62,7 +62,7 @@ public class PreOrderTool {
     @Tool(name="flightBook",description = "请根据用户的行程需求，查询并推荐合适的航班。" +
             "需要考虑：出发时间、到达时间、航空公司、价格、准点率等因素。" +
             "给出至少3个推荐选项，并说明理由。")
-    public List<Map> flightBook(@ToolParam(name="bookDay",description = "出发时间,例如：5月25日") String bookDay){
+    public List<Map> flightBook(@ToolParam(name="bookDay",description = "出发时间,例如：5月25日",required = true) String bookDay){
         List<Map> hotels = new ArrayList<>();
         Map hotelData = new LinkedHashMap();
         hotelData.put("name","国航6678");

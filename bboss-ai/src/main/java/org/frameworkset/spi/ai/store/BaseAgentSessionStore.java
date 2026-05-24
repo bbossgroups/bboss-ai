@@ -16,11 +16,9 @@ package org.frameworkset.spi.ai.store;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
-import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -189,15 +187,15 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
    
  
     @Override
-    public void appendSessionMessageFromParent(Map<String, Object> message){
+    public void appendSessionMessageFromParent(Map<String,Object> message){
         appendSessionMessage( message);
         
     }
-    protected void appendSessionMessage(Map<String, Object> message){
+    protected void appendSessionMessage(Map<String,Object> persistentMessage){
         if(sessionMemory == null){
             return ;
         }
-        sessionMemory.add(message);
+        sessionMemory.add(persistentMessage);
         if(sessionSize > 0 && sessionMemory.size() > sessionSize){
             sessionMemory.remove(0);
         }
@@ -206,124 +204,164 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
 
     @Override
-    public void addSessionMessage(Map<String, Object> message){
+    public void addSessionMessage(PersistentMessage persistentMessage){
 
         if(sessionMemory == null){
             return ;
         }
-        appendSessionMessage(message);
+        appendSessionMessage(persistentMessage.getMessage());
         if(mainAgentSessionStore != null){
-            mainAgentSessionStore.persistentSessionMessage(message, agentId,this.getParantAgentId(),null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
+            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
         }
         else if(this.persistentSessionMemory){
-            persistentSessionMessage(message, agentId,this.getParantAgentId(),null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
+            persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
         }
          
     }
 
     @Override
-    public LastSessionMessage addAgentResultSessionMessage(String message){
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
+    public LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent){
+        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent.getData());
+        
+        return addAgentResultSessionMessage(assistantMessage, serverEvent.getTokenMetrics());
+    }
+
+     
+    private LastSessionMessage addAgentResultSessionMessage(Map<String, Object> assistantMessage, TokenMetrics tokenMetrics){
+//        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent.getData());
         LastSessionMessage lastSubAgentSessionMessage = null;
         if(sessionMemory == null){
             lastSubAgentSessionMessage = new LastSessionMessage();
             lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
             lastSubAgentSessionMessage.setRequestId(this.getRequestId());
+            lastSubAgentSessionMessage.setTokenMetrics(tokenMetrics);
             return lastSubAgentSessionMessage;
         }
+//        message.setMessage(assistantMessage);
         appendSessionMessage(assistantMessage);
 
         if(parentAgentSessionStore != null){
             if(aiAgent != null ){
                 if(!aiAgent.isDisablePush2ParentLastSubMessage()) {
 //                if(!aiAgent.isDisableGloableStore()) {
-                    lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
+//                    lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
+                    parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
                 }
                 else{
-                    parentAgentSessionStore.persistentSessionMessage(assistantMessage, agentId, this.getParantAgentId(),null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+
                 }
             }
             else{
-                lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
+//                lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
+                parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
             }
-            
 
+
+        }
+//        else{
+//            lastSubAgentSessionMessage = new LastSessionMessage();
+//            lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
+//            lastSubAgentSessionMessage.setRequestId(this.getRequestId());
+//        }
+
+        if(mainAgentSessionStore != null){
+            PersistentMessage persistentMessage = new PersistentMessage();
+            persistentMessage.setMessage(assistantMessage);
+            persistentMessage.setTokenMetrics(tokenMetrics);
+            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId, this.getParantAgentId(),null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
         }
         else{
             lastSubAgentSessionMessage = new LastSessionMessage();
             lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
+            lastSubAgentSessionMessage.setTokenMetrics(tokenMetrics);
             lastSubAgentSessionMessage.setRequestId(this.getRequestId());
         }
 
 
-
+       
         return lastSubAgentSessionMessage;
+    }
+    @Override
+    public LastSessionMessage addAgentResultSessionMessage(TokenMetrics tokenMetrics,String message){
+        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
+         
+        return   addAgentResultSessionMessage(assistantMessage, tokenMetrics);
     }
     /**
      * 添加子智能体结果消息
-     * @param message
+     * @param persistentMessage
      * @param agentId
      * @param parentAgentId
      */
     @Override
-    public LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId){
+    public LastSessionMessage addAgentResultSessionMessage(Map<String, Object> persistentMessage//Map<String, Object> message
+                                                            ,String agentId,String parentAgentId){
 
         LastSessionMessage lastSessionMessage = null;
-        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
-//            loadSessionMemory(message,  agentId);
-            //msgId,createTime,sessionId,seqNo,message,role
-            lastSessionMessage  = mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
-            
-        }
-        else if(this.persistentSessionMemory){//主智能体直接持久化消息
-//            loadSessionMemory(message,  agentId);
-            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
-            
-
-        }
+//        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
+////            loadSessionMemory(message,  agentId);
+//            //msgId,createTime,sessionId,seqNo,message,role
+//            lastSessionMessage  = mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+//            
+//        }
+//        else if(this.persistentSessionMemory){//主智能体直接持久化消息
+////            loadSessionMemory(message,  agentId);
+//            lastSessionMessage  = persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+//            
+//
+//        }
         //msgId,createTime,sessionId,seqNo,message,role
 
 
-        appendSessionMessage(message);
+        appendSessionMessage(persistentMessage);
         
         return lastSessionMessage;
 
     }
 
     @Override
-    public void addSessionMessage( Map<String, Object> systemMessage,String prompt,String agentId,String parentAgentId){
+    public void addSessionMessage( Map<String, Object> message//Map<String, Object> systemMessage
+                                    ,String prompt,String agentId,String parentAgentId){
 
         if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
             //msgId,createTime,sessionId,seqNo,message,role
-            mainAgentSessionStore.persistentSessionMessage(systemMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
+            PersistentMessage persistentMessage = new PersistentMessage();
+            persistentMessage.setMessage(message);
+            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
-            persistentSessionMessage(systemMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);//1 代表子智能体输出结果 0 代表子智能体中间消息，3 代表用户输入消息
+            PersistentMessage persistentMessage = new PersistentMessage();
+            persistentMessage.setMessage(message);
+            persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);//1 代表子智能体输出结果 0 代表子智能体中间消息，3 代表用户输入消息
         }
 //            SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
 //                    SimpleStringUtil.getUUID32(),new Date(),this.getSessionId(),agentId, integerCount.increament(), JsonUtil.object2json(systemMessage),
 //                    systemMessage.get("role"));
 
-        appendSessionMessage(systemMessage);
+        appendSessionMessage(message);
     }
  
-    @Override
-    public Map<String, Object> addAssistantSessionMessage(String message){
-        if(sessionMemory == null){
-            return null;
-        }
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
-        addSessionMessage(assistantMessage);
-        return assistantMessage;
-    }
+//    @Override
+//    public Map<String, Object> addAssistantSessionMessage(String message){
+//        if(sessionMemory == null){
+//            return null;
+//        }
+//        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
+//        PersistentMessage persistentMessage = new PersistentMessage();
+//        persistentMessage.setMessage(assistantMessage);
+//        addSessionMessage(assistantMessage);
+//        return assistantMessage;
+//    }
     @Override
     public Map<String, Object> addAssistantSessionMessage(ServerEvent serverEvent){
         if(sessionMemory == null){
             return null;
         }
         Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent);
-
-        addSessionMessage(assistantMessage);
+        PersistentMessage persistentMessage = new PersistentMessage();
+        persistentMessage.setMessage(assistantMessage);
+        persistentMessage.setTokenMetrics(serverEvent.getTokenMetrics());
+        addSessionMessage(persistentMessage);
         return assistantMessage;
     }
     @Override
@@ -334,7 +372,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
         Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(  baseStreamDataBuilder);
 
-        addSessionMessage(assistantMessage);
+        StreamData streamData = baseStreamDataBuilder.getToolCallsStreamData();
+        PersistentMessage persistentMessage = new PersistentMessage();
+        persistentMessage.setMessage(assistantMessage);
+        persistentMessage.setTokenMetrics(streamData.getStreamTokenMetrics());
+        persistentMessage.setTotalTokenMetrics(streamData.getTotalTokenMetrics());
+        addSessionMessage(persistentMessage);
         return assistantMessage;
     }
 

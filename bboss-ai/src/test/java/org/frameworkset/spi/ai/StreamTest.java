@@ -53,12 +53,7 @@ import java.util.concurrent.CountDownLatch;
 public class StreamTest {
     private static Logger logger = LoggerFactory.getLogger(StreamTest.class);
     public static void initDB(){
-//        SQLUtil.startPool("visualops",//数据源名称
-//                "com.mysql.cj.jdbc.Driver",//oracle驱动
-//                "jdbc:mysql://10.13.6.127:3306/visualops?useUnicode=true&characterEncoding=utf-8&useSSL=false",//mysql链接串
-//                "root","passwd",//数据库账号和口令
-//                "select 1 " //数据库连接校验sql
-//        );
+ 
 
         SQLUtil.startPool("visualops",//数据源名称
                 "com.mysql.cj.jdbc.Driver",//oracle驱动
@@ -82,7 +77,7 @@ public class StreamTest {
 
 
 
-        properties.put("tool.http.hosts","10.13.6.4:8128");///设置tool服务地址
+        properties.put("tool.http.hosts","127.0.0.1:8080");///设置tool服务地址
         properties.put("tool.http.apiKeyId","17689048891086XsDsJVgwiQcmKhOdh23DX4NT");//设置apiKey
         properties.put("tool.http.timeoutSocket","60000");
         properties.put("tool.http.timeoutConnection","40000");

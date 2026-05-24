@@ -20,6 +20,7 @@ import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.model.PersistentMessage;
 import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
@@ -193,6 +194,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 
                             }
                             for (SessionMessage sessionMessage : sessionMessages) {
+                                
                                 appendSessionMessageFromParent(sessionMessage.getMessage());
                             }
 
@@ -210,12 +212,13 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     }
 
     @Override
-    public LastSessionMessage persistentSessionMessage(Map<String, Object> message,
-                                                       String agentId, String parentAgentId,String marks,String metadata, String agentResultMessage){
+    public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,
+                                                       String agentId, String parentAgentId, String marks, String metadata, String agentResultMessage){
         try {
 
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role
+            Map<String, Object> message = persistentMessage.getMessage();
             String msgId = SimpleStringUtil.getUUID32();
             String role = (String) message.get("role");
             if(agentResultMessage != null && !agentResultMessage.equals("1")){
@@ -223,10 +226,14 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                     agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
                 }
             }
+            String tokenMetrics = null;
+            if(persistentMessage.getTokenMetrics() != null){
+                tokenMetrics = JsonUtil.object2json(persistentMessage.getTokenMetrics());
+            }
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
                     msgId,new Date(),this.getSessionId(),
                     parentAgentId, agentId,agentResultMessage,integerCount.increament(), JsonUtil.object2json(message),
-                    role,marks,metadata,this.getRequestId());
+                    role,marks,metadata,this.getRequestId(), tokenMetrics);
 
             if(agentResultMessage != null && agentResultMessage.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();
@@ -236,6 +243,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                 lastSessionMessage.setSessionId(getSessionId());
                 lastSessionMessage.setRequestId(this.getRequestId());
                 lastSessionMessage.setMsgAgentId(agentId);
+                lastSessionMessage.setTokenMetrics(persistentMessage.getTokenMetrics());
                 lastSessionMessage.setMsgParentAgentId(parentAgentId);
                 return lastSessionMessage;
             }

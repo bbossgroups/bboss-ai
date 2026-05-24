@@ -38,7 +38,7 @@ public interface StreamDataBuilder {
 
 
 
-    String addAgentResultSessionMessage();
+    String addAgentResultSessionMessage(TokenMetrics tokenMetrics);
     TokenMetrics getTokenMetrics();
     void setTokenMetrics(TokenMetrics tokenMetrics);
 }

@@ -239,8 +239,8 @@ public class AgentMessage<T extends AgentMessage> {
         return (T)this;
     }
 
-    public LastSessionMessage addAgentResultSessionMessage(String message,AIAgent aiAgent){
-        return aiAgent.addAgentResultSessionMessage(message);
+    public LastSessionMessage addAgentResultSessionMessage(TokenMetrics tokenMetrics,String message,AIAgent aiAgent){
+        return aiAgent.addAgentResultSessionMessage(  tokenMetrics,message);
         /**
          AgentSessionStore mainSessionStore = aiAgent.getMainSessionStore();
          //        initSessionStore();

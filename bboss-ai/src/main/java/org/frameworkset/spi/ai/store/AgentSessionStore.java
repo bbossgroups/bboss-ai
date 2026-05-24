@@ -17,7 +17,9 @@ package org.frameworkset.spi.ai.store;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.model.PersistentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.TokenMetrics;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
 import java.util.List;
@@ -53,15 +55,16 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     int getSessionSize() ;
     String getSessionId(); 
 
-    void addSessionMessage(Map<String, Object> message);
+    void addSessionMessage(PersistentMessage message);
 
-    LastSessionMessage addAgentResultSessionMessage(String message);
+    LastSessionMessage addAgentResultSessionMessage(TokenMetrics tokenMetrics,String persistentMessage);
+    LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent);
 
     LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId);
-    void appendSessionMessageFromParent(Map<String, Object> message);
-    void addSessionMessage( Map<String, Object> systemMessage,String prompt,String agentId,String parentAgentId);
+    void appendSessionMessageFromParent(Map<String,Object> message);
+    void addSessionMessage( Map<String,Object> systemMessage,String prompt,String agentId,String parentAgentId);
    
-    Map<String, Object> addAssistantSessionMessage(String message);
+//    Map<String, Object> addAssistantSessionMessage(String message);
 
     Map<String, Object> addAssistantSessionMessage(ServerEvent serverEvent);
     Map<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder);
@@ -71,8 +74,10 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 
     List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize);
 
-    LastSessionMessage persistentSessionMessage(Map<String, Object> message, 
-                                                String agentId,String parentAgentId,String marks,String metadata,String agentResultMessage);
+    LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,//Map<String, Object> message,
+                                                String agentId, String parentAgentId, String marks, String metadata, String agentResultMessage);
+            
+            //, TokenMetrics tokenMetrics);
     AgentSessionStore getMainAgentSessionStore() ;
 
     T setMainAgentSessionStore(AgentSessionStore mainAgentSessionStore) ;

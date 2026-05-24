@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.store;
  */
 
 import com.frameworkset.orm.annotation.Column;
+import org.frameworkset.spi.ai.model.TokenMetrics;
 
 import java.util.Date;
 import java.util.Map;
@@ -58,6 +59,8 @@ public class SessionMessage {
     
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.SessionMessageEditor")
     private Map<String, Object> message;
+    @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.TokenMetricsEditor")
+    private TokenMetrics tokenMetrics;
     private String role;
 
     public Map<String, Object> getMessage() {
@@ -154,5 +157,13 @@ public class SessionMessage {
 
     public void setRequestId(String requestId) {
         this.requestId = requestId;
+    }
+
+    public TokenMetrics getTokenMetrics() {
+        return tokenMetrics;
+    }
+
+    public void setTokenMetrics(TokenMetrics tokenMetrics) {
+        this.tokenMetrics = tokenMetrics;
     }
 }

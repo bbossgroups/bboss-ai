@@ -891,7 +891,7 @@ public class AIResponseUtil {
             String data = line.substring(5).trim();
 
             if (streamDataBuilder.isDone( agentAdapter,   data)) {
-                streamDataBuilder.addAgentResultSessionMessage();
+                streamDataBuilder.addAgentResultSessionMessage(null);
                 return true;
             }
             if (!data.isEmpty()) {
@@ -1006,7 +1006,7 @@ public class AIResponseUtil {
                 serverEvent.setDone(true);
                 TokenMetrics tokenMetrics = streamDataBuilder.getTokenMetrics();
                 serverEvent.setTokenMetrics(tokenMetrics);
-                serverEvent.setFullStreamData(streamDataBuilder.addAgentResultSessionMessage());
+                serverEvent.setFullStreamData(streamDataBuilder.addAgentResultSessionMessage(tokenMetrics));
                 try {
                     ChatStreamCallback chatStreamCallback = chatObject.getChatStreamCallback();
                     if (chatStreamCallback != null) {

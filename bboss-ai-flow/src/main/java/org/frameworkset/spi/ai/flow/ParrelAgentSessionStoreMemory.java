@@ -101,18 +101,18 @@ public class ParrelAgentSessionStoreMemory extends AgentSessionStoreMemory<Parre
     public LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId){
 
         LastSessionMessage lastSessionMessage = null;
-        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
-//            loadSessionMemory(message,  agentId);
-            //msgId,createTime,sessionId,seqNo,message,role
-            lastSessionMessage  = mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
-
-        }
-        else if(this.persistentSessionMemory){//主智能体直接持久化消息
-//            loadSessionMemory(message,  agentId);
-            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
-
-
-        }
+//        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
+////            loadSessionMemory(message,  agentId);
+//            //msgId,createTime,sessionId,seqNo,message,role
+//            lastSessionMessage  = mainAgentSessionStore.persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+//
+//        }
+//        else if(this.persistentSessionMemory){//主智能体直接持久化消息
+////            loadSessionMemory(message,  agentId);
+//            lastSessionMessage  = persistentSessionMessage(message, agentId,parentAgentId,null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+//
+//
+//        }
         //msgId,createTime,sessionId,seqNo,message,role
 
 

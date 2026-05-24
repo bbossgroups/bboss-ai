@@ -19,6 +19,7 @@ import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.model.PersistentMessage;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.util.concurrent.IntegerCount;
 
@@ -153,6 +154,9 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 
                         }
                         for (SessionMessage sessionMessage : sessionMessages) {
+                            PersistentMessage persistentMessage = new PersistentMessage();
+                            persistentMessage.setMessage(sessionMessage.getMessage());
+                            persistentMessage.setTokenMetrics(sessionMessage.getTokenMetrics());
                             appendSessionMessageFromParent(sessionMessage.getMessage());
                         }
 
@@ -165,11 +169,12 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
     }
 
     @Override
-    public LastSessionMessage persistentSessionMessage(Map<String, Object> message, 
-                                                       String agentId,String parentAgentId,String marks,String metadata,
+    public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,// Map<String, Object> message,
+                                                       String agentId, String parentAgentId, String marks, String metadata,
                                                        String agentResultMessage){
 
 //        loadSessionMemory(message,  agentId);
+        Map<String, Object> message = persistentMessage.getMessage();
         SessionMessage sessionMessage = new SessionMessage();
         sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
         sessionMessage.setMessage(message);
@@ -189,6 +194,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setAgentResultMessage(agentResultMessage);
         sessionMessage.setMarks(marks);
         sessionMessage.setMetadata(metadata);
+        sessionMessage.setTokenMetrics(persistentMessage.getTokenMetrics());
         sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
         agentSession.addSessionMessage(sessionMessage);
 
@@ -200,6 +206,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             lastSessionMessage.setRequestId(this.getRequestId());
             lastSessionMessage.setSessionId(getSessionId());
             lastSessionMessage.setMsgAgentId(agentId);
+            lastSessionMessage.setTokenMetrics(sessionMessage.getTokenMetrics());
             lastSessionMessage.setMsgParentAgentId(parentAgentId);
             return lastSessionMessage;
         }
