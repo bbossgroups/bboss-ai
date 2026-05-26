@@ -30,7 +30,9 @@ public interface ToolsRegist {
     List<FunctionToolDefine> registTools();
     FunctionCall getFunctionCall(String functionName);
 
-    FunctionToolDefine getFunctionToolDefine(String functionName);
+    default FunctionToolDefine getFunctionToolDefine(String functionName){
+        return null;
+    }
 	default void init(){
 		
 	}
