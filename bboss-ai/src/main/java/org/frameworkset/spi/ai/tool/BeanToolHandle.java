@@ -17,12 +17,10 @@ package org.frameworkset.spi.ai.tool;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
-import org.frameworkset.spi.ai.model.Parameters;
 import org.frameworkset.spi.ai.model.Property;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.frameworkset.util.ClassUtil;
-import org.frameworkset.util.ClassUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -80,7 +78,7 @@ public class BeanToolHandle {
         
         
     }
-    public static List<FunctionToolDefine> parserTools(Object toolObject) {
+    public static List<FunctionToolDefine> parserTools(Object toolObject,BeanToolFunctionCallBuilder beanToolFunctionCallBuilder) {
         ClassUtil.ClassInfo classInfo = ClassUtil.getClassInfo(toolObject.getClass());
         Method[] methods = classInfo.getDeclaredMethods();
        
@@ -168,7 +166,7 @@ public class BeanToolHandle {
                if(requirements != null && requirements.size() > 0){
                    functionToolDefine.requiredParameters(requirements.toArray(new String[requirements.size()]));
                }
-               functionToolDefine.setFunctionCall(new BeanToolFunctionCall(method,toolObject,functionToolDefine,parameters));
+               functionToolDefine.setFunctionCall(beanToolFunctionCallBuilder.buildBeanToolFunctionCall( method,toolObject,functionToolDefine,parameters));
                 //将FunctionToolDefine对象添加到列表中
                 if (functionToolDefines == null) {
                     functionToolDefines = new ArrayList<>();

@@ -268,7 +268,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             PersistentMessage persistentMessage = new PersistentMessage();
             persistentMessage.setMessage(assistantMessage);
             persistentMessage.setTokenMetrics(tokenMetrics);
-            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId, this.getParantAgentId(),null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
+            lastSubAgentSessionMessage = mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId, this.getParantAgentId(),null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
         }
         else{
             lastSubAgentSessionMessage = new LastSessionMessage();

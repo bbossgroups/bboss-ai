@@ -15,40 +15,30 @@ package org.frameworkset.spi.ai.tool;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.model.FunctionCall;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
-import org.frameworkset.spi.ai.tools.ToolsRegist;
 
-import java.util.List;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 
 /**
  * @author biaoping.yin
  * @Date 2026/5/21
  */
-public class BeanToolsRegist implements ToolsRegist {
-    private Object toolBean;
-    private List<FunctionToolDefine> functionToolDefines;
+public class BeanToolsRegist extends BaseBeanToolsRegist {
+  
     public BeanToolsRegist(Object toolBean){
-        this.toolBean = toolBean;
+        super(toolBean);
+    }
+
+    protected BaseBeanToolFunctionCall buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters){
+        return _buildBeanToolFunctionCall(  toolMethod,   toolBean,   functionToolDefine,  parameters);
+    }
+
+
+    public static BaseBeanToolFunctionCall _buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters){
+        return new BeanToolFunctionCall(toolMethod,toolBean,functionToolDefine,parameters);
     }
     
-    @Override
-    public void init(){
-        functionToolDefines = BeanToolHandle.parserTools(toolBean);
-    }
 
-    @Override
-    public List<FunctionToolDefine> registTools() {
-        return functionToolDefines;
-    }
-
-    /**
-     * beanTools无需实现本方法，
-     * @param functionName
-     * @return
-     */
-    @Override
-    public FunctionCall getFunctionCall(String functionName) {
-        return null;
-    }
+ 
 }

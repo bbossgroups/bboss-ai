@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.tools;
+package org.frameworkset.spi.ai.mcp.tools.server;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -15,26 +15,24 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.model.FunctionCall;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
+import org.frameworkset.spi.ai.tool.BaseBeanToolFunctionCall;
+import org.frameworkset.spi.ai.tool.BaseBeanToolsRegist;
 
-import java.util.List;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 
 /**
- * 动态加载模型工具
- * 动态返回工具调用接口
  * @author biaoping.yin
- * @Date 2026/2/22
+ * @Date 2026/5/21
  */
-public interface ToolsRegist {
-    List<FunctionToolDefine> registTools();
-    FunctionCall getFunctionCall(String functionName);
+public class MCPBeanToolsRegist extends BaseBeanToolsRegist {
 
-    FunctionToolDefine getFunctionToolDefine(String functionName);
-	default void init(){
-		
-	}
-	default void destroy(){
-		
-	}
+    public MCPBeanToolsRegist(Object toolBean){
+        super(toolBean);
+    }
+
+    protected BaseBeanToolFunctionCall buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters){
+        return new MCPBeanToolFunctionCall(toolMethod,toolBean,functionToolDefine,parameters);
+    }
 }

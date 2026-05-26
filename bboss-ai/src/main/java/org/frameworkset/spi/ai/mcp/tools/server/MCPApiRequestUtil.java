@@ -1,0 +1,70 @@
+package org.frameworkset.spi.ai.mcp.tools.server;
+/**
+ * Copyright 2026 bboss
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+ 
+import org.frameworkset.spi.ai.mcp.model.MCPInitializedToolResponse;
+import org.frameworkset.spi.ai.mcp.model.McpToolRequest;
+import org.frameworkset.spi.ai.mcp.model.SSEInitializeResponse;
+import org.frameworkset.spi.ai.mcp.sse.MCPSSERequestUtil;
+import org.frameworkset.spi.ai.mcp.sse.McpSSESink;
+import org.frameworkset.spi.ai.mcp.streamable.MCPStreamableRequestUtil;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author biaoping.yin
+ * @Date 2026/3/3
+ */
+public class MCPApiRequestUtil {
+ 
+	
+	public static void sendSSEToolCallResponse(McpSSESink mcpSSESink,
+                                               McpToolRequest mcpToolRequest,
+                                               List<Map> content){
+		MCPSSERequestUtil.sendSSEToolCallResponse(mcpSSESink, mcpToolRequest, content);
+		 
+	}
+	
+	public static void sendSSEInitializeResponse(McpSSESink mcpSSESink, McpToolRequest mcpRequest) {
+		SSEInitializeResponse sseInitializeResponse = new SSEInitializeResponse();
+		sseInitializeResponse.setProtocolVersion("2026-05-26");
+		sseInitializeResponse.setListChanged(false);
+		sseInitializeResponse.setResources(new LinkedHashMap());
+		sseInitializeResponse.setServerName("bboss-mcp-server");
+		sseInitializeResponse.setServerVersion("1.0.0");
+		MCPSSERequestUtil.sendSSEInitializeResponse(mcpSSESink, mcpRequest,sseInitializeResponse);
+		 
+	}
+	
+	public static MCPInitializedToolResponse sendInitializeResponse(McpToolRequest mcpRequest) {
+		SSEInitializeResponse sseInitializeResponse = new SSEInitializeResponse();
+		sseInitializeResponse.setProtocolVersion("2026-05-26");
+		sseInitializeResponse.setListChanged(false);
+		sseInitializeResponse.setResources(new LinkedHashMap());
+		sseInitializeResponse.setServerName("bboss-mcp-server");
+		sseInitializeResponse.setServerVersion("1.0.0");
+		return MCPStreamableRequestUtil.sendInitializeResponse( mcpRequest, sseInitializeResponse);
+		
+	}
+	
+	public static void notificationsInitialized(McpSSESink mcpSSESink ) {
+		MCPSSERequestUtil.notificationsInitialized(mcpSSESink);
+		
+	}
+}

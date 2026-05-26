@@ -23,7 +23,7 @@ import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.*;
-import org.frameworkset.spi.ai.tool.BeanToolHandle;
+import org.frameworkset.spi.ai.tool.*;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
@@ -31,6 +31,8 @@ import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -888,7 +890,12 @@ public class AIAgent<T extends AIAgent> {
         }
     }
     public T registBeanTool(Object beanTool) {
-        List<FunctionToolDefine> functionToolDefines = BeanToolHandle.parserTools(beanTool);
+        List<FunctionToolDefine> functionToolDefines = BeanToolHandle.parserTools(beanTool,new BeanToolFunctionCallBuilder() {
+            @Override
+            public BaseBeanToolFunctionCall buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters) {
+                return BeanToolsRegist._buildBeanToolFunctionCall(  toolMethod,   toolBean,   functionToolDefine,   parameters);
+            }
+        });
         if(CollectionUtils.isNotEmpty(functionToolDefines)){
             reset();
             if (this.tools == null) {

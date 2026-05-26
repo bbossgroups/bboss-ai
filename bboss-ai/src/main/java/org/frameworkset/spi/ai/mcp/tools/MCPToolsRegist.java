@@ -58,4 +58,9 @@ public class MCPToolsRegist implements ToolsRegist {
 	public FunctionCall getFunctionCall(String functionName) {
 		return new MCPToolFunctionCall(mcpClient);
 	}
+
+    @Override
+    public FunctionToolDefine getFunctionToolDefine(String functionName) {
+        throw new UnsupportedOperationException("MCPToolsRegist does not support getFunctionToolDefine");
+    }
 }

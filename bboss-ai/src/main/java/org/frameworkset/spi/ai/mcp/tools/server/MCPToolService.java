@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.tools;
+package org.frameworkset.spi.ai.mcp.tools.server;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -15,26 +15,19 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.model.FunctionCall;
-import org.frameworkset.spi.ai.model.FunctionToolDefine;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
 
 /**
- * 动态加载模型工具
- * 动态返回工具调用接口
  * @author biaoping.yin
- * @Date 2026/2/22
+ * @Date 2026/3/3
  */
-public interface ToolsRegist {
-    List<FunctionToolDefine> registTools();
-    FunctionCall getFunctionCall(String functionName);
-
-    FunctionToolDefine getFunctionToolDefine(String functionName);
-	default void init(){
-		
-	}
-	default void destroy(){
-		
-	}
+public interface MCPToolService {
+	Flux<String> sse(String apiKey);
+	String message(  String apiKey, String sessionId,
+					 String requestBody
+	);
+	
+	Object streamable(  String apiKey, 
+					 String requestBody
+	);
 }

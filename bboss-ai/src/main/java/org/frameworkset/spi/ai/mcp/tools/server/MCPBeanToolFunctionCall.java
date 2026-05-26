@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.tool;
+package org.frameworkset.spi.ai.mcp.tools.server;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -19,29 +19,32 @@ import org.frameworkset.spi.ai.model.FunctionCall;
 import org.frameworkset.spi.ai.model.FunctionCallException;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
+import org.frameworkset.spi.ai.tool.BaseBeanToolFunctionCall;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 工具方法
  * @author biaoping.yin
  * @Date 2026/5/20
  */
-public class BeanToolFunctionCall extends  BaseBeanToolFunctionCall implements FunctionCall {
+public class MCPBeanToolFunctionCall extends BaseBeanToolFunctionCall<List<Map>> implements FunctionCall<List<Map>> {
  
 
-    public BeanToolFunctionCall(Method toolMethod, Object toolBean, 
-                                FunctionToolDefine functionToolDefine,
-                                Parameter[] parameters){
-         super(toolMethod,toolBean,functionToolDefine,parameters);
+    public MCPBeanToolFunctionCall(Method toolMethod, Object toolBean,
+                                   FunctionToolDefine functionToolDefine,
+                                   Parameter[] parameters){
+        super(toolMethod,toolBean,functionToolDefine,parameters);
     }
  
     @Override
-    public Object call(FunctionTool functionTool) throws FunctionCallException {
+    public List<Map> call(FunctionTool functionTool) throws FunctionCallException {
         try {
-            return toolMethod.invoke(toolBean,getArgs(  functionTool));
+            return (List<Map>)toolMethod.invoke(toolBean,getArgs(  functionTool));
         } catch (IllegalAccessException e) {
             throw new FunctionCallException(e);
         } catch (InvocationTargetException e) {
