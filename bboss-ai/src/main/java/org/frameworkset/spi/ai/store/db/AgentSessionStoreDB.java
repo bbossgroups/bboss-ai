@@ -21,6 +21,7 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.PersistentMessage;
+import org.frameworkset.spi.ai.model.TokenMetrics;
 import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
@@ -226,14 +227,21 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                     agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
                 }
             }
+            TokenMetrics tokenMetrics_ = persistentMessage.getTokenMetrics();
             String tokenMetrics = null;
-            if(persistentMessage.getTokenMetrics() != null){
-                tokenMetrics = JsonUtil.object2json(persistentMessage.getTokenMetrics());
+            long elapsed = 0l;
+            if(tokenMetrics_ != null){
+                tokenMetrics = JsonUtil.object2json(tokenMetrics_);
+                if(tokenMetrics_.getStartTime() != null && tokenMetrics_.getEndTime() != null){
+                    elapsed = tokenMetrics_.getEndTime() - tokenMetrics_.getStartTime();
+                }
             }
+           
+            
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
                     msgId,new Date(),this.getSessionId(),
                     parentAgentId, agentId,agentResultMessage,integerCount.increament(), JsonUtil.object2json(message),
-                    role,marks,metadata,this.getRequestId(), tokenMetrics);
+                    role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed);
 
             if(agentResultMessage != null && agentResultMessage.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();
@@ -245,6 +253,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                 lastSessionMessage.setMsgAgentId(agentId);
                 lastSessionMessage.setTokenMetrics(persistentMessage.getTokenMetrics());
                 lastSessionMessage.setMsgParentAgentId(parentAgentId);
+                lastSessionMessage.setElapsed(elapsed);
                 return lastSessionMessage;
             }
             else{

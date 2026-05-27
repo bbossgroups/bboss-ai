@@ -41,6 +41,10 @@ public class SessionMessage {
     public static final String MESSAGE_TYPE_MIDDLE_MESSAGE = "0";
     
     private String msgId;
+
+
+
+    private long elapsed;
     /**
      * 前端用户请求id，每次请求生成一个唯一id
      */
@@ -165,5 +169,12 @@ public class SessionMessage {
 
     public void setTokenMetrics(TokenMetrics tokenMetrics) {
         this.tokenMetrics = tokenMetrics;
+    }
+    public long getElapsed() {
+        return elapsed;
+    }
+
+    public void setElapsed(long elapsed) {
+        this.elapsed = elapsed;
     }
 }

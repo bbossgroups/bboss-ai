@@ -230,11 +230,22 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     private LastSessionMessage addAgentResultSessionMessage(Map<String, Object> assistantMessage, TokenMetrics tokenMetrics){
 //        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent.getData());
         LastSessionMessage lastSubAgentSessionMessage = null;
+       
         if(sessionMemory == null){
+            TokenMetrics tokenMetrics_ = tokenMetrics;
+            long elapsed = 0l;
+
+            if(tokenMetrics_ != null){
+                if(tokenMetrics_.getStartTime() != null && tokenMetrics_.getEndTime() != null){
+                    elapsed = tokenMetrics_.getEndTime() - tokenMetrics_.getStartTime();
+                }
+            }
             lastSubAgentSessionMessage = new LastSessionMessage();
             lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
             lastSubAgentSessionMessage.setRequestId(this.getRequestId());
+            
             lastSubAgentSessionMessage.setTokenMetrics(tokenMetrics);
+            lastSubAgentSessionMessage.setElapsed(elapsed);
             return lastSubAgentSessionMessage;
         }
 //        message.setMessage(assistantMessage);
@@ -271,9 +282,18 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             lastSubAgentSessionMessage = mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId, this.getParantAgentId(),null,null,MESSAGE_TYPE_AGENTRESULTMESSAGE);
         }
         else{
+            TokenMetrics tokenMetrics_ = tokenMetrics;
+            long elapsed = 0l;
+
+            if(tokenMetrics_ != null){
+                if(tokenMetrics_.getStartTime() != null && tokenMetrics_.getEndTime() != null){
+                    elapsed = tokenMetrics_.getEndTime() - tokenMetrics_.getStartTime();
+                }
+            }
             lastSubAgentSessionMessage = new LastSessionMessage();
             lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
             lastSubAgentSessionMessage.setTokenMetrics(tokenMetrics);
+            lastSubAgentSessionMessage.setElapsed(elapsed);
             lastSubAgentSessionMessage.setRequestId(this.getRequestId());
         }
 

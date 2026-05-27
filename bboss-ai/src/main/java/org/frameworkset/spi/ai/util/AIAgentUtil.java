@@ -810,9 +810,7 @@ public class AIAgentUtil {
         BaseURLResponseHandler<ServerEvent> responseHandler = new BaseURLResponseHandler<ServerEvent>() {
             @Override
             public ServerEvent handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
-                ServerEvent serverEvent1 = AIResponseUtil.handleChatResponse(agentAdapter, chatObject.getCompletionsUrl(), response, chatObject.getStreamDataBuilder());
-                 TokenMetrics tokenMetrics = serverEvent1.getTokenMetrics();
-                return serverEvent1;
+                return   AIResponseUtil.handleChatResponse(agentAdapter, chatObject.getCompletionsUrl(), response, chatObject.getStreamDataBuilder());
             }
         };
 

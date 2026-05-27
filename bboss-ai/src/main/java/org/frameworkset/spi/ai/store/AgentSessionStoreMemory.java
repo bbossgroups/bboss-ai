@@ -16,10 +16,12 @@ package org.frameworkset.spi.ai.store;
  */
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.PersistentMessage;
+import org.frameworkset.spi.ai.model.TokenMetrics;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.util.concurrent.IntegerCount;
 
@@ -194,10 +196,20 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setAgentResultMessage(agentResultMessage);
         sessionMessage.setMarks(marks);
         sessionMessage.setMetadata(metadata);
-        sessionMessage.setTokenMetrics(persistentMessage.getTokenMetrics());
+        TokenMetrics tokenMetrics_ = persistentMessage.getTokenMetrics();
+        long elapsed = 0l;
+
+        if(tokenMetrics_ != null){
+            if(tokenMetrics_.getStartTime() != null && tokenMetrics_.getEndTime() != null){
+                elapsed = tokenMetrics_.getEndTime() - tokenMetrics_.getStartTime();
+            }
+        }
+        sessionMessage.setElapsed(elapsed);
+        sessionMessage.setTokenMetrics(tokenMetrics_);
         sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
         agentSession.addSessionMessage(sessionMessage);
-
+       
+        
         if(agentResultMessage != null && agentResultMessage.equals("1")) {
             LastSessionMessage lastSessionMessage = new LastSessionMessage();
             lastSessionMessage.setMsgId(sessionMessage.getMsgId());
@@ -206,7 +218,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             lastSessionMessage.setRequestId(this.getRequestId());
             lastSessionMessage.setSessionId(getSessionId());
             lastSessionMessage.setMsgAgentId(agentId);
-            lastSessionMessage.setTokenMetrics(sessionMessage.getTokenMetrics());
+            lastSessionMessage.setTokenMetrics(tokenMetrics_);
+            lastSessionMessage.setElapsed(elapsed);
             lastSessionMessage.setMsgParentAgentId(parentAgentId);
             return lastSessionMessage;
         }

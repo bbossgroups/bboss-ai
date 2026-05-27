@@ -34,6 +34,7 @@ public class LastSessionMessage {
     /**消息对应智能体id*/
     private String msgAgentId;
     private String msgParentAgentId;    
+    private long elapsed;
     
     /**
      * 是不是最新的消息，如果是，则需要记录引用关系到数据库
@@ -116,5 +117,13 @@ public class LastSessionMessage {
 
     public void setTokenMetrics(TokenMetrics tokenMetrics) {
         this.tokenMetrics = tokenMetrics;
+    }
+
+    public long getElapsed() {
+        return elapsed;
+    }
+
+    public void setElapsed(long elapsed) {
+        this.elapsed = elapsed;
     }
 }
