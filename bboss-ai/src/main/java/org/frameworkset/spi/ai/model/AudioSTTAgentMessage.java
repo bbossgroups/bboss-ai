@@ -100,7 +100,10 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
             public StreamData build(AgentAdapter agentAdapter, String line) {
                 return agentAdapter.parseAudioStreamContentFromData(this,line);
             }
-
+            @Override
+            public String getMaas() {
+                return clientConfiguration.getDatasource();
+            }
 
             @Override
             public boolean isDone(AgentAdapter agentAdapter,String data) {

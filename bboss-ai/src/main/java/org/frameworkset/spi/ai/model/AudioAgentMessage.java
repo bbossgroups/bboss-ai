@@ -65,6 +65,10 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         sseHeaderSetFunction = agentAdapter.getAudioGenSSEHeaderSetFunction();
         streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
+            public String getMaas() {
+                return clientConfiguration.getDatasource();
+            }
+            @Override
             public StreamData build(AgentAdapter agentAdapter, String line) {
                 return agentAdapter.parseAudioGenStreamContentFromData(line);
             }

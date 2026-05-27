@@ -63,7 +63,7 @@ public class McpBookingStreamTest {
 
         // 场景3：酒店和机票都要（路由到并行查询）
 //        bookingWorkflowStream("kimi", "我5月25日到5月28日要去北京出差，帮我预定酒店和机票", "kimi-k2.6", null);
-
+//        bookingWorkflowStream("qwenvlplus", "我5月25日到5月28日要去北京出差，帮我预定酒店和机票", "qwen3.7-max", null);
         bookingWorkflowStream("qwenvlplus", "我5月25日到5月28日要去北京出差，帮我预定酒店和机票", "qwen3.6-plus", null);
     }
 
@@ -148,7 +148,7 @@ public class McpBookingStreamTest {
                 .setToolsRegist(toolsRegist));
 
         bothAgent.addAgent(new AINodeAgent(
-                "请根据用户的行程需求:#[input.query]，查询并推荐合适的航班。" +
+                "请根据用户的行程需求:#[input.query]，查询并推荐合适的航班和机票。" +
                         "需要考虑：出发时间、到达时间、航空公司、价格、准点率等因素。" +
                         "给出至少3个推荐选项，并说明理由。")
                 .setAgentId("parrelFlightAgent").setAgentName("并行机票查询")

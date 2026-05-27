@@ -61,7 +61,10 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
                 return agentAdapter.parseVideoParserStreamContentFromData(this,line);
             }
 
-
+            @Override
+            public String getMaas() {
+                return clientConfiguration.getDatasource();
+            }
             @Override
             public boolean isDone(AgentAdapter agentAdapter,String data) {
                 return agentAdapter.isVideoParserDone(data);

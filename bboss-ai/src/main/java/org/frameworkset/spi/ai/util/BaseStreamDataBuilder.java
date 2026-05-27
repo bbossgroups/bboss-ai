@@ -28,6 +28,8 @@ import java.util.Map;
  * @Date 2026/2/24
  */
 public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
+    private Long startTime;
+    private Long endTime;
     private TokenMetrics tokenMetrics;
     /**
      * stream模式下工具识别对象
@@ -143,6 +145,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
             appendFullReasoningStreamData(streamData);
         }
         computeTokens(streamData);
+        streamData.setMaas(this.getMaas());
         return streamData;
     }
 
@@ -169,6 +172,8 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
             if(tokenMetrics == null) {
                 tokenMetrics = new TokenMetrics();
                 tokenMetrics.setModel(streamTokenMetrics.getModel());
+                tokenMetrics.setStartTime(this.getStartTime());
+                tokenMetrics.setMaas(streamTokenMetrics.getMaas());
             }
             tokenMetrics.increaseTotalTokens(streamTokenMetrics.getTotalTokens());
             tokenMetrics.increasePromptTokens(streamTokenMetrics.getPromptTokens());
@@ -177,6 +182,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
             tokenMetrics.increaseCompletionTextTokens(streamTokenMetrics.getCompletionTextTokens());
             tokenMetrics.increasePromptCachedTokens(streamTokenMetrics.getPromptCachedTokens());
             tokenMetrics.increasePromptTextTokens(streamTokenMetrics.getPromptTextTokens());
+            tokenMetrics.setEndTime(streamTokenMetrics.getEndTime());
         }
         streamData.setTotalTokenMetrics(tokenMetrics);
     }
@@ -335,5 +341,21 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         else{
             return null;
         }
+    }
+
+    public Long getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(Long startTime) {
+        this.startTime = startTime;
+    }
+
+    public Long getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Long endTime) {
+        this.endTime = endTime;
     }
 }

@@ -61,7 +61,10 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
                 return agentAdapter.parseImageParserStreamContentFromData(this,line);
             }
 
-
+            @Override
+            public String getMaas() {
+                return clientConfiguration.getDatasource();
+            }
             @Override
             public boolean isDone(AgentAdapter agentAdapter,String data) {
                 return agentAdapter.isImageParserDone(data);

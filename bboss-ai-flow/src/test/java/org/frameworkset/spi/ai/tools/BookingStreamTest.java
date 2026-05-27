@@ -120,7 +120,7 @@ public class BookingStreamTest {
         planAgent.addRouteChoiceAgent(new AINodeAgent(
                 "请根据用户的行程需求:#[input.query]，查询并推荐合适的酒店。" +
                         "需要考虑：地理位置、价格区间、用户评分、配套设施等因素。" +
-                        "给出至少3个推荐选项，并说明理由。")
+                        "给出至少3个推荐选项，并说明理由。如未匹配到工具，请返回\"未找到匹配的工具\"")
                 .setAgentId("hotelAgent")
                 .setAgentName("酒店查询智能体")
                 
@@ -130,7 +130,7 @@ public class BookingStreamTest {
         planAgent.addRouteChoiceAgent(new AINodeAgent(
                 "请根据用户的行程需求:#[input.query]，查询并推荐合适的航班。" +
                         "需要考虑：出发时间、到达时间、航空公司、价格、准点率等因素。" +
-                        "给出至少3个推荐选项，并说明理由。")
+                        "给出至少3个推荐选项，并说明理由。如未匹配到工具，请返回\"未找到匹配的工具\"")
                 .setAgentId("flightAgent").setAgentName("机票查询智能体") 
                 .setToolsRegist(toolsRegist));
 
@@ -142,14 +142,14 @@ public class BookingStreamTest {
         bothAgent.addAgent(new AINodeAgent(
                 "请根据用户的行程需求:#[input.query]，查询并推荐合适的酒店。" +
                         "需要考虑：地理位置（尽量靠近市中心或商务区）、价格区间、用户评分、配套设施等因素。" +
-                        "给出至少3个推荐选项，并说明理由。")
+                        "给出至少3个推荐选项，并说明理由。如未匹配到工具，请返回\"未找到匹配的工具\"")
                 .setAgentId("parrelHotelAgent").setAgentName("并行酒店查询")
                 .setToolsRegist(toolsRegist));
 
         bothAgent.addAgent(new AINodeAgent(
                 "请根据用户的行程需求:#[input.query]，查询并推荐合适的航班。" +
                         "需要考虑：出发时间、到达时间、航空公司、价格、准点率等因素。" +
-                        "给出至少3个推荐选项，并说明理由。")
+                        "给出至少3个推荐选项，并说明理由。如未匹配到工具，请返回\"未找到匹配的工具\"")
                 .setAgentId("parrelFlightAgent").setAgentName("并行机票查询")
                 .setToolsRegist(toolsRegist));
 

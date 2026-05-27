@@ -54,7 +54,7 @@ public class MCPApiKeyServiceImpl implements MCPApiKeyService{
      */
     @Override
     public Boolean auth(String apiKey) {
-        return true;
+        return mcpServerApiKeyInfo.containsKey(apiKey);
     }
 
     /**
@@ -66,6 +66,12 @@ public class MCPApiKeyServiceImpl implements MCPApiKeyService{
      */
     @Override
     public Boolean auth(String functionName, String apiKey) {
+        BaseBeanToolsRegist mcpBeanToolsRegist = mcpServerApiKeyInfo.get(apiKey);
+        if(mcpBeanToolsRegist == null){
+            return false;
+        }
+        if(mcpBeanToolsRegist.getFunctionToolDefine(functionName) == null)
+            return false;
         return true;
     }
 
@@ -78,6 +84,9 @@ public class MCPApiKeyServiceImpl implements MCPApiKeyService{
     @Override
     public FunctionToolDefine getFunctionToolDefine(String apiKey, String functionName) {
         BaseBeanToolsRegist mcpBeanToolsRegist = mcpServerApiKeyInfo.get(apiKey);
+        if(mcpBeanToolsRegist == null){
+            return null;
+        }
         return mcpBeanToolsRegist.getFunctionToolDefine(functionName);
     }
 }

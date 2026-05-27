@@ -71,7 +71,10 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
             public StreamData build(AgentAdapter agentAdapter, String line) {
                 return agentAdapter.parseStreamContentFromData(this,line);
             }
-
+            @Override
+            public String getMaas() {
+                return clientConfiguration.getDatasource();
+            }
             @Override
             public boolean isDone(AgentAdapter agentAdapter,String data) {
                 return agentAdapter.isDone(data);

@@ -26,6 +26,14 @@ import org.frameworkset.spi.ai.model.TokenMetrics;
  * @Date 2026/1/12
  */
 public interface StreamDataBuilder {
+    
+    String getMaas();
+    void setStartTime(Long startTime);
+    void setEndTime(Long endTime);
+    Long getStartTime();
+    Long getEndTime();
+    
+
     StreamData build(AgentAdapter agentAdapter , String line);
     default StreamData buildWrapped(AgentAdapter agentAdapter , String line){
         return build(agentAdapter,line);

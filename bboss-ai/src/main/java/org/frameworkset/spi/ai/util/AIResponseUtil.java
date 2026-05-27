@@ -385,6 +385,8 @@ public class AIResponseUtil {
             {
                 tokenMetrics = streamDataBuilder.buildTokenMetrics(usage);
                 tokenMetrics.setModel(model);
+                tokenMetrics.setMaas(streamDataBuilder.getMaas());
+                tokenMetrics.setStartTime(streamDataBuilder.getStartTime());
             }
             
             Object choices_ = map.get("choices");
@@ -402,6 +404,9 @@ public class AIResponseUtil {
                                String reasoning_content = (String) delta.get("reasoning_content");
                                String content = (String) delta.get("content");
                                Object tool_call = delta.get("tool_calls");
+                               if(tokenMetrics != null){
+                                   tokenMetrics.setEndTime(System.currentTimeMillis());
+                               }
                                if(tool_call != null){
                                    return streamDataBuilder.functionToolsChunk((List<Map>) tool_call, finishReason).setStreamTokenMetrics(tokenMetrics);
                                }
@@ -417,6 +422,9 @@ public class AIResponseUtil {
                                if (message != null) {
                                    String reasoning_content = (String) message.get("reasoning_content");
                                    String content = (String) message.get("content");
+                                   if(tokenMetrics != null){
+                                       tokenMetrics.setEndTime(System.currentTimeMillis());
+                                   }
                                    if (SimpleStringUtil.isNotEmpty(reasoning_content)) {
                                        return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
                                    } else {
@@ -431,8 +439,12 @@ public class AIResponseUtil {
                            Map delta = (Map) choice.get("delta");
                            if (delta != null) {
                                Object tool_call = delta.get("tool_calls");
+                               if(tokenMetrics != null){
+                                   tokenMetrics.setEndTime(System.currentTimeMillis());
+                               }
                                if(tool_call != null){
                                    List<Map> tool_call_ = (List<Map>) tool_call;
+                                   
                                    return new StreamData( tool_call_.get(0), finishReason).setStreamTokenMetrics(tokenMetrics)   ;
 //                                   return streamDataBuilder.functionToolsChunk((List<Map>) tool_call, finishReason);
                                }
@@ -446,6 +458,9 @@ public class AIResponseUtil {
                                    StreamData streamData = streamDataBuilder.functionTools((List<Map>) message.get("tool_calls"), finishReason);
                                    if (streamData != null) {
                                        String reasoning_content = (String) message.get("reasoning_content");
+                                       if(tokenMetrics != null){
+                                           tokenMetrics.setEndTime(System.currentTimeMillis());
+                                       }
                                        if (reasoning_content == null) {
                                            return streamData
                                                    .setContent((String) message.get("content"))
@@ -482,7 +497,11 @@ public class AIResponseUtil {
             else {
                 String code =  (String)map.get("code");
                 String message = (String) map.get("message");
+                
                 if(SimpleStringUtil.isNotEmpty(code)) {
+                    if(tokenMetrics != null){
+                        tokenMetrics.setEndTime(System.currentTimeMillis());
+                    }
                     return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
                 }
                 else {
@@ -492,6 +511,7 @@ public class AIResponseUtil {
 
             }
             if(tokenMetrics != null){
+                tokenMetrics.setEndTime(System.currentTimeMillis());
                 streamDataBuilder.setTokenMetrics(tokenMetrics);
             }
         } catch (Exception e) {
@@ -1006,6 +1026,7 @@ public class AIResponseUtil {
                 serverEvent.setDone(true);
                 TokenMetrics tokenMetrics = streamDataBuilder.getTokenMetrics();
                 serverEvent.setTokenMetrics(tokenMetrics);
+                tokenMetrics.setEndTime(System.currentTimeMillis());
                 serverEvent.setFullStreamData(streamDataBuilder.addAgentResultSessionMessage(tokenMetrics));
                 try {
                     ChatStreamCallback chatStreamCallback = chatObject.getChatStreamCallback();

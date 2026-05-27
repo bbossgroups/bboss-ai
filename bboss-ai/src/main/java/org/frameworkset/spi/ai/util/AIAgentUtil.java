@@ -63,9 +63,11 @@ public class AIAgentUtil {
      * 创建流式调用的Flux,在指定的数据源上执行
      */
     public static Flux<String> streamChatCompletion(String poolName,Object chatMessage, AIAgent aiAgent,ChatContext chatContext) {
+        long startTime = System.currentTimeMillis();
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true,chatContext);
+        chatObject.getStreamDataBuilder().setStartTime(startTime);
         BaseStreamDataHandler<String> streamDataHandler = new BaseStreamDataHandler<String>() {
  
 
@@ -233,15 +235,18 @@ public class AIAgentUtil {
 
     public static <T> void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ToolAgentMessage toolAgentMessage,
                                                      FluxSink<T> sink,DisposeEventHandler disposeEventHandler, AIAgent aiAgent,ChatContext chatContext) {
+        long startTime = System.currentTimeMillis();
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,toolAgentMessage);
 
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,toolAgentMessage,   aiAgent,true,chatContext);
+        chatObject.getStreamDataBuilder().setStartTime(startTime);
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
  
             @Override
             public boolean handle(String line, FluxSink<ServerEvent> sink, BooleanWrapperInf firstEventTag, FluxSinkStatus fluxSinkStatus) {
-                return AIResponseUtil.handleServerEventData(this.agentAdapter, this.isStream(), line, sink, firstEventTag, (BaseStreamDataBuilder)chatObject.getStreamDataBuilder(),   fluxSinkStatus);
-
+                boolean result = AIResponseUtil.handleServerEventData(this.agentAdapter, this.isStream(),
+                        line, sink, firstEventTag, (BaseStreamDataBuilder)chatObject.getStreamDataBuilder(),   fluxSinkStatus);
+                return result;
             }
             @Override
 
@@ -355,12 +360,13 @@ public class AIAgentUtil {
      * 创建流式调用的Flux,在指定的数据源上执行
      */
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent, ChatContext chatStreamCallback) {
- 
+        long startTime = System.currentTimeMillis();
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
          
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true,chatStreamCallback);
         chatObject.setStoreFilePathFunction(storeFilePathFunction);
+        chatObject.getStreamDataBuilder().setStartTime(startTime);
         chatObject.setChatContext(chatStreamCallback);
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
            
@@ -793,16 +799,20 @@ public class AIAgentUtil {
     
 
     public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent,ChatContext chatContext) {
+        long startTime = System.currentTimeMillis();
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,chatMessage);
         ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,aiAgent,false,chatContext);
+        chatObject.getStreamDataBuilder().setStartTime(startTime);
         Object message = chatObject.getMessage();
         String data = null;
         ServerEvent serverEvent = null;
         BaseURLResponseHandler<ServerEvent> responseHandler = new BaseURLResponseHandler<ServerEvent>() {
             @Override
             public ServerEvent handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
-                return AIResponseUtil.handleChatResponse(agentAdapter, chatObject.getCompletionsUrl(), response, chatObject.getStreamDataBuilder());
+                ServerEvent serverEvent1 = AIResponseUtil.handleChatResponse(agentAdapter, chatObject.getCompletionsUrl(), response, chatObject.getStreamDataBuilder());
+                 TokenMetrics tokenMetrics = serverEvent1.getTokenMetrics();
+                return serverEvent1;
             }
         };
 
@@ -869,9 +879,11 @@ public class AIAgentUtil {
      * 创建流式调用的Flux,在指定的数据源上执行
      */
     public static <T> Flux<T> streamChatCompletion(String poolName,Object chatMessage,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent,ChatContext chatContext) {
+        long startTime = System.currentTimeMillis();
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true,chatContext);
+        chatObject.getStreamDataBuilder().setStartTime(startTime);
         streamDataHandler.setStream(chatObject.isStream());
         streamDataHandler.setAgentAdapter(agentAdapter);
         streamDataHandler.setChatObject(chatObject);

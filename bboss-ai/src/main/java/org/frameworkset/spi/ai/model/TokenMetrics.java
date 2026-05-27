@@ -26,6 +26,8 @@ import java.util.Map;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TokenMetrics {
+
+    private String maas;
     private String model;
     private long totalTokens;
     private long promptTokens;
@@ -39,11 +41,12 @@ public class TokenMetrics {
 
     private long completionTextTokens;
     
-    private long startTime;
-    private long endTime;
+    private Long startTime;
+    private Long endTime;
     /**
      * 非stream模式下，有值
      */
+    @JsonIgnore
     private Map usage;
 
     public String getModel() {
@@ -83,19 +86,19 @@ public class TokenMetrics {
         this.promptCachedTokens = promptCachedTokens;
     }
 
-    public long getStartTime() {
+    public Long getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(long startTime) {
+    public void setStartTime(Long startTime) {
         this.startTime = startTime;
     }
 
-    public long getEndTime() {
+    public Long getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(long endTime) {
+    public void setEndTime(Long endTime) {
         this.endTime = endTime;
     }
 
@@ -153,4 +156,13 @@ public class TokenMetrics {
     public void setPromptTextTokens(long promptTextTokens) {
         this.promptTextTokens = promptTextTokens;
     }
+
+    public String getMaas() {
+        return maas;
+    }
+
+    public void setMaas(String maas) {
+        this.maas = maas;
+    }
+
 }

@@ -45,6 +45,7 @@ public class StreamData {
     private  String finishReason;
     private boolean done;
     private String url;
+    private String maas;
     /**
      * 工具返回数据：角色
      */
@@ -233,5 +234,13 @@ public class StreamData {
 
     public boolean isContent() {
         return type == ServerEvent.CONTENT;
+    }
+
+    public String getMaas() {
+        return maas;
+    }
+
+    public void setMaas(String maas) {
+        this.maas = maas;
     }
 }
