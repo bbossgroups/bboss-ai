@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.adapter;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
 import org.frameworkset.spi.ai.model.VideoVLAgentMessage;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**
  * Kimi模型智能体适配器
@@ -26,16 +27,16 @@ import org.frameworkset.spi.ai.model.VideoVLAgentMessage;
  */
 public class KimiAgentAdapter extends QwenAgentAdapter{
     @Override
-    public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+    public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration, ImageVLAgentMessage imageVLAgentMessage) {
         return "/v1/chat/completions";
     }
     @Override
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+    public String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) {
         return "/v1/chat/completions";
     }
 
 
-    public String getVideoVLCompletionsUrl(VideoVLAgentMessage videoVLAgentMessage) {
+    public String getVideoVLCompletionsUrl(ClientConfiguration clientConfiguration,VideoVLAgentMessage videoVLAgentMessage) {
         return "/v1/chat/completions";
     }
 }

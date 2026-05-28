@@ -41,16 +41,16 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
     private Logger logger = org.slf4j.LoggerFactory.getLogger(JiutianAgentAdapter.class);
     private static String downImageUrl = "/largemodel/moma/api/v1/fs/getFile";
     @Override
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+    public String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) {
         return "/largemodel/moma/api/v3/chat/completions";
     }
     @Override
-    public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+    public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration,ImageVLAgentMessage imageVLAgentMessage) {
         return "/largemodel/moma/api/v3/image/text";
     }
 
     @Override
-    public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
+    public String getGenImageCompletionsUrl(ClientConfiguration clientConfiguration,ImageAgentMessage imageAgentMessage) {
         return "/largemodel/moma/api/v3/images/generations";
     }
 

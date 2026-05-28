@@ -84,8 +84,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
     }
 
-    public   float[] embedding(EmbeddingMessage embeddingMessage,AIAgent agent,Map<String,Object> params) {
-        EmbeddingResponse result = HttpRequestProxy.sendJsonBody(embeddingMessage.getMaas(), params, getEmbeddingUrl(embeddingMessage), EmbeddingResponse.class);
+    public   float[] embedding(ClientConfiguration config,EmbeddingMessage embeddingMessage,AIAgent agent,Map<String,Object> params) {
+        EmbeddingResponse result = HttpRequestProxy.sendJsonBody(embeddingMessage.getMaas(), params, getEmbeddingUrl(config,embeddingMessage), EmbeddingResponse.class);
         if(result != null){
             return result.embedding();
         }
@@ -764,7 +764,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
   
     public StoreChatObject buildVideoRequestParameter(ClientConfiguration clientConfiguration, VideoAgentMessage videoAgentMessage,AIAgent aiAgent) {
         StoreChatObject storeChatObject = new StoreChatObject();
-        storeChatObject.setSubmitVideoTaskUrl(getSubmitVideoTaskUrl(  videoAgentMessage));
+        storeChatObject.setSubmitVideoTaskUrl(getSubmitVideoTaskUrl(  clientConfiguration,  videoAgentMessage));
         storeChatObject.setMessage(this.buildGenVideoRequestMap(videoAgentMessage,clientConfiguration,aiAgent));
         return storeChatObject;
     }
@@ -808,8 +808,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return rerankParams;
     }
 
-    public List<RerankedDocument> rerank(RerankMessage rerankMessage, AIAgent agent, Map<String, Object> params) {
-        Map response = HttpRequestProxy.sendJsonBody(rerankMessage.getMaas(), params, this.getRerankUrl(rerankMessage), Map.class);
+    public List<RerankedDocument> rerank(ClientConfiguration clientConfiguration,RerankMessage rerankMessage, AIAgent agent, Map<String, Object> params) {
+        Map response = HttpRequestProxy.sendJsonBody(rerankMessage.getMaas(), params, this.getRerankUrl( clientConfiguration, rerankMessage), Map.class);
         if(logger.isDebugEnabled()) {
             logger.debug("Rerank 响应: {}", JsonUtil.object2json(response));
         }

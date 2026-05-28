@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.adapter;
  */
 
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**
  * Minimax系列模型智能体适配器
@@ -24,27 +25,27 @@ import org.frameworkset.spi.ai.model.*;
  */
 public class TencentHYAgentAdapter extends DoubaoAgentAdapter{
     @Override
-    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage) {
+    public String getSubmitVideoTaskUrl(ClientConfiguration clientConfiguration, VideoAgentMessage videoAgentMessage) {
         return "/v1/chat/completions";
     }
 
     @Override
-    public String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage) {
+    public String getVideoTaskResultUrl(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage) {
         return "/v1/chat/completions";
     }
 
     
     @Override
-    public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+    public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration,ImageVLAgentMessage imageVLAgentMessage) {
 //        throw new UnsupportedOperationException("getImageVLCompletionsUrl");
         return "/v1/chat/completions";
     }
     @Override
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+    public String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) {
         return "/v1/chat/completions";
     }
     @Override
-    public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
+    public String getGenImageCompletionsUrl(ClientConfiguration clientConfiguration,ImageAgentMessage imageAgentMessage) {
         return "/v1/chat/completions";
     }
 
@@ -55,11 +56,11 @@ public class TencentHYAgentAdapter extends DoubaoAgentAdapter{
      * @return
      */
     @Override
-    public String getAudioSTTCompletionsUrl(AudioSTTAgentMessage audioSTTAgentMessage){
+    public String getAudioSTTCompletionsUrl(ClientConfiguration clientConfiguration,AudioSTTAgentMessage audioSTTAgentMessage){
         throw new UnsupportedOperationException("getAudioSTTCompletionsUrl");
     }
     @Override
-    public String getGenAudioCompletionsUrl(AudioAgentMessage audioAgentMessage){
+    public String getGenAudioCompletionsUrl(ClientConfiguration clientConfiguration,AudioAgentMessage audioAgentMessage){
         throw new UnsupportedOperationException("getAudioSTTCompletionsUrl");
     }
  

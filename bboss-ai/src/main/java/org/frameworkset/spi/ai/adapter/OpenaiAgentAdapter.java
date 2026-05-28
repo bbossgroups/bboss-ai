@@ -19,6 +19,7 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.MessageBuilder;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.*;
 
@@ -28,27 +29,27 @@ import java.util.*;
  */
 public class OpenaiAgentAdapter extends QwenAgentAdapter{
     @Override
-    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage) {
+    public String getSubmitVideoTaskUrl(ClientConfiguration clientConfiguration, VideoAgentMessage videoAgentMessage) {
         return "/v1/chat/completions";
     }
 
     @Override
-    public String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage) {
+    public String getVideoTaskResultUrl(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage) {
         return "/v1/chat/completions";
     }
 
 
     @Override
-    public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+    public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration,ImageVLAgentMessage imageVLAgentMessage) {
 //        throw new UnsupportedOperationException("getImageVLCompletionsUrl");
         return "/v1/chat/completions";
     }
     @Override
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+    public String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) {
         return "/v1/chat/completions";
     }
     @Override
-    public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
+    public String getGenImageCompletionsUrl(ClientConfiguration clientConfiguration,ImageAgentMessage imageAgentMessage) {
         return "/v1/chat/completions";
     }
 

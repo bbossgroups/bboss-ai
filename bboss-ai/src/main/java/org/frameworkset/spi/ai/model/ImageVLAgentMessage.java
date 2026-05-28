@@ -91,7 +91,7 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
         chatObject.setMessage(agentMessage);
         chatObject.setAgentMessage(this);
         chatObject.setStream(stream);
-        chatObject.setCompletionsUrl(agentAdapter.getImageVLCompletionsUrl(this));
+        chatObject.setCompletionsUrl(agentAdapter.getImageVLCompletionsUrl(clientConfiguration,this));
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
         chatObject.setAiAgent(aiAgent);

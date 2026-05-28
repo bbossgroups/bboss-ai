@@ -88,7 +88,7 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
         
         parameters = agentAdapter.buildAudioSTTRequestMap(this,aiAgent,chatCallback);
 //        this.audioSTTCompletionsUrl = agentAdapter.getAudioSTTCompletionsUrl(this);
-        chatObject.setAudioSTTCompletionsUrl(agentAdapter.getAudioSTTCompletionsUrl(this));
+        chatObject.setAudioSTTCompletionsUrl(agentAdapter.getAudioSTTCompletionsUrl(clientConfiguration,this));
         if(!fromStreamAPI){
             parameters.put("stream",false);
         }

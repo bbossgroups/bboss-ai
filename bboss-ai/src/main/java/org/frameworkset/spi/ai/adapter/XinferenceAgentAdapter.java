@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.adapter;
  */
 
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**
  * 阿里百炼通义系列模型智能体适配器
@@ -24,20 +25,20 @@ import org.frameworkset.spi.ai.model.*;
  */
 public class XinferenceAgentAdapter extends QwenAgentAdapter{
     @Override
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+    public String getChatCompletionsUrl(ClientConfiguration clientConfiguration, ChatAgentMessage chatAgentMessage) {
         return "/v1/chat/completions";
     }
 
     @Override
-    public String getEmbeddingUrl(AgentMessage agentMessage) {
+    public String getEmbeddingUrl(ClientConfiguration clientConfiguration,AgentMessage agentMessage) {
         return "/v1/embeddings";
     }
     @Override
-    public String getRerankUrl(AgentMessage agentMessage) {
+    public String getRerankUrl(ClientConfiguration clientConfiguration,AgentMessage agentMessage) {
         return "/v1/rerank";
     }
     @Override
-    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage){
+    public String getSubmitVideoTaskUrl(ClientConfiguration clientConfiguration,VideoAgentMessage videoAgentMessage){
         if(videoAgentMessage.getFirstFrameUrl() != null) {
             return "/api/v1/services/aigc/image2video/video-synthesis";
         }
@@ -46,7 +47,7 @@ public class XinferenceAgentAdapter extends QwenAgentAdapter{
         }
     }
     @Override
-    public String getGenAudioCompletionsUrl(AudioAgentMessage audioAgentMessage){
+    public String getGenAudioCompletionsUrl(ClientConfiguration clientConfiguration,AudioAgentMessage audioAgentMessage){
         return "/api/v1/services/aigc/multimodal-generation/generation";
     }
 
@@ -57,24 +58,24 @@ public class XinferenceAgentAdapter extends QwenAgentAdapter{
      */
     @Override
 
-    public String getAudioSTTCompletionsUrl(AudioSTTAgentMessage audioSTTAgentMessage){
+    public String getAudioSTTCompletionsUrl(ClientConfiguration clientConfiguration,AudioSTTAgentMessage audioSTTAgentMessage){
         return "/api/v1/services/aigc/multimodal-generation/generation";
     }
     @Override
-    public String getVideoVLCompletionsUrl(VideoVLAgentMessage videoVLAgentMessage) {
+    public String getVideoVLCompletionsUrl(ClientConfiguration clientConfiguration,VideoVLAgentMessage videoVLAgentMessage) {
         return "/v1/chat/completions";
     }
     @Override
-    public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+    public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration,ImageVLAgentMessage imageVLAgentMessage) {
         return "/compatible-mode/v1/chat/completions";
     }
 
     @Override
-    public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
+    public String getGenImageCompletionsUrl(ClientConfiguration clientConfiguration,ImageAgentMessage imageAgentMessage) {
         return "/api/v1/services/aigc/multimodal-generation/generation";
     }
     @Override
-    public String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage){
+    public String getVideoTaskResultUrl(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage){
         return "/api/v1/tasks/"+videoStoreAgentMessage.getTaskId();
     }
    

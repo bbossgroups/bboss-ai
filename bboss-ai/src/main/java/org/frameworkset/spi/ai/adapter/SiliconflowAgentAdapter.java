@@ -20,6 +20,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.Map;
 
@@ -30,12 +31,12 @@ import java.util.Map;
  */
 public class SiliconflowAgentAdapter extends QwenAgentAdapter{
     @Override
-    public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+    public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration, ImageVLAgentMessage imageVLAgentMessage) {
         return "/chat/completions";
     }
 
     @Override
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+    public String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) {
         return "/v1/chat/completions";
     }
 

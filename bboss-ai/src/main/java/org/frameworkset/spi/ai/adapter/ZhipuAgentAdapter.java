@@ -33,25 +33,25 @@ import java.util.*;
  */
 public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
     @Override
-    public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+    public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration,ImageVLAgentMessage imageVLAgentMessage) {
         return "/api/paas/v4/chat/completions";
     }
     @Override
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+    public String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) {
         return "/api/paas/v4/chat/completions";
     }
     @Override
-    public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
+    public String getGenImageCompletionsUrl(ClientConfiguration clientConfiguration,ImageAgentMessage imageAgentMessage) {
         return "/api/paas/v4/images/generations";
     }
 
     @Override
-    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage) {
+    public String getSubmitVideoTaskUrl(ClientConfiguration clientConfiguration,VideoAgentMessage videoAgentMessage) {
         return "/api/paas/v4/videos/generations";
     }
 
     @Override
-    public String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage) {
+    public String getVideoTaskResultUrl(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage) {
         return "https://open.bigmodel.cn/api/paas/v4/async-result/"+videoStoreAgentMessage.getTaskId();
     }
 
@@ -100,11 +100,11 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
      * @return
      */
     @Override
-    public String getAudioSTTCompletionsUrl(AudioSTTAgentMessage audioSTTAgentMessage){
+    public String getAudioSTTCompletionsUrl(ClientConfiguration clientConfiguration,AudioSTTAgentMessage audioSTTAgentMessage){
         return "/api/paas/v4/audio/transcriptions";
     }
     @Override
-    public String getGenAudioCompletionsUrl(AudioAgentMessage audioAgentMessage){
+    public String getGenAudioCompletionsUrl(ClientConfiguration clientConfiguration,AudioAgentMessage audioAgentMessage){
         return "/api/paas/v4/audio/speech";
     }
 

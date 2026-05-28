@@ -102,7 +102,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         if(stream == null){
             stream = false;
         }
-        chatObject.setCompletionsUrl(agentAdapter.getGenAudioCompletionsUrl(this));
+        chatObject.setCompletionsUrl(agentAdapter.getGenAudioCompletionsUrl(clientConfiguration,this));
         chatObject.setSseHeaderSetFunction(sseHeaderSetFunction);
         chatObject.setMessage(agentMessage);
         chatObject.setAgentMessage(this);

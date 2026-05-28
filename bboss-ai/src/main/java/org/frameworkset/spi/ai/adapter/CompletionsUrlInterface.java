@@ -16,21 +16,22 @@ package org.frameworkset.spi.ai.adapter;
  */
 
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**
  * @author biaoping.yin
  * @Date 2026/2/1
  */
 public interface CompletionsUrlInterface {
-    String getGenAudioCompletionsUrl(AudioAgentMessage audioAgentMessage);
-    String getAudioSTTCompletionsUrl(AudioSTTAgentMessage audioSTTAgentMessage);
-    String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage);  
-    String getVideoVLCompletionsUrl(VideoVLAgentMessage videoVLAgentMessage);
-    String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage);
-    String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage);
-    String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) ;
-    String getRerankUrl(AgentMessage chatAgentMessage) ;
-    String getEmbeddingUrl(AgentMessage chatAgentMessage) ;
-    String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage);
+    String getGenAudioCompletionsUrl(ClientConfiguration clientConfiguration,AudioAgentMessage audioAgentMessage);
+    String getAudioSTTCompletionsUrl(ClientConfiguration clientConfiguration,AudioSTTAgentMessage audioSTTAgentMessage);
+    String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration,ImageVLAgentMessage imageVLAgentMessage);  
+    String getVideoVLCompletionsUrl(ClientConfiguration clientConfiguration,VideoVLAgentMessage videoVLAgentMessage);
+    String getGenImageCompletionsUrl(ClientConfiguration clientConfiguration,ImageAgentMessage imageAgentMessage);
+    String getSubmitVideoTaskUrl(ClientConfiguration clientConfiguration,VideoAgentMessage videoAgentMessage);
+    String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) ;
+    String getRerankUrl(ClientConfiguration clientConfiguration,AgentMessage chatAgentMessage) ;
+    String getEmbeddingUrl(ClientConfiguration clientConfiguration,AgentMessage chatAgentMessage) ;
+    String getVideoTaskResultUrl(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage);
 
 }

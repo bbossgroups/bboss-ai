@@ -31,22 +31,22 @@ import java.util.*;
 public class DoubaoAgentAdapter  extends QwenAgentAdapter{
 
     @Override
-    public String getSubmitVideoTaskUrl(VideoAgentMessage videoAgentMessage) {
+    public String getSubmitVideoTaskUrl(ClientConfiguration clientConfiguration,VideoAgentMessage videoAgentMessage) {
         return "/api/v3/contents/generations/tasks";
     }
 
     @Override
-    public String getVideoTaskResultUrl(VideoStoreAgentMessage videoStoreAgentMessage) {
+    public String getVideoTaskResultUrl(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage) {
         return "/api/v3/contents/generations/tasks/"+videoStoreAgentMessage.getTaskId();
     }
 
     @Override
-    public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+    public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration,ImageVLAgentMessage imageVLAgentMessage) {
         return "/api/v3/chat/completions";
     }
 
     @Override
-    public String getGenImageCompletionsUrl(ImageAgentMessage imageAgentMessage) {
+    public String getGenImageCompletionsUrl(ClientConfiguration clientConfiguration,ImageAgentMessage imageAgentMessage) {
         return "/api/v3/images/generations";
     }
 
@@ -259,7 +259,7 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
         return result;
     }
     @Override    
-    public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+    public String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) {
         return "/api/v3/chat/completions";
     }
 }

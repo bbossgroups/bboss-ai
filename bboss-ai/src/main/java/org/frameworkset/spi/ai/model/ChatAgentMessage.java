@@ -105,7 +105,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         chatObject.setMessage(agentMessage);
         chatObject.setStream(stream);
         chatObject.setAgentMessage(this);
-        chatObject.setCompletionsUrl(agentAdapter.getChatCompletionsUrl(this));
+        chatObject.setCompletionsUrl(agentAdapter.getChatCompletionsUrl(clientConfiguration,this));
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
         chatObject.setAiAgent(aiAgent);
