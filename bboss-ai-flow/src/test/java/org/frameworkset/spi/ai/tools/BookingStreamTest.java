@@ -63,7 +63,12 @@ public class BookingStreamTest {
         // 场景3：酒店和机票都要（路由到并行查询）
 //        bookingWorkflowStream("kimi", "我5月25日到5月28日要去北京出差，帮我预定酒店和机票", "kimi-k2.6", null);
 
-        bookingWorkflowStream("qwenvlplus", "我5月25日到5月28日要去北京出差，帮我预定酒店和机票", "qwen3.6-plus", null);
+        bookingWorkflowStream("qwenvlplus", "我计划5月25日到5月28日从长沙去北京出差，帮我预定酒店和机票", "qwen3.6-plus", null);
+
+
+//        bookingWorkflowStream("minimax", "我5月25日到5月28日要去北京出差，帮我预定酒店和机票", "MiniMax-M3", null);
+        
+           
     }
 
     public static void initDB(){
@@ -108,7 +113,7 @@ public class BookingStreamTest {
         // 路由智能体判断用户意图：酒店、机票、都要
         planAgent.addAgent(new AIRouteAgent()
                 .setAgentId("bookingRouter").setAgentName("预定路由智能体")
-                .setSystemPrompt("你是一个行程预定路由智能体。请分析用户的问题，判断用户需要预定什么，注意你不需要直接回答用户的问题，只需要做路由判断。")
+                .setSystemPrompt("你是一个行程预定路由智能体。请分析用户的问题，判断用户需要预定什么，注意你不需要直接回答用户的问题，只需要做路由判断,使用json格式返回匹配的智能体信息")
                 .addRoutingChoice("hotelAgent", "用户只需要预定酒店")
                 .addRoutingChoice("flightAgent", "用户只需要预定机票")
                 .addRoutingChoice("bothAgent", "用户需要同时预定酒店和机票")

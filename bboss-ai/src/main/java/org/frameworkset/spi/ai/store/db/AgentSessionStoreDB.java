@@ -143,9 +143,12 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         this.dataSource = dataSource;
         return this;
     }
- 
     @Override
     public boolean loadSessionMemory(String prompt,String agentId){
+        return loadSessionMemory(  prompt,(String)null,  agentId);
+    }
+    @Override
+    public boolean loadSessionMemory(String prompt,String domain,String agentId){
         if(agentSession != null){
             return false;
         }
@@ -165,6 +168,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                         agentSession.setTitle(prompt);
                         agentSession.setCreateTime(new java.util.Date());
                         agentSession.setLastAccessTime(agentSession.getCreateTime());
+                        agentSession.setDomain(domain);
                         //创建session
                         //sessionId, createTime, useId, agentId, title
                         SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionSQL(),
@@ -172,7 +176,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                                 new Date(),
                                 getUserId(),
                                 this.getAgentId() != null ? getAgentId() : agentId,//如果主agentId存在，则使用主agentId，否则session由agentId对应的agent创建
-                                prompt.length() > 50 ? prompt.substring(0, 50) : prompt);
+                                prompt.length() > 50 ? prompt.substring(0, 50) : prompt,domain);
                     } else {
                         //获取主智能体记忆记录
                         List<SessionMessage> sessionMessages = null;
@@ -214,7 +218,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,
-                                                       String agentId, String parentAgentId, String marks, String metadata, String agentResultMessage){
+                                                       String agentId, String parentAgentId, String marks, String metadata, String messageType){
         try {
 
 //            loadSessionMemory(message, agentId);
@@ -222,11 +226,11 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             Map<String, Object> message = persistentMessage.getMessage();
             String msgId = SimpleStringUtil.getUUID32();
             String role = (String) message.get("role");
-            if(agentResultMessage != null && !agentResultMessage.equals("1")){
-                if(role.equals(MessageBuilder.ROLE_USER)){
-                    agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
-                }
-            }
+//            if(agentResultMessage != null && !agentResultMessage.equals("1")){
+//                if(role.equals(MessageBuilder.ROLE_USER)){
+//                    agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
+//                }
+//            }
             TokenMetrics tokenMetrics_ = persistentMessage.getTokenMetrics();
             String tokenMetrics = null;
             long elapsed = 0l;
@@ -240,10 +244,10 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
                     msgId,new Date(),this.getSessionId(),
-                    parentAgentId, agentId,agentResultMessage,integerCount.increament(), JsonUtil.object2json(message),
-                    role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed);
+                    parentAgentId, agentId,messageType,integerCount.increament(), JsonUtil.object2json(message),
+                    role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId());
 
-            if(agentResultMessage != null && agentResultMessage.equals("1")) {
+            if(messageType != null && messageType.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();
                 lastSessionMessage.setMsgId(msgId);
                 lastSessionMessage.setLastSessionMessage(message);

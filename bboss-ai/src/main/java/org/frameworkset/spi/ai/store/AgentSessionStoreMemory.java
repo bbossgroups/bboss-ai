@@ -16,12 +16,8 @@ package org.frameworkset.spi.ai.store;
  */
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
-import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
-import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.model.PersistentMessage;
-import org.frameworkset.spi.ai.model.TokenMetrics;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.util.concurrent.IntegerCount;
 
@@ -110,6 +106,20 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
   
     protected Object lockLoadSessionMemory = new Object();
     public boolean loadSessionMemory(String prompt,String agentId){
+        return loadSessionMemory(prompt, (String)null,   agentId);
+    }
+
+    /**
+     * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
+     * 如果会话不存在 则创建会话
+     *
+     * @param prompt
+     * @param domain
+     * @param agentId
+     * @return
+     */
+    @Override
+    public boolean loadSessionMemory(String prompt, String domain, String agentId) {
         if(agentSession != null){
             return false;
         }
@@ -129,6 +139,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
                     agentSession.setTitle(prompt.length() > 50 ? prompt.substring(0, 50) : prompt);
                     agentSession.setCreateTime(new java.util.Date());
                     agentSession.setLastAccessTime(agentSession.getCreateTime());
+                    agentSession.setDomain(domain);
                     agentSessions.put(this.getSessionId(), agentSession);
 
                 } else {
@@ -173,7 +184,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,// Map<String, Object> message,
                                                        String agentId, String parentAgentId, String marks, String metadata,
-                                                       String agentResultMessage){
+                                                       String messageType){
 
 //        loadSessionMemory(message,  agentId);
         Map<String, Object> message = persistentMessage.getMessage();
@@ -181,11 +192,12 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
         sessionMessage.setMessage(message);
         String role = (String) message.get("role");
-        if(agentResultMessage != null && !agentResultMessage.equals("1")){
-            if(role.equals(MessageBuilder.ROLE_USER)){
-                agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
-            }
-        }
+        
+//        if(messageType != null && !messageType.equals("1")){
+//            if(role.equals(MessageBuilder.ROLE_USER)){
+//                messageType = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
+//            }
+//        }
         sessionMessage.setRole(role);
         sessionMessage.setSeqNo(integerCount.increament());
         sessionMessage.setCreateTime(new java.util.Date());
@@ -193,9 +205,10 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setRequestId(this.getRequestId());
         sessionMessage.setAgentId(agentId);
         sessionMessage.setParentAgentId(parentAgentId);
-        sessionMessage.setAgentResultMessage(agentResultMessage);
+        sessionMessage.setMessageType(messageType);
         sessionMessage.setMarks(marks);
         sessionMessage.setMetadata(metadata);
+        sessionMessage.setTraceId(this.getTraceId());
         TokenMetrics tokenMetrics_ = persistentMessage.getTokenMetrics();
         long elapsed = 0l;
 
@@ -210,7 +223,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         agentSession.addSessionMessage(sessionMessage);
        
         
-        if(agentResultMessage != null && agentResultMessage.equals("1")) {
+        if(messageType != null && messageType.equals("1")) {
             LastSessionMessage lastSessionMessage = new LastSessionMessage();
             lastSessionMessage.setMsgId(sessionMessage.getMsgId());
             lastSessionMessage.setLastSessionMessage(message);
@@ -248,6 +261,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             throw new AIRuntimeException("getAgentSessionMessage: agentId="+agentId + ",agentSessionSize="+agentSessionSize,exception);
         }
     }
+
+
 
     @Override
     public void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId){

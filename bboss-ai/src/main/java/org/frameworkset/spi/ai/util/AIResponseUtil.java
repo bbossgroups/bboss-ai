@@ -142,7 +142,7 @@ public class AIResponseUtil {
             serverEvent.setToolCallResponse(false);
         }
         serverEvent.setData(error);
-        serverEvent.setType(ServerEvent.ERROR);
+        serverEvent.setType(ServerEvent.TYPE_ERROR);
         sink.next(serverEvent);
 
         serverEvent = new ServerEvent();
@@ -160,7 +160,7 @@ public class AIResponseUtil {
      * @param data
      * @return
      */
-    public static StreamData parseAudioStreamContentFromData(StreamDataBuilder streamDataBuilder,String data){
+    public static StreamData parseAudioStreamContentFromData(AgentAdapter agentAdapter,StreamDataBuilder streamDataBuilder,String data){
         try {
             Map map = SimpleStringUtil.json2Object(data, Map.class);
             Map output = (Map) map.get("output");
@@ -276,7 +276,7 @@ public class AIResponseUtil {
      * @param data
      * @return
      */
-    public static StreamData parseQianwenAudioGenStreamContentFromData(String data){
+    public static StreamData parseQianwenAudioGenStreamContentFromData(AgentAdapter agentAdapter,String data){
         try {
             Map _data = SimpleStringUtil.json2Object(data,Map.class);
             Map output = (Map)_data.get("output");
@@ -375,9 +375,9 @@ public class AIResponseUtil {
      * @param data
      * @return
      */
-    public static StreamData parseStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data) {
+    public static StreamData parseStreamContentFromData(AgentAdapter agentAdapter,BaseStreamDataBuilder streamDataBuilder,String data) {
         try {
-            Map map = SimpleStringUtil.json2Object(data,Map.class);
+            Map map = JsonUtil.json2Object(data,Map.class);
             String model = (String) map.get("model");
             Map usage = (Map) map.get("usage");
             TokenMetrics tokenMetrics = null;
@@ -495,14 +495,18 @@ public class AIResponseUtil {
                 }
             }
             else {
-                String code =  (String)map.get("code");
-                String message = (String) map.get("message");
-                
-                if(SimpleStringUtil.isNotEmpty(code)) {
-                    if(tokenMetrics != null){
-                        tokenMetrics.setEndTime(System.currentTimeMillis());
-                    }
-                    return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
+                if(tokenMetrics != null){
+                    tokenMetrics.setEndTime(System.currentTimeMillis());
+                }
+                StreamData streamData = agentAdapter.buildErrorStreamData(map,tokenMetrics);
+//                String code =  (String)map.get("code");
+//                String message = (String) map.get("message");
+//                
+                if(streamData != null) {
+                    return 
+                            streamData;
+                   
+//                    return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
                 }
                 else {
                     if(logger.isDebugEnabled())
@@ -953,7 +957,7 @@ public class AIResponseUtil {
                 serverEvent.setGenUrl(content.getUrl());
                 serverEvent.setFinishReason(content.getFinishReason());
                 
-                serverEvent.setType(ServerEvent.DATA);
+                serverEvent.setType(ServerEvent.TYPE_DATA);
                 serverEvent.setFunctionTools(content.getFunctionTools());
                 serverEvent.setToolCalls(content.getToolCalls());
                 serverEvent.setContentType(content.getType());
@@ -1021,7 +1025,7 @@ public class AIResponseUtil {
                     firstEventTag.set(false);
                     serverEvent.setFirst(true);
                 }
-                serverEvent.setType(ServerEvent.DATA);
+                serverEvent.setType(ServerEvent.TYPE_DATA);
                 serverEvent.setToolCallResponse(chatObject.isToolCall());
                 serverEvent.setDone(true);
                 TokenMetrics tokenMetrics = streamDataBuilder.getTokenMetrics();
@@ -1139,7 +1143,7 @@ public class AIResponseUtil {
         serverEvent.setData(content.getContent());
         serverEvent.setGenUrl(content.getUrl());
         serverEvent.setFinishReason(content.getFinishReason());
-        serverEvent.setType(ServerEvent.DATA);
+        serverEvent.setType(ServerEvent.TYPE_DATA);
         serverEvent.setContentType(content.getType());
         serverEvent.setDone(content.isDone());
 

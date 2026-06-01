@@ -90,12 +90,7 @@ public class AIAgent<T extends AIAgent> {
             }
         }
     }
-    /**
-     * true 智能体会话记录不会被记录到父智能体的会议记忆，同时也不会加载父智能体的会话记忆
-     * false 会记录
-     * 已经废弃
-     */
-    protected boolean disableGloableStore;
+ 
 
 
     /**
@@ -209,9 +204,7 @@ public class AIAgent<T extends AIAgent> {
         return agentMessage;
     }
 
-    public boolean isDisableGloableStore() {
-        return disableGloableStore;
-    }
+ 
 
     public T setPrompt(String prompt) {
         this.prompt = prompt;
@@ -618,6 +611,8 @@ public class AIAgent<T extends AIAgent> {
         reactMessage(  chatAgentMessage);
         return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this);
     }
+    
+    
 
 
     public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage ){
@@ -1076,5 +1071,19 @@ public class AIAgent<T extends AIAgent> {
 
     public AgentOutput getAgentOutput() {
         return agentOutput;
+    }
+    public boolean loadSessionMemory(String prompt ){
+        this.initSessionStore();
+        return this.mainSessionStore.loadSessionMemory(prompt,this.agentId);    
+    }
+
+    public boolean loadSessionMemory(String prompt ,String domain){
+        this.initSessionStore();
+        return this.mainSessionStore.loadSessionMemory(prompt,this.agentId);
+    }
+    
+    public void recordTraceMessage(TraceMessage traceMessage){
+        this.initSessionStore();
+        this.mainSessionStore.recordTraceMessage(traceMessage);
     }
 }

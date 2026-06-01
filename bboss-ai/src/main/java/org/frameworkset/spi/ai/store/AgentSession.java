@@ -32,7 +32,7 @@ public class AgentSession {
     private String sessionId;
     private String userId;
     private String agentId;
-
+    private String domain;
     private String title;
     private List<SessionMessage> assistantMessages;
 
@@ -112,9 +112,13 @@ public class AgentSession {
             else if (messageAgentId != null && messageAgentId.equals(agentId) ) {
                 if (agentMessages == null)
                     agentMessages = new ArrayList<>();
-                agentMessages.add(assistantMessage);
+                //messageType in ('0',1','2','3')
+                String messageType = assistantMessage.getMessageType();
+                if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3")) {
+                    agentMessages.add(assistantMessage);
+                }
             }
-            else if(messageParentId != null && messageParentId.equals(agentId) && assistantMessage.getAgentResultMessage().equals("1")) {
+            else if(messageParentId != null && messageParentId.equals(agentId) && assistantMessage.getMessageType().equals("1")) {
                 if (agentMessages == null)
                     agentMessages = new ArrayList<>();
                 agentMessages.add(assistantMessage);
@@ -174,9 +178,14 @@ public class AgentSession {
                 if (messageAgentId == null) {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
-                    mainAgentMessages.add(assistantMessage);
+                    //messageType in ('0',1','2','3')
+                    String messageType = assistantMessage.getMessageType();
+                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3")) {
+                        mainAgentMessages.add(assistantMessage);
+                    }
+                   
                 }
-                else if (messageParentId == null && assistantMessage.getAgentResultMessage().equals("1")) {
+                else if (messageParentId == null && assistantMessage.getMessageType().equals("1")) {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
                     mainAgentMessages.add(assistantMessage);
@@ -190,9 +199,15 @@ public class AgentSession {
                 if (messageAgentId != null && messageAgentId.equals(agentId)) {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
-                    mainAgentMessages.add(assistantMessage);
+
+                    //messageType in ('0',1','2','3')
+                    String messageType = assistantMessage.getMessageType();
+                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3")) {
+                        mainAgentMessages.add(assistantMessage);
+                    }
+                   
                 }
-                else if (messageParentId != null && messageParentId.equals(agentId) && assistantMessage.getAgentResultMessage().equals("1")) {//子agent的输出结果消息也是主agent的消息
+                else if (messageParentId != null && messageParentId.equals(agentId) && assistantMessage.getMessageType().equals("1")) {//子agent的输出结果消息也是主agent的消息
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
                     mainAgentMessages.add(assistantMessage);
@@ -220,4 +235,11 @@ public class AgentSession {
     }
 
 
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
 }

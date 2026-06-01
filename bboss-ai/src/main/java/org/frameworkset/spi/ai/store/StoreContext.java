@@ -46,7 +46,9 @@ public class StoreContext {
     private String userId;
     private String agentId;
     private String dataSource;
-
+    
+    private String domain;
+    
 
 
     private String traceId;
@@ -163,5 +165,15 @@ public class StoreContext {
 
     public void setMainSessionStore(AgentSessionStore mainSessionStore) {
         this.mainSessionStore = mainSessionStore;
+    }
+
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public StoreContext setDomain(String domain) {
+        this.domain = domain;
+        return this;
     }
 }

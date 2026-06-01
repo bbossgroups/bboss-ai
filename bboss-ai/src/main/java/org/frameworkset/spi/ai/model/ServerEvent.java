@@ -33,8 +33,23 @@ import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServerEvent extends MultimodalGeneration implements AIEvent{
-    public static final int DATA = 0;
-    public static final int ERROR = 1;
+    /**
+     * 数据消息
+     */
+    public static final int TYPE_DATA = 0;
+    /**
+     * 异常消息
+     */
+    public static final int TYPE_ERROR = 1;
+
+    /**
+     * trace信息，traceId
+     */
+    public static final int TYPE_TRACE = 2;
+    /**
+     * 拒绝消息：
+     */
+    public static final int TYPE_REFUSAL = 3;
 
     /**
      * 数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0
@@ -89,7 +104,7 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     /**
      * 字段表示数据报文类型，0表示数据报文，1表示错误报文,默认值为0
      */
-    private int type = DATA;
+    private int type = TYPE_DATA;
 
     /**
      * 字段表示数据报文类型，0表示答案内容，1表示思维链内容,2 表示返回识别的工具定义内容，默认值为0
@@ -107,10 +122,24 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      */
     private boolean done;
 
+    public String getTraceId() {
+        return traceId;
+    }
 
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    private String traceId;
 
     private TokenMetrics tokenMetrics;
 
+
+
+    /**
+     * 置信度值
+     */
+    private Double confidance;
 
 
     /**
@@ -319,5 +348,13 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 
     public void setTokenMetrics(TokenMetrics tokenMetrics) {
         this.tokenMetrics = tokenMetrics;
+    }
+
+    public Double getConfidance() {
+        return confidance;
+    }
+
+    public void setConfidance(Double confidance) {
+        this.confidance = confidance;
     }
 }

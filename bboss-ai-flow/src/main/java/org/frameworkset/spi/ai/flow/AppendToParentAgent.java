@@ -15,9 +15,7 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.tran.jobflow.NodeTrigger;
-import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 
 /**

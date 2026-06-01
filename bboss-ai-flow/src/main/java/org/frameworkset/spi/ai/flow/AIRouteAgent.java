@@ -27,16 +27,15 @@ import java.util.List;
  */
 public class AIRouteAgent 
         extends AIBaseNodeAgent<AIRouteAgent> {
+    private int retryTimes = 3;
     public AIRouteAgent( String prompt ) {
         super( prompt);
-        disableGloableStore = true;
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
     }
 
     public AIRouteAgent(  ) {
         super(  );
-        disableGloableStore = true;
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
     }
@@ -77,5 +76,14 @@ public class AIRouteAgent
 
     public List<RouteChoice> getRouteChoiceList() {
         return routeChoiceList;
+    }
+
+    public AIRouteAgent setRetryTimes(int retryTimes) {
+        this.retryTimes = retryTimes;
+        return this;
+    }
+
+    public int getRetryTimes() {
+        return retryTimes;
     }
 }

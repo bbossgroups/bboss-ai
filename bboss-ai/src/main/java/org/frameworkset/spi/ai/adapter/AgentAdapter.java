@@ -287,7 +287,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @return
      */
     public StreamData parseAudioGenStreamContentFromData(String data){
-        return AIResponseUtil.parseQianwenAudioGenStreamContentFromData(data);
+        return AIResponseUtil.parseQianwenAudioGenStreamContentFromData(this,data);
     }
 
     /**
@@ -297,7 +297,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @return
      */
     public StreamData parseStreamContentFromData(BaseStreamDataBuilder streamDataBuilder, String data){
-        return AIResponseUtil.parseStreamContentFromData(streamDataBuilder,data);
+        return AIResponseUtil.parseStreamContentFromData(this,streamDataBuilder,data);
     }
 
     /**
@@ -307,11 +307,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @return
      */
     public StreamData parseImageParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data){
-        return AIResponseUtil.parseStreamContentFromData(streamDataBuilder,data);
+        return AIResponseUtil.parseStreamContentFromData(this,streamDataBuilder,data);
     }
 
     public StreamData parseVideoParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data){
-        return AIResponseUtil.parseStreamContentFromData(streamDataBuilder,data);
+        return AIResponseUtil.parseStreamContentFromData(this,streamDataBuilder,data);
     }
 
     /**
@@ -320,7 +320,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @return
      */
     public StreamData parseAudioStreamContentFromData(StreamDataBuilder streamDataBuilder,String data){
-        return AIResponseUtil.parseAudioStreamContentFromData(  streamDataBuilder,data);
+        return AIResponseUtil.parseAudioStreamContentFromData( this, streamDataBuilder,data);
     }
 
     
@@ -846,5 +846,15 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
         }
         return rerankedDocuments;
+    }
+
+    public StreamData buildErrorStreamData(Map map, TokenMetrics tokenMetrics) {
+        String code =  (String)map.get("code");
+        String message = (String) map.get("message");
+
+        if(code != null) {
+            return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
+        }
+        return null;
     }
 }

@@ -28,7 +28,8 @@ public class AgentSessionStoreDBConfig {
             .append( "createTime number(20),") //创建时间
             .append( "useId varchar(100),")  //用户id
             .append( "agentId varchar(100),")  //代理id
-            .append( "title varchar(500),")  //会话标题         
+            .append( "title varchar(500),")  //会话标题     
+            .append( "domain varchar(100),")  //会话所属领域       
             .append( "PRIMARY KEY (sessionId))").toString();
 
 
@@ -36,14 +37,16 @@ public class AgentSessionStoreDBConfig {
             .append(" createTime datetime NOT NULL comment '创建时间', " )
             .append( "useId varchar(100) comment '用户id',")  //用户id
             .append( "agentId varchar(100) comment '代理id',")  //代理id
-            .append( "title varchar(500) comment '会话标题',")  //会话标题     
+            .append( "title varchar(500) comment '会话标题',")  //会话标题  
+            .append( "domain varchar(100),")  //会话所属领域      
             .append( "PRIMARY KEY(sessionId)) comment '增量状态同步表主键' ENGINE=InnoDB").toString();
     
     public static final String oracle_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
             .append(" useId varchar2(100) NOT NULL, " )
             .append( "agentId varchar2(100) NOT NULL, " )
-            .append("title varchar2(500) NOT NULL,")              
+            .append("title varchar2(500) NOT NULL,")
+            .append( "domain varchar2(100),")  //会话所属领域          
             .append( "constraint $sessionTableName_PK primary key(sessionId))").toString();
 
 
@@ -53,6 +56,8 @@ public class AgentSessionStoreDBConfig {
             .append("COMMENT ON COLUMN $sessionTableName.useId IS '用户id';")
             .append("COMMENT ON COLUMN $sessionTableName.agentId IS '代理id';")
             .append("COMMENT ON COLUMN $sessionTableName.title IS '会话标题';")
+
+            .append("COMMENT ON COLUMN $sessionTableName.domain IS '会话所属领域';")
             .toString();
     
     public static final String dm_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar2(100) NOT NULL," )
@@ -60,12 +65,14 @@ public class AgentSessionStoreDBConfig {
             .append(" useId varchar2(100) NOT NULL, " )
             .append( "agentId varchar2(100) NOT NULL, " )
             .append("title varchar2(500) NOT NULL,")
+            .append( "domain varchar2(100),")  //会话所属领域     
             .append( "constraint $sessionTableName_PK primary key(sessionId))").toString();
     public static final String sqlserver_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar(100) NOT NULL," )
             .append( "createTime datetime NOT NULL,")  //创建时间
             .append("useId varchar(100) NOT NULL,") //用户id
             .append( "agentId varchar(100) NOT NULL,")  //代理id
-            .append( "title varchar(500) NOT NULL,")  //会话标题           
+            .append( "title varchar(500) NOT NULL,")  //会话标题   
+            .append( "domain varchar2(100),")  //会话所属领域             
             .append( "constraint $sessionTableName_PK primary key(sessionId))") //增量状态同步表主键
             .toString();
 
@@ -74,6 +81,7 @@ public class AgentSessionStoreDBConfig {
             .append( "useId varchar(100),")  //用户id
             .append( " agentId varchar(100)  NOT NULL,") //代理id
             .append( "title varchar(500) ,")  //会话标题
+            .append( "domain varchar2(100),")  //会话所属领域     
             .append( "primary key(sessionId))")//增量状态同步表主键
             .toString();
 
@@ -88,9 +96,10 @@ public class AgentSessionStoreDBConfig {
             .append( "createTime number(20),") //创建时间
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中 0：否 1：是
+            .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "sessionId varchar(100),")  //会话id
             .append( "requestId varchar(100), " )  //请求id
+            .append( "traceId varchar(100), " )  //trace id
             .append( "seqNo int,")  //消息序号
             .append( "message text,")  //消息正文
 
@@ -105,15 +114,15 @@ public class AgentSessionStoreDBConfig {
             .append(" createTime datetime NOT NULL comment '创建时间', " )
             .append( "sessionId varchar(100) NOT NULL, " )  //会话id
             .append( "requestId varchar(100), " )  //请求id
+            .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
+            .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, " )  //消息正文
             .append( "role varchar(100) NOT NULL, " )
             .append( "tokenMetrics LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, " )  //token消耗统计
             .append( "elapsed BIGINT,")  //耗时
-
             .append( "marks varchar(500),")
             .append( "metadata  LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,")
             .append( "primary key(msgId)) comment '消息表主键' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").toString();
@@ -123,9 +132,10 @@ public class AgentSessionStoreDBConfig {
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
             .append( "requestId varchar2(100), " )  //请求id
+            .append( "traceId varchar2(100), " )  //trace id
             .append( "parentAgentId varchar2(100),")  //父agentid
             .append( "agentId varchar2(100),")  //创建消息的agentid
-            .append( "agentResultMessage varchar2(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
+            .append( "messageType varchar2(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
             .append( "tokenMetrics clob , " )  //token消耗统计
@@ -140,9 +150,10 @@ public class AgentSessionStoreDBConfig {
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
             .append( "requestId varchar2(100), " )  //请求id
+            .append( "traceId varchar2(100), " )  //trace id
             .append( "parentAgentId varchar2(100),")  //父agentid
             .append( "agentId varchar2(100),")  //创建消息的agentid
-            .append( "agentResultMessage varchar2(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
+            .append( "messageType varchar2(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
             .append( "tokenMetrics clob , " )  //token消耗统计
@@ -156,9 +167,10 @@ public class AgentSessionStoreDBConfig {
             .append( "createTime datetime NOT NULL,")  //创建时间
             .append("sessionId varchar(100) NOT NULL,") //会话id
             .append( "requestId varchar(100), " )  //请求id
+            .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
+            .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message nvarchar(max) NOT NULL,")  //消息正文
             .append( "tokenMetrics nvarchar(max),")  //token消耗统计
@@ -172,9 +184,10 @@ public class AgentSessionStoreDBConfig {
             .append( "createTime timestamp NOT NULL,")  //创建时间
             .append( "sessionId varchar(100) NOT NULL,")  //会话id
             .append( "requestId varchar(100), " )  //请求id
+            .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
+            .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message text NOT NULL,")  //消息正文
             .append( "tokenMetrics text,")  //token消耗统计
@@ -356,8 +369,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         existSQL = new StringBuilder().append("select 1 from ").append(sessionTableName).toString();
         existMessageSQL = new StringBuilder().append("select 1 from ").append(sessionMessageTableName).toString();
         existMessageReferenceSQL = new StringBuilder().append("select 1 from ").append(sessionMessageReferenceTableName).toString();
-        insertSessionSQL = "INSERT INTO "+sessionTableName+" (sessionId, createTime, useId, agentId, title) \n" +
-                "VALUES (?, ?, ?, ?, ?)";
+        insertSessionSQL = "INSERT INTO "+sessionTableName+" (sessionId, createTime, useId, agentId, title,domain) \n" +
+                "VALUES (?, ?, ?, ?, ?,?)";
         
         deleteSessionByUserIdSQL = new StringBuilder().append("delete from ")
                 .append(sessionTableName).append(" where  useId=?").toString();
@@ -374,10 +387,10 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         /**
          *         .append( "parentAgentId varchar(100),")  //父agentid
          *             .append( "agentId varchar(100),")  //创建消息的agentid
-         *             .append( "agentResultMessage varchar(1),")  //是否是agent的最终结果消息，需要加载到父agent的记忆消息中
+         *             .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
          */
         insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
-                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,agentResultMessage,seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
 
         insertSessionMessageRerenceSQL = "INSERT INTO "+sessionMessageReferenceTableName+" (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
                                                     "VALUES (?, ?, ?, ?, ?)";
@@ -395,10 +408,13 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
                 .append(sessionMessageTableName).append(" where useId=? order by createTime,seqNo desc").toString();
 
         /**
-         * 查询最近的消息
+         * 查询最近的消息,恢复到对话中 
+         * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+         * 排除掉智能体跟踪消息
          */
         selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and agentResultMessage = '1')) order by createTime,seqNo asc").toString();
+                .append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and messageType = '1')) ")
+                .append("and messageType in ('0','1','2','3') order by createTime,seqNo asc").toString();
 
         selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
                 .append(sessionMessageTableName).append(" where sessionId=? ").toString();
@@ -406,7 +422,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         selectSessionMessageBySessionId2ndAgentIdSQL = new StringBuilder()
                 .append("select *  from ")
                 .append(sessionMessageTableName)
-                .append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and agentResultMessage = '1')))" )
+                .append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
+                .append("and messageType in ('0','1','2','3'))" )
                 .append(" or msgId in (select msgId from ")
                 .append(sessionMessageReferenceTableName)
                 .append(" where sessionId=? and refAgentId = ?) " )

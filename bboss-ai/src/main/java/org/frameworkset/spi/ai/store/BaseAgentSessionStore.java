@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
@@ -25,8 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.frameworkset.spi.ai.store.SessionMessage.MESSAGE_TYPE_AGENTRESULTMESSAGE;
-import static org.frameworkset.spi.ai.store.SessionMessage.MESSAGE_TYPE_MIDDLE_MESSAGE;
+import static org.frameworkset.spi.ai.store.SessionMessage.*;
 
 /**
  * @author biaoping.yin
@@ -54,6 +54,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
      * 用户id，可选
      */
     private String userId;
+
+    private String traceId;
     /**
      * 会话对应的agentId
      */
@@ -131,6 +133,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.userId = storeContext.getUserId();
         this.agentId = storeContext.getAgentId();
         this.requestId = storeContext.getRequestId();
+        this.traceId = storeContext.getTraceId();
         if(agentId == null){
             this.agentId = "agentId-0";
         }
@@ -141,7 +144,11 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         }
 
     }
-    
+
+    public String getTraceId() {
+        return traceId;
+    }
+
     /**
      * 子任务会话记忆
      */
@@ -200,21 +207,56 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             sessionMemory.remove(0);
         }
     }
+    @Override
+    public void recordTraceMessage(TraceMessage traceMessage) {
+        PersistentMessage persistentMessage = new PersistentMessage();
+        persistentMessage.setMessage(traceMessage.getMessage());
+        TokenMetrics tokenMetrics = new TokenMetrics();
+        tokenMetrics.setStartTime(traceMessage.getStartTime());
+        tokenMetrics.setEndTime(traceMessage.getEndTime());
+        persistentMessage.setTokenMetrics(tokenMetrics);
+        String metadata = null;
+        if(traceMessage.getMetaData() != null){
+            metadata = JsonUtil.object2json(traceMessage.getMetaData());
+        }
+        this.persistentSessionMessage(persistentMessage,this.getAgentId(), this.getParantAgentId(), (String)null, metadata, MESSAGE_TYPE_TRACE_MESSAGE);
+    }
 
+    /**
+     * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息
+     * @param role
+     * @return
+     */
 
-
+    private String messageType(String role){
+        if("system".equals(role)){
+            return MESSAGE_TYPE_SYSTEM_MESSAGE;
+        }
+        else if("user".equals(role)){
+            return MESSAGE_TYPE_USER_MESSAGE;
+        }
+        else if("assistant".equals(role)){
+            return MESSAGE_TYPE_ASSISTANT_MESSAGE;
+        }
+ 
+        return MESSAGE_TYPE_ASSISTANT_MESSAGE;
+    }
     @Override
     public void addSessionMessage(PersistentMessage persistentMessage){
 
         if(sessionMemory == null){
             return ;
         }
-        appendSessionMessage(persistentMessage.getMessage());
+        Map<String,Object> message = persistentMessage.getMessage();
+        appendSessionMessage(message);
+       
+        String role = (String) message.get("role");
+        String messageType = messageType(role);
         if(mainAgentSessionStore != null){
-            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
+            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),null,null, messageType);
         }
         else if(this.persistentSessionMemory){
-            persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
+            persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),null,null, messageType);
         }
          
     }
@@ -342,17 +384,20 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     @Override
     public void addSessionMessage( Map<String, Object> message//Map<String, Object> systemMessage
                                     ,String prompt,String agentId,String parentAgentId){
-
+        String role = (String) message.get("role");
+        String messageType = messageType(role);
         if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
             //msgId,createTime,sessionId,seqNo,message,role
             PersistentMessage persistentMessage = new PersistentMessage();
             persistentMessage.setMessage(message);
-            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);
+            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null, messageType);
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
             PersistentMessage persistentMessage = new PersistentMessage();
             persistentMessage.setMessage(message);
-            persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null,MESSAGE_TYPE_MIDDLE_MESSAGE);//1 代表子智能体输出结果 0 代表子智能体中间消息，3 代表用户输入消息
+            persistentSessionMessage(persistentMessage, agentId,parentAgentId,null,null, messageType);//0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息
+
+            
         }
 //            SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
 //                    SimpleStringUtil.getUUID32(),new Date(),this.getSessionId(),agentId, integerCount.increament(), JsonUtil.object2json(systemMessage),
@@ -457,6 +502,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return sessionSize;
     }
 
+    
     public String getSessionId() {
         return sessionId;
     }

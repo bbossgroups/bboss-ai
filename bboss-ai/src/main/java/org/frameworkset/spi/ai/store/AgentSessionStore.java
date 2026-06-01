@@ -16,10 +16,7 @@ package org.frameworkset.spi.ai.store;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.model.PersistentMessage;
-import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.model.TokenMetrics;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
 import java.util.List;
@@ -36,7 +33,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     String genSubAgentId();
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
     LastSessionMessage getLastSubAgentSessionMessage();
-    public List<LastSessionMessage> getLastSubAgentSessionMessages();
+    List<LastSessionMessage> getLastSubAgentSessionMessages();
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
     
     /**
@@ -46,6 +43,16 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
      * @return
      */
     boolean loadSessionMemory(String prompt,String agentId);
+
+    /**
+     * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
+     * 如果会话不存在 则创建会话
+     * @param prompt
+     * @param domain 
+     * @param agentId
+     * @return
+     */
+    boolean loadSessionMemory(String prompt,String domain,String agentId);
     
     String getParantAgentId();
     AIAgent getAiAgent();
@@ -74,8 +81,9 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 
     List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize);
 
+    void recordTraceMessage(TraceMessage traceMessage);
     LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,//Map<String, Object> message,
-                                                String agentId, String parentAgentId, String marks, String metadata, String agentResultMessage);
+                                                String agentId, String parentAgentId, String marks, String metadata, String messageType);
             
             //, TokenMetrics tokenMetrics);
     AgentSessionStore getMainAgentSessionStore() ;

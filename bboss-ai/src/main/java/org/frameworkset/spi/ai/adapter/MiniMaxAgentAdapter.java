@@ -102,6 +102,16 @@ public class MiniMaxAgentAdapter extends DoubaoAgentAdapter{
         return "/v1/t2a_v2";
     }
 
-  
+    @Override
+    public StreamData buildErrorStreamData(Map map, TokenMetrics tokenMetrics) {
+        Map baseRsp = (Map) map.get("base_resp");
+        String code =String.valueOf(baseRsp.get("status_code"));
+        String message = (String) baseRsp.get("status_msg");
+
+        if(code != null) {
+            return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
+        }
+        return null;
+    }
     
 }

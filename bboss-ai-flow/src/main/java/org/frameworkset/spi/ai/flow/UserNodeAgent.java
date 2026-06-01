@@ -21,7 +21,7 @@ import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 
 /**
- * 用户智能体：不会介绍上游消息
+ * 用户智能体：不会接受上游消息
  * @author biaoping.yin
  * @Date 2026/4/14
  */

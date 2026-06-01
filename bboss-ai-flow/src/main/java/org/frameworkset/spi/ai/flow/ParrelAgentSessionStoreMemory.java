@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.frameworkset.spi.ai.store.SessionMessage.MESSAGE_TYPE_AGENTRESULTMESSAGE;
 
 /**
  * @author biaoping.yin

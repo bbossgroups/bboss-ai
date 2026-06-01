@@ -25,7 +25,6 @@ import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.prompt.PromptEval;
-import org.frameworkset.tran.jobflow.builder.CallableJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
@@ -34,26 +33,29 @@ import reactor.core.publisher.FluxSink;
 
 import java.util.List;
 
+import static org.frameworkset.spi.ai.model.ServerEvent.TYPE_TRACE;
+
 /**
  * @author biaoping.yin
  * @Date 2026/4/14
  */
 public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
     private static Logger logger = LoggerFactory.getLogger(AIRouterNodeBuilder.class);
-    private String prompt2 = "# 用户问题：${prompt}\r# 根据用户问题，从以下智能体列表中选择一个最合适的智能体记录\r${routeChoiceList}\r# 输出要求：\r" +
+    private String prompt2 = "# 用户问题：#[input.query]\n# 根据用户问题，从以下智能体列表中选择一个最合适的智能体记录\n#[route.ChoiceList,scope=node]\n# 输出要求：\r" +
             "1.如果匹配到智能体将匹配的智能体JSON串包含在```json和```中输出，将其他文字都去除\r" +
-            "2.如果未匹配到智能体，请返回空内容\r" 
+            "2.如果未匹配到智能体，请返回空内容\r"
             ;
-    // 新增：极简提示词，直接要求纯 JSON
-    private String promptMinimal = "根据用户问题选择最合适的智能体。\n\n" +
-            "用户问题：${prompt}\n\n" +
-            "候选智能体：${routeChoiceList}\n\n" +
-            "直接输出JSON，不要任何其他文字：";
+            ;
+//    // 新增：极简提示词，直接要求纯 JSON
+//    private String promptMinimal = "根据用户问题选择最合适的智能体。\n\n" +
+//            "用户问题：${prompt}\n\n" +
+//            "候选智能体：${routeChoiceList}\n\n" +
+//            "直接输出JSON，不要任何其他文字：";
 
     private String prompt = prompt2;
-    private String prompt1 = "# 用户问题：${prompt}\r# 根据用户问题，从以下智能体列表中选择一个最合适的智能体记录\r${routeChoiceList}\r# 输出要求：\r" +
-            "只返回匹配的智能体JSON串，将其他文字都去除"
-            ;
+//    private String prompt1 = "# 用户问题：${prompt}\r# 根据用户问题，从以下智能体列表中选择一个最合适的智能体记录\r${routeChoiceList}\r# 输出要求：\r" +
+//            "只返回匹配的智能体JSON串，将其他文字都去除"
+//            ;
 
     private AIRouteAgent routeAgent;
     public AIRouterNodeBuilder(AIRouteAgent routeAgent) {
@@ -89,7 +91,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
-        prompt = prompt.replace("${prompt}",agentMessage.getPrompt()).replace("${routeChoiceList}",JsonUtil.object2json(routeChoiceList));
+        jobFlowNodeExecuteContext.addContextData("route.ChoiceList", JsonUtil.object2json(routeChoiceList));
         routeAgent.setPrompt(prompt);
         ChatContext chatContext = new ChatContext();
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
@@ -110,36 +112,61 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
                 AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext);
             }
         });
-        ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage)agentMessage,chatContext);
-        if(serverEvent != null) {
-            FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
-            if(fluxSink != null){
-                fluxSink.next(serverEvent);
-            }
-            else {
-                if (logger.isInfoEnabled()) {
-                    logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
-                }
-            }
-            JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
-            JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
-            
-            String data = serverEvent.getData();
-            
-            RouteChoice result = null;
-            if (data != null) {
-                MarkdownJsonExtractor extractor = new MarkdownJsonExtractor();
-                List<String> jsonList = extractor.extractAll(data);
-                if (jsonList != null && jsonList.size() > 0) {
-                    result = JsonUtil.json2Object(jsonList.get(jsonList.size() - 1), RouteChoice.class);
-                    if (containerJobFlowNodeExecuteContext != null) {
-                        containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
-                    } else {
-                        jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+        int retry = 0;
+        do {
+            ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage) agentMessage, chatContext);
+            if (serverEvent != null) {
+                
+                JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
+                JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
+
+                String data = serverEvent.getData();
+                FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
+               
+                RouteChoice result = null;
+                if (data != null) {
+                    MarkdownJsonExtractor extractor = new MarkdownJsonExtractor();
+                    List<String> jsonList = extractor.extractAll(data);
+                    if (jsonList != null && jsonList.size() > 0) {
+                        result = JsonUtil.json2Object(jsonList.get(jsonList.size() - 1), RouteChoice.class);
+                        if (containerJobFlowNodeExecuteContext != null) {
+                            containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
+                        } else {
+                            jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+                        }
+                        if (fluxSink != null) {
+                            fluxSink.next(serverEvent);
+                        } else {
+                            if (logger.isInfoEnabled()) {
+                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+                            }
+                        }
+                        break;
+                    }
+                    else{
+                        ServerEvent traceServerEvent = new ServerEvent();
+                        traceServerEvent.setData("未匹配到智能体，再次匹配："+data);
+                        
+                        traceServerEvent.setType(TYPE_TRACE);
+                        if (fluxSink != null) {
+                            fluxSink.next(serverEvent);
+                        } else {
+                            if (logger.isInfoEnabled()) {
+                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+                            }
+                        }
+                        if (fluxSink != null) {
+                            fluxSink.next(traceServerEvent);
+                        } else {
+                            if (logger.isInfoEnabled()) {
+                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), traceServerEvent.getData());
+                            }
+                        }
                     }
                 }
+                retry ++;
             }
-        }
+        } while (true && retry < routeAgent.getRetryTimes());
        
         
         return null;

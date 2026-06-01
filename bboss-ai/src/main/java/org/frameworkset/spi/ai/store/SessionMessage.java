@@ -27,18 +27,31 @@ import java.util.Map;
  */
 public class SessionMessage {
     /**
-     * 智能体输出消息
+     * 智能体输出消息:ASSISTANT中的一种
      */
     public static final String MESSAGE_TYPE_AGENTRESULTMESSAGE = "1";
     /**
-     * 智能体输入消息
+     * 智能体用户输入消息
      */
     public static final String MESSAGE_TYPE_USER_MESSAGE = "2";
 
     /**
-     * 智能体过程消息
+     * 智能体辅助消息
      */
-    public static final String MESSAGE_TYPE_MIDDLE_MESSAGE = "0";
+    public static final String MESSAGE_TYPE_ASSISTANT_MESSAGE = "0";
+
+
+    /**
+     * 智能体系统消息
+     */
+    public static final String MESSAGE_TYPE_SYSTEM_MESSAGE = "3";
+
+
+
+    /**
+     * 智能体跟踪消息
+     */
+    public static final String MESSAGE_TYPE_TRACE_MESSAGE = "5";
     
     private String msgId;
 
@@ -58,8 +71,12 @@ public class SessionMessage {
     private String metadata;
 
     private String parentAgentId;
-    private String agentResultMessage = MESSAGE_TYPE_MIDDLE_MESSAGE;
+    private String messageType = MESSAGE_TYPE_ASSISTANT_MESSAGE;
     private int seqNo;
+
+
+
+    private String traceId;
     
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.SessionMessageEditor")
     private Map<String, Object> message;
@@ -83,12 +100,12 @@ public class SessionMessage {
         this.parentAgentId = parentAgentId;
     }
 
-    public String getAgentResultMessage() {
-        return agentResultMessage;
+    public String getMessageType() {
+        return messageType;
     }
 
-    public void setAgentResultMessage(String agentResultMessage) {
-        this.agentResultMessage = agentResultMessage;
+    public void setMessageType(String messageType) {
+        this.messageType = messageType;
     }
 
     public String getRole() {
@@ -176,5 +193,13 @@ public class SessionMessage {
 
     public void setElapsed(long elapsed) {
         this.elapsed = elapsed;
+    }
+
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
     }
 }
