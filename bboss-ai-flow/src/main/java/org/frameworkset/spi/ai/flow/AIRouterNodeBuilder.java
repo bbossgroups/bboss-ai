@@ -20,10 +20,7 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
-import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.AgentMessage;
-import org.frameworkset.spi.ai.model.ChatAgentMessage;
-import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.PromptEval;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -31,7 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.frameworkset.spi.ai.model.ServerEvent.TYPE_TRACE;
 
@@ -114,6 +113,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         });
         int retry = 0;
         do {
+            long start = System.currentTimeMillis();
             ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage) agentMessage, chatContext);
             if (serverEvent != null) {
                 
@@ -128,31 +128,64 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
                     MarkdownJsonExtractor extractor = new MarkdownJsonExtractor();
                     List<String> jsonList = extractor.extractAll(data);
                     if (jsonList != null && jsonList.size() > 0) {
-                        result = JsonUtil.json2Object(jsonList.get(jsonList.size() - 1), RouteChoice.class);
-                        if (containerJobFlowNodeExecuteContext != null) {
-                            containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
-                        } else {
-                            jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+                        String json = jsonList.get(jsonList.size() - 1);
+                        try {
+                            result = JsonUtil.json2Object(json, RouteChoice.class);
                         }
-                        if (fluxSink != null) {
-                            fluxSink.next(serverEvent);
-                        } else {
-                            if (logger.isInfoEnabled()) {
-                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+                        catch (Exception e){
+                            try {
+                                List<RouteChoice> results = JsonUtil.json2ListObject(json, RouteChoice.class);
+                                if (results != null && results.size() > 1) {
+                                    throw new AIRuntimeException("route choice json size > 1:" + json + ". please check your prompt and route choice list");
+                                }
+                                result = results.get(0);
+                            }
+                            catch (Exception e1){
+                                if (logger.isInfoEnabled()) {
+                                    logger.info("agent id :{},json:{}", agent.getAgentId(), json);
+                                }
+                            }
+                            
+                        }
+                        if(result != null) {
+                            if (containerJobFlowNodeExecuteContext != null) {
+                                containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
+                            } else {
+                                jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+                            }
+                            if (fluxSink != null) {
+                                fluxSink.next(serverEvent);
+                            } else {
+                                if (logger.isInfoEnabled()) {
+                                    logger.info("agent id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+                                }
                             }
                         }
                         break;
                     }
                     else{
                         ServerEvent traceServerEvent = new ServerEvent();
-                        traceServerEvent.setData("未匹配到智能体，再次匹配："+data);
-                        
+                        String message = null;
+                        if(retry > 0)
+                            message = ("重试" + retry + "次，未匹配到智能体："+data);
+                        else{
+                            message =  ("未匹配到智能体："+data);
+                        }
+                        traceServerEvent.setData(message);
                         traceServerEvent.setType(TYPE_TRACE);
+                        TraceMessage traceMessage = new TraceMessage();
+                        Map<String, Object> messageMap = new LinkedHashMap<>();
+                        messageMap.put("text",message);
+                        messageMap.put("data",data);
+                        traceMessage.setMessage(messageMap);
+                        traceMessage.setStartTime(start);
+                        traceMessage.setEndTime(System.currentTimeMillis());
+                        routeAgent.recordTraceMessage(traceMessage);
                         if (fluxSink != null) {
-                            fluxSink.next(serverEvent);
+                            fluxSink.next(traceServerEvent);
                         } else {
                             if (logger.isInfoEnabled()) {
-                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), traceServerEvent.getData());
                             }
                         }
                         if (fluxSink != null) {
@@ -166,7 +199,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
                 }
                 retry ++;
             }
-        } while (true && retry < routeAgent.getRetryTimes());
+        } while (retry < routeAgent.getRetryTimes());
        
         
         return null;

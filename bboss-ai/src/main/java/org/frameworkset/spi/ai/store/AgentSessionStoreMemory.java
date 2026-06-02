@@ -106,7 +106,12 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
   
     protected Object lockLoadSessionMemory = new Object();
     public boolean loadSessionMemory(String prompt,String agentId){
-        return loadSessionMemory(prompt, (String)null,   agentId);
+        String domain = null;
+        StoreContext storeContext = this.getStoreContext();
+        if(storeContext != null){
+            domain = storeContext.getDomain();
+        }
+        return loadSessionMemory(prompt, domain,   agentId);
     }
 
     /**

@@ -1073,17 +1073,24 @@ public class AIAgent<T extends AIAgent> {
         return agentOutput;
     }
     public boolean loadSessionMemory(String prompt ){
-        this.initSessionStore();
-        return this.mainSessionStore.loadSessionMemory(prompt,this.agentId);    
+//        this.initSessionStore();
+//        if(this.mainSessionStore != null) {
+//            return this.mainSessionStore.loadSessionMemory(prompt, this.agentId);
+//        }
+        return loadSessionMemory(  prompt,null );
     }
 
     public boolean loadSessionMemory(String prompt ,String domain){
         this.initSessionStore();
-        return this.mainSessionStore.loadSessionMemory(prompt,this.agentId);
+        if(this.mainSessionStore != null)
+            return this.mainSessionStore.loadSessionMemory(prompt,domain,this.agentId);
+        return false;
     }
     
     public void recordTraceMessage(TraceMessage traceMessage){
         this.initSessionStore();
-        this.mainSessionStore.recordTraceMessage(traceMessage);
+        if(this.mainSessionStore != null) {
+            this.mainSessionStore.recordTraceMessage(traceMessage);
+        }
     }
 }

@@ -29,6 +29,7 @@ import java.util.Map;
 public interface AgentSessionStore<T extends AgentSessionStore> {
     void init();
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
+    StoreContext getStoreContext();
     String getAgentId();
     String genSubAgentId();
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);

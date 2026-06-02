@@ -368,6 +368,39 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return MessageBuilder.buildInputImagesMessage(message,imageUrls);
     }
 
+    protected List<Map<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent aiAgent) {
+        List<FunctionTool> tools = toolAgentMessage.getFunctionTools();
+        List<Map<String, Object>> toolMessages = new ArrayList<>(tools.size());
+        for(FunctionTool tool : tools) {
+            String toolId = tool.getId();
+            String functionName = tool.getFunctionName();
+            FunctionCall functionCall = aiAgent.getFunctionCall(functionName);
+            try {
+                if (functionCall == null) {
+                    throw new FunctionCallException("FunctionCall of " + functionName + " is null.");
+                }
+                Object result = functionCall.call(tool);
+                if (result == null) {
+                    throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
+                }
+                Map<String, Object> toolMessage = null;
+                if (result instanceof String)
+                    toolMessage = MessageBuilder.buildToolMessage((String) result, toolId);
+                else if (result instanceof MCPToolCallResponse) {
+                    result = ((MCPToolCallResponse) result).getResult();
+                    toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
+                } else {
+                    toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
+                }
+                toolMessages.add(toolMessage);
+//                return toolMessage;
+
+            } catch (Exception e) {
+                throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
+            }
+        }
+        return toolMessages;
+    }
     protected Map<String, Object> buildInputToolMessage(ToolAgentMessage toolAgentMessage,AIAgent aiAgent) {
         FunctionTool tool = toolAgentMessage.getFunctionTool();
         String toolId = tool.getId();
@@ -402,8 +435,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @return
      */
     public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent aiAgent,ChatContext chatContext){
-        Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
-       
+//        Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
+        List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,aiAgent);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", toolAgentMessage.getModel());
 
@@ -411,18 +444,23 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory();
         if(sessionMemory != null){
             // 构建消息历史列表，包含之前的会话记忆           
+            for(Map<String, Object> userMessage : userMessages) {
 
-            
-            // 添加当前用户消息
-            toolAgentMessage.addSessionMessage(userMessage,aiAgent);
+                // 添加当前用户消息
+                toolAgentMessage.addSessionMessage(userMessage, aiAgent);
+            }
             messages = new ArrayList<>(sessionMemory);
 
 
         }
         else{
             messages = new ArrayList<>();
+            for(Map<String, Object> userMessage : userMessages) {
+                messages.add(userMessage);
+                // 添加当前用户消息
+//                toolAgentMessage.addSessionMessage(userMessage, aiAgent);
+            }
             
-            messages.add(userMessage);
         }
 
 

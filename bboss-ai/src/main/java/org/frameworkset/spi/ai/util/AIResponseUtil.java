@@ -1029,8 +1029,11 @@ public class AIResponseUtil {
                 serverEvent.setToolCallResponse(chatObject.isToolCall());
                 serverEvent.setDone(true);
                 TokenMetrics tokenMetrics = streamDataBuilder.getTokenMetrics();
-                serverEvent.setTokenMetrics(tokenMetrics);
-                tokenMetrics.setEndTime(System.currentTimeMillis());
+                if(tokenMetrics != null) {
+                    serverEvent.setTokenMetrics(tokenMetrics);
+                    tokenMetrics.setEndTime(System.currentTimeMillis());
+                }
+                
                 serverEvent.setFullStreamData(streamDataBuilder.addAgentResultSessionMessage(tokenMetrics));
                 try {
                     ChatStreamCallback chatStreamCallback = chatObject.getChatStreamCallback();

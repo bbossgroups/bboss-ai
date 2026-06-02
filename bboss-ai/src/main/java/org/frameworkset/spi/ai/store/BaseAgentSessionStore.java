@@ -20,6 +20,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -33,6 +34,7 @@ import static org.frameworkset.spi.ai.store.SessionMessage.*;
  * @Date 2026/4/2
  */
 public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> implements AgentSessionStore<T>{
+    private static Logger log = org.slf4j.LoggerFactory.getLogger(BaseAgentSessionStore.class); 
     /**
      * 在内存中持久化用户消息
      */
@@ -79,7 +81,16 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.sessionMemory = sessionMemory;
 
     }
-
+    @Override
+    public StoreContext getStoreContext(){
+        if(this.storeContext != null){
+            return storeContext;
+        }
+        if(this.mainAgentSessionStore != null && this.mainAgentSessionStore != this){
+            return mainAgentSessionStore.getStoreContext();
+        }
+        return null;
+    }
     @Override
     public T setAIAgent(AIAgent aiAgent) {
         this.aiAgent = aiAgent;
@@ -202,6 +213,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(sessionMemory == null){
             return ;
         }
+//        if(agentId != null && agentId.equals("parrelHotelAgent")){
+//            log.info("appendSessionMessage ");
+//        }
         sessionMemory.add(persistentMessage);
         if(sessionSize > 0 && sessionMemory.size() > sessionSize){
             sessionMemory.remove(0);

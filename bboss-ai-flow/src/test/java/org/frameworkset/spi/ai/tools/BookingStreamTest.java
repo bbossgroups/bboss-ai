@@ -63,7 +63,7 @@ public class BookingStreamTest {
         // 场景3：酒店和机票都要（路由到并行查询）
 //        bookingWorkflowStream("kimi", "我5月25日到5月28日要去北京出差，帮我预定酒店和机票", "kimi-k2.6", null);
 
-        bookingWorkflowStream("qwenvlplus", "我计划5月25日到5月28日从长沙去北京出差，帮我预定酒店和机票", "qwen3.6-plus", null);
+        bookingWorkflowStream("qwenvlplus", "我计划5月25日到5月28日从长沙去北京出差，帮我预定酒店和机票", "qwen3.7-plus", null);
 
 
 //        bookingWorkflowStream("minimax", "我5月25日到5月28日要去北京出差，帮我预定酒店和机票", "MiniMax-M3", null);
@@ -123,9 +123,9 @@ public class BookingStreamTest {
         // ==================== 阶段2：分支查询智能体 ====================
         // 酒店查询智能体（当路由到hotelAgent时执行）
         planAgent.addRouteChoiceAgent(new AINodeAgent(
-                "请根据用户的行程需求:#[input.query]，查询并推荐合适的酒店。" +
+                "请根据用户的行程需求:#[input.query]，只查询并推荐合适的酒店，千万不要查询航班。" +
                         "需要考虑：地理位置、价格区间、用户评分、配套设施等因素。" +
-                        "给出至少3个推荐选项，并说明理由。如未匹配到工具，请返回\"未找到匹配的工具\"")
+                        "给出至少3个推荐选项，并说明理由。如未匹配到工具，请返回\"未找到匹配的酒店查询工具\"")
                 .setAgentId("hotelAgent")
                 .setAgentName("酒店查询智能体")
                 
@@ -133,9 +133,9 @@ public class BookingStreamTest {
 
         // 机票查询智能体（当路由到flightAgent时执行）
         planAgent.addRouteChoiceAgent(new AINodeAgent(
-                "请根据用户的行程需求:#[input.query]，查询并推荐合适的航班。" +
+                "请根据用户的行程需求:#[input.query]，只查询并推荐合适的航班和机票，千万不要查询酒店。" +
                         "需要考虑：出发时间、到达时间、航空公司、价格、准点率等因素。" +
-                        "给出至少3个推荐选项，并说明理由。如未匹配到工具，请返回\"未找到匹配的工具\"")
+                        "给出至少3个推荐选项，并说明理由。如未匹配到工具，请返回\"未找到匹配的机票查询工具\"")
                 .setAgentId("flightAgent").setAgentName("机票查询智能体") 
                 .setToolsRegist(toolsRegist));
 
@@ -168,13 +168,13 @@ public class BookingStreamTest {
                 "请根据用户的问题:#[input.query]，提供有帮助的行程和预定相关建议。")
                 .setAgentId("defaultAgent").setAgentName("默认智能体") );
 
-        // ==================== 阶段5：汇总智能体 ====================
-        // 汇总前面所有节点的结果，给出最终的预定建议
-        planAgent.addAgent(new AINodeAgent(
-                "请综合前面的查询结果，为用户提供一份完整的预定建议报告。" +
-                        "报告需要包含：1)推荐的酒店及理由 2)推荐的航班及理由 3)总预算估算 4)最终操作建议。" +
-                        "请用清晰的中文输出。")
-                .setAgentId("summaryAgent").setAgentName("汇总建议智能体").setOutputVaribleName("aaaa", AIFlowConst.AIFLOW_VAR_SCOPE_FLOW) );
+//        // ==================== 阶段5：汇总智能体 ====================
+//        // 汇总前面所有节点的结果，给出最终的预定建议
+//        planAgent.addAgent(new AINodeAgent(
+//                "请综合前面的查询结果，为用户提供一份完整的预定建议报告。" +
+//                        "报告需要包含：1)推荐的酒店及理由 2)推荐的航班及理由 3)总预算估算 4)最终操作建议。" +
+//                        "请用清晰的中文输出。")
+//                .setAgentId("summaryAgent").setAgentName("汇总建议智能体").setOutputVaribleName("aaaa", AIFlowConst.AIFLOW_VAR_SCOPE_FLOW) );
 
         // 通过飞书mcp接口，将汇总智能体结果创建为飞书文档
         ToolsRegist mcpToolsRegist = new FeishuMcpRegist("feishumcp");

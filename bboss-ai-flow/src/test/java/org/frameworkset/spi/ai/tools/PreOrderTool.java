@@ -60,6 +60,7 @@ public class PreOrderTool {
 
     @Tool(name="flightQuery",description = "根据用户的行程需求，查询合适的航班机票。" )
     public List<Map> flightQuery(@ToolParam(name="bookDay",description = "出发时间,例如：5月25日",required = true) String bookDay,
+                                 @ToolParam(name="arriveDay",description = "到达时间,例如：5月28日",required = true) String arriveDay,
                                 @ToolParam(name="fromStation",description = "出发地,例如：长沙",required = true) String fromStation,
                                 @ToolParam(name="toStation",description = "到达地,例如：北京",required = true) String toStation){
         List<Map> hotels = new ArrayList<>();
