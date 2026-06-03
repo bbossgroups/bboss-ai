@@ -27,6 +27,8 @@ import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
+import org.frameworkset.util.RetryCallback;
+import org.frameworkset.util.RetryUtil;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
 import org.slf4j.Logger;
@@ -493,8 +495,18 @@ public class AIAgentUtil {
                         data = SimpleStringUtil.object2json(message);
                     }
                 }
-
-                HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, chatObject.getCompletionsUrl(), header, responseHandler);
+                AgentMessage agentMessage = chatObject.getAgentMessage();
+                int retry = agentMessage.getRetry();
+                if(retry <= 0) {
+                    HttpRequestProxy.sendJsonBody(clientConfiguration, (String) data, chatObject.getCompletionsUrl(), header, responseHandler);
+                }
+                else{
+                    final String _data = (String)data;
+                    RetryUtil.retry(retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
+                         HttpRequestProxy.sendJsonBody(clientConfiguration, (String) _data, chatObject.getCompletionsUrl(), header, responseHandler);
+                         return null;
+                    });
+                }
 //                            if(baseStreamDataBuilder.)
             }
             else if (chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_POST_FORM)){
@@ -1023,7 +1035,16 @@ public class AIAgentUtil {
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(embeddingMessage.getMaas());
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,embeddingMessage);
         Map<String,Object> params = agentAdapter.buildEmbeddingMessage(config,embeddingMessage,agent);
-        return agentAdapter.embedding(  config,embeddingMessage,agent,params);
+        float[] embedding = null;
+        int retry = embeddingMessage.getRetry();
+        if(retry <=  0 ){
+            embedding = agentAdapter.embedding(  config,embeddingMessage,agent,params);
+        }
+        else{
+            embedding = RetryUtil.retry(retry, embeddingMessage.getRetryInterval(), () -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
+
+        }
+        return embedding;
 //        EmbeddingResponse result = HttpRequestProxy.sendJsonBody(embeddingMessage.getMaas(), params, agentAdapter.getEmbeddingUrl(embeddingMessage), EmbeddingResponse.class);
 //        if(result != null){
 //            return result.embedding();
@@ -1035,7 +1056,17 @@ public class AIAgentUtil {
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(rerankMessage.getMaas());
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,rerankMessage);
         Map<String,Object> params = agentAdapter.buildRerankMessage(config,rerankMessage,agent);
-        List<RerankedDocument> rerankedDocuments = agentAdapter.rerank(config,rerankMessage,agent,params);
+        
+        List<RerankedDocument> rerankedDocuments = null;
+        int retry = rerankMessage.getRetry();
+        if(retry <=  0 ){
+            rerankedDocuments = agentAdapter.rerank(config, rerankMessage, agent, params);
+        }
+        else{
+            rerankedDocuments = RetryUtil.retry(retry, rerankMessage.getRetryInterval(), () -> agentAdapter.rerank(config, rerankMessage, agent, params));
+            
+        }
+         
        
         if(rerankedDocuments != null && rerankedDocuments.size() > 0) {
             List<RerankedDocument> relevanceScoreDocuments = new ArrayList<>();

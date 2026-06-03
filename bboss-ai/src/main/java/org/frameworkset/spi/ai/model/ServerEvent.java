@@ -50,6 +50,16 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      * 拒绝消息：
      */
     public static final int TYPE_REFUSAL = 3;
+    
+    /**
+     * 知识库资料消息：
+     */
+    public static final int TYPE_RAG_KNOWLEDGE = 5;
+
+    /**
+     * 步骤消息：
+     */
+    public static final int TYPE_STEP = 6;
 
     /**
      * 数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0
@@ -60,8 +70,10 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 
     public static final int TOKEN_METRICS = 5;
     public static final int MCP_TOOL_CALLS = 3;
+    private Double confidence;
     /**
-     * 字段包含数据内容，当type为0时，data字段包含数据内容，当type为1时，data字段包含错误信息
+     * 数据内容
+     * 当type为0时 数据消息，当type1时表示异常消息,当type为2时表示trace信息，traceId 当type为3时表示拒答消息，当type为5时表示知识库资料消息 
      */
     private String data;
 
@@ -102,12 +114,13 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     private String reasoningContent;
 
     /**
-     * 字段表示数据报文类型，0表示数据报文，1表示错误报文,默认值为0
+     * 数据报文类型:0 数据消息，1表示异常消息,2 trace信息，traceId 3 拒答消息 5 知识库资料消息 6 步骤消息
+     * 默认值为0     
      */
     private int type = TYPE_DATA;
 
     /**
-     * 字段表示数据报文类型，0表示答案内容，1表示思维链内容,2 表示返回识别的工具定义内容，默认值为0
+     * 数据内容类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0     *  
      */
     private int contentType = CONTENT;
 
@@ -121,6 +134,8 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      * 标记数据获取是否完成
      */
     private boolean done;
+    private List ragKnowledge;
+
 
     public String getTraceId() {
         return traceId;
@@ -134,12 +149,25 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 
     private TokenMetrics tokenMetrics;
 
-
+    /**
+     * 步骤消息：智能体id
+     */
+    private String agentId;
+    /**
+     * 步骤消息：智能体名称
+     */
+    private String agentName;
 
     /**
-     * 置信度值
+     * 步骤消息：父智能体id
      */
-    private Double confidance;
+    private String parentAgentId;
+    /**
+     * 步骤消息：父智能体名称
+     */
+    private String parentAgentName;
+    
+    
 
 
     /**
@@ -158,7 +186,9 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     }
 
     /**
-     * 获取数据报文类型，0表示数据报文，1表示错误报文
+     * 数据报文类型:0 数据消息，1表示异常消息,2 trace信息，traceId 3 拒答消息 5 知识库资料消息 6 步骤消息
+     * 默认值为0     
+     * @return 
      */
     public int getType() {
         return type;
@@ -173,19 +203,22 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     }
 
     /**
-     * 设置数据报文类型，0表示数据报文，1表示错误报文,默认值为0
+     * 数据报文类型:0 数据消息，1表示异常消息,2 trace信息，traceId 3 拒答消息 5 知识库资料消息 6 步骤消息
+     * 默认值为0     
      */
     public void setType(int type) {
         this.type = type;
     }
     /**
-     * 获取数据内容，当type为0时，data字段包含数据内容，当type为1时，data字段包含错误信息
+     * 数据内容
+     * 当type为0时 数据消息，当type1时表示异常消息,当type为2时表示trace信息，traceId 当type为3时表示拒答消息，当type为5时表示知识库资料消息 
      */
     public String getData() {
         return data;
     }
     /**
-     * 设置数据内容，当type为0时，data字段包含数据内容，当type为1时，data字段包含错误信息
+     * 数据内容
+     * 当type为0时 数据消息，当type1时表示异常消息,当type为2时表示trace信息，traceId 当type为3时表示拒答消息，当type为5时表示知识库资料消息 
      */
     public void setData(String data) {
         this.data = data;
@@ -258,16 +291,14 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 
 
     /**
-     * 获取数据报文类型，0表示答案内容，1表示思维链内容,默认值为0
-     * @return
+     * 数据内容类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0     *  
      */
     public int getContentType() {
         return contentType;
     }
 
     /**
-     * 设置数据报文类型，0表示答案内容，1表示思维链内容,默认值为0
-     * @param contentType
+     * 数据内容类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0     *  
      */
     public void setContentType(int contentType) {
         this.contentType = contentType;
@@ -349,12 +380,51 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     public void setTokenMetrics(TokenMetrics tokenMetrics) {
         this.tokenMetrics = tokenMetrics;
     }
-
-    public Double getConfidance() {
-        return confidance;
+ 
+    public List getRagKnowledge() {
+        return ragKnowledge;
+    }
+    public void setRagKnowledge(List ragKnowledge) {
+        this.ragKnowledge = ragKnowledge;
     }
 
-    public void setConfidance(Double confidance) {
-        this.confidance = confidance;
+    public Double getConfidence() {
+        return confidence;
+    }
+
+    public void setConfidence(Double confidence) {
+        this.confidence = confidence;
+    }
+
+    public String getAgentId() {
+        return agentId;
+    }
+
+    public void setAgentId(String agentId) {
+        this.agentId = agentId;
+    }
+
+    public String getAgentName() {
+        return agentName;
+    }
+
+    public void setAgentName(String agentName) {
+        this.agentName = agentName;
+    }
+
+    public String getParentAgentId() {
+        return parentAgentId;
+    }
+
+    public void setParentAgentId(String parentAgentId) {
+        this.parentAgentId = parentAgentId;
+    }
+
+    public String getParentAgentName() {
+        return parentAgentName;
+    }
+
+    public void setParentAgentName(String parentAgentName) {
+        this.parentAgentName = parentAgentName;
     }
 }

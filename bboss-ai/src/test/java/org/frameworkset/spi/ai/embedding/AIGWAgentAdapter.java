@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.embedding;
 import org.frameworkset.spi.ai.adapter.QwenAgentAdapter;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**
  * @author biaoping.yin
@@ -25,13 +26,13 @@ import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
  */
 public class AIGWAgentAdapter extends QwenAgentAdapter {
 	
-	public String getChatCompletionsUrl(ChatAgentMessage chatAgentMessage) {
+	public String getChatCompletionsUrl(ClientConfiguration clientConfiguration, ChatAgentMessage chatAgentMessage) {
 		return "/v1/chat/completions";
 	}
 	
  
  
-	public String getImageVLCompletionsUrl(ImageVLAgentMessage imageVLAgentMessage) {
+	public String getImageVLCompletionsUrl(ClientConfiguration clientConfiguration,ImageVLAgentMessage imageVLAgentMessage) {
 		return "/v1/chat/completions";
 	}
 	 

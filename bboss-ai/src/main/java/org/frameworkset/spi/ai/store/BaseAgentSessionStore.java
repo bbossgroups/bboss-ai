@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.store;
  */
 
 import com.frameworkset.util.JsonUtil;
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
@@ -224,7 +225,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     @Override
     public void recordTraceMessage(TraceMessage traceMessage) {
         PersistentMessage persistentMessage = new PersistentMessage();
-        persistentMessage.setMessage(traceMessage.getMessage());
+
+        Map<String, Object> message = traceMessage.getMessage();
+        persistentMessage.setMessage(message);
         TokenMetrics tokenMetrics = new TokenMetrics();
         tokenMetrics.setStartTime(traceMessage.getStartTime());
         tokenMetrics.setEndTime(traceMessage.getEndTime());
@@ -233,7 +236,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(traceMessage.getMetaData() != null){
             metadata = JsonUtil.object2json(traceMessage.getMetaData());
         }
-        this.persistentSessionMessage(persistentMessage,this.getAgentId(), this.getParantAgentId(), (String)null, metadata, MESSAGE_TYPE_TRACE_MESSAGE);
+        String role = (String) message.get("role");
+        String messageType = SimpleStringUtil.isNotEmpty(role)?messageType(role):MESSAGE_TYPE_TRACE_MESSAGE;
+        
+        this.persistentSessionMessage(persistentMessage,this.getAgentId(), this.getParantAgentId(), (String)null, metadata, messageType);
     }
 
     /**
@@ -252,6 +258,18 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         else if("assistant".equals(role)){
             return MESSAGE_TYPE_ASSISTANT_MESSAGE;
         }
+        else if("trace".equals(role)){
+            return MESSAGE_TYPE_TRACE_MESSAGE;
+        }
+
+        else if("rag".equals(role)){
+            return MESSAGE_TYPE_RAG_MESSAGE;
+        }
+
+        else if("refuse".equals(role)){
+            return MESSAGE_TYPE_REFUSE_MESSAGE;
+        }
+        
  
         return MESSAGE_TYPE_ASSISTANT_MESSAGE;
     }

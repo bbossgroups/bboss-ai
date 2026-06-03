@@ -501,8 +501,12 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
             JobParams jobParams = null;
             if(inputMessage != null || inputSystemMessage != null){
                 jobParams = new JobParams();
-                jobParams.addParam("input.query", inputMessage);
-                jobParams.addParam("input.system", inputSystemMessage);
+                if(inputMessage != null) {
+                    jobParams.addParam("input.query", inputMessage);
+                }
+                if(inputSystemMessage != null) {
+                    jobParams.addParam("input.system", inputSystemMessage);
+                }
                 
             }
             jobflow.execute(jobParams);
@@ -561,8 +565,12 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
                     JobParams jobParams = null;
                     if(inputMessage != null || inputSystemMessage != null){
                         jobParams = new JobParams();
-                        jobParams.addParam("input.query", inputMessage);
-                        jobParams.addParam("input.system", inputSystemMessage);
+                        if(inputMessage != null) {
+                            jobParams.addParam("input.query", inputMessage);
+                        }
+                        if(inputSystemMessage != null) {
+                            jobParams.addParam("input.system", inputSystemMessage);
+                        }
 
                     }
                     jobflow.execute(jobParams);

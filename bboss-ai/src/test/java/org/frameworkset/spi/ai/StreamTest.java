@@ -317,7 +317,7 @@ public class StreamTest {
                                 return true;
                             }
                             if (!data.isEmpty()) {
-                                StreamData content = AIResponseUtil.parseStreamContentFromData((BaseStreamDataBuilder) getStreamDataBuilder(), data);
+                                StreamData content = AIResponseUtil.parseStreamContentFromData(agentAdapter,(BaseStreamDataBuilder) getStreamDataBuilder(), data);
                                 if (content != null && !content.isEmpty()) {
                                     if (firstEventTag.get()) {
                                         firstEventTag.set(false);

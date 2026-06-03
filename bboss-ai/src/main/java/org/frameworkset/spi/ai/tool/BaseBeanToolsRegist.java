@@ -21,6 +21,7 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,18 +42,55 @@ public abstract class BaseBeanToolsRegist implements ToolsRegist {
     protected abstract BaseBeanToolFunctionCall buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters);
     @Override
     public void init(){
-        functionToolDefines = BeanToolHandle.parserTools(toolBean, new BeanToolFunctionCallBuilder() {
-            @Override
-            public BaseBeanToolFunctionCall buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters) {
-                return BaseBeanToolsRegist.this.buildBeanToolFunctionCall(  toolMethod,   toolBean,   functionToolDefine,   parameters);
+//        functionToolDefines = BeanToolHandle.parserTools(toolBean, new BeanToolFunctionCallBuilder() {
+//            @Override
+//            public BaseBeanToolFunctionCall buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters) {
+//                return BaseBeanToolsRegist.this.buildBeanToolFunctionCall(  toolMethod,   toolBean,   functionToolDefine,   parameters);
+//            }
+//        });
+//        if(functionToolDefines != null){
+//            functionToolDefinesIndexByName = new LinkedHashMap<>();
+//            for(FunctionToolDefine functionToolDefine : functionToolDefines) {
+//                functionToolDefinesIndexByName.put(functionToolDefine.getFunction().getName(), functionToolDefine);
+//            }
+//        }
+        registBeanTools(toolBean);
+    }
+    protected Object registLock = new Object();
+    public void registBeanTools(Object toolBean) {
+        synchronized (registLock){
+            if(this.toolBean == null){
+                this.toolBean = toolBean;
             }
-        });
-        if(functionToolDefines != null){
-            functionToolDefinesIndexByName = new LinkedHashMap<>();
-            for(FunctionToolDefine functionToolDefine : functionToolDefines) {
-                functionToolDefinesIndexByName.put(functionToolDefine.getFunction().getName(), functionToolDefine);
+
+            List<FunctionToolDefine> functionToolDefines = BeanToolHandle.parserTools(toolBean, new BeanToolFunctionCallBuilder() {
+                @Override
+                public BaseBeanToolFunctionCall buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters) {
+                    return BaseBeanToolsRegist.this.buildBeanToolFunctionCall(  toolMethod,   toolBean,   functionToolDefine,   parameters);
+                }
+            });
+            if(functionToolDefines != null){
+                if(functionToolDefinesIndexByName == null) {
+                    functionToolDefinesIndexByName = new LinkedHashMap<>();
+                }
+                List<FunctionToolDefine> newFunctionToolDefines = new ArrayList<>(); 
+                for(FunctionToolDefine functionToolDefine : functionToolDefines) {
+                    String name = functionToolDefine.getFunction().getName();
+                    if(functionToolDefinesIndexByName.containsKey(name)){
+                        continue;
+                    }
+                    newFunctionToolDefines.add(functionToolDefine);
+                    functionToolDefinesIndexByName.put(name, functionToolDefine);
+                }
+                if(newFunctionToolDefines.size() > 0){
+                    if(this.functionToolDefines == null){
+                        this.functionToolDefines = new ArrayList<>();
+                    }
+                    this.functionToolDefines.addAll(newFunctionToolDefines);
+                }
             }
         }
+         
     }
 
     @Override

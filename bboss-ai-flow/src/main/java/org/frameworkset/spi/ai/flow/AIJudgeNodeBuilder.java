@@ -47,7 +47,7 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
     }
 
 
-    private String judgePrompt = "评估结果是否回答了问题";
+    private String judgePrompt = "评估结果是否回答了问题\n#[input.query,scope=node]\n#[answer,scope=node]";
 
 
     @Override
@@ -57,43 +57,51 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
         if(judgePrompt == null){
             judgePrompt = this.judgePrompt;
         }
+        
         String userPrompt = judgeAgent.getParentAgent().getFirstSubAgentPrompt();
-        boolean hasPromptVar = false;
-        if(judgePrompt.indexOf("${prompt}") > 0){
-            judgePrompt = SimpleStringUtil.replace(judgePrompt, "${prompt}", userPrompt);
-            hasPromptVar = true;
-        }
-        
-        boolean hasAnswerVar = false;
-        LastSessionMessage lastSessionMessage = judgeAgent.getParentAgent().getLastSessionMessage() ;
-        if(judgePrompt.indexOf("${answer}") > 0){
-            judgePrompt = SimpleStringUtil.replace(judgePrompt, "${answer}", lastSessionMessage.getData());
-            hasAnswerVar = true;
-        }
-        StringBuilder prompt = new StringBuilder();
-        if(!hasPromptVar){
+        String input = (String) jobFlowNodeExecuteContext.getJobFlowContextData("input.query");
+        if(SimpleStringUtil.isNotEmpty(input)){
+            jobFlowNodeExecuteContext.addContextData("input.query", input);
             
-            prompt.append(judgePrompt);
-            prompt.append("\r");
-            prompt.append("# 用户问题：\r").append(judgeAgent.getParentAgent().getFirstSubAgentPrompt());
         }
+        else{
+            jobFlowNodeExecuteContext.addContextData("input.query", userPrompt);
+        }
+         
         
-        if(!hasAnswerVar){
-            if(prompt.length() == 0){
-                prompt.append(judgePrompt);
-            }
-            prompt.append("\r");
-
-            if(lastSessionMessage != null)
-                prompt.append("# 问题答案：\r").append(lastSessionMessage.getData());
-            else{
-                prompt.append("# 问题答案：\r");
-            }
+//        boolean hasAnswerVar = false;
+        LastSessionMessage lastSessionMessage = judgeAgent.getParentAgent().getLastSessionMessage() ;
+        if(lastSessionMessage != null && lastSessionMessage.getData() != null){
+            jobFlowNodeExecuteContext.addContextData("answer", lastSessionMessage.getData());
         }
+//        if(judgePrompt.indexOf("${answer}") > 0){
+//            judgePrompt = SimpleStringUtil.replace(judgePrompt, "${answer}", lastSessionMessage.getData());
+//            hasAnswerVar = true;
+//        }
+//        StringBuilder prompt = new StringBuilder();
+//        if(!hasPromptVar){
+//            
+//            prompt.append(judgePrompt);
+//            prompt.append("\r");
+//            prompt.append("# 用户问题：\r").append(judgeAgent.getParentAgent().getFirstSubAgentPrompt());
+//        }
+//        
+//        if(!hasAnswerVar){
+//            if(prompt.length() == 0){
+//                prompt.append(judgePrompt);
+//            }
+//            prompt.append("\r");
+//
+//            if(lastSessionMessage != null)
+//                prompt.append("# 问题答案：\r").append(lastSessionMessage.getData());
+//            else{
+//                prompt.append("# 问题答案：\r");
+//            }
+//        }
         
-        if(prompt.length() > 0){
-            judgePrompt = prompt.toString();
-        }
+//        if(prompt.length() > 0){
+//            judgePrompt = prompt.toString();
+//        }
 
         judgeAgent.setPrompt(judgePrompt);
         ChatContext chatContext = new ChatContext();

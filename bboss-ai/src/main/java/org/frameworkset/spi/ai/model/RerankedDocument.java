@@ -24,11 +24,20 @@ import java.util.Map;
 public class RerankedDocument {
     private int index;
     private String document;
+    /**
+     * 向量检索相似度
+     */
     private double vectorScore;
 
 
+    /**
+     * bm25检索相似度
+     */
     private double bm25Score;
     private Map<String,Object> metadata;
+    /**
+     * Rerank召回相似度
+     */
     private double relevanceScore;
 
     public int getIndex() {

@@ -30,7 +30,16 @@ import java.util.Map;
 public class AgentMessage<T extends AgentMessage> {
 
 
-    
+
+    /**
+     * 模型调用报错时，是否重试
+     * > 0时重试
+     */
+    private int retry;
+    /**
+     * 重试时间间隔
+     */
+    private long retryInterval = 500L;
     private Boolean thinking;
     /**
      * maas平台数据源名称
@@ -259,5 +268,24 @@ public class AgentMessage<T extends AgentMessage> {
          }
          return lastSessionMessage;
          */
+    }
+
+
+    public int getRetry() {
+        return retry;
+    }
+
+    public T setRetry(int retry) {
+        this.retry = retry;
+        return (T)this;
+    }
+
+    public long getRetryInterval() {
+        return retryInterval;
+    }
+
+    public T setRetryInterval(long retryInterval) {
+        this.retryInterval = retryInterval;
+        return (T)this;
     }
 }

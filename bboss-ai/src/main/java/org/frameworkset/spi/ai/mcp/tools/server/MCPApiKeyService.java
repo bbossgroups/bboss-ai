@@ -22,8 +22,18 @@ import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import java.util.List;
 
 public interface MCPApiKeyService {
-	  
+    /**
+     * 注册mcp服务端工具到多个key，可多次调用，注册多个bean tool
+      * @param apiKeys
+     * @param bean
+     */  
 	void registMcpBeanTool(String[] apiKeys,Object bean);
+
+    /**
+     * 注册mcp服务端工具到单个key，可多次调用，注册多个bean tool
+     * @param apiKey
+     * @param bean
+     */
     void registMcpBeanTool(String apiKey,Object bean);
 	/**
 	 * 校验apiKey是否存在

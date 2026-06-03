@@ -52,6 +52,55 @@ public class SessionMessage {
      * 智能体跟踪消息
      */
     public static final String MESSAGE_TYPE_TRACE_MESSAGE = "5";
+
+    /**
+     * 智能体RAG知识消息
+     */
+    public static final String MESSAGE_TYPE_RAG_MESSAGE = "6";
+
+    /**
+     * 智能体拒答消息
+     */
+    public static final String MESSAGE_TYPE_REFUSE_MESSAGE = "7";
+
+
+
+    /**
+     * 智能体输出消息:ASSISTANT中的一种
+     */
+    public static final String MESSAGE_TYPE_AGENTRESULTMESSAGE_NAME = "agentresult";
+    /**
+     * 智能体用户输入消息
+     */
+    public static final String MESSAGE_TYPE_USER_MESSAGE_NAME = "user";
+
+    /**
+     * 智能体辅助消息
+     */
+    public static final String MESSAGE_TYPE_ASSISTANT_MESSAGE_NAME = "assistant";
+
+
+    /**
+     * 智能体系统消息
+     */
+    public static final String MESSAGE_TYPE_SYSTEM_MESSAGE_NAME = "system";
+
+
+
+    /**
+     * 智能体跟踪消息
+     */
+    public static final String MESSAGE_TYPE_TRACE_MESSAGE_NAME = "trace";
+
+    /**
+     * 智能体RAG知识消息
+     */
+    public static final String MESSAGE_TYPE_RAG_MESSAGE_NAME = "rag";
+
+    /**
+     * 智能体拒答消息
+     */
+    public static final String MESSAGE_TYPE_REFUSE_MESSAGE_NAME = "refuse";
     
     private String msgId;
 

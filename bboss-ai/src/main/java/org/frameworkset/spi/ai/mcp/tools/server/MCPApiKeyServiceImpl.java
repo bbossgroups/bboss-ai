@@ -38,11 +38,24 @@ public class MCPApiKeyServiceImpl implements MCPApiKeyService{
         
     }
 
+    private Object registLock = new Object();
     @Override
     public void registMcpBeanTool(String apiKey, Object bean) {
-        MCPBeanToolsRegist mcpBeanToolsRegist = new MCPBeanToolsRegist(bean);
-        mcpBeanToolsRegist.init();
-        mcpServerApiKeyInfo.put(apiKey,mcpBeanToolsRegist);
+        MCPBeanToolsRegist mcpBeanToolsRegist = mcpServerApiKeyInfo.get(apiKey);
+        if(mcpBeanToolsRegist == null) {
+            synchronized (registLock) {
+                mcpBeanToolsRegist = mcpServerApiKeyInfo.get(apiKey);
+                if(mcpBeanToolsRegist == null) {
+                    mcpBeanToolsRegist = new MCPBeanToolsRegist(bean);
+                    mcpBeanToolsRegist.init();
+
+                    mcpServerApiKeyInfo.put(apiKey, mcpBeanToolsRegist);
+                    return;
+                }
+            }
+        }
+        mcpBeanToolsRegist.registBeanTools(bean);
+        
 
     }
 
