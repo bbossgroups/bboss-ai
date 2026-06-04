@@ -17,6 +17,8 @@ package org.frameworkset.spi.ai.mcp.tools.server;
 
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.tool.BaseBeanToolsRegist;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -26,14 +28,19 @@ import java.util.Map;
  * @Date 2026/5/26
  */
 public class MCPApiKeyServiceImpl implements MCPApiKeyService{
+    private static Logger logger = LoggerFactory.getLogger(MCPApiKeyServiceImpl.class);
     private Map<String,MCPBeanToolsRegist> mcpServerApiKeyInfo = new java.util.concurrent.ConcurrentHashMap();
 
     @Override
     public void registMcpBeanTool(String[] apiKeys,Object bean) {
         MCPBeanToolsRegist mcpBeanToolsRegist = new MCPBeanToolsRegist(bean);
         mcpBeanToolsRegist.init();
+        if(logger.isInfoEnabled())
+            logger.info("Regist MCP bean tool for apiKeys count: {}", apiKeys != null ? apiKeys.length : 0);
         for(String apiKey : apiKeys){
             mcpServerApiKeyInfo.put(apiKey,mcpBeanToolsRegist);
+            if(logger.isInfoEnabled())
+                logger.info("Regist MCP bean tool success for apiKey: {}", apiKey);
         }
         
     }
@@ -50,11 +57,15 @@ public class MCPApiKeyServiceImpl implements MCPApiKeyService{
                     mcpBeanToolsRegist.init();
 
                     mcpServerApiKeyInfo.put(apiKey, mcpBeanToolsRegist);
+                    if(logger.isInfoEnabled())
+                        logger.info("Regist MCP bean tool success for apiKey: {}", apiKey);
                     return;
                 }
             }
         }
         mcpBeanToolsRegist.registBeanTools(bean);
+        if(logger.isInfoEnabled())
+            logger.info("Regist bean tools to existing MCPBeanToolsRegist for apiKey: {}", apiKey);
         
 
     }
@@ -67,7 +78,15 @@ public class MCPApiKeyServiceImpl implements MCPApiKeyService{
      */
     @Override
     public Boolean auth(String apiKey) {
-        return mcpServerApiKeyInfo.containsKey(apiKey);
+        if(apiKey == null){
+            if(logger.isWarnEnabled())
+                logger.warn("apiKey is null,auth result is false.");
+            return false;
+        }
+        boolean result = mcpServerApiKeyInfo.containsKey(apiKey);
+        if(logger.isDebugEnabled())
+            logger.debug("Auth apiKey: {}, result: {}", apiKey, result);
+        return result;
     }
 
     /**
@@ -81,25 +100,40 @@ public class MCPApiKeyServiceImpl implements MCPApiKeyService{
     public Boolean auth(String functionName, String apiKey) {
         BaseBeanToolsRegist mcpBeanToolsRegist = mcpServerApiKeyInfo.get(apiKey);
         if(mcpBeanToolsRegist == null){
+            if(logger.isDebugEnabled())
+                logger.debug("Auth functionName: {}, apiKey: {} failed, apiKey not found.", functionName, apiKey);
             return false;
         }
-        if(mcpBeanToolsRegist.getFunctionToolDefine(functionName) == null)
+        if(mcpBeanToolsRegist.getFunctionToolDefine(functionName) == null){
+            if(logger.isDebugEnabled())
+                logger.debug("Auth functionName: {}, apiKey: {} failed, function not found.", functionName, apiKey);
             return false;
+        }
+        if(logger.isDebugEnabled())
+            logger.debug("Auth functionName: {}, apiKey: {} success.", functionName, apiKey);
         return true;
     }
 
     @Override
     public List<FunctionToolDefine> getMcpServerApiKeyInfo(String apiKey) {
         MCPBeanToolsRegist mcpBeanToolsRegist = mcpServerApiKeyInfo.get(apiKey);
-        return mcpBeanToolsRegist.registTools();    
+        List<FunctionToolDefine> tools = mcpBeanToolsRegist.registTools();
+        if(logger.isDebugEnabled())
+            logger.debug("Get MCP server apiKey info, apiKey: {}, tools count: {}", apiKey, tools != null ? tools.size() : 0);
+        return tools;
     }
 
     @Override
     public FunctionToolDefine getFunctionToolDefine(String apiKey, String functionName) {
         BaseBeanToolsRegist mcpBeanToolsRegist = mcpServerApiKeyInfo.get(apiKey);
         if(mcpBeanToolsRegist == null){
+            if(logger.isDebugEnabled())
+                logger.debug("Get function tool define failed, apiKey: {} not found.", apiKey);
             return null;
         }
-        return mcpBeanToolsRegist.getFunctionToolDefine(functionName);
+        FunctionToolDefine toolDefine = mcpBeanToolsRegist.getFunctionToolDefine(functionName);
+        if(logger.isDebugEnabled())
+            logger.debug("Get function tool define, apiKey: {}, functionName: {}, found: {}", apiKey, functionName, toolDefine != null);
+        return toolDefine;
     }
 }
