@@ -52,6 +52,8 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
         
     }
     
+
+    
     public LastSessionMessage getLastSessionMessage(){
         return mainSessionStore.getLastSubAgentSessionMessage();
     }
@@ -545,7 +547,12 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
     public void setDisposeEventHandler(DisposeEventHandler disposeEventHandler) {
         this.disposeEventHandler = disposeEventHandler;
     }
-
+    private AIJobFlow jobflow;
+    public void shutdown(){
+        if(jobflow != null){
+            jobflow.stop();
+        }
+    }
     public   Flux<ServerEvent> buildFlux(  ) {
         return Flux.<ServerEvent>create(sink -> {
             try {
@@ -574,6 +581,7 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
 
                     }
                     jobflow.execute(jobParams);
+                    AIPlanAgent.this.jobflow = jobflow;
 
                 }
                 
