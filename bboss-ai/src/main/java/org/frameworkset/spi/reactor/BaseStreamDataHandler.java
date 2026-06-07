@@ -19,15 +19,12 @@ import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ChatObject;
-import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.ToolAgentMessage;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import reactor.core.publisher.FluxSink;
-
-import java.util.Map;
 
 /**
  * @author biaoping.yin

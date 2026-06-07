@@ -142,4 +142,15 @@ public class ToolAgentMessage extends ChatAgentMessage{
 //    public boolean isToolThinkingMessage(){
 //        return false ;
 //    }
+
+
+    @Override
+    public int getRetry() {
+        return chatAgentMessage.getRetry();
+    }
+
+    @Override
+    public long getRetryInterval() {
+        return chatAgentMessage.getRetryInterval();
+    }
 }

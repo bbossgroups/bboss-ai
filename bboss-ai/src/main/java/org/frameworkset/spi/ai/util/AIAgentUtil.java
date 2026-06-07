@@ -105,15 +105,25 @@ public class AIAgentUtil {
      */
     public static ImageEvent multimodalImageGeneration(String poolName,  ImageAgentMessage message, StoreFilePathFunction storeFilePathFunction,AIAgent aiAgent) {
         ImageEvent imageEvent = null;       
-
+        
         try {
             ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
             AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,message);
             StoreChatObject storeChatObject = agentAdapter.buildGenImageRequestParameter(config,message,aiAgent);
             storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
-            
-            Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(config,message),Map.class);
-            imageEvent = agentAdapter.buildGenImageResponse(config,message,storeChatObject, data);
+            int retry = message.getRetry();
+            if(retry <= 0) {
+                Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(config,message),Map.class);
+                imageEvent = agentAdapter.buildGenImageResponse(config,message,storeChatObject, data);
+            }
+            else{
+//                final String _data = (String)data;
+                imageEvent = RetryUtil.retry(retry, message.getRetryInterval(), (RetryCallback<ImageEvent>) () -> {
+                    Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(config,message),Map.class);
+                    return agentAdapter.buildGenImageResponse(config,message,storeChatObject, data);
+                });
+            }
+              
         }
         catch(Exception e){
             imageEvent = new ImageEvent();
@@ -171,13 +181,36 @@ public class AIAgentUtil {
         try {
 //            StoreFilePathFunction storeFilePathFunction = storeChatObject.getStoreFilePathFunction();
             if (storeFilePathFunction != null && storeFilePathFunction instanceof ReponseStoreFilePathFunction) {
-                String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
-                audioEvent = new AudioEvent();
-                audioEvent.setAudioUrl(audioUrl);
+                
+
+                int retry = message.getRetry();
+                if(retry <= 0) {
+                    String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
+                    audioEvent = new AudioEvent();
+                    audioEvent.setAudioUrl(audioUrl);
+                }
+                else{
+                    audioEvent = RetryUtil.retry(retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
+                        String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
+                        AudioEvent audioEvent_ = new AudioEvent();
+                        audioEvent_.setAudioUrl(audioUrl);
+                        return audioEvent_;
+                    });
+                }
 
             } else {
-                Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), Map.class);
-                audioEvent = agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
+                int retry = message.getRetry();
+                if(retry <= 0) {
+                    Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), Map.class);
+                    audioEvent = agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
+                }
+                else{
+                    audioEvent = RetryUtil.retry(retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
+                        Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), Map.class);
+                        return agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
+                    });
+                }
+                
 
             }
         }
@@ -187,30 +220,7 @@ public class AIAgentUtil {
             audioEvent.setMessage(SimpleStringUtil.exceptionToString(e));
         }
         return audioEvent;
-//        Map data = HttpRequestProxy.sendJsonBody(poolName,message,url,Map.class);
-//        Map output = (Map)data.get("output");
-//        Map audio = (Map)output.get("audio");
-//        String finishReason = (String)output.get("finish_reason");
-//
-//        if(audio == null && finishReason == null)
-//            return null;
-//        AudioEvent audioEvent = new AudioEvent();
-//        audioEvent.setFinishReason(finishReason);
-//        String audioUrl = (String)audio.get("url");
-//        String auditData = (String)audio.get("data");
-//        Object expiresAt_ = audio.get("expires_at");
-//        if(expiresAt_ != null) {
-//            if (expiresAt_ instanceof Long) {
-//                audioEvent.setExpiresAt((Long) expiresAt_);
-//            } else {
-//                audioEvent.setExpiresAt((Integer) expiresAt_);
-//            }
-//        }
-//        audioEvent.setAudioBase64(auditData);
-//        audioEvent.setAudioUrl(audioUrl);
-
-
-//        return audioEvent;
+ 
     }
 
     /**
@@ -301,8 +311,19 @@ public class AIAgentUtil {
                         data = SimpleStringUtil.object2json(message);
                     }
                 }
-
-                HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, chatObject.getCompletionsUrl(), header, responseHandler);
+                AgentMessage agentMessage = chatObject.getAgentMessage();
+                int retry = agentMessage.getRetry();
+                if(retry <= 0) {
+                    HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, chatObject.getCompletionsUrl(), header, responseHandler);
+                }
+                else{
+                    final String _data = (String)data;
+                    RetryUtil.retry(retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
+                        HttpRequestProxy.sendJsonBody(clientConfiguration, _data, chatObject.getCompletionsUrl(), header, responseHandler);
+                        return null;
+                    });
+                }
+                
 //                            if(baseStreamDataBuilder.)
             }
             else if (chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_POST_FORM)){
@@ -503,7 +524,7 @@ public class AIAgentUtil {
                 else{
                     final String _data = (String)data;
                     RetryUtil.retry(retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
-                         HttpRequestProxy.sendJsonBody(clientConfiguration, (String) _data, chatObject.getCompletionsUrl(), header, responseHandler);
+                         HttpRequestProxy.sendJsonBody(clientConfiguration,  _data, chatObject.getCompletionsUrl(), header, responseHandler);
                          return null;
                     });
                 }

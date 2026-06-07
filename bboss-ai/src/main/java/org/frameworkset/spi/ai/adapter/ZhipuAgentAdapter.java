@@ -15,13 +15,20 @@ package org.frameworkset.spi.ai.adapter;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
+import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import org.frameworkset.spi.remote.http.ResponseStatus;
+import org.frameworkset.util.RetryCallback;
+import org.frameworkset.util.RetryUtil;
 
 import java.io.File;
 import java.util.*;
@@ -383,5 +390,57 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
 
 
         return result;
+    }
+
+    public AudioEvent multimodalAudioGeneration(ClientConfiguration config, AudioAgentMessage message, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent, ChatContext chatContext) {
+
+        StoreChatObject storeChatObject = this.buildGenAudioRequestParameter(config, message,aiAgent,  chatContext);
+        storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
+        AudioEvent audioEvent = null;
+        try {
+//            StoreFilePathFunction storeFilePathFunction = storeChatObject.getStoreFilePathFunction();
+            if (storeFilePathFunction != null && storeFilePathFunction instanceof ReponseStoreFilePathFunction) {
+
+
+                int retry = message.getRetry();
+                if(retry <= 0) {
+                    String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), this.getGenAudioCompletionsUrl(config,message),
+                            AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
+                    audioEvent = new AudioEvent();
+                    audioEvent.setAudioUrl(audioUrl);
+                }
+                else{
+                    audioEvent = RetryUtil.retry(retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
+                        String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), this.getGenAudioCompletionsUrl(config,message),
+                                AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
+                        AudioEvent audioEvent_ = new AudioEvent();
+                        audioEvent_.setAudioUrl(audioUrl);
+                        return audioEvent_;
+                    });
+                }
+
+            } else {
+                int retry = message.getRetry();
+                if(retry <= 0) {
+                    Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), this.getGenAudioCompletionsUrl(config,message), Map.class);
+                    audioEvent = this.buildGenAudioResponse(config, message, storeChatObject,data);
+                }
+                else{
+                    audioEvent = RetryUtil.retry(retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
+                        Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), this.getGenAudioCompletionsUrl(config,message), Map.class);
+                        return this.buildGenAudioResponse(config, message, storeChatObject,data);
+                    });
+                }
+
+
+            }
+        }
+        catch(Exception e){
+            audioEvent = new AudioEvent();
+            audioEvent.setCode(ResponseStatus.ERROR_CODE);
+            audioEvent.setMessage(SimpleStringUtil.exceptionToString(e));
+        }
+        return audioEvent;
+
     }
 }
