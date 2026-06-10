@@ -29,6 +29,7 @@ import org.frameworkset.tran.jobflow.builder.JobFlowBuilder;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.listener.JobFlowListener;
 import org.frameworkset.tran.jobflow.schedule.JobFlowScheduleConfig;
+import org.frameworkset.tran.jobflow.schedule.ScheduleConfigInterface;
 import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
 import org.slf4j.Logger;
@@ -45,11 +46,15 @@ import reactor.core.scheduler.Schedulers;
 public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgent<AIPlanAgent> {
     private static Logger logger = LoggerFactory.getLogger(AIPlanAgent.class);
     
-    
+    private ScheduleConfigInterface jobFlowScheduleConfig;
     private AIJobFlowBuilder jobFlowBuilder;
     public AIPlanAgent(StoreContext storeContext) {
         super(storeContext);
         
+    }
+
+    public void setJobFlowScheduleConfig(ScheduleConfigInterface jobFlowScheduleConfig) {
+        this.jobFlowScheduleConfig = jobFlowScheduleConfig;
     }
     
 
@@ -60,6 +65,9 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
     private void initAIJobFlowBuilder(){
         if(jobFlowBuilder == null){
             jobFlowBuilder = new AIJobFlowBuilder(this);
+            if(jobFlowScheduleConfig != null){
+                jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
+            }
         }
     }
 
@@ -474,26 +482,23 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
 //    }
 
 
-//    /**
-//     * 添加工作流节点
-//     * @param flowNode
-//     * @param triggerScriptAPI 
-//     * @return
-//     */
-//    public AIPlanAgent addFlowNode(AIFlowNode flowNode, TriggerScriptAPI triggerScriptAPI) {
-//        initAIJobFlowBuilder();
-//        flowNode.setPlanAgent(this);
-//        jobFlowBuilder.addJobFlowNodeBuilder(new AIFlowNodeBuilder(flowNode ).setTriggerScriptAPI(triggerScriptAPI));
-//        return this;
-//    }
-
+    /**
+     * 支持定时调度执行
+     * @return
+     */
     public LastSessionMessage chat( ) {
         
         if(jobFlowBuilder != null){
             initSessionStore();
-          
-            JobFlowScheduleConfig jobFlowScheduleConfig = new JobFlowScheduleConfig();
-            jobFlowScheduleConfig.setExecuteOneTime(true);
+            ScheduleConfigInterface jobFlowScheduleConfig = null;
+            if(this.jobFlowScheduleConfig == null) {
+                jobFlowScheduleConfig = new JobFlowScheduleConfig();
+                jobFlowScheduleConfig.setExecuteOneTime(true);
+            }
+            else {
+                jobFlowScheduleConfig = this.jobFlowScheduleConfig;
+            }
+            
             jobFlowBuilder.setJobFlowScheduleConfig(jobFlowScheduleConfig);
             jobFlowBuilder.setJobFlowId(this.getAgentId());
             jobFlowBuilder.setJobFlowName(this.getAgentName());
@@ -511,14 +516,23 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
                 }
                 
             }
-            jobflow.execute(jobParams);
-            return this.getLastSessionMessage();
+            if(jobFlowScheduleConfig.isExecuteOneTime()) {
+                jobflow.execute(jobParams);
+                return this.getLastSessionMessage();
+            }
+            else{
+                jobflow.start();
+            }
             
         }
         return null;
     }
 
 
+    /**
+     * 不支持定时调度执行
+     * @return
+     */
     public Flux<ServerEvent> chatStream( ) {
         this.stream = true;
         return flux = buildFlux(  );
