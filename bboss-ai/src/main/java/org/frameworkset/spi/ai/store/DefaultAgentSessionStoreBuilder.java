@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.store.db.AgentSessionStoreDB;
 
@@ -28,17 +29,17 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
 
 
     @Override
-    public AgentSessionStore build(StoreContext storeContext) {
+    public AgentSessionStore build(StoreContext storeContext, AIAgent agent) {
         if(storeContext.getMainSessionStore() != null){
             return storeContext.getMainSessionStore();
         }
         AgentSessionStore agentSessionStore = null;
         if(storeContext.getStoreType() == null || storeContext.getStoreType().equals(StoreContext.STORE_TYPE_MEMORY)) {
-            agentSessionStore = new AgentSessionStoreMemory(storeContext);
+            agentSessionStore = new AgentSessionStoreMemory(storeContext,agent);
             
         }        
         else if(storeContext.getStoreType().equals(StoreContext.STORE_TYPE_DB)) {
-            agentSessionStore = new AgentSessionStoreDB(storeContext);
+            agentSessionStore = new AgentSessionStoreDB(storeContext,   agent);
         }
         if(agentSessionStore == null)
             throw new AIRuntimeException("Invalid store type: " + storeContext.getStoreType())  ;

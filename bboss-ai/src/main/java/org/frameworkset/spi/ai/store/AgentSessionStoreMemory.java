@@ -17,11 +17,13 @@ package org.frameworkset.spi.ai.store;
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -67,8 +69,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         super(sessionId, userId, agentId );
     }
 
-    public AgentSessionStoreMemory(StoreContext storeContext) {
-        super(storeContext);
+    public AgentSessionStoreMemory(StoreContext storeContext, AIAgent agent) {
+        super(storeContext,  agent);
         
     }
 
@@ -142,12 +144,13 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
                     agentSession.setUserId(this.getUserId());
                     agentSession.setAgentId(this.getAgentId() != null ? getAgentId() : agentId);
                     agentSession.setTitle(prompt.length() > 50 ? prompt.substring(0, 50) : prompt);
-                    agentSession.setCreateTime(new java.util.Date());
+                    agentSession.setCreateTime(new Date());
                     agentSession.setLastAccessTime(agentSession.getCreateTime());
                     agentSession.setDomain(domain);
                     agentSessions.put(this.getSessionId(), agentSession);
 
                 } else {
+                    agentSession.setLastAccessTime(new Date());
                     //获取主智能体记忆记录
                     List<SessionMessage> sessionMessages = null;
                     if (this.getAgentId() == null) {

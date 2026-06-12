@@ -79,7 +79,7 @@ public class AIAgent<T extends AIAgent> {
                 return;
             if (mainSessionStore == null && storeContext != null) {
                 AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
-                mainSessionStore = agentSessionStoreBuilder.build(storeContext);
+                mainSessionStore = agentSessionStoreBuilder.build(storeContext, this);
                 mainSessionStore.setAIAgent(this);
                 if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
                     ((SessionAgentMessage) agentMessage).setMainSessionStore(mainSessionStore);

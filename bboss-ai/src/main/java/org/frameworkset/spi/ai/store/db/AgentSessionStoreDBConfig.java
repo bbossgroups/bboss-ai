@@ -26,7 +26,8 @@ import com.frameworkset.orm.adapter.DB;
 public class AgentSessionStoreDBConfig {
     public static String sqlite_createSessionTableSQL = new StringBuilder().append("create table $sessionTableName (sessionId varchar(100),")  //会话id
             .append( "createTime number(20),") //创建时间
-            .append( "useId varchar(100),")  //用户id
+            .append(" lastAccessTime number(20), " )
+            .append( "userId varchar(100),")  //用户id
             .append( "agentId varchar(100),")  //代理id
             .append( "title varchar(500),")  //会话标题     
             .append( "domain varchar(100),")  //会话所属领域       
@@ -35,15 +36,17 @@ public class AgentSessionStoreDBConfig {
 
     public static final String mysql_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar(100) NOT NULL comment '会话id'," )
             .append(" createTime datetime NOT NULL comment '创建时间', " )
-            .append( "useId varchar(100) comment '用户id',")  //用户id
+            .append(" lastAccessTime datetime NOT NULL comment '最后访问时间', " )
+            .append( "userId varchar(100) comment '用户id',")  //用户id
             .append( "agentId varchar(100) comment '代理id',")  //代理id
             .append( "title varchar(500) comment '会话标题',")  //会话标题  
-            .append( "domain varchar(100),")  //会话所属领域      
+            .append( "domain varchar(100) comment '业务领域',")  //会话所属领域      
             .append( "PRIMARY KEY(sessionId)) comment '增量状态同步表主键' ENGINE=InnoDB").toString();
     
     public static final String oracle_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
-            .append(" useId varchar2(100) NOT NULL, " )
+            .append(" lastAccessTime timestamp NOT NULL, " )
+            .append(" userId varchar2(100) NOT NULL, " )
             .append( "agentId varchar2(100) NOT NULL, " )
             .append("title varchar2(500) NOT NULL,")
             .append( "domain varchar2(100),")  //会话所属领域          
@@ -53,7 +56,7 @@ public class AgentSessionStoreDBConfig {
     public static final String oracle_addCommentsToSessionTableSQL = new StringBuilder()
             .append("COMMENT ON COLUMN $sessionTableName.sessionId IS '会话id';")
             .append("COMMENT ON COLUMN $sessionTableName.createTime IS '创建时间';")
-            .append("COMMENT ON COLUMN $sessionTableName.useId IS '用户id';")
+            .append("COMMENT ON COLUMN $sessionTableName.userId IS '用户id';")
             .append("COMMENT ON COLUMN $sessionTableName.agentId IS '代理id';")
             .append("COMMENT ON COLUMN $sessionTableName.title IS '会话标题';")
 
@@ -62,14 +65,16 @@ public class AgentSessionStoreDBConfig {
     
     public static final String dm_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
-            .append(" useId varchar2(100) NOT NULL, " )
+            .append(" lastAccessTime timestamp NOT NULL, " )
+            .append(" userId varchar2(100) NOT NULL, " )
             .append( "agentId varchar2(100) NOT NULL, " )
             .append("title varchar2(500) NOT NULL,")
             .append( "domain varchar2(100),")  //会话所属领域     
             .append( "constraint $sessionTableName_PK primary key(sessionId))").toString();
     public static final String sqlserver_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar(100) NOT NULL," )
             .append( "createTime datetime NOT NULL,")  //创建时间
-            .append("useId varchar(100) NOT NULL,") //用户id
+            .append(" lastAccessTime datetime NOT NULL, " )
+            .append("userId varchar(100) NOT NULL,") //用户id
             .append( "agentId varchar(100) NOT NULL,")  //代理id
             .append( "title varchar(500) NOT NULL,")  //会话标题   
             .append( "domain varchar2(100),")  //会话所属领域             
@@ -78,7 +83,8 @@ public class AgentSessionStoreDBConfig {
 
     public static final String postgresql_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName (sessionId varchar(100) NOT NULL," )
             .append( "createTime timestamp NOT NULL,")  //创建时间
-            .append( "useId varchar(100),")  //用户id
+            .append(" lastAccessTime timestamp NOT NULL, " )
+            .append( "userId varchar(100),")  //用户id
             .append( " agentId varchar(100)  NOT NULL,") //代理id
             .append( "title varchar(500) ,")  //会话标题
             .append( "domain varchar2(100),")  //会话所属领域     
@@ -88,7 +94,7 @@ public class AgentSessionStoreDBConfig {
     public static final String postgresql_addCommentsToSessionTableSQL = new StringBuilder()
             .append("COMMENT ON COLUMN $sessionTableName.sessionId IS '会话id';")
             .append("COMMENT ON COLUMN $sessionTableName.createTime IS '创建时间';")
-            .append("COMMENT ON COLUMN $sessionTableName.useId IS '用户id';")
+            .append("COMMENT ON COLUMN $sessionTableName.userId IS '用户id';")
             .append("COMMENT ON COLUMN $sessionTableName.agentId IS '代理id';")
             .append("COMMENT ON COLUMN $sessionTableName.title IS '会话标题';")
             .toString();
@@ -290,6 +296,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 
 
     private String insertSessionSQL;
+    private String updateSessionLastAccessTimeSQL;
     private String deleteSessionSQL;
     private String deleteSessionByUserIdSQL;
     private String deleteSessionBySessionIdSQL;
@@ -369,17 +376,18 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         existSQL = new StringBuilder().append("select 1 from ").append(sessionTableName).toString();
         existMessageSQL = new StringBuilder().append("select 1 from ").append(sessionMessageTableName).toString();
         existMessageReferenceSQL = new StringBuilder().append("select 1 from ").append(sessionMessageReferenceTableName).toString();
-        insertSessionSQL = "INSERT INTO "+sessionTableName+" (sessionId, createTime, useId, agentId, title,domain) \n" +
-                "VALUES (?, ?, ?, ?, ?,?)";
+        insertSessionSQL = "INSERT INTO "+sessionTableName+" (sessionId, createTime, lastAccessTime,userId, agentId, title,domain) \n" +
+                "VALUES (?, ?, ?, ?, ?,?,?)";
+        updateSessionLastAccessTimeSQL = "UPDATE "+sessionTableName+" SET lastAccessTime = ? WHERE sessionId = ?";
         
         deleteSessionByUserIdSQL = new StringBuilder().append("delete from ")
-                .append(sessionTableName).append(" where  useId=?").toString();
+                .append(sessionTableName).append(" where  userId=?").toString();
 
         deleteSessionBySessionIdSQL = new StringBuilder().append("delete from ")
                 .append(sessionTableName).append(" where sessionId=? ").toString();
 
         selectSessionByUserIdSQL = new StringBuilder().append("select * from ")
-                .append(sessionTableName).append(" where useId=? order by createTime desc").toString();
+                .append(sessionTableName).append(" where userId=? order by createTime desc").toString();
 
         selectSessionBySessionIdSQL = new StringBuilder().append("select * from ")
                 .append(sessionTableName).append(" where sessionId=? ").toString();
@@ -396,7 +404,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
                                                     "VALUES (?, ?, ?, ?, ?)";
         deleteSessionMessageSQL = "DELETE FROM "+sessionMessageTableName+" where msgId=? and jobType=?";
         deleteSessionMessageByUserIdSQL = new StringBuilder().append("delete from ")
-                .append(sessionMessageTableName).append(" where useId=? ").toString();
+                .append(sessionMessageTableName).append(" where userId=? ").toString();
 
         deleteSessionMessageBySessionIdSQL = new StringBuilder().append("delete from ")
                 .append(sessionMessageTableName).append(" where sessionId=? ").toString();
@@ -405,7 +413,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
                 .append(sessionMessageReferenceTableName).append(" where sessionId=? ").toString();
 
         selectSessionMessageByUserIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where useId=? order by createTime,seqNo desc").toString();
+                .append(sessionMessageTableName).append(" where userId=? order by createTime,seqNo desc").toString();
 
         /**
          * 查询最近的消息,恢复到对话中 
@@ -505,6 +513,10 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 
     public String getInsertSessionSQL() {
         return insertSessionSQL;
+    }
+
+    public String getUpdateSessionLastAccessTimeSQL() {
+        return updateSessionLastAccessTimeSQL;
     }
 
     public String getDeleteSessionSQL() {

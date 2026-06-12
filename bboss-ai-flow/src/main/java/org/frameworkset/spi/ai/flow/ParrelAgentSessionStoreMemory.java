@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
@@ -53,8 +54,8 @@ public class ParrelAgentSessionStoreMemory extends AgentSessionStoreMemory<Parre
         super(sessionId, userId, agentId);
     }
 
-    public ParrelAgentSessionStoreMemory(StoreContext storeContext) {
-        super(storeContext);
+    public ParrelAgentSessionStoreMemory(StoreContext storeContext, AIAgent agent) {
+        super(storeContext,agent);
     }
 
     private Object lock = new Object();

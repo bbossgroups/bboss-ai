@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.store.db;
 import com.frameworkset.common.poolman.SQLExecutor;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.PersistentMessage;
@@ -70,8 +71,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         init();
     }
     
-    public AgentSessionStoreDB(StoreContext storeContext) {
-        super(storeContext);
+    public AgentSessionStoreDB(StoreContext storeContext, AIAgent agent) {
+        super(storeContext,   agent);
         this.dataSource = storeContext.getDataSource();
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         agentSessionStoreDBConfig.setSessionTableName(storeContext.getSessionTableName());
@@ -170,14 +171,21 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                         agentSession.setLastAccessTime(agentSession.getCreateTime());
                         agentSession.setDomain(domain);
                         //创建session
-                        //sessionId, createTime, useId, agentId, title
+                        //sessionId, createTime, userId, agentId, title
                         SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionSQL(),
                                 getSessionId(),
+                                new Date(),
                                 new Date(),
                                 getUserId(),
                                 this.getAgentId() != null ? getAgentId() : agentId,//如果主agentId存在，则使用主agentId，否则session由agentId对应的agent创建
                                 prompt.length() > 50 ? prompt.substring(0, 50) : prompt,domain);
                     } else {
+                        SQLExecutor.updateWithDBName(
+                                dataSource,
+                                agentSessionStoreDBConfig.getUpdateSessionLastAccessTimeSQL(),
+                                new Date(),
+                                getSessionId()
+                        );
                         //获取主智能体记忆记录
                         List<SessionMessage> sessionMessages = null;
                         if (this.getAgentId() == null) {

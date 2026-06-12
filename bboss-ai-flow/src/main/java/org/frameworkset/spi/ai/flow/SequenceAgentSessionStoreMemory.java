@@ -17,7 +17,6 @@ package org.frameworkset.spi.ai.flow;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.model.PersistentMessage;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.StoreContext;
@@ -54,8 +53,8 @@ public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<Seq
         super(sessionId, userId, agentId);
     }
 
-    public SequenceAgentSessionStoreMemory(StoreContext storeContext) {
-        super(storeContext);
+    public SequenceAgentSessionStoreMemory(StoreContext storeContext, AIAgent agent) {
+        super(storeContext,   agent);
     }
 
     private Object lock = new Object();

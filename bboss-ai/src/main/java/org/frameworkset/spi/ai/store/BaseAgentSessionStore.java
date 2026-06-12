@@ -138,12 +138,14 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return parentAgentSessionStore;
     }
 
-    public BaseAgentSessionStore(StoreContext storeContext){
+    public BaseAgentSessionStore(StoreContext storeContext,AIAgent agent){
         this.persistentSessionMemory = true;
         this.storeContext = storeContext;
         this.sessionId = storeContext.getSessionId();   
         this.userId = storeContext.getUserId();
-        this.agentId = storeContext.getAgentId();
+        if(agent != null) {
+            this.agentId = agent.getAgentId();
+        }
         this.requestId = storeContext.getRequestId();
         this.traceId = storeContext.getTraceId();
         if(agentId == null){

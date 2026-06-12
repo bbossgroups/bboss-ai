@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+**
+ *  Copyright 2008-2010 biaoping.yin
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *
+ * Title: agentSession.xml
+ * Description: 会话管理sql配置文件
+ 
+ * Company:asiainfo
+ * Copyright (c) 2015
+ * @Date 2026-06-12 14:16:51
+ * @author yinbp
+ * @version v1.0 
+ **
+ -->
+<properties>
+	
+	<property name="addAgentSession">
+		<![CDATA[
+			insert into agent_session (sessionId,agentId,createTime,domain,title,useId) values(#[sessionid],#[agentid],#[createtime],#[domain],#[title],#[useid])
+		]]>
+	</property>
+	<property name="deleteByKey">
+		<![CDATA[
+			delete from agent_session where sessionId=?
+		]]>
+	</property>
+	<property name="updateAgentSession">
+		<![CDATA[
+			update agent_session set sessionId=#[sessionid],agentId=#[agentid],createTime=#[createtime],domain=#[domain],title=#[title],useId=#[useid] where sessionId=#[sessionid]
+		]]>
+	</property>
+	<property name="selectById">
+		<![CDATA[
+			select * from agent_session where sessionId=?
+		]]>
+	</property>
+	<property name="queryListAgentSession">
+		<![CDATA[
+			select * from agent_session where 1=1
+			#if($agentid && !$agentid.equals(""))
+				and agentId =#[agentid]		
+			#end
+			#if($userId && !$userId.equals(""))
+				and userId =#[userId]		
+			#end
+			#if($domain && !$domain.equals(""))
+				and domain =#[domain]		
+			#end		 
+			
+            #if($sortKey && !$sortKey.equals(""))
+                order by $sortKey #if($sortDesc)desc#else asc#end
+            #end
+
+		]]>
+	</property>
+
+    <property name="queryListSessionMessages">
+        <![CDATA[
+			select *  from agent_session_message where sessionId=? order by createTime,seqNo asc
+
+		]]>
+    </property>
+
+    <property name="queryListAgentSessionMessages">
+        <![CDATA[
+			select *  from agent_session_message where sessionId=? and agentid=? order by createTime,seqNo asc
+
+		]]>
+    </property>
+
+
+    
+</properties>

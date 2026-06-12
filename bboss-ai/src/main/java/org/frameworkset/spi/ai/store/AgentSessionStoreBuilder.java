@@ -15,11 +15,13 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
+
 /**
  * @author biaoping.yin
  * @Date 2026/4/7
  */
 public interface AgentSessionStoreBuilder {
-    AgentSessionStore build(StoreContext storeContext);
+    AgentSessionStore build(StoreContext storeContext, AIAgent agent);
 
 }

@@ -49,7 +49,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(mainSessionStore == null) {
             storeContext = new StoreContext();
             storeContext.setSessionMemory(session);
-            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
             if(storeContext.isResetSession() && storeContext.getSessionId() != null){
                 mainSessionStore.removeSession(storeContext.getSessionId());
             }
@@ -73,7 +73,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             storeContext = new StoreContext();
             storeContext.setSessionSize(sessionSize);
             storeContext.setSessionMemory(session);
-            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
             if(storeContext.isResetSession() && storeContext.getSessionId() != null){
                 mainSessionStore.removeSession(storeContext.getSessionId());
             }
@@ -100,7 +100,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
                 storeContext = new StoreContext();
             }
             storeContext.setSessionSize(sessionSize);
-            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
             if(storeContext.isResetSession() && storeContext.getSessionId() != null){
                 mainSessionStore.removeSession(storeContext.getSessionId());
             }
@@ -144,7 +144,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
      
     private void initSessionStore(){
         if(mainSessionStore == null && storeContext != null){
-            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext);
+            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
             if(storeContext.isResetSession() && storeContext.getSessionId() != null){
                 mainSessionStore.removeSession(storeContext.getSessionId());
             }
