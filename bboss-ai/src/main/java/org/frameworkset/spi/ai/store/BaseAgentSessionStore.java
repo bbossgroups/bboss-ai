@@ -271,6 +271,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         else if("refuse".equals(role)){
             return MESSAGE_TYPE_REFUSE_MESSAGE;
         }
+        else if(SessionMessage.MESSAGE_TYPE_USERINPUTMESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_USERINPUTMESSAGE;
+        }
         
  
         return MESSAGE_TYPE_ASSISTANT_MESSAGE;

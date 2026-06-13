@@ -27,11 +27,15 @@ import java.util.Map;
  */
 public class SessionMessage {
     /**
+     * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
+     */
+    public static final String MESSAGE_TYPE_USERINPUTMESSAGE = "8";
+    /**
      * 智能体输出消息:ASSISTANT中的一种
      */
     public static final String MESSAGE_TYPE_AGENTRESULTMESSAGE = "1";
     /**
-     * 智能体用户输入消息
+     * 智能体用户输入消息：提交给大模型或者其他多模态模型
      */
     public static final String MESSAGE_TYPE_USER_MESSAGE = "2";
 
@@ -64,7 +68,10 @@ public class SessionMessage {
     public static final String MESSAGE_TYPE_REFUSE_MESSAGE = "7";
 
 
-
+    /**
+     * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
+     */
+    public static final String MESSAGE_TYPE_USERINPUTMESSAGE_NAME = "userinput";
     /**
      * 智能体输出消息:ASSISTANT中的一种
      */
@@ -126,6 +133,10 @@ public class SessionMessage {
 
 
     private String traceId;
+    /**
+     * 记录用户输入问题
+     */
+    private String inputQuery;
     
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.SessionMessageEditor")
     private Map<String, Object> message;
