@@ -31,6 +31,7 @@ import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -167,7 +168,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                         agentSession.setUserId(this.getUserId());
                         agentSession.setAgentId(this.getAgentId() != null ? this.getAgentId() : agentId);
                         agentSession.setTitle(prompt);
-                        agentSession.setCreateTime(new java.util.Date());
+                        agentSession.setCreateTime(LocalDateTime.now());
                         agentSession.setLastAccessTime(agentSession.getCreateTime());
                         agentSession.setDomain(domain);
                         //创建session

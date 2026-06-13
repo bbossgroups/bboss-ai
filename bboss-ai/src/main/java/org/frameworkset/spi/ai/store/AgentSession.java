@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.store;
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -27,8 +28,8 @@ import java.util.*;
 public class AgentSession {
 
 
-    private Date createTime;
-    private Date lastAccessTime;
+    private LocalDateTime createTime;
+    private LocalDateTime lastAccessTime;
     private String sessionId;
     private String userId;
     private String agentId;
@@ -142,19 +143,19 @@ public class AgentSession {
         this.assistantMessages = assistantMessages;
     }
 
-    public Date getCreateTime() {
+    public LocalDateTime getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(Date createTime) {
+    public void setCreateTime(LocalDateTime createTime) {
         this.createTime = createTime;
     }
 
-    public Date getLastAccessTime() {
+    public LocalDateTime getLastAccessTime() {
         return lastAccessTime;
     }
 
-    public void setLastAccessTime(Date lastAccessTime) {
+    public void setLastAccessTime(LocalDateTime lastAccessTime) {
         this.lastAccessTime = lastAccessTime;
     }
 

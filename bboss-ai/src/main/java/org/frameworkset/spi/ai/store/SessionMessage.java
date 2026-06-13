@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.store;
 import com.frameworkset.orm.annotation.Column;
 import org.frameworkset.spi.ai.model.TokenMetrics;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 
@@ -118,7 +119,7 @@ public class SessionMessage {
      * 前端用户请求id，每次请求生成一个唯一id
      */
     private String requestId;
-    private Date createTime;
+    private LocalDateTime createTime;
     private String sessionId;
     private String agentId;
 
@@ -176,11 +177,11 @@ public class SessionMessage {
         this.role = role;
     }
 
-    public Date getCreateTime() {
+    public LocalDateTime getCreateTime() {
         return createTime;
     }
 
-    public void setCreateTime(Date createTime) {
+    public void setCreateTime(LocalDateTime createTime) {
         this.createTime = createTime;
     }
 

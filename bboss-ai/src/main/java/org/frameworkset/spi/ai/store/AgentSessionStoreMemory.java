@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.util.concurrent.IntegerCount;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -144,13 +145,13 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
                     agentSession.setUserId(this.getUserId());
                     agentSession.setAgentId(this.getAgentId() != null ? getAgentId() : agentId);
                     agentSession.setTitle(prompt.length() > 50 ? prompt.substring(0, 50) : prompt);
-                    agentSession.setCreateTime(new Date());
+                    agentSession.setCreateTime(LocalDateTime.now());
                     agentSession.setLastAccessTime(agentSession.getCreateTime());
                     agentSession.setDomain(domain);
                     agentSessions.put(this.getSessionId(), agentSession);
 
                 } else {
-                    agentSession.setLastAccessTime(new Date());
+                    agentSession.setLastAccessTime(LocalDateTime.now());
                     //获取主智能体记忆记录
                     List<SessionMessage> sessionMessages = null;
                     if (this.getAgentId() == null) {
@@ -208,7 +209,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //        }
         sessionMessage.setRole(role);
         sessionMessage.setSeqNo(integerCount.increament());
-        sessionMessage.setCreateTime(new java.util.Date());
+        sessionMessage.setCreateTime(LocalDateTime.now());
         sessionMessage.setSessionId(this.getSessionId());
         sessionMessage.setRequestId(this.getRequestId());
         sessionMessage.setAgentId(agentId);
