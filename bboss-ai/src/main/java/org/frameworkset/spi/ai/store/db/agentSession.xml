@@ -38,6 +38,20 @@
 			delete from agent_session where sessionId=?
 		]]>
 	</property>
+
+    <property name="deleteAgentSessionMessageByKey">
+        <![CDATA[
+			delete from agent_session_message where sessionId=?
+		]]>
+    </property>
+    <property name="deleteAgentSessionMessageRefByKey">
+        <![CDATA[
+			delete from agent_session_message_ref where sessionId=?
+		]]>
+    </property>
+    
+
+    
 	<property name="updateAgentSession">
 		<![CDATA[
 			update agent_session set sessionId=#[sessionid],agentId=#[agentid],createTime=#[createtime],domain=#[domain],title=#[title],useId=#[useid] where sessionId=#[sessionid]

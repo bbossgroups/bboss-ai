@@ -60,18 +60,27 @@ public class AgentSessionServiceImpl implements AgentSessionService {
     public void deleteAgentSession(String sessionid) throws AgentSessionException
 
     {
+        init();
+        TransactionManager tm = new TransactionManager();
         try {
-            init();
+            tm.begin();
             if (log.isInfoEnabled()) {
                 log.info("delete AgentSession start::sessionid={}", sessionid);
             }
             executor.deleteWithDBName(datasource, "deleteByKey", sessionid);
+            executor.deleteWithDBName(datasource, "deleteAgentSessionMessageByKey", sessionid);
+            executor.deleteWithDBName(datasource, "deleteAgentSessionMessageRefByKey", sessionid);
+            tm.commit();
+            
+            
             if (log.isInfoEnabled()) {
                 log.info("delete AgentSession success::sessionid={}", sessionid);
             }
         } catch (Exception e) {
             log.error("delete AgentSession failed::sessionid={}", sessionid, e);
             throw new AgentSessionException("delete AgentSession failed::sessionid=" + sessionid, e);
+        }finally {
+            tm.release();
         }
 
     }
@@ -86,6 +95,8 @@ public class AgentSessionServiceImpl implements AgentSessionService {
         try {
             tm.begin();
             executor.deleteByKeysWithDBName(datasource, "deleteByKey", sessionids);
+            executor.deleteByKeysWithDBName(datasource, "deleteAgentSessionMessageByKey", sessionids);
+            executor.deleteByKeysWithDBName(datasource, "deleteAgentSessionMessageRefByKey", sessionids);
             tm.commit();
             if (log.isInfoEnabled()) {
                 log.info("deleteBatchAgentSession success::sessionids count={}", sessionids != null ? sessionids.length : 0);
