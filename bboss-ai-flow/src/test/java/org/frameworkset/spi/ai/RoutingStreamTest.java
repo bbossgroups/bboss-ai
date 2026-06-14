@@ -112,7 +112,7 @@ public class RoutingStreamTest {
 
         
         //构建裁判智能体：判断是否回答了问题
-        planAgent.addAgent(new AIJudgeAgent("评估结果是否回答了问题,回答请回复：是，否则回复：否").setAgentId("judgeAgent").setAgentName("评估智能体"));
+        planAgent.addAgent(new AIJudgeAgent("评估结果是否回答了问题:\n#[input.query,scope=node]\n# 问题答案：\n#[answer,scope=node],回答请回复：是，否则回复：否").setAgentId("judgeAgent").setAgentName("评估智能体"));
         
         //构建最终飞书报告创建智能体：添加将问题答案创建为飞书文档的智能体
         planAgent.addAgent(new AINodeAgent("将结果创建为飞书文档", feishuMcp).setAgentId("createDocAgent").setAgentName("飞书文档创建智能体"),

@@ -22,7 +22,7 @@ import java.util.List;
 
 /**
  * <p>Title: AgentSessionService</p> <p>Description: 会话管理服务接口 </p>
- * <p>asiainfo</p> <p>Copyright (c) 2015</p> @Date 2026-06-12 14:16:51 @author
+ *  <p>Copyright (c) 2015</p> @Date 2026-06-12 14:16:51 @author
  * yinbp @version v1.0
  */
 public interface AgentSessionService {

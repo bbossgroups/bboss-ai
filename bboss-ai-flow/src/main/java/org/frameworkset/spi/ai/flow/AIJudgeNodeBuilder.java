@@ -47,7 +47,7 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
     }
 
 
-    private String judgePrompt = "评估结果是否回答了问题\n#[input.query,scope=node]\n#[answer,scope=node]";
+    private String judgePrompt = "评估结果是否回答了问题:\n#[input.query,scope=node]\n# 问题答案：\n#[answer,scope=node],回答请回复：是，否则回复：否";
 
 
     @Override

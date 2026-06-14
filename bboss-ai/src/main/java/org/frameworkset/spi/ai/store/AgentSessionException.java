@@ -19,7 +19,7 @@ package org.frameworkset.spi.ai.store;
 /**
  * <p>Title: AgentSessionException</p> <p>Description: 会话管理异常处理类
  * 
- * </p> <p>asiainfo</p> <p>Copyright (c) 2007</p> @Date 2026-06-12
+ * </p>  <p>Copyright (c) 2007</p> @Date 2026-06-12
  * 14:16:51 @author yinbp @version v1.0
  */
 public class AgentSessionException extends RuntimeException {

@@ -18,7 +18,7 @@ package org.frameworkset.spi.ai.model;
 
 /**
  * <p>Title: AgentSessionCondition</p> <p>Description: 会话管理查询条件实体类 </p>
- * <p>asiainfo</p> <p>Copyright (c) 2007</p> @Date 2026-06-12 14:16:51 @author
+ *  <p>Copyright (c) 2007</p> @Date 2026-06-12 14:16:51 @author
  * yinbp @version v1.0
  */
 public class AgentSessionCondition implements java.io.Serializable {
