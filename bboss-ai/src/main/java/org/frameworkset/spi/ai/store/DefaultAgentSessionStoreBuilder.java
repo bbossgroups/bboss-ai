@@ -34,6 +34,7 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
             return storeContext.getMainSessionStore();
         }
         AgentSessionStore agentSessionStore = null;
+        
         if(storeContext.getStoreType() == null || storeContext.getStoreType().equals(StoreContext.STORE_TYPE_MEMORY)) {
             agentSessionStore = new AgentSessionStoreMemory(storeContext,agent);
             

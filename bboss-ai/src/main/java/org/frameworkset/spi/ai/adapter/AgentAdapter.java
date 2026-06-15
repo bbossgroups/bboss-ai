@@ -434,7 +434,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param toolAgentMessage
      * @return
      */
-    public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent aiAgent,ChatContext chatContext){
+    public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent aiAgent,ChatObject chatObject,ChatContext chatContext){
 //        Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
         List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,aiAgent);
         Map<String, Object> requestMap = new HashMap<>();
@@ -494,12 +494,12 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 requestMap.put("max_tokens", toolAgentMessage.getMaxTokens());
             }
         }
-        buildThinking(  toolAgentMessage, requestMap);
+        buildThinking(  toolAgentMessage, chatObject, requestMap);
 //        buildTools(toolAgentMessage, requestMap);
         return requestMap;
     }
     
-    protected void buildThinking(ChatAgentMessage chatAgentMessage,Map<String, Object> requestMap){
+    protected void buildThinking(ChatAgentMessage chatAgentMessage,ChatObject chatObject,Map<String, Object> requestMap){
         Map parameters = chatAgentMessage.getParameters();
         Boolean thinking = chatAgentMessage.getThinking();
         if(thinking != null){
@@ -516,9 +516,20 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 data.put("type", thinking?"enabled":"disabled");
                 requestMap.put("thinking", data);
             }
-        }
+            chatObject.setThinking(thinking);
+        }   
         else{
-            chatAgentMessage.setThinking(this.getDefaultThinking());
+            if (parameters !=null && parameters.containsKey("thinking")) {
+                Map data =  (Map) parameters.get("thinking");
+                String type = (String)data.get("type");
+                if("enabled".equals(type)){
+                    chatObject.setThinking(true);
+                }
+                else{
+                    chatObject.setThinking(false);
+                }
+              
+            }
         }
         
         
@@ -529,7 +540,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param chatAgentMessage
      * @return
      */
-    public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
+    public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent aiAgent,ChatObject chatObject, ChatContext chatContext) {
 
         String agentId = aiAgent.getAgentId();
         String message = getPrompt(  chatAgentMessage,   aiAgent);
@@ -609,7 +620,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 requestMap.put("max_tokens", chatAgentMessage.getMaxTokens());
             }
         }
-        buildThinking(  chatAgentMessage, requestMap);
+        buildThinking(  chatAgentMessage,chatObject, requestMap);
         buildTools(aiAgent, requestMap);
         return requestMap;
     }
@@ -814,10 +825,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     }
 
 
-    public Boolean getDefaultThinking() {
-        return false;
-    }
-
+ 
     public Boolean getCustomThinking(Map parameters) {
         Map thinking = (Map)parameters.get("thinking");
         if(thinking != null){

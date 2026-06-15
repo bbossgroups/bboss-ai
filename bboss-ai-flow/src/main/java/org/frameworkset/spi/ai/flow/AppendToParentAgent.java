@@ -22,9 +22,9 @@ import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
  * @author biaoping.yin
  * @Date 2026/5/13
  */
-public interface AppendToParentAgent {
+public interface AppendToParentAgent<T extends AppendToParentAgent> {
 
-    void setDisableStream(boolean disableStream);
+    T setDisableStream(boolean disableStream);
     /**
      * 主干流程管理：为当前作业节点添加后续条件分支，如果当前节点是一个复合条件节点，则为在该复合条件节点后新加一个条件复合节点，新复合节点后续条件分支就可以直接调用
      * addConditionJobFlowNodeBuilder方法添加

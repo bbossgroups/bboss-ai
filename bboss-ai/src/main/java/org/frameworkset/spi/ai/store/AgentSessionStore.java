@@ -31,7 +31,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     StoreContext getStoreContext();
     String getAgentId();
-    String genSubAgentId();
+    String genSubAgentId(AgentIdAssign agentIdAssign);
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
     LastSessionMessage getLastSubAgentSessionMessage();
     List<LastSessionMessage> getLastSubAgentSessionMessages();
@@ -98,4 +98,6 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     void cleanLastSessionMessages();
 
     void removeSession(String sessionId);
+
+    String genSubAgentName(String agentId);
 }

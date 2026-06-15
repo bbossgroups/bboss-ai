@@ -71,11 +71,11 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
 
     public void appendFullReasoningStreamData(StreamData streamData){
         
-        if(streamData.getReasoningContent() != null) {
+        if(streamData.getContent() != null) {
             if (fullReasoningStreamData == null) {
                 fullReasoningStreamData = new StringBuilder();
             }
-            fullReasoningStreamData.append(streamData.getReasoningContent());
+            fullReasoningStreamData.append(streamData.getContent());
         }
     }
     
@@ -153,10 +153,11 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         String data = null;
         StringBuilder newData = new StringBuilder();
         if(fullReasoningStreamData != null){
-            newData.append("<reasoning>").append(fullReasoningStreamData.toString()).append("</reasoning>\r\n");
+            tokenMetrics.setReasoningData(fullReasoningStreamData.toString());
+//            newData.append("<reasoning>").append(fullReasoningStreamData.toString()).append("</reasoning>\r\n");
         }
         if(this.fullStreamData != null){
-            newData. append(fullStreamData.toString());
+            newData. append(fullStreamData);
            
         }
         if(newData.length() > 0) {

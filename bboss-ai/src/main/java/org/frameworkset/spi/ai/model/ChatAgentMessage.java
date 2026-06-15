@@ -32,22 +32,23 @@ import java.util.Map;
 public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
  
 //    private String chatCompletionsUrl;
-    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent,ChatContext chatContext){
-        Map parameters = agentAdapter.buildOpenAIRequestMap(this,   aiAgent,chatContext);
+    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent,ChatObject chatObject,ChatContext chatContext){
+        Map parameters = agentAdapter.buildOpenAIRequestMap(this,   aiAgent,  chatObject,chatContext);
         return parameters;
     }
 
  
 
-    protected void buildThinking(ChatObject chatObject,AgentAdapter agentAdapter, Map parameters){
-        Boolean thinking = agentAdapter.getDefaultThinking();
-        Boolean _thinking = agentAdapter.getCustomThinking(  parameters);
-        if(_thinking != null)
-            thinking = _thinking;
-        chatObject.setThinking(thinking);
-    }
+//    protected void buildThinking(ChatObject chatObject,AgentAdapter agentAdapter, Map parameters){
+//        Boolean thinking = agentAdapter.getDefaultThinking();
+//        Boolean _thinking = agentAdapter.getCustomThinking(  parameters);
+//        if(_thinking != null)
+//            thinking = _thinking;
+//        chatObject.setThinking(thinking);
+//    }
     public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback){
         ChatObject chatObject = new ChatObject();
+        chatObject.setAiAgent(aiAgent);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
         Boolean stream = false;
@@ -56,8 +57,8 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
         
-        parameters = buildOpenAIRequestMap(agentAdapter,   aiAgent,chatCallback);
-        buildThinking(  chatObject,  agentAdapter,   parameters);
+        parameters = buildOpenAIRequestMap(agentAdapter,   aiAgent,chatObject,chatCallback);
+//        buildThinking(  chatObject,  agentAdapter,   parameters);
         if(!fromStreamAPI){
             parameters.put("stream",false);
         }
@@ -108,7 +109,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         chatObject.setCompletionsUrl(agentAdapter.getChatCompletionsUrl(clientConfiguration,this));
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
-        chatObject.setAiAgent(aiAgent);
+        
         return chatObject;
     }
 

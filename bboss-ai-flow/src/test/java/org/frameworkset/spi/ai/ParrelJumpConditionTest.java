@@ -65,11 +65,11 @@ public class ParrelJumpConditionTest {
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()                            
                 .setModel(model).setThinking(false)
                 .setMaas(maas).setPrompt(prompt);
-
+        StoreContext storeContext = new StoreContext();
+        storeContext.setAgentMessageTypeConvertor(new CustomAgentMessageTypeConvertor());
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
-        AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()
-                .setSessionId(sessionId).setUserId("user123").setSessionSize(100)                 
+        AIPlanAgent planAgent = new AIPlanAgent(storeContext .setSessionId(sessionId).setUserId("user123").setSessionSize(100)                 
                 .setStoreType(StoreContext.STORE_TYPE_DB).setRequestId("request123")
                 .setDataSource("visualops"))
                 .setAgentMessage(chatAgentMessage)

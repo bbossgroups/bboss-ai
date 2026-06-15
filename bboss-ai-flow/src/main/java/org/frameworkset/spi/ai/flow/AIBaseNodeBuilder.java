@@ -86,8 +86,7 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
         });
         if(!planAgent.isStream() || agent.isDisableStream()) {
            
-            ServerEvent serverEvent = agent.chat((ChatAgentMessage) agentMessage,chatContext);
-//            AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext); 
+            agent.chat((ChatAgentMessage) agentMessage,chatContext);
         }
         else{
             

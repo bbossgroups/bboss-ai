@@ -25,6 +25,7 @@ import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
 import org.frameworkset.util.RetryCallback;
@@ -95,7 +96,23 @@ public class AIAgentUtil {
     }
 
 
-    
+    private static void traceLLMInput(Object message,AIAgent agent){
+        TraceMessage traceMessage = new TraceMessage();
+        Map  tracemessage = new LinkedHashMap();
+        tracemessage.put("input", message);
+        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
+        traceMessage.setMessage(tracemessage);
+        agent.recordTraceMessage(traceMessage);
+    }
+
+    private static void traceLLMOutput(Object message,AIAgent agent){
+        TraceMessage traceMessage = new TraceMessage();
+        Map  tracemessage = new LinkedHashMap();
+        tracemessage.put("out", message);
+        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMOUTPUTMESSAGE_NAME);
+        traceMessage.setMessage(tracemessage);
+        agent.recordTraceMessage(traceMessage);
+    }
 
     /**
      * 调用图片生成模型，生成图片
@@ -111,6 +128,7 @@ public class AIAgentUtil {
             AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,message);
             StoreChatObject storeChatObject = agentAdapter.buildGenImageRequestParameter(config,message,aiAgent);
             storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
+            traceLLMInput(storeChatObject.getMessage(), aiAgent);
             int retry = message.getRetry();
             if(retry <= 0) {
                 Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(config,message),Map.class);
@@ -179,6 +197,9 @@ public class AIAgentUtil {
         storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
         AudioEvent audioEvent = null;
         try {
+
+            traceLLMInput(storeChatObject.getMessage(), aiAgent);
+             
 //            StoreFilePathFunction storeFilePathFunction = storeChatObject.getStoreFilePathFunction();
             if (storeFilePathFunction != null && storeFilePathFunction instanceof ReponseStoreFilePathFunction) {
                 
@@ -295,6 +316,9 @@ public class AIAgentUtil {
 
                 }
             };
+
+            traceLLMInput(message, chatObject.getAiAgent());
+            
             if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)){
                 Map header = new LinkedHashMap();
 
@@ -500,6 +524,9 @@ public class AIAgentUtil {
 
                 }
             };
+
+            traceLLMInput(message, chatObject.getAiAgent());
+             
             if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)){
                 Map header = new LinkedHashMap();
 
@@ -846,20 +873,27 @@ public class AIAgentUtil {
                 return   AIResponseUtil.handleChatResponse(agentAdapter, chatObject.getCompletionsUrl(), response, chatObject.getStreamDataBuilder());
             }
         };
-
+        traceLLMInput(message, aiAgent);
+        
         if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)) {
+            
             if (message != null) {
                 if (message instanceof String) {
-                    data = (String) message;
+                    data = (String) message;               
+                     
+                    
                 } else {
                     data = SimpleStringUtil.object2json(message);
+                   
                 }
             }
+           
             serverEvent = HttpRequestProxy.sendJsonBody(config, data, chatObject.getCompletionsUrl(), (Map)null, responseHandler);
         }
         else if (chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_POST_FORM)){
 
             Map<String,File> files = chatObject.getFiles();
+           
             if(files == null) {
                 serverEvent =  HttpRequestProxy.httpPost(config, chatObject.getCompletionsUrl(), message, (Map) null, responseHandler);
             }
@@ -925,6 +959,8 @@ public class AIAgentUtil {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(maasName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,videoAgentMessage);
         StoreChatObject storeChatObject = agentAdapter.buildVideoRequestParameter(clientConfiguration,videoAgentMessage,  aiAgent);
+        traceLLMInput(storeChatObject.getMessage(), aiAgent);
+         
         Map taskInfo = HttpRequestProxy.sendJsonBody(maasName,storeChatObject.getMessage(),agentAdapter.getSubmitVideoTaskUrl(clientConfiguration,videoAgentMessage),videoAgentMessage.getHeaders(),Map.class);
         VideoTask task = agentAdapter.buildVideoResponseTask(clientConfiguration,videoAgentMessage,  taskInfo);
         
@@ -1058,6 +1094,8 @@ public class AIAgentUtil {
         Map<String,Object> params = agentAdapter.buildEmbeddingMessage(config,embeddingMessage,agent);
         float[] embedding = null;
         int retry = embeddingMessage.getRetry();
+        traceLLMInput(params, agent);
+        
         if(retry <=  0 ){
             embedding = agentAdapter.embedding(  config,embeddingMessage,agent,params);
         }
@@ -1065,6 +1103,7 @@ public class AIAgentUtil {
             embedding = RetryUtil.retry(retry, embeddingMessage.getRetryInterval(), () -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
 
         }
+        traceLLMOutput(embedding, agent);
         return embedding;
 //        EmbeddingResponse result = HttpRequestProxy.sendJsonBody(embeddingMessage.getMaas(), params, agentAdapter.getEmbeddingUrl(embeddingMessage), EmbeddingResponse.class);
 //        if(result != null){
@@ -1078,6 +1117,7 @@ public class AIAgentUtil {
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,rerankMessage);
         Map<String,Object> params = agentAdapter.buildRerankMessage(config,rerankMessage,agent);
         
+        traceLLMInput(params, agent);
         List<RerankedDocument> rerankedDocuments = null;
         int retry = rerankMessage.getRetry();
         if(retry <=  0 ){
@@ -1095,6 +1135,7 @@ public class AIAgentUtil {
             Double relevanceScore = rerankMessage.getRelevanceScore();
             Integer topK = rerankMessage.getTopK();
             if(relevanceScore == null && topK == null){
+                traceLLMOutput(rerankedDocuments, agent);
                 return rerankedDocuments;
             }
             if (relevanceScore != null && relevanceScore > 0d) {
@@ -1118,13 +1159,16 @@ public class AIAgentUtil {
                 }
             }
             if(topKDocuments.size() > 0){
+                traceLLMOutput(topKDocuments, agent);
                 return topKDocuments;
             }
             else if(relevanceScoreDocuments.size() > 0) {
+                traceLLMOutput(relevanceScoreDocuments, agent);
                 return relevanceScoreDocuments;
             }
             
         }
+        
         return null;
         
         

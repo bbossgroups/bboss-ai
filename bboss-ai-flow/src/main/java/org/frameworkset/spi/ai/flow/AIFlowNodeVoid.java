@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.flow;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.TraceMessage;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.tran.jobflow.NodeTrigger;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
@@ -52,8 +53,8 @@ public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements Appe
     }
 
     @Override
-    public void setDisableStream(boolean disableStream){
-        
+    public T setDisableStream(boolean disableStream){
+        return (T)this;
     }
 
     public DisposeEventHandler getDisposeEventHandler(){
@@ -64,11 +65,24 @@ public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements Appe
     }   
      
     public AIFlowNodeVoid(  ) {
-        super(  );
-        this.nodeId = SimpleStringUtil.getUUID32();
-        this.nodeName = "AIFlowNode";
+//        super(  );
+//        this.nodeId = SimpleStringUtil.getUUID32();
+//        this.nodeName = "AIFlowNode";
     }
 
+    public AIFlowNodeVoid( String nodeId, String nodeName) {
+        super(  );
+        this.nodeId = nodeId;
+        this.nodeName = nodeName;
+    }
+    public T recordTraceMessage(TraceMessage traceMessage){
+
+        traceMessage.setAgentId(this.getNodeId());
+        traceMessage.setParentAgentId(this.getParentAgent() != null?this.getParentAgent().getAgentId():planAgent.getAgentId());
+        this.planAgent.getMainSessionStore().recordTraceMessage(traceMessage);
+
+        return (T)this;
+    }
     public AIPlanAgent getPlanAgent() {
         return planAgent;
     }
@@ -113,6 +127,10 @@ public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements Appe
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, boolean defaultNode) {
+        if(this.getNodeId() == null){
+            this.nodeId = parentAgent.genSubAgentId();
+            this.nodeName = parentAgent.genSubAgentName(nodeId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
 
@@ -135,7 +153,10 @@ public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements Appe
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
-
+        if(this.getNodeId() == null){
+            this.nodeId = parentAgent.genSubAgentId();
+            this.nodeName = parentAgent.genSubAgentName(nodeId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
 
@@ -160,6 +181,10 @@ public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements Appe
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(boolean allCondtionNodeMathfailedContinue,AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode){
+        if(this.getNodeId() == null){
+            this.nodeId = parentAgent.genSubAgentId();
+            this.nodeName = parentAgent.genSubAgentName(nodeId  );
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
 
@@ -213,6 +238,10 @@ public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements Appe
      */
     @Override
     public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMatchfailedContinue,AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+        if(this.getNodeId() == null){
+            this.nodeId = parentAgent.genSubAgentId();
+            this.nodeName = parentAgent.genSubAgentName(nodeId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
         if(jobFlowNodeBuilder == null){
@@ -256,7 +285,10 @@ public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements Appe
      */
     @Override
     public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
-       
+        if(this.getNodeId() == null){
+            this.nodeId = parentAgent.genSubAgentId();
+            this.nodeName = parentAgent.genSubAgentName(nodeId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
         if(jobFlowNodeBuilder == null){

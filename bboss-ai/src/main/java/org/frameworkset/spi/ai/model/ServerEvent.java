@@ -34,35 +34,35 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServerEvent extends MultimodalGeneration implements AIEvent{
     /**
-     * 数据消息
+     * type：数据消息
      */
     public static final int TYPE_DATA = 0;
     /**
-     * 异常消息
+     * type：异常消息
      */
     public static final int TYPE_ERROR = 1;
 
     /**
-     * trace信息，traceId
+     * type：trace信息，traceId
      */
     public static final int TYPE_TRACE = 2;
     /**
-     * 拒绝消息：
+     * type：拒绝消息：
      */
     public static final int TYPE_REFUSAL = 3;
     
     /**
-     * 知识库资料消息：
+     * type：知识库资料消息：
      */
     public static final int TYPE_RAG_KNOWLEDGE = 5;
 
     /**
-     * 步骤消息：
+     * type：步骤消息：
      */
     public static final int TYPE_STEP = 6;
 
     /**
-     * 数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0
+     * contentType：数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0
      */
     public static final int CONTENT = 0;
     public static final int REASONING_CONTENT = 1;

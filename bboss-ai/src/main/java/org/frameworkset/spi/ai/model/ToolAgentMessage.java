@@ -60,8 +60,8 @@ public class ToolAgentMessage extends ChatAgentMessage{
 //    }
 
     @Override
-    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent,ChatContext chatContext){
-        Map parameters = agentAdapter.buildOpenAIRequestMapWithTool(this,aiAgent,  chatContext);
+    protected Map buildOpenAIRequestMap(AgentAdapter agentAdapter, AIAgent aiAgent,ChatObject chatObject,ChatContext chatContext){
+        Map parameters = agentAdapter.buildOpenAIRequestMapWithTool(this,aiAgent,chatObject,  chatContext);
         return parameters;
     }
     

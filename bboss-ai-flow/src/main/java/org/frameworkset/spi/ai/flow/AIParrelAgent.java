@@ -55,6 +55,9 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
         this.disableReferenceParentLastSubMessage = true;
     }
 
+
+
+
     @Override
     protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore,int sessionSize){
         return new ParrelAgentSessionStoreMemory(parentSessionStore,sessionSize);
@@ -168,6 +171,10 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
      * 添加并行智能体节点，并设置条件触发器
      */
     public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI){
+        if(this.getAgentId() == null){
+            this.agentId = parentAgent.genSubAgentId();
+            this.agentName = parentAgent.genSubAgentName(agentId);
+        }
         this.setParentAgent((AIAgent)parentAgent);
         if(this.getPlanAgent() == null){
              

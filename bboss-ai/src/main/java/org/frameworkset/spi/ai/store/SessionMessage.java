@@ -15,22 +15,33 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.frameworkset.orm.annotation.Column;
 import org.frameworkset.spi.ai.model.TokenMetrics;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Map;
 
 /**
  * @author biaoping.yin
  * @Date 2026/4/3
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SessionMessage {
     /**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
      */
     public static final String MESSAGE_TYPE_USERINPUTMESSAGE = "8";
+
+    /**
+     * LLM输入消息
+     */
+    public static final String MESSAGE_TYPE_LLMINPUTMESSAGE = "9";
+
+    /**
+     * LLM输出消息
+     */
+    public static final String MESSAGE_TYPE_LLMOUTPUTMESSAGE = "10";
     /**
      * 智能体输出消息:ASSISTANT中的一种
      */
@@ -73,6 +84,16 @@ public class SessionMessage {
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
      */
     public static final String MESSAGE_TYPE_USERINPUTMESSAGE_NAME = "userinput";
+
+    /**
+     * LLM输入消息
+     */
+    public static final String MESSAGE_TYPE_LLMINPUTMESSAGE_NAME = "llminput";
+
+    /**
+     * LLM输出消息
+     */
+    public static final String MESSAGE_TYPE_LLMOUTPUTMESSAGE_NAME = "llmoutput";
     /**
      * 智能体输出消息:ASSISTANT中的一种
      */

@@ -35,7 +35,10 @@ import static org.frameworkset.spi.ai.store.SessionMessage.*;
  * @Date 2026/4/2
  */
 public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> implements AgentSessionStore<T>{
-    private static Logger log = org.slf4j.LoggerFactory.getLogger(BaseAgentSessionStore.class); 
+    private static Logger log = org.slf4j.LoggerFactory.getLogger(BaseAgentSessionStore.class);
+
+    private final static AgentMessageTypeConvertor DEFAULT_AGENTMESSAGETYPECONVERTOR = new AgentMessageTypeConvertor();
+    protected AgentMessageTypeConvertor agentMessageTypeConvertor = DEFAULT_AGENTMESSAGETYPECONVERTOR;
     /**
      * 在内存中持久化用户消息
      */
@@ -69,10 +72,14 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     protected AIAgent aiAgent;
 
 
-    protected AgentIdAssign agentIdAssign = new AgentIdAssign();
-    public String genSubAgentId(){
+    public String genSubAgentId(AgentIdAssign agentIdAssign){
 
-        return "agentId-"+agentIdAssign.getAgentId();
+        return this.getAgentId()+"-"+agentIdAssign.getAgentId();
+    }
+
+    public void setAgentMessageTypeConvertor(AgentMessageTypeConvertor agentMessageTypeConvertor) {
+        if(agentMessageTypeConvertor != null)
+            this.agentMessageTypeConvertor = agentMessageTypeConvertor;
     }
 
     protected AgentSessionStore mainAgentSessionStore;
@@ -142,6 +149,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.persistentSessionMemory = true;
         this.storeContext = storeContext;
         this.sessionId = storeContext.getSessionId();   
+        if(this.storeContext.getAgentMessageTypeConvertor() != null){
+            this.agentMessageTypeConvertor = storeContext.getAgentMessageTypeConvertor();
+        }
         this.userId = storeContext.getUserId();
         if(agent != null) {
             this.agentId = agent.getAgentId();
@@ -241,42 +251,18 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         String role = (String) message.get("role");
         String messageType = SimpleStringUtil.isNotEmpty(role)?messageType(role):MESSAGE_TYPE_TRACE_MESSAGE;
         
-        this.persistentSessionMessage(persistentMessage,this.getAgentId(), this.getParantAgentId(), (String)null, metadata, messageType);
+        this.persistentSessionMessage(persistentMessage,traceMessage.getAgentId(), traceMessage.getParentAgentId(), (String)null, metadata, messageType);
     }
 
     /**
-     * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息
+     * 将角色转换为消息类型messageType，对应agent_session_message表中的messageType字段
      * @param role
      * @return
      */
 
     private String messageType(String role){
-        if("system".equals(role)){
-            return MESSAGE_TYPE_SYSTEM_MESSAGE;
-        }
-        else if("user".equals(role)){
-            return MESSAGE_TYPE_USER_MESSAGE;
-        }
-        else if("assistant".equals(role)){
-            return MESSAGE_TYPE_ASSISTANT_MESSAGE;
-        }
-        else if("trace".equals(role)){
-            return MESSAGE_TYPE_TRACE_MESSAGE;
-        }
-
-        else if("rag".equals(role)){
-            return MESSAGE_TYPE_RAG_MESSAGE;
-        }
-
-        else if("refuse".equals(role)){
-            return MESSAGE_TYPE_REFUSE_MESSAGE;
-        }
-        else if(SessionMessage.MESSAGE_TYPE_USERINPUTMESSAGE_NAME.equals(role)){
-            return MESSAGE_TYPE_USERINPUTMESSAGE;
-        }
-        
- 
-        return MESSAGE_TYPE_ASSISTANT_MESSAGE;
+        return this.agentMessageTypeConvertor.convertMessageType(role);
+         
     }
     @Override
     public void addSessionMessage(PersistentMessage persistentMessage){
@@ -595,8 +581,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         }
     }
 
-
-
+    @Override
+    public String genSubAgentName(String agentId) {
+        return this.getAiAgent().getAgentName() + "-" + agentId;
+    }
 
     public String getRequestId() {
         return requestId;

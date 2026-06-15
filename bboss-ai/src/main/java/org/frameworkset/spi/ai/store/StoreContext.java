@@ -26,6 +26,7 @@ public class StoreContext {
     public static final String STORE_TYPE_DB = "db";
     public static final String STORE_TYPE_MEMORY = "memory";
     private AgentSessionStore mainSessionStore;
+    private AgentMessageTypeConvertor agentMessageTypeConvertor;
     /**
      * 会话id
      */
@@ -83,6 +84,15 @@ public class StoreContext {
 
     public String getUserId() {
         return userId;
+    }
+
+    public StoreContext setAgentMessageTypeConvertor(AgentMessageTypeConvertor agentMessageTypeConvertor) {
+        this.agentMessageTypeConvertor = agentMessageTypeConvertor;
+        return this;
+    }
+
+    public AgentMessageTypeConvertor getAgentMessageTypeConvertor() {
+        return agentMessageTypeConvertor;
     }
 
     public StoreContext setUserId(String userId) {

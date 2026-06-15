@@ -50,7 +50,10 @@ public class AIAgent<T extends AIAgent> {
     private String type;
     protected int sessionSize;
 
-
+    public String genSubAgentName(String agentId) {
+        return getAgentName() + "-" + agentId;
+    }
+   
     /**
      * 输出变量名
      */
@@ -77,15 +80,30 @@ public class AIAgent<T extends AIAgent> {
         synchronized (mainSessionStoreLock) {
             if(mainSessionStore != null)
                 return;
-            if (mainSessionStore == null && storeContext != null) {
-                AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
-                mainSessionStore = agentSessionStoreBuilder.build(storeContext, this);
-                mainSessionStore.setAIAgent(this);
-                if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
-                    ((SessionAgentMessage) agentMessage).setMainSessionStore(mainSessionStore);
+            if (mainSessionStore == null ) {
+                if(storeContext != null) {
+                    AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
+                    mainSessionStore = agentSessionStoreBuilder.build(storeContext, this);
+                    mainSessionStore.setAIAgent(this);
+                    this.agentSessionStore = mainSessionStore;
+                    if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
+                        ((SessionAgentMessage) agentMessage).setMainSessionStore(mainSessionStore);
+                    }
+                    if (storeContext.isResetSession() && storeContext.getSessionId() != null) {
+                        mainSessionStore.removeSession(storeContext.getSessionId());
+                    }
                 }
-                if(storeContext.isResetSession() && storeContext.getSessionId() != null){
-                    mainSessionStore.removeSession(storeContext.getSessionId());
+                else{
+                    if(parentAgent != null){
+                        this.mainSessionStore = parentAgent.getMainSessionStore();
+                    }
+                    if(mainSessionStore == null && parentSessionStore != null){
+                        this.mainSessionStore = parentSessionStore.getMainAgentSessionStore();
+                        if(this.mainSessionStore == null){
+                            this.mainSessionStore = parentSessionStore;
+                        }
+                    }
+                    
                 }
             }
         }
@@ -181,6 +199,17 @@ public class AIAgent<T extends AIAgent> {
         }
         return null;
     }
+
+    public T setMainSessionStore(AgentSessionStore mainSessionStore) {
+        this.mainSessionStore = mainSessionStore;
+        return (T)this;
+    }
+
+    public T setAgentSessionStore(AgentSessionStore agentSessionStore) {
+        this.agentSessionStore = agentSessionStore;
+        return (T)this;
+    }
+    
 
     public LastSessionMessage getLastSessionMessage(){
         return agentSessionStore != null?agentSessionStore.getLastSubAgentSessionMessage():null;
@@ -350,9 +379,12 @@ public class AIAgent<T extends AIAgent> {
             sessionAgentMessage = (SessionAgentMessage)agentMessage;
             if(mainSessionStore == null) {
                 mainSessionStore = sessionAgentMessage.getMainSessionStore();
-                this.mainSessionStore = mainSessionStore;
+                
             }
             
+        }
+        if(this.mainSessionStore == null){
+            this.mainSessionStore = mainSessionStore;
         }
         
         if(agentId == null){
@@ -360,7 +392,7 @@ public class AIAgent<T extends AIAgent> {
                 agentId = parentAgent.genSubAgentId();
             }
             else{
-                agentId = mainSessionStore != null?mainSessionStore.genSubAgentId(): SimpleStringUtil.getUUID32();
+                agentId = mainSessionStore != null?mainSessionStore.genSubAgentId(this.agentIdAssign): SimpleStringUtil.getUUID32();
             }
         }
         if(mainSessionStore != null) {
@@ -784,6 +816,21 @@ public class AIAgent<T extends AIAgent> {
     }
     private boolean toolInited = false;
     private Object initLock = new Object();
+
+    /**
+     * 构建子代理
+     * @return
+     */
+    public AIAgent buildSubAgent(){
+        AIAgent agent = new AIAgent();
+        agent.setParentAgent(this)
+                .setAgentId(genSubAgentId())
+                .setAgentName(genSubAgentName(agent.getAgentId()))
+                .setMainSessionStore(this.mainSessionStore)
+                .setParentSessionStore(this.agentSessionStore);
+        
+        return agent;
+    }
     public void init(){
         if(toolInited)
             return;
@@ -1006,24 +1053,27 @@ public class AIAgent<T extends AIAgent> {
         return false;
     }
 
-    public void setDisableStream(boolean disableStream) {
+    public T setDisableStream(boolean disableStream) {
         this.disableStream = disableStream;
+        return (T)this;
     }
 
     public boolean isDisablePush2ParentLastSubMessage() {
         return disablePush2ParentLastSubMessage;
     }
 
-    public void setDisablePush2ParentLastSubMessage(boolean disablePush2ParentLastSubMessage) {
+    public T setDisablePush2ParentLastSubMessage(boolean disablePush2ParentLastSubMessage) {
         this.disablePush2ParentLastSubMessage = disablePush2ParentLastSubMessage;
+        return (T)this;
     }
 
     public boolean isDisableReferenceParentLastSubMessage() {
         return disableReferenceParentLastSubMessage;
     }
 
-    public void setDisableReferenceParentLastSubMessage(boolean disableReferenceParentLastSubMessage) {
+    public T setDisableReferenceParentLastSubMessage(boolean disableReferenceParentLastSubMessage) {
         this.disableReferenceParentLastSubMessage = disableReferenceParentLastSubMessage;
+        return (T)this;
     }
 
     public String getOutputVaribleName() {
@@ -1087,10 +1137,13 @@ public class AIAgent<T extends AIAgent> {
         return false;
     }
     
-    public void recordTraceMessage(TraceMessage traceMessage){
+    public T recordTraceMessage(TraceMessage traceMessage){
         this.initSessionStore();
         if(this.mainSessionStore != null) {
+            traceMessage.setAgentId(this.getAgentId());
+            traceMessage.setParentAgentId(this.getParentAgentId());
             this.mainSessionStore.recordTraceMessage(traceMessage);
         }
+        return (T)this;
     }
 }

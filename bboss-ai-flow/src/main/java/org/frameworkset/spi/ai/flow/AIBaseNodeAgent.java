@@ -123,6 +123,10 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
      */
     @Override
     public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
+        if(this.getAgentId() == null){
+            this.agentId = parentAgent.genSubAgentId();
+            this.agentName = parentAgent.genSubAgentName(agentId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
         if(jobFlowNodeBuilder == null){
 
@@ -133,16 +137,22 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
             }
 
             this.setParentAgent((AIAgent) parentAgent);
+            
             jobFlowNodeBuilder = _builderJobFlowNodeBuilder();
 
 //            throw new JobFlowBuilderException("Can not find job flow node builder for agentId:"+aiAgent.getAgentId());
         }
+        
         
         parentAgent.addJobFlowNodeBuilder(jobFlowNodeBuilder,triggerScriptAPI);
     }
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, boolean defaultNode) {
+        if(this.getAgentId() == null){
+            this.agentId = parentAgent.genSubAgentId();
+            this.agentName = parentAgent.genSubAgentName(agentId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
 
@@ -166,7 +176,10 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
-
+        if(this.getAgentId() == null){
+            this.agentId = parentAgent.genSubAgentId();
+            this.agentName = parentAgent.genSubAgentName(agentId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
 
@@ -192,6 +205,10 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(boolean allCondtionNodeMathfailedContinue,AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode){
+        if(this.getAgentId() == null){
+            this.agentId = parentAgent.genSubAgentId();
+            this.agentName = parentAgent.genSubAgentName(agentId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
 
@@ -246,6 +263,10 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
      */
     @Override
     public String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+        if(this.getAgentId() == null){
+            this.agentId = parentAgent.genSubAgentId();
+            this.agentName = parentAgent.genSubAgentName(agentId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
         if(jobFlowNodeBuilder == null){
@@ -261,6 +282,10 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
     @Override
     public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMatchfailedContinue,AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
+        if(this.getAgentId() == null){
+            this.agentId = parentAgent.genSubAgentId();
+            this.agentName = parentAgent.genSubAgentName(agentId);
+        }
         JobFlowNodeBuilder jobFlowNodeBuilder = parentAgent.getJobFlowNodeBuilder(this.getAgentId());
 
         if(jobFlowNodeBuilder == null){

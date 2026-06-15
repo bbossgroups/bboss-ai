@@ -54,7 +54,7 @@ public class OpenaiAgentAdapter extends QwenAgentAdapter{
     }
 
     @Override
-    protected void buildThinking(ChatAgentMessage chatAgentMessage,Map<String, Object> requestMap){
+    protected void buildThinking(ChatAgentMessage chatAgentMessage,ChatObject chatObject,Map<String, Object> requestMap){
 //        Map parameters = chatAgentMessage.getParameters();
 //        Boolean thinking = chatAgentMessage.getThinking();
 //        if(thinking != null){

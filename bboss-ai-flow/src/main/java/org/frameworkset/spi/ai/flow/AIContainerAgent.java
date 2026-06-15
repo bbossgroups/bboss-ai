@@ -24,6 +24,8 @@ import org.frameworkset.tran.jobflow.script.TriggerScriptAPI;
  * @Date 2026/5/13
  */
 public interface AIContainerAgent<T extends AIContainerAgent> {
+    String genSubAgentId();
+    String genSubAgentName(String agentId);
     T addJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder);
     T addJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI);
 

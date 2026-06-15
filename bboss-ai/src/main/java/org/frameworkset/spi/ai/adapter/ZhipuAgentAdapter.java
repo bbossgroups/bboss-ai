@@ -62,10 +62,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
         return "https://open.bigmodel.cn/api/paas/v4/async-result/"+videoStoreAgentMessage.getTaskId();
     }
 
-    @Override
-    public Boolean getDefaultThinking() {
-        return false;
-    }
+ 
 
     @Override
     /**

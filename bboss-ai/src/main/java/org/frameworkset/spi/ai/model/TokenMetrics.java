@@ -38,6 +38,12 @@ public class TokenMetrics {
     private long completionReasoningTokens;
 
 
+    /**
+     * 思考数据
+     */
+    private String reasoningData;
+
+
 
     private long completionTextTokens;
     
@@ -163,6 +169,14 @@ public class TokenMetrics {
 
     public void setMaas(String maas) {
         this.maas = maas;
+    }
+
+    public String getReasoningData() {
+        return reasoningData;
+    }
+
+    public void setReasoningData(String reasoningData) {
+        this.reasoningData = reasoningData;
     }
 
 }
