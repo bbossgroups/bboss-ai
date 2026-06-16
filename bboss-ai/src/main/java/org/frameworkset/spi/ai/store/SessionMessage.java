@@ -31,21 +31,43 @@ public class SessionMessage {
     /**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
      */
-    public static final String MESSAGE_TYPE_USERINPUTMESSAGE = "8";
+    public static final String MESSAGE_TYPE_USER_INPUTMESSAGE = "8";
 
     /**
      * LLM输入消息
      */
-    public static final String MESSAGE_TYPE_LLMINPUTMESSAGE = "9";
+    public static final String MESSAGE_TYPE_LLM_INPUTMESSAGE = "9";
 
     /**
      * LLM输出消息
      */
-    public static final String MESSAGE_TYPE_LLMOUTPUTMESSAGE = "10";
+    public static final String MESSAGE_TYPE_LLM_OUTPUTMESSAGE = "10";
+
+    /**
+     * 向量模型输入消息
+     */
+    public static final String MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE = "11";
+
+    /**
+     * RERANK模型输入消息
+     */
+    public static final String MESSAGE_TYPE_RERANK_INPUTMESSAGE = "12";
+
+
+    /**
+     * 向量模型输入消息
+     */
+    public static final String MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE = "13";
+    
+    /**
+     * RERANK模型输入消息
+     */
+    public static final String MESSAGE_TYPE_RERANK_OUTPUTMESSAGE = "14";
+    
     /**
      * 智能体输出消息:ASSISTANT中的一种
      */
-    public static final String MESSAGE_TYPE_AGENTRESULTMESSAGE = "1";
+    public static final String MESSAGE_TYPE_AGENT_RESULTMESSAGE = "1";
     /**
      * 智能体用户输入消息：提交给大模型或者其他多模态模型
      */
@@ -83,21 +105,40 @@ public class SessionMessage {
     /**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
      */
-    public static final String MESSAGE_TYPE_USERINPUTMESSAGE_NAME = "userinput";
+    public static final String MESSAGE_TYPE_USER_INPUTMESSAGE_NAME = "userinput";
 
     /**
      * LLM输入消息
      */
-    public static final String MESSAGE_TYPE_LLMINPUTMESSAGE_NAME = "llminput";
+    public static final String MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME = "llminput";
 
+    /**
+     * 向量模型输入消息
+     */
+    public static final String MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE_NAME = "embeddinginput";
+    /**
+     * RERANK模型输入消息
+     */
+    public static final String MESSAGE_TYPE_RERANK_INPUTMESSAGE_NAME = "rerankinput";
+
+
+    /**
+     * 向量模型输入消息
+     */
+    public static final String MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE_NAME = "embeddingoutput";
+    /**
+     * RERANK模型输入消息
+     */
+    public static final String MESSAGE_TYPE_RERANK_OUTPUTMESSAGE_NAME = "rerankoutput";
+    
     /**
      * LLM输出消息
      */
-    public static final String MESSAGE_TYPE_LLMOUTPUTMESSAGE_NAME = "llmoutput";
+    public static final String MESSAGE_TYPE_LLM_OUTPUTMESSAGE_NAME = "llmoutput";
     /**
      * 智能体输出消息:ASSISTANT中的一种
      */
-    public static final String MESSAGE_TYPE_AGENTRESULTMESSAGE_NAME = "agentresult";
+    public static final String MESSAGE_TYPE_AGENT_RESULTMESSAGE_NAME = "agentresult";
     /**
      * 智能体用户输入消息
      */

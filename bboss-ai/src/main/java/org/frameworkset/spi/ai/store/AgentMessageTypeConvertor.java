@@ -32,38 +32,57 @@ public class AgentMessageTypeConvertor {
      * @param role
      * @return
      */
-    public String convertMessageType(String role){
-
-
-       
-            if("system".equals(role)){
-                return MESSAGE_TYPE_SYSTEM_MESSAGE;
-            }
-            else if("user".equals(role)){
-                return MESSAGE_TYPE_USER_MESSAGE;
-            }
-            else if("assistant".equals(role)){
-                return MESSAGE_TYPE_ASSISTANT_MESSAGE;
-            }
-            else if("trace".equals(role)){
-                return MESSAGE_TYPE_TRACE_MESSAGE;
-            }
-
-            else if("rag".equals(role)){
-                return MESSAGE_TYPE_RAG_MESSAGE;
-            }
-
-            else if("refuse".equals(role)){
-                return MESSAGE_TYPE_REFUSE_MESSAGE;
-            }
-            else if(SessionMessage.MESSAGE_TYPE_USERINPUTMESSAGE_NAME.equals(role)){
-                return MESSAGE_TYPE_USERINPUTMESSAGE;
-            }
-            else if(MESSAGE_TYPE_LLMINPUTMESSAGE_NAME.equals(role)){
-                return MESSAGE_TYPE_LLMINPUTMESSAGE;
-            }
-
-
+    public String convertMessageType(String role){       
+        if("system".equals(role)){
+            return MESSAGE_TYPE_SYSTEM_MESSAGE;
+        }
+        else if("user".equals(role)){
+            return MESSAGE_TYPE_USER_MESSAGE;
+        }
+        else if("assistant".equals(role)){
             return MESSAGE_TYPE_ASSISTANT_MESSAGE;
+        }
+        else if("trace".equals(role)){
+            return MESSAGE_TYPE_TRACE_MESSAGE;
+        }
+
+        else if("rag".equals(role)){
+            return MESSAGE_TYPE_RAG_MESSAGE;
+        }
+
+        else if("refuse".equals(role)){
+            return MESSAGE_TYPE_REFUSE_MESSAGE;
+        }
+        else if(SessionMessage.MESSAGE_TYPE_USER_INPUTMESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_USER_INPUTMESSAGE;
+        }
+        else if(MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_LLM_INPUTMESSAGE;
+        }
+
+        else if(MESSAGE_TYPE_LLM_OUTPUTMESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_LLM_OUTPUTMESSAGE;
+        }
+        else if(MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE;
+        }
+
+
+        else if(MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE;
+        }
+        else if(MESSAGE_TYPE_RERANK_INPUTMESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_RERANK_INPUTMESSAGE;
+        }
+        else if(MESSAGE_TYPE_RERANK_OUTPUTMESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_RERANK_OUTPUTMESSAGE;
+        }
+        else if(MESSAGE_TYPE_AGENT_RESULTMESSAGE_NAME.equals(role)) {
+            return MESSAGE_TYPE_AGENT_RESULTMESSAGE;
+        }
+
+
+
+        return MESSAGE_TYPE_ASSISTANT_MESSAGE;
     }
 }

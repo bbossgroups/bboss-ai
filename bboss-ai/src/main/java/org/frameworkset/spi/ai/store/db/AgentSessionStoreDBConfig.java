@@ -102,7 +102,7 @@ public class AgentSessionStoreDBConfig {
             .append( "createTime number(20),") //创建时间
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+            .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "sessionId varchar(100),")  //会话id
             .append( "requestId varchar(100), " )  //请求id
             .append( "traceId varchar(100), " )  //trace id
@@ -123,7 +123,7 @@ public class AgentSessionStoreDBConfig {
             .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+            .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, " )  //消息正文
             .append( "role varchar(100) NOT NULL, " )
@@ -141,7 +141,7 @@ public class AgentSessionStoreDBConfig {
             .append( "traceId varchar2(100), " )  //trace id
             .append( "parentAgentId varchar2(100),")  //父agentid
             .append( "agentId varchar2(100),")  //创建消息的agentid
-            .append( "messageType varchar2(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+            .append( "messageType varchar2(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
             .append( "tokenMetrics clob , " )  //token消耗统计
@@ -159,7 +159,7 @@ public class AgentSessionStoreDBConfig {
             .append( "traceId varchar2(100), " )  //trace id
             .append( "parentAgentId varchar2(100),")  //父agentid
             .append( "agentId varchar2(100),")  //创建消息的agentid
-            .append( "messageType varchar2(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+            .append( "messageType varchar2(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
             .append( "tokenMetrics clob , " )  //token消耗统计
@@ -176,7 +176,7 @@ public class AgentSessionStoreDBConfig {
             .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+            .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message nvarchar(max) NOT NULL,")  //消息正文
             .append( "tokenMetrics nvarchar(max),")  //token消耗统计
@@ -193,7 +193,7 @@ public class AgentSessionStoreDBConfig {
             .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建消息的agentid
-            .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+            .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message text NOT NULL,")  //消息正文
             .append( "tokenMetrics text,")  //token消耗统计
@@ -395,7 +395,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         /**
          *         .append( "parentAgentId varchar(100),")  //父agentid
          *             .append( "agentId varchar(100),")  //创建消息的agentid
-         *             .append( "messageType varchar(1),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+         *             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
          */
         insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
                 .append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();

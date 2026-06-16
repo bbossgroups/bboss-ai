@@ -96,20 +96,22 @@ public class AIAgentUtil {
     }
 
 
-    private static void traceLLMInput(Object message,AIAgent agent){
+    private static void traceLLMInput(Object message,AIAgent agent,String inputMessageTypeName){
         TraceMessage traceMessage = new TraceMessage();
         Map  tracemessage = new LinkedHashMap();
         tracemessage.put("input", message);
-        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
+//        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
+        tracemessage.put("role", inputMessageTypeName);
         traceMessage.setMessage(tracemessage);
         agent.recordTraceMessage(traceMessage);
     }
 
-    private static void traceLLMOutput(Object message,AIAgent agent){
+    private static void traceLLMOutput(Object message,AIAgent agent,String outputMessageType){
         TraceMessage traceMessage = new TraceMessage();
         Map  tracemessage = new LinkedHashMap();
         tracemessage.put("out", message);
-        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMOUTPUTMESSAGE_NAME);
+//        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMOUTPUTMESSAGE_NAME);
+        tracemessage.put("role", outputMessageType);
         traceMessage.setMessage(tracemessage);
         agent.recordTraceMessage(traceMessage);
     }
@@ -128,7 +130,7 @@ public class AIAgentUtil {
             AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,message);
             StoreChatObject storeChatObject = agentAdapter.buildGenImageRequestParameter(config,message,aiAgent);
             storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
-            traceLLMInput(storeChatObject.getMessage(), aiAgent);
+            traceLLMInput(storeChatObject.getMessage(), aiAgent,SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
             int retry = message.getRetry();
             if(retry <= 0) {
                 Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(config,message),Map.class);
@@ -198,7 +200,7 @@ public class AIAgentUtil {
         AudioEvent audioEvent = null;
         try {
 
-            traceLLMInput(storeChatObject.getMessage(), aiAgent);
+            traceLLMInput(storeChatObject.getMessage(), aiAgent,SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
              
 //            StoreFilePathFunction storeFilePathFunction = storeChatObject.getStoreFilePathFunction();
             if (storeFilePathFunction != null && storeFilePathFunction instanceof ReponseStoreFilePathFunction) {
@@ -317,7 +319,7 @@ public class AIAgentUtil {
                 }
             };
 
-            traceLLMInput(message, chatObject.getAiAgent());
+            traceLLMInput(message, chatObject.getAiAgent(),SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
             
             if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)){
                 Map header = new LinkedHashMap();
@@ -525,7 +527,7 @@ public class AIAgentUtil {
                 }
             };
 
-            traceLLMInput(message, chatObject.getAiAgent());
+            traceLLMInput(message, chatObject.getAiAgent(),SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
              
             if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)){
                 Map header = new LinkedHashMap();
@@ -873,7 +875,7 @@ public class AIAgentUtil {
                 return   AIResponseUtil.handleChatResponse(agentAdapter, chatObject.getCompletionsUrl(), response, chatObject.getStreamDataBuilder());
             }
         };
-        traceLLMInput(message, aiAgent);
+        traceLLMInput(message, aiAgent,SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
         
         if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)) {
             
@@ -959,7 +961,7 @@ public class AIAgentUtil {
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(maasName);
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,videoAgentMessage);
         StoreChatObject storeChatObject = agentAdapter.buildVideoRequestParameter(clientConfiguration,videoAgentMessage,  aiAgent);
-        traceLLMInput(storeChatObject.getMessage(), aiAgent);
+        traceLLMInput(storeChatObject.getMessage(), aiAgent,SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
          
         Map taskInfo = HttpRequestProxy.sendJsonBody(maasName,storeChatObject.getMessage(),agentAdapter.getSubmitVideoTaskUrl(clientConfiguration,videoAgentMessage),videoAgentMessage.getHeaders(),Map.class);
         VideoTask task = agentAdapter.buildVideoResponseTask(clientConfiguration,videoAgentMessage,  taskInfo);
@@ -1094,7 +1096,7 @@ public class AIAgentUtil {
         Map<String,Object> params = agentAdapter.buildEmbeddingMessage(config,embeddingMessage,agent);
         float[] embedding = null;
         int retry = embeddingMessage.getRetry();
-        traceLLMInput(params, agent);
+        traceLLMInput(params, agent,SessionMessage.MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE_NAME);
         
         if(retry <=  0 ){
             embedding = agentAdapter.embedding(  config,embeddingMessage,agent,params);
@@ -1103,7 +1105,7 @@ public class AIAgentUtil {
             embedding = RetryUtil.retry(retry, embeddingMessage.getRetryInterval(), () -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
 
         }
-        traceLLMOutput(embedding, agent);
+        traceLLMOutput(embedding, agent,SessionMessage.MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE_NAME);
         return embedding;
 //        EmbeddingResponse result = HttpRequestProxy.sendJsonBody(embeddingMessage.getMaas(), params, agentAdapter.getEmbeddingUrl(embeddingMessage), EmbeddingResponse.class);
 //        if(result != null){
@@ -1117,7 +1119,7 @@ public class AIAgentUtil {
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,rerankMessage);
         Map<String,Object> params = agentAdapter.buildRerankMessage(config,rerankMessage,agent);
         
-        traceLLMInput(params, agent);
+        traceLLMInput(params, agent,SessionMessage.MESSAGE_TYPE_RERANK_INPUTMESSAGE_NAME);
         List<RerankedDocument> rerankedDocuments = null;
         int retry = rerankMessage.getRetry();
         if(retry <=  0 ){
@@ -1135,7 +1137,7 @@ public class AIAgentUtil {
             Double relevanceScore = rerankMessage.getRelevanceScore();
             Integer topK = rerankMessage.getTopK();
             if(relevanceScore == null && topK == null){
-                traceLLMOutput(rerankedDocuments, agent);
+                traceLLMOutput(rerankedDocuments, agent,SessionMessage.MESSAGE_TYPE_RERANK_OUTPUTMESSAGE_NAME);
                 return rerankedDocuments;
             }
             if (relevanceScore != null && relevanceScore > 0d) {
@@ -1159,11 +1161,11 @@ public class AIAgentUtil {
                 }
             }
             if(topKDocuments.size() > 0){
-                traceLLMOutput(topKDocuments, agent);
+                traceLLMOutput(topKDocuments, agent,SessionMessage.MESSAGE_TYPE_RERANK_OUTPUTMESSAGE_NAME);
                 return topKDocuments;
             }
             else if(relevanceScoreDocuments.size() > 0) {
-                traceLLMOutput(relevanceScoreDocuments, agent);
+                traceLLMOutput(relevanceScoreDocuments, agent,SessionMessage.MESSAGE_TYPE_RERANK_OUTPUTMESSAGE_NAME);
                 return relevanceScoreDocuments;
             }
             
