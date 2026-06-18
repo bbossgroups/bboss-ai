@@ -1122,12 +1122,16 @@ public class AIAgent<T extends AIAgent> {
     public AgentOutput getAgentOutput() {
         return agentOutput;
     }
+
+    /**
+     * 加载会话历史记录，如果会话历史记录不存在，则根据prompt创建一个会话
+     * @param prompt
+     * @return
+     */
+    
     public boolean loadSessionMemory(String prompt ){
-//        this.initSessionStore();
-//        if(this.mainSessionStore != null) {
-//            return this.mainSessionStore.loadSessionMemory(prompt, this.agentId);
-//        }
-        return loadSessionMemory(  prompt,null );
+ 
+        return loadSessionMemory(  prompt,this.storeContext.getDomain() );
     }
 
     public boolean loadSessionMemory(String prompt ,String domain){
