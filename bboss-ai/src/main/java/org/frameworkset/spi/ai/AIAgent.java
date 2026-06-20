@@ -24,6 +24,7 @@ import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.tool.*;
+import org.frameworkset.spi.ai.tool.ToolSearcher;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
@@ -140,6 +141,11 @@ public class AIAgent<T extends AIAgent> {
 
     @JsonIgnore
     protected ToolsRegist toolsRegist;
+    @JsonIgnore
+    protected ToolSearcher toolSearcher;
+    
+
+
     @JsonIgnore
     protected AgentSessionStore agentSessionStore;
     @JsonIgnore
@@ -795,7 +801,21 @@ public class AIAgent<T extends AIAgent> {
         return null;
     }
 
-
+    /**
+     * 获取经过搜索过滤后的工具列表
+     * 如果未设置 toolSearcher，或 query 为空，则返回全部工具
+     */
+    public List<FunctionToolDefine> getToolsByToolSearch(AgentMessage agentMessage) {
+        String query = null;
+        List<FunctionToolDefine> allTools = getTools();
+        if (toolSearcher != null && allTools != null && !allTools.isEmpty()) {
+            query = this.evalPrompt(agentMessage);
+            if(query != null && !query.trim().isEmpty()) {
+                return toolSearcher.search(allTools, query);
+            }
+        }
+        return allTools;
+    }
     public List<FunctionToolDefine> getTools() {
         return tools;
     }
@@ -886,6 +906,7 @@ public class AIAgent<T extends AIAgent> {
 
                 }
             }
+            
             toolInited = true;
         }
     }
@@ -1150,4 +1171,14 @@ public class AIAgent<T extends AIAgent> {
         }
         return (T)this;
     }
+
+    public T setToolSearcher(ToolSearcher toolSearcher) {
+        this.toolSearcher = toolSearcher;
+        return (T)this;
+    }
+
+    public ToolSearcher getToolSearcher() {
+        return toolSearcher;
+    }
+
 }

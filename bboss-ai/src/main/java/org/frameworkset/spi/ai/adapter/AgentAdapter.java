@@ -64,23 +64,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     protected abstract Map buildGenImageRequestMap(ImageAgentMessage imageAgentMessage,AIAgent aiAgent);
 
     
-    protected Object convertTools(Object tools){
-        if(tools instanceof String){
-            return SimpleStringUtil.json2ListObject((String)tools,Map.class);
-        }
-        return tools;
-    }
-    protected void buildTools(AIAgent aiAgent,Map<String, Object> requestMap){
+ 
+    protected void buildTools(AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap){
         aiAgent.init();
-        if(aiAgent.getTools() != null){
-            Object tools = aiAgent.getTools();
-            requestMap.put("tools", convertTools(  tools));
-//            if(tools instanceof List){
-//                requestMap.put("tools", tools);
-//            }
-//            else if(tools instanceof String){
-//                requestMap.put("tools", SimpleStringUtil.json2ListObject((String)tools,Map.class));
-//            }
+        List<FunctionToolDefine> tools = aiAgent.getToolsByToolSearch(agentMessage);
+        if(tools != null && tools.size() > 0){
+//            Object tools = aiAgent.getTools();
+            requestMap.put("tools",   tools);
         }
     }
 
@@ -119,7 +109,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
             
         }
-        buildTools(  aiAgent, requestMap);
+        buildTools(agentMessage,  aiAgent, requestMap);
     }
     protected Object handleImageParserMessages(List<Map<String, Object>> messages){
         return messages;
@@ -621,7 +611,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
         }
         buildThinking(  chatAgentMessage,chatObject, requestMap);
-        buildTools(aiAgent, requestMap);
+        buildTools(chatAgentMessage,aiAgent, requestMap);
         return requestMap;
     }
     public abstract ImageEvent buildGenImageResponse(ClientConfiguration config, ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject,Map imageData);

@@ -73,7 +73,7 @@ public class SiliconflowAgentAdapter extends QwenAgentAdapter{
             }
         }
 
-        buildTools( aiAgent , requestMap);
+        buildTools( agentMessage,aiAgent , requestMap);
     }
   
 

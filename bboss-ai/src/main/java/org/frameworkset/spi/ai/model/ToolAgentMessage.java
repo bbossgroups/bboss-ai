@@ -65,6 +65,11 @@ public class ToolAgentMessage extends ChatAgentMessage{
         return parameters;
     }
     
+    @Override
+    public String getPrompt(){
+        return chatAgentMessage.getPrompt();
+    }
+    
 
  
 
