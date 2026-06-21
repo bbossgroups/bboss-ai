@@ -65,9 +65,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
     
  
-    protected void buildTools(AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap){
+    protected void buildTools(ChatContext chatContext,AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap){
         aiAgent.init();
-        List<FunctionToolDefine> tools = aiAgent.getToolsByToolSearch(agentMessage);
+        List<FunctionToolDefine> tools = aiAgent.getToolsByToolSearch(chatContext,agentMessage);
         if(tools != null && tools.size() > 0){
 //            Object tools = aiAgent.getTools();
             requestMap.put("tools",   tools);
@@ -81,7 +81,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
         return null;
     }
-    protected void filterParameters(AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap, Map<String, Object> parameters) {
+    protected void filterParameters(ChatContext chatContext,AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap, Map<String, Object> parameters) {
         if(SimpleStringUtil.isEmpty( parameters)){
             if( agentMessage.getStream() != null){
                 requestMap.put("stream", agentMessage.getStream());
@@ -109,7 +109,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
             
         }
-        buildTools(agentMessage,  aiAgent, requestMap);
+        buildTools(chatContext,agentMessage,  aiAgent, requestMap);
     }
     protected Object handleImageParserMessages(List<Map<String, Object>> messages){
         return messages;
@@ -177,7 +177,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         requestMap.put("messages", handleImageParserMessages(messages));
         Map parameters = videoVLAgentMessage.getParameters();
 
-        filterParameters(videoVLAgentMessage,aiAgent,requestMap,parameters);
+        filterParameters(chatContext,videoVLAgentMessage,aiAgent,requestMap,parameters);
 
         return requestMap;
     }
@@ -236,7 +236,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         requestMap.put("messages", handleImageParserMessages(messages));
         Map parameters = imageAgentMessage.getParameters();
 
-        filterParameters(imageAgentMessage,aiAgent,requestMap,parameters);
+        filterParameters(chatContext,imageAgentMessage,aiAgent,requestMap,parameters);
 
         return requestMap;
     }
@@ -611,7 +611,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
         }
         buildThinking(  chatAgentMessage,chatObject, requestMap);
-        buildTools(chatAgentMessage,aiAgent, requestMap);
+        buildTools(chatContext,chatAgentMessage,aiAgent, requestMap);
         return requestMap;
     }
     public abstract ImageEvent buildGenImageResponse(ClientConfiguration config, ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject,Map imageData);

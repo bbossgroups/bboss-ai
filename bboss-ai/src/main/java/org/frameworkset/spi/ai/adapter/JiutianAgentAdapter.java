@@ -206,7 +206,7 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
             requestMap.put("messages", handleImageParserMessages(messages));
             Map parameters = imageAgentMessage.getParameters();
 
-            filterParameters(imageAgentMessage,aiAgent, requestMap, parameters);
+            filterParameters(chatContext,imageAgentMessage,aiAgent, requestMap, parameters);
         }
 
         return requestMap;

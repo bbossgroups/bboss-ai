@@ -805,11 +805,11 @@ public class AIAgent<T extends AIAgent> {
      * 获取经过搜索过滤后的工具列表
      * 如果未设置 toolSearcher，或 query 为空，则返回全部工具
      */
-    public List<FunctionToolDefine> getToolsByToolSearch(AgentMessage agentMessage) {
+    public List<FunctionToolDefine> getToolsByToolSearch(ChatContext chatContext,AgentMessage agentMessage) {
         String query = null;
         List<FunctionToolDefine> allTools = getTools();
         if (toolSearcher != null && allTools != null && !allTools.isEmpty()) {
-            query = this.evalPrompt(agentMessage);
+            query = chatContext.evalPrompt(this.evalPrompt(agentMessage));
             if(query != null && !query.trim().isEmpty()) {
                 return toolSearcher.search(allTools, query);
             }
