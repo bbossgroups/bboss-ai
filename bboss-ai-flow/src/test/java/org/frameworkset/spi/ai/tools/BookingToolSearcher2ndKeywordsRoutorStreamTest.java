@@ -17,10 +17,7 @@ package org.frameworkset.spi.ai.tools;
 
 import com.frameworkset.common.poolman.util.SQLUtil;
 import org.frameworkset.spi.ai.callback.AgentOutput;
-import org.frameworkset.spi.ai.flow.AINodeAgent;
-import org.frameworkset.spi.ai.flow.AIParrelAgent;
-import org.frameworkset.spi.ai.flow.AIPlanAgent;
-import org.frameworkset.spi.ai.flow.AIRouteAgent;
+import org.frameworkset.spi.ai.flow.*;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
@@ -46,8 +43,8 @@ import java.util.concurrent.CountDownLatch;
  * @author biaoping.yin
  * @Date 2026/5/20
  */
-public class BookingToolSearcherStreamTest {
-    private static Logger logger = LoggerFactory.getLogger(BookingToolSearcherStreamTest.class);
+public class BookingToolSearcher2ndKeywordsRoutorStreamTest {
+    private static Logger logger = LoggerFactory.getLogger(BookingToolSearcher2ndKeywordsRoutorStreamTest.class);
 
     public static void main(String[] args) throws InterruptedException, IOException {
         // 初始化HTTP连接池
@@ -111,9 +108,11 @@ public class BookingToolSearcherStreamTest {
         // ====================  路由智能体（判断用户意图） ====================
         
         // 路由智能体判断用户意图：酒店、机票、都要
-        planAgent.addAgent(new AIRouteAgent().addRoutingChoice("hotelAgent", "用户只需要预定酒店")
-				.addRoutingChoice("flightAgent", "用户只需要预定机票")
-				.addRoutingChoice("bothAgent", "用户需要同时预定酒店和机票")
+        planAgent.addAgent(new AIKeywordsRouteAgent()
+				.addRoutingChoice("bothAgent", new String[]{"酒店和机票"}, "用户需要同时预定酒店和机票")
+				.addRoutingChoice("hotelAgent", new String[]{"酒店"},"用户只需要预定酒店")
+				.addRoutingChoice("flightAgent", new String[]{"航班","机票"}, "用户只需要预定机票")
+				
                 .setAgentId("bookingRouter").setAgentName("预定路由智能体")
                 .setSystemPrompt("你是一个行程预定路由智能体。请分析用户的问题，判断用户需要预定什么，注意你不需要直接回答用户的问题，只需要做路由判断,使用json格式返回匹配的智能体信息")              
                 

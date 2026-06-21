@@ -22,6 +22,7 @@ package org.frameworkset.spi.ai.flow;
 public class RouteChoice {
     private String agentId;
     private String description;
+    private String[] keywords;
     public RouteChoice(){
         
     }
@@ -29,6 +30,16 @@ public class RouteChoice {
     public RouteChoice(String agentId, String description) {
         this.agentId = agentId;
         this.description = description;
+    }
+
+    public RouteChoice(String agentId, String description,String[] keywords) {
+        this.agentId = agentId;
+        this.description = description;
+        this.keywords = keywords;
+    }
+
+    public String[] getKeywords() {
+        return keywords;
     }
 
     public String getAgentId() {

@@ -34,7 +34,7 @@ import java.util.List;
  * @Date 2026/4/14
  */
 public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent> 
-        extends AIAgent<T> implements AppendToParentAgent{
+        extends AIAgent<T> implements AppendToParentAgent<T>{
     protected AIPlanAgent planAgent;
     public AIBaseNodeAgent(ToolsRegist mcpToolsRegist ) {
         super(   mcpToolsRegist);

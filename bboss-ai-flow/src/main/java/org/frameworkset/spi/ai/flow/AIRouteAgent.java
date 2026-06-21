@@ -25,7 +25,7 @@ import java.util.List;
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public class AIRouteAgent 
+public class AIRouteAgent
         extends AIBaseNodeAgent<AIRouteAgent> {
     private int retryTimes = 3;
     public AIRouteAgent( String prompt ) {
@@ -41,16 +41,16 @@ public class AIRouteAgent
     }
     public AIRouteAgent setAgentMessage(AgentMessage agentMessage) {
         this.agentMessage = agentMessage;
-        return this;
+        return   this;
     }
 
  
 
-    private List<RouteChoice> routeChoiceList;
+    protected List<RouteChoice> routeChoiceList;
 
     public AIRouteAgent setRouteChoiceList(List<RouteChoice> routeChoiceList) {
         this.routeChoiceList = routeChoiceList;
-        return this;
+        return   this;
     }
     @Override
     protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
@@ -63,16 +63,10 @@ public class AIRouteAgent
             routeChoiceList = new ArrayList<>();
         }
         routeChoiceList.add(new RouteChoice(agentId,description));
-        return this;
-    }
-
-    public AIRouteAgent addDefaultRoutingChoice(String agentId,String description){
-        if(routeChoiceList == null){
-            routeChoiceList = new ArrayList<>();
-        }
-        routeChoiceList.add(new RouteChoice(agentId,description));
         return  this;
     }
+
+ 
 
     public List<RouteChoice> getRouteChoiceList() {
         return routeChoiceList;
@@ -80,7 +74,7 @@ public class AIRouteAgent
 
     public AIRouteAgent setRetryTimes(int retryTimes) {
         this.retryTimes = retryTimes;
-        return this;
+        return  this;
     }
 
     public int getRetryTimes() {

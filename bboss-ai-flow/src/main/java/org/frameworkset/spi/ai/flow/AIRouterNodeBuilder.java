@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.PromptEval;
+import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
@@ -177,6 +178,8 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
                         Map<String, Object> messageMap = new LinkedHashMap<>();
                         messageMap.put("text",message);
                         messageMap.put("data",data);
+						
+						messageMap.put("role", SessionMessage.MESSAGE_TYPE_TRACE_MESSAGE_NAME);
                         traceMessage.setMessage(messageMap);
                         traceMessage.setStartTime(start);
                         traceMessage.setEndTime(System.currentTimeMillis());
@@ -188,13 +191,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
                                 logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), traceServerEvent.getData());
                             }
                         }
-                        if (fluxSink != null) {
-                            fluxSink.next(traceServerEvent);
-                        } else {
-                            if (logger.isInfoEnabled()) {
-                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), traceServerEvent.getData());
-                            }
-                        }
+                         
                     }
                 }
                 retry ++;
@@ -204,7 +201,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         
         return null;
     }
-
+     
  
 
 

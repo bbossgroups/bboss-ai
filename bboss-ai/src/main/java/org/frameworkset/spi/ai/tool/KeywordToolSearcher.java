@@ -38,8 +38,7 @@ public class KeywordToolSearcher implements ToolSearcher {
         if (allTools == null || allTools.isEmpty() || keywords == null || keywords.length == 0) {
             return allTools;
         }
-        String[] keywords = null;
-        keywords = this.keywords;
+        String[] keywords = this.keywords;
         List<FunctionToolDefine> matched = new ArrayList<>();
         for (FunctionToolDefine tool : allTools) {
 //            if (tool.getFunction() == null) continue;
