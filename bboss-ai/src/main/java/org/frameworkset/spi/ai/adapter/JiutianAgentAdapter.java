@@ -95,7 +95,6 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
      
 
     /**
-     * https://jiutian.10086.cn/portal/common-helpcenter#/document/1157?platformCode=DMX_TYZX
      * @param config
      * @param imageData
      * @return

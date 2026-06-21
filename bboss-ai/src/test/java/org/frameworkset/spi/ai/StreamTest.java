@@ -85,7 +85,7 @@ public class StreamTest {
         properties.put("tool.http.maxTotal","200");
         properties.put("tool.http.defaultMaxPerRoute","100");
         HttpRequestProxy.startHttpPools(properties);
-//        callDeepseekSimple();
+        callDeepseekSimple();
 //        callChatDeepseekSimple();
 //        testCustom();
 //        callguijiSimple();
@@ -143,7 +143,7 @@ public class StreamTest {
 
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库飞书定制开发和应用中的文档",true);
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
-        streamDBStoreChatWithMcpTools("deepseek","feishumcp","deepseek-v4-pro","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
+//        streamDBStoreChatWithMcpTools("deepseek","feishumcp","deepseek-v4-pro","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
 //        streamDBStoreChatWithMcpTools("qwenvlplus","feishumcp","qwen3.6-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
         
 //        streamChatWithMcpTools("openai","feishumcp","gpt-5.4","列出知识库飞书定制开发和应用中的文档",true);
@@ -194,7 +194,10 @@ public class StreamTest {
         String message = "介绍一下bboss jobflow";
         //设置模型调用参数，
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-        chatAgentMessage.setModel("deepseek-chat");
+        chatAgentMessage.setModel("deepseek-v4-pro");
+        chatAgentMessage.setMaas("deepseek");
+//        chatAgentMessage.setModel("qwen3.7-plus");
+//        chatAgentMessage.setMaas("qwenvlplus");
         chatAgentMessage.setPrompt(message);
 
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
@@ -202,9 +205,9 @@ public class StreamTest {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
         AIAgent aiAgent = new AIAgent();
-        Flux<ServerEvent> flux = aiAgent.streamChat("deepseek",chatAgentMessage);
+        Flux<ServerEvent> flux = aiAgent.streamChat(chatAgentMessage);
                 flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
-                .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
+                .doOnNext(chunk -> System.out.print(chunk.getData())) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
                 .doOnError(error ->{countDownLatch.countDown(); logger.error("错误: " + error.getMessage(),error);})
                 .subscribe();
@@ -856,7 +859,7 @@ public class StreamTest {
         imageVLAgentMessage.setPrompt(message);
 
 
-        //九天模型参考文档：https://jiutian.10086.cn/portal/common-helpcenter#/document/1160?platformCode=DMX_TYZX
+        //九天模型参考文档：https://jiutian.30086.cn/portal/common-helpcenter#/document/1160?platformCode=DMX_TYZX
         String model = "LLMImage2Text";
         imageVLAgentMessage.setModel( model);
     // 构建消息历史列表，包含之前的会话记忆
@@ -884,7 +887,7 @@ public class StreamTest {
         chatAgentMessage.setPrompt(message);
 
 
-        //九天模型参考文档：https://jiutian.10086.cn/portal/common-helpcenter#/document/1160?platformCode=DMX_TYZX
+        //九天模型参考文档：https://jiutian.30086.cn/portal/common-helpcenter#/document/1160?platformCode=DMX_TYZX
         String model = "jiutian-lan-comv3";
         chatAgentMessage.setModel( model);
         chatAgentMessage.setTemperature(0.7d);

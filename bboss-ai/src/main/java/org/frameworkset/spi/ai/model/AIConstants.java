@@ -40,7 +40,7 @@ public class AIConstants {
     public static final String AI_MODEL_TYPE_DEEPSEEK_URL = "https://api.deepseek.com";
     public static final String AI_MODEL_TYPE_KIMI_URL = "https://api.moonshot.cn";
     public static final String AI_MODEL_TYPE_SILICONFLOW_URL = "https://api.siliconflow.cn";
-    public static final String AI_MODEL_TYPE_JIUTIAN_URL = "https://jiutian.10086.cn";
+    public static final String AI_MODEL_TYPE_JIUTIAN_URL = "https://jiutian.30086.cn";
     public static final String AI_MODEL_TYPE_ZHIPU_URL = "https://open.bigmodel.cn";
     public static final String AI_MODEL_TYPE_MINIMAX_URL = "https://api.minimaxi.com";
     public static final String AI_MODEL_TYPE_HUNYUAN_URL = "https://api.hunyuan.cloud.tencent.com";
