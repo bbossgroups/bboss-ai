@@ -98,8 +98,8 @@ public class StreamTest {
 //        chatWithTools("hunyuan","hunyuan-2.0-thinking-20251109");
 
 
-//        chatWithTools("qwenvlplus","qwen3.5-plus");
-//        chatWithTools("zhipu","glm-5");
+//        chatWithTools("qwenvlplus","qwen3.7-plus");
+//        chatWithTools("zhipu","glm-5.2");
 
 
 
@@ -112,42 +112,42 @@ public class StreamTest {
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","查询用户admin的操作日志，展示数据并进行分析");
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
 
-//        streamChatWithRemoteTools("zhipu","glm-5","查询用户admin的操作日志，展示数据并进行分析");
-//		streamChatWithRemoteTools("zhipu","glm-5","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
+//        streamChatWithRemoteTools("zhipu","glm-5.2","查询用户admin的操作日志，展示数据并进行分析");
+//		streamChatWithRemoteTools("zhipu","glm-5.2","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
 
-//        streamChatWithRemoteTools("kimi","kimi-k2.5","查询用户admin的操作日志，展示数据并进行分析");
+//        streamChatWithRemoteTools("kimi","kimi-k2.6","查询用户admin的操作日志，展示数据并进行分析");
 
         //演示没有匹配到工具的流式调用
 
-//        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
-//        streamChatWithRemoteTools("zhipu","glm-5","介绍bboss");
-//        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
+//        streamChatWithRemoteTools("qwenvlplus","qwen3.7-plus","介绍bboss");
+//        streamChatWithRemoteTools("zhipu","glm-5.2","介绍bboss");
+//        streamChatWithRemoteTools("kimi","kimi-k2.6","介绍bboss");
 //        streamChatWithRemoteTools("deepseek","deepseek-chat","介绍bboss");
 //        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","介绍bboss");
 
-//		streamChatWithMcpTools("qwenvlplus","gaotie", "qwen3.5-plus", "查询高铁线路",true);
+//		streamChatWithMcpTools("qwenvlplus","gaotie", "qwen3.7-plus", "查询高铁线路",true);
 
-//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.7-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 
-//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询用户admin的操作日志，并进行分析",true);
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.7-plus","查询用户admin的操作日志，并进行分析",true);
 //        streamChatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询用户admin的操作日志，并进行分析",true);
 
 //        chatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
 //        streamChatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
-//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.7-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("openai","visualops","gpt-5.4","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
 //        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
 
-//        streamChatWithMcpTools("custom","shuqi","qwen3.5-plus","推荐一部穿越小说",true);
+//        streamChatWithMcpTools("custom","shuqi","qwen3.7-plus","推荐一部穿越小说",true);
 
-//        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库飞书定制开发和应用中的文档",true);
-//        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
+//        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出知识库飞书定制开发和应用中的文档",true);
+//        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
 //        streamDBStoreChatWithMcpTools("deepseek","feishumcp","deepseek-v4-pro","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
-//        streamDBStoreChatWithMcpTools("qwenvlplus","feishumcp","qwen3.6-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
+//        streamDBStoreChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
         
 //        streamChatWithMcpTools("openai","feishumcp","gpt-5.4","列出知识库飞书定制开发和应用中的文档",true);
-//        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
+//        streamChatWithMcpTools("qwenvlplus","12306","qwen3.7-plus","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
 //		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
 

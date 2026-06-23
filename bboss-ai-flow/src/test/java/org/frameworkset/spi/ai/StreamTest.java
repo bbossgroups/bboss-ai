@@ -44,10 +44,10 @@ public class StreamTest {
 		HttpRequestProxy.startHttpPools("mcpserver.properties");
 
 //        multiagent("qwenvlplus","qwen3.6-plus");
-//        multiagent("zhipu","glm-5.1");
-//        multiagentWeathor("zhipu","glm-5.1",null);
-        multiagentWeathor("zhipu","glm-5.1","6021bcca95fe4393bd4726f7b667a75a");
-//        multiuserAgentWeathor("zhipu","glm-5.1","3021bcca95fe4393bd4726f7b667a75a");
+//        multiagent("zhipu","glm-5.2");
+//        multiagentWeathor("zhipu","glm-5.2",null);
+        multiagentWeathor("zhipu","glm-5.2","6021bcca95fe4393bd4726f7b667a75a");
+//        multiuserAgentWeathor("zhipu","glm-5.2","3021bcca95fe4393bd4726f7b667a75a");
         
     }
 

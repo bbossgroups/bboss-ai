@@ -73,7 +73,17 @@
 			#end
 			#if($domain && !$domain.equals(""))
 				and domain =#[domain]		
-			#end		 
+			#end		
+			#if($domains)
+				and domain in  ( 
+                  #foreach($d in $domains) 
+                        #if($foreach.index > 0),#end #[domains[$foreach.index]] 
+                  #end
+              ) 	
+			#end
+			#if($title && !$title.equals(""))
+				and title like #[title]	
+			#end	  
 			
             #if($sortKey && !$sortKey.equals(""))
                 order by $sortKey #if($sortDesc)desc#else asc#end

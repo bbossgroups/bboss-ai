@@ -35,6 +35,9 @@ public class AgentSession {
     private String agentId;
     private String domain;
     private String title;
+    /**
+     * 会话消息列表，采用内存持久化机制管理会话时有值
+     */
     private List<SessionMessage> assistantMessages;
 
     
@@ -63,7 +66,7 @@ public class AgentSession {
     }
 
     /**
-     * 记录智能体引用的历史消息清单
+     * 记录智能体引用的历史消息清单，采用内存持久化机制管理会话时有值
      */
     private Map<String,List<LastSessionMessage>> agentReferenceSessionMessages = new ConcurrentHashMap();
     

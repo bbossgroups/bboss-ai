@@ -9,3 +9,11 @@
 /.gradle/
 /gradle
 /temp/
+/bboss-ai-flow/src/test/resources/需求.xlsx
+/bboss-ai-flow/src/test/resources/需求.md
+/codeplain/bboss-ai-mcpbean.md
+/codeplain/bboss-ai-springboot.md
+/codeplain/bboss-ai-toolannotation.md
+/codeplain/bboss-ai-toolsearcher.md
+/codeplain/EcopConfigService.java
+/codeplain/需求.md

@@ -26,14 +26,19 @@ public class AgentSessionCondition implements java.io.Serializable {
 	 * 代理id
 	 */
 	private String agentid;
+    /**
+     * 同时查询多个领域会话数据
+     */
+    private String[] domains;
 
-    public String getDomain() {
-        return domain;
-    }
 
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
+
+    /**
+     * 会话标题,模糊查询
+     */
+    private String title;
+
+
 
     /**
      * 业务领域
@@ -79,4 +84,27 @@ public class AgentSessionCondition implements java.io.Serializable {
 		return sortDesc;
 	}
 
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    public void setDomains(String[] domains) {
+        this.domains = domains;
+    }
+
+    public String[] getDomains() {
+        return domains;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
 }
