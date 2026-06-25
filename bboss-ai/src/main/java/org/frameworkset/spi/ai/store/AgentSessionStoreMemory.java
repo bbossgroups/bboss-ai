@@ -229,7 +229,9 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setElapsed(elapsed);
         sessionMessage.setTokenMetrics(tokenMetrics_);
         sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
-        agentSession.addSessionMessage(sessionMessage);
+		if(agentSession != null) {
+			agentSession.addSessionMessage(sessionMessage);
+		}
        
         
         if(messageType != null && messageType.equals("1")) {

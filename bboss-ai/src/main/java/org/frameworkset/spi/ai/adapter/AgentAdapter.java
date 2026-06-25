@@ -122,7 +122,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return aiAgent.evalPrompt(agentMessage);
     }
     public Map buildVideoVLRequestMap(VideoVLAgentMessage videoVLAgentMessage, AIAgent aiAgent,ChatContext chatContext) {
-
+		// 构建消息历史列表，包含之前的会话记忆
+		
+		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoVLAgentMessage.getModel());
         List<String > videoUrls = videoVLAgentMessage.getVideoUrls();
@@ -140,9 +142,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         else{
             userMessage = buildInputVideosMessage(prompt, (String[])null);
         }
-        // 构建消息历史列表，包含之前的会话记忆
-
-        List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory();
+      
         List<Map<String, Object>> messages = null;
         if(sessionMemory != null){
             if(sessionMemory.size() == 0){
@@ -183,8 +183,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     }
     
     public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
-
-        
+		
+		// 构建消息历史列表，包含之前的会话记忆
+		
+		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",imageAgentMessage.getModel());
         List<String > imageUrls = imageAgentMessage.getImageUrls();
@@ -201,9 +203,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         else{
             userMessage = buildInputImagesMessage(prompt, (String[])null);
         }
-        // 构建消息历史列表，包含之前的会话记忆
-
-        List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory();
+ 
         List<Map<String, Object>> messages = null;
         if(sessionMemory != null){
             if(sessionMemory.size() == 0){
@@ -426,12 +426,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      */
     public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent aiAgent,ChatObject chatObject,ChatContext chatContext){
 //        Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
+		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,aiAgent);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", toolAgentMessage.getModel());
 
         List<Map<String, Object>> messages = null;
-        List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory();
+   
         if(sessionMemory != null){
             // 构建消息历史列表，包含之前的会话记忆           
             for(Map<String, Object> userMessage : userMessages) {
@@ -531,12 +532,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @return
      */
     public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent aiAgent,ChatObject chatObject, ChatContext chatContext) {
-
+		
+		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         String agentId = aiAgent.getAgentId();
         String message = getPrompt(  chatAgentMessage,   aiAgent);
         if(SimpleStringUtil.isEmpty(message)){
             throw new AIRuntimeException("Prompt message is empty.");
         }
+		
         if(chatContext != null){
             message = chatContext.evalPrompt(message);
         }
@@ -546,7 +549,6 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         requestMap.put("model", chatAgentMessage.getModel());
 
         List<Map<String, Object>> messages = null;
-        List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory();
         if(sessionMemory != null){
             // 构建消息历史列表，包含之前的会话记忆           
 
@@ -726,10 +728,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioSTTAgentMessage.getModel());
-
+		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         // 构建消息历史列表，包含之前的会话记忆
-        List<Map<String, Object>> messages = aiAgent.getSessionMemory() !=  null?
-                new ArrayList<>(aiAgent.getSessionMemory()):new ArrayList<>();
+        List<Map<String, Object>> messages = sessionMemory !=  null?
+                new ArrayList<>(sessionMemory):new ArrayList<>();
         Object audio = audioSTTAgentMessage.getAudio();
         // 添加当前用户消息
         Map<String, Object> userMessage = null;

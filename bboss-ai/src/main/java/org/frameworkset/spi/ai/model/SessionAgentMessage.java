@@ -133,8 +133,8 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
 //        return (T)this;
 //    }
 
-    public AgentSessionStore getMainSessionStore() {
-        initSessionStore();
+    public AgentSessionStore getMainSessionStore(AIAgent aiAgent) {
+        initSessionStore(  aiAgent);
         return mainSessionStore;
     }
 
@@ -142,7 +142,8 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
  
     
      
-    private void initSessionStore(){
+    private void initSessionStore(AIAgent aiAgent){
+		
         if(mainSessionStore == null && storeContext != null){
             mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
             if(storeContext.isResetSession() && storeContext.getSessionId() != null){
@@ -150,6 +151,9 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             }
 //            mainSessionStore = sessionStore;
         }
+		if(mainSessionStore == null && aiAgent != null){
+			mainSessionStore = aiAgent.getMainSessionStore();
+		}
     }
     public T setMainSessionStore(AgentSessionStore mainSessionStore){
         this.mainSessionStore = mainSessionStore;
@@ -157,7 +161,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     }
 
     public int getSessionSize() {
-        initSessionStore();
+        initSessionStore(null);
         if (mainSessionStore != null)
             return mainSessionStore.getSessionSize();
         return 0;
@@ -175,7 +179,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         return agentSessionStore;
     }
     public T addSessionMessage(Map<String, Object> systemMessage,String prompt, AIAgent aiAgent){
-        initSessionStore();
+        initSessionStore(aiAgent);
         if(mainSessionStore == null){
             return (T)this;
         }
@@ -193,12 +197,15 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     }
     
     public T addSessionMessage(Map<String, Object> message, AIAgent aiAgent){   
-        initSessionStore();
+        initSessionStore(aiAgent);
         if(mainSessionStore == null){
             return (T)this;
         }
         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
         AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+		if(agentSessionStore == null){
+			agentSessionStore = aiAgent.getAgentSessionStore();
+		}
         if(agentSessionStore == null){
             return (T)this;
         }
@@ -223,12 +230,15 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
 //    }
 
     public Map<String,Object> addAssistantSessionMessage(ServerEvent serverEvent, AIAgent aiAgent){
-        initSessionStore();
+        initSessionStore(aiAgent);
         if(mainSessionStore == null){
             return null;
         }
         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
         AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+		if(agentSessionStore == null){
+			agentSessionStore = aiAgent.getAgentSessionStore();
+		}
         if(agentSessionStore == null){
             return null;
         }
@@ -236,12 +246,15 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     }
 
     public Map<String,Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder, AIAgent aiAgent){
-        initSessionStore();
+        initSessionStore(aiAgent);
         if(mainSessionStore == null){
             return null;
         }
         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
         AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
+		if(agentSessionStore == null){
+			agentSessionStore = aiAgent.getAgentSessionStore();
+		}
         if(agentSessionStore == null){
             return null;
         }

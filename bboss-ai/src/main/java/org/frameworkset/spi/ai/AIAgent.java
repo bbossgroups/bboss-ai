@@ -384,7 +384,7 @@ public class AIAgent<T extends AIAgent> {
         if( agentMessage instanceof SessionAgentMessage) {
             sessionAgentMessage = (SessionAgentMessage)agentMessage;
             if(mainSessionStore == null) {
-                mainSessionStore = sessionAgentMessage.getMainSessionStore();
+                mainSessionStore = sessionAgentMessage.getMainSessionStore(this);
                 
             }
             
@@ -798,8 +798,18 @@ public class AIAgent<T extends AIAgent> {
         if(this.agentSessionStore != null) {
             return this.agentSessionStore.getSessionMemory();
         }
-        return null;
+        return getSessionMemory(false);
     }
+
+	public List<Map<String, Object>> getSessionMemory(boolean create) {
+		
+		if(agentSessionStore == null && create){
+			this.agentSessionStore = new AgentSessionStoreMemory(new ArrayList<>());
+			this.mainSessionStore = this.agentSessionStore;
+			
+		}
+		return this.agentSessionStore.getSessionMemory();
+	}
 
     /**
      * 获取经过搜索过滤后的工具列表

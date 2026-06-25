@@ -140,11 +140,11 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
 
     @Override
     public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
-
+		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         
         requestMap.put("model", imageAgentMessage.getModel());
-        List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory();
+       
         List<String> imageUrls = imageAgentMessage.getImageUrls();
         String prompt = getPrompt(  imageAgentMessage,   aiAgent);
         if(chatContext != null)
