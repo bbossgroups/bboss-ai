@@ -647,7 +647,7 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
     @Override
     public String addConditionJobFlowNodeBuilder(JobFlowNodeBuilder jobFlowNodeBuilder, TriggerScriptAPI triggerScriptAPI){
         initAIJobFlowBuilder();
-        return this.jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder.setTriggerScriptAPI(triggerScriptAPI));
+        return this.jobFlowBuilder.addConditionJobFlowNodeBuilder(jobFlowNodeBuilder,triggerScriptAPI);
     }
 
     @Override

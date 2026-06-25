@@ -15,13 +15,11 @@ package org.frameworkset.spi.ai.prompt;
  * limitations under the License.
  */
 
-import com.frameworkset.util.SimpleStringUtil;
 import com.frameworkset.util.VariableHandler;
 import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.remote.http.template.DslTemplateCache;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
-import org.frameworkset.util.annotations.DateFormateMeta;
+import org.slf4j.Logger;
 
 import java.util.List;
 
@@ -30,6 +28,7 @@ import java.util.List;
  * @Date 2026/5/12
  */
 public class PromptEval {
+    private static Logger logger = org.slf4j.LoggerFactory.getLogger(PromptEval.class);
     private static String pretoken = "#\\[";
     private static String endtoken = "\\]";
     
@@ -118,11 +117,10 @@ public class PromptEval {
  
         }
         if(newPrompt.length() > 0){
-            return newPrompt.toString();
+            prompt = newPrompt.toString();
         }
-        else{
-            return prompt;
-        }
+        logger.info("new prompt:{}",prompt);
+        return prompt;
        
     }
 }
