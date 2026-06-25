@@ -131,6 +131,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         if(agentSession != null){
             return false;
         }
+        boolean newSession = false;
         synchronized (lockLoadSessionMemory) {
 
             if (agentSession == null) {//未加载
@@ -149,6 +150,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
                     agentSession.setLastAccessTime(agentSession.getCreateTime());
                     agentSession.setDomain(domain);
                     agentSessions.put(this.getSessionId(), agentSession);
+                    newSession = true;
 
                 } else {
                     agentSession.setLastAccessTime(LocalDateTime.now());
@@ -184,10 +186,9 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 
                     }
                 }
-                return true;
             }
         }
-        return false;
+        return newSession;
     }
 
     @Override

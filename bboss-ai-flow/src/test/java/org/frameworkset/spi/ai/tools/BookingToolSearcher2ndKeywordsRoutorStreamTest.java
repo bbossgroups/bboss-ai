@@ -99,7 +99,7 @@ public class BookingToolSearcher2ndKeywordsRoutorStreamTest {
         };
         // 定义工作流智能体，设置会话存储机制为DB
         AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()
-                .setSessionId(sessionId).setUserId("user123").setSessionSize(100)
+                .setSessionId(sessionId).setUserId("user123").setSessionSize(100).setDomain("booking")
                 .setStoreType(StoreContext.STORE_TYPE_DB)
                 .setDataSource("visualops"))
                 .setAgentMessage(chatAgentMessage)

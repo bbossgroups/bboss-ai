@@ -1161,8 +1161,11 @@ public class AIAgent<T extends AIAgent> {
      */
     
     public boolean loadSessionMemory(String prompt ){
- 
-        return loadSessionMemory(  prompt,this.storeContext.getDomain() );
+        String domain = null;
+        if(storeContext != null){
+            domain = storeContext.getDomain();
+        }
+        return loadSessionMemory(  prompt,domain );
     }
 
     public boolean loadSessionMemory(String prompt ,String domain){

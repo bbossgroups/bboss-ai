@@ -147,13 +147,15 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     }
     @Override
     public boolean loadSessionMemory(String prompt,String agentId){
-        return loadSessionMemory(  prompt,(String)null,  agentId);
+        String domain = this.storeContext != null ?this.storeContext.getDomain():null;
+        return loadSessionMemory(  prompt,domain,  agentId);
     }
     @Override
     public boolean loadSessionMemory(String prompt,String domain,String agentId){
         if(agentSession != null){
             return false;
         }
+        boolean newSession = false;
         synchronized (lockLoadSessionMemory) {
             if (agentSession == null) {//未加载
                 try {
@@ -180,6 +182,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                                 getUserId(),
                                 this.getAgentId() != null ? getAgentId() : agentId,//如果主agentId存在，则使用主agentId，否则session由agentId对应的agent创建
                                 prompt.length() > 50 ? prompt.substring(0, 50) : prompt,domain);
+                        newSession = true;
                     } else {
                         SQLExecutor.updateWithDBName(
                                 dataSource,
@@ -218,11 +221,10 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 
                 } catch (SQLException e) {
                     throw new AIRuntimeException("load session error", e);
-                }
-                return true;
+                }                
             }  
         }
-        return false;
+        return newSession;
     }
 
     @Override

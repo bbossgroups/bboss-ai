@@ -48,6 +48,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     /**
      * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
      * 如果会话不存在 则创建会话
+     * 如果是新建的会话，则返回true，否则返回false
      * @param prompt
      * @param domain 
      * @param agentId
