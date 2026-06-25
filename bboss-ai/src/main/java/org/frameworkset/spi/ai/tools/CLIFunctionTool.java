@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.slf4j.Logger;
@@ -42,8 +43,8 @@ public class CLIFunctionTool {
 	}
 	
 	@Tool(name ="executeCommand",description = "执行命令行或者命令脚本:支持linux 和windows 命令和脚本执行，并返回执行结果，注意参数commandScript不能为空！")
-    public Map executeCommand(@ToolParam(name = "commandScript",description = "命令行脚本",required = true) String commandScript){
-        Map result = new java.util.LinkedHashMap<>();
+    public String executeCommand(@ToolParam(name = "commandScript",description = "命令行脚本",required = true) String commandScript){
+        String executeResult = null;
         try {
             java.util.concurrent.CompletableFuture<String> future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
                 java.io.File tempScript = null;
@@ -51,6 +52,8 @@ public class CLIFunctionTool {
                     String os = System.getProperty("os.name").toLowerCase();
                     boolean isWindows = os.contains("win");
                     boolean isScript = commandScript != null && (commandScript.contains("\n") || commandScript.contains("\r"));
+                    // 根据操作系统选择对应的字符集
+                    String charset = isWindows ? "GBK" : java.nio.charset.StandardCharsets.UTF_8.name();
 
                     ProcessBuilder processBuilder;
                     if (isScript) {
@@ -78,7 +81,7 @@ public class CLIFunctionTool {
                     Process proc = processBuilder.start();
                     StringBuilder output = new StringBuilder();
                     try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                            new java.io.InputStreamReader(proc.getInputStream(), "UTF-8"))) {
+                            new java.io.InputStreamReader(proc.getInputStream(), charset))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             output.append(line).append("\n");
@@ -94,19 +97,18 @@ public class CLIFunctionTool {
                     }
                 }
             });
-			String executeResult = null;
+			
 			if(timeout > 0L) {
 				executeResult = future.get(timeout, java.util.concurrent.TimeUnit.SECONDS);
 			}
 			else{
 				executeResult = future.get();
 			}
-            result.put("executeResult", executeResult);
         } catch (Exception e) {
             logger.error("Error executing command: " + commandScript, e);
-            result.put("executeResult", "Error: " + e.getMessage());
+            throw new AIRuntimeException("Error executing command: " + commandScript,e);
         }
-        return result;
+        return executeResult;
     }
 
 }

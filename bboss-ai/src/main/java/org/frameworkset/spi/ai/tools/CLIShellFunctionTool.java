@@ -41,16 +41,17 @@ public class CLIShellFunctionTool {
 		return this;
 	}
 	
-	@Tool(name ="executeShell",description = "执行shell脚本:支持linux 和windows shell脚本执行，并返回执行结果，注意参数shell不能为空！")
-    public Map executeShell(@ToolParam(name = "shell",description = "shell脚本",required = true) String shell){
-        Map result = new java.util.LinkedHashMap<>();
-        try {
+	@Tool(name ="executeShell",description = "执行shell脚本，并返回执行结果:支持linux 和windows shell脚本执行，注意参数shell不能为空！")
+    public String executeShell(@ToolParam(name = "shell",description = "shell脚本",required = true) String shell){
+        String executeResult = null;        try {
             java.util.concurrent.CompletableFuture<String> future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
                 java.io.File tempScript = null;
                 try {
                     String os = System.getProperty("os.name").toLowerCase();
                     boolean isWindows = os.contains("win");
                     boolean isScript = shell != null && (shell.contains("\n") || shell.contains("\r"));
+                    // 根据操作系统选择对应的字符集
+                    String charset = isWindows ? "GBK" : java.nio.charset.StandardCharsets.UTF_8.name();
 
                     ProcessBuilder processBuilder;
                     if (isScript) {
@@ -68,7 +69,7 @@ public class CLIShellFunctionTool {
                         }
                     } else {
                         if (isWindows) {
-                            processBuilder = new ProcessBuilder("cmd", "/c", shell);
+                            processBuilder = new ProcessBuilder("cmd", "/c",  "chcp", "65001", ">", "nul", "&&",shell);
                         } else {
                             processBuilder = new ProcessBuilder("sh", "-c", shell);
                         }
@@ -78,13 +79,14 @@ public class CLIShellFunctionTool {
                     Process proc = processBuilder.start();
                     StringBuilder output = new StringBuilder();
                     try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                            new java.io.InputStreamReader(proc.getInputStream(), "UTF-8"))) {
+                            new java.io.InputStreamReader(proc.getInputStream(), charset))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             output.append(line).append("\n");
                         }
                     }
                     proc.waitFor();
+                    
                     return output.toString();
                 } catch (Exception e) {
                     throw new RuntimeException("Command execution failed: " + shell, e);
@@ -94,19 +96,21 @@ public class CLIShellFunctionTool {
                     }
                 }
             });
-			String executeResult = null;
+			
 			if(timeout > 0L) {
 				executeResult = future.get(timeout, java.util.concurrent.TimeUnit.SECONDS);
 			}
 			else{
 				executeResult = future.get();
 			}
-            result.put("executeResult", executeResult);
+            if(logger.isDebugEnabled()) {
+                logger.info("Command executed successfully: {}", shell);
+                logger.info("Command output: {}", executeResult);
+            }
         } catch (Exception e) {
             logger.error("Error executing command: " + shell, e);
-            result.put("executeResult", "Error: " + e.getMessage());
         }
-        return result;
+        return executeResult;
     }
 
 }

@@ -1,0 +1,118 @@
+package org.frameworkset.spi.ai.tools;
+/**
+ * Copyright 2026 bboss
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import com.frameworkset.common.poolman.util.SQLUtil;
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.flow.AIJudgeAgent;
+import org.frameworkset.spi.ai.flow.AINodeAgent;
+import org.frameworkset.spi.ai.flow.AIPlanAgent;
+import org.frameworkset.spi.ai.model.ChatAgentMessage;
+import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.store.StoreContext;
+import org.frameworkset.spi.ai.tool.BeanToolsRegist;
+import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import reactor.core.publisher.Flux;
+
+import java.util.concurrent.CountDownLatch;
+
+/**
+ * @author biaoping.yin
+ * @Date 2026/6/24
+ */
+public class CliToolFlowTest {
+	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CliToolFlowTest.class);
+	
+	public static void main(String[] args) {
+		try {
+			HttpRequestProxy.startHttpPools("application-stream.properties");
+            initDB();
+			callMinimaxSimple();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+    public static void initDB(){
+
+
+        SQLUtil.startPool("visualops",//数据源名称
+                "com.mysql.cj.jdbc.Driver",//oracle驱动
+                "jdbc:mysql://192.168.137.1:3306/bboss?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true",//mysql链接串
+                "root","123456",//数据库账号和口令
+                "select 1 " //数据库连接校验sql
+        );
+    }
+
+    public static void callMinimaxSimple() throws InterruptedException {
+		//MiniMax-M2.7
+		//定义问题变量
+		String message = "当前OS为windows，生成一段复合windows语法的shell脚本，先查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理。输出要求：返回工具执行命令结果";
+		//设置模型调用参数，
+		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
+		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个运维专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本中可以包含完成用户要求的多条指令代码，并将生成的脚本交由工具执行，输出执行结果");
+		
+		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
+		
+		CountDownLatch countDownLatch = new CountDownLatch(1);
+        // 定义工作流智能体，设置会话存储机制为DB
+        AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()
+                .setSessionId("123456").setUserId("user123").setSessionSize(100)
+                .setStoreType(StoreContext.STORE_TYPE_DB)
+                .setDataSource("visualops"))
+                .setAgentMessage(chatAgentMessage)
+                .setAgentName("命令执行工作流").setAgentId("commandExecutionWorkflowAgent");
+        
+        ToolsRegist toolsRegist = new BeanToolsRegist(new CLIShellFunctionTool(60));
+		AINodeAgent scan2ndClosePortProcessAgent = new AINodeAgent()
+				.setAgentId("scan2ndClosePortProcessAgent").setAgentName("扫描并关闭端口进程");
+		scan2ndClosePortProcessAgent.setToolsRegist(toolsRegist);
+        planAgent.addAgent(scan2ndClosePortProcessAgent);
+        
+        planAgent.addAgent(new AIJudgeAgent("请评估问题答案是否处理了用户提出的问题,处理则返回输出：是，否则仅返回输出：否\n#用户问题:\n#[input.query,scope=node]\n# 问题答案：\n#[answer,scope=node]")
+				.setAgentId("judgeAgent").setAgentName("评估智能体"));
+        //构建最终飞书报告创建智能体：添加将问题答案创建为飞书文档的智能体
+        planAgent.addConditionFlowNode(scan2ndClosePortProcessAgent,
+                nodeTriggerContext -> {
+                    String judgeResult = (String) nodeTriggerContext.getFlowContextData("judgeAgent.judgeResult");
+                    if("否".equals(judgeResult)){
+                        return true;
+                    }
+                    else{
+                        logger.info("judgeAgent.judgeResult：{}",judgeResult);
+                    }
+                    return false;
+                });
+        //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
+		Flux<ServerEvent> flux = planAgent.chatStream();
+		
+		flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+				.doOnNext(chunk -> {
+					
+					if(chunk.getData() != null) {
+						System.out.print(chunk.getData());
+					}
+//					
+				}) //打印流式调用返回的问题答案片段
+				.doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
+				.doOnError(error ->{countDownLatch.countDown(); logger.error("错误: " + error.getMessage(),error);})
+				.subscribe();
+		
+		// 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+		countDownLatch.await();
+	}
+	
+}
