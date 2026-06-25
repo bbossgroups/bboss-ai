@@ -16,6 +16,9 @@
 
 package org.frameworkset.spi.ai.model;
 
+import java.time.LocalDateTime;
+import java.util.Date;
+
 /**
  * <p>Title: AgentSessionCondition</p> <p>Description: 会话管理查询条件实体类 </p>
  *  <p>Copyright (c) 2007</p> @Date 2026-06-12 14:16:51 @author
@@ -50,6 +53,15 @@ public class AgentSessionCondition implements java.io.Serializable {
 	private String userId;
 	private String sortKey;
 	private boolean sortDesc;
+
+    /**
+     * 查询开始时间：最后访问时间
+     */
+    private Date lastAccessTime_start;
+    /**
+     * 查询结束时间：最后访问时间
+     */
+    private Date lastAccessTime_end;
 	public AgentSessionCondition() {
 	}
 	public void setAgentid(String agentid) {
@@ -106,5 +118,21 @@ public class AgentSessionCondition implements java.io.Serializable {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Date getLastAccessTime_start() {
+        return lastAccessTime_start;
+    }
+
+    public void setLastAccessTime_start(Date lastAccessTime_start) {
+        this.lastAccessTime_start = lastAccessTime_start;
+    }
+
+    public Date getLastAccessTime_end() {
+        return lastAccessTime_end;
+    }
+
+    public void setLastAccessTime_end(Date lastAccessTime_end) {
+        this.lastAccessTime_end = lastAccessTime_end;
     }
 }

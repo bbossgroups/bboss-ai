@@ -62,6 +62,12 @@
 			select * from agent_session where sessionId=?
 		]]>
 	</property>
+    <property name="existAgentSession">
+        <![CDATA[
+			select count(1) as sessionCount from agent_session where sessionId=?
+		]]>
+    </property>
+    
 	<property name="queryListAgentSession">
 		<![CDATA[
 			select * from agent_session where 1=1
@@ -84,7 +90,12 @@
 			#if($title && !$title.equals(""))
 				and title like #[title]	
 			#end	  
-			
+			#if($lastAccessTime_start )
+                and lastAccessTime>=#[lastAccessTime_start]
+            #end
+            #if($lastAccessTime_end )
+                and lastAccessTime<=#[lastAccessTime_end]
+            #end
             #if($sortKey && !$sortKey.equals(""))
                 order by $sortKey #if($sortDesc)desc#else asc#end
             #end

@@ -16,6 +16,8 @@ package org.frameworkset.spi.ai;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
+import com.frameworkset.util.JsonUtil;
+import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
 import org.frameworkset.spi.ai.store.AgentSession;
@@ -23,6 +25,8 @@ import org.frameworkset.spi.ai.store.AgentSessionService;
 import org.frameworkset.spi.ai.store.db.AgentSessionServiceImpl;
 import org.slf4j.Logger;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 /**
@@ -41,7 +45,7 @@ public class AgentSessionServiceTest {
                 "select 1 " //数据库连接校验sql
         );
     }
-    public static void main(String[] args){
+    public static void main(String[] args) throws ParseException {
         initDB();
         String[] domains = new String[]{"bookingWorkflowAgent","workflowAgent"};
         AgentSessionService agentSessionService = new AgentSessionServiceImpl();
@@ -55,10 +59,20 @@ public class AgentSessionServiceTest {
         if(domains != null && domains.length > 0) {
             agentSessionCondition.setDomains(domains);
         }
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        
+        agentSessionCondition.setLastAccessTime_start(dateFormat.parse("2023-01-01 00:00:00"));
+        agentSessionCondition.setLastAccessTime_end(dateFormat.parse("2025-12-31 23:59:59"));
         agentSessionCondition.setSortKey("lastAccessTime");
         agentSessionCondition.setSortDesc(true);
         List<AgentSession> sessions = agentSessionService.queryListAgentSessions(agentSessionCondition);
-        logger.info("sessions:{}",sessions);
+        logger.info("sessions:{}", JsonUtil.object2json(sessions));
+        
+        boolean exist = agentSessionService.existAgentSession("9719a152abbc45a1a3d0e09621efe5ce");
+        logger.info("exist:{}",exist);
+
+        exist = agentSessionService.existAgentSession("9719a152abbc45a1a3d09621efe5ce");
+        logger.info("exist:{}",exist);
     }
 
 }

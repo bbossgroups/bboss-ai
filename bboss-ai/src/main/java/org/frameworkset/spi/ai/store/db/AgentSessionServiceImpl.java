@@ -27,6 +27,7 @@ import org.frameworkset.spi.ai.store.SessionMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -129,6 +130,25 @@ public class AgentSessionServiceImpl implements AgentSessionService {
         }
 
     }
+
+    /**
+     * 判断会话是否存在
+     *
+     * @param sessionid
+     * @return
+     * @throws AgentSessionException
+     */
+    @Override
+    public boolean existAgentSession(String sessionid) throws AgentSessionException {
+        int count = 0;
+        try {
+            count = executor.queryObjectWithDBName(Integer.class, datasource, "existAgentSession", sessionid);
+        } catch (SQLException e) {
+            throw new AgentSessionException(e);
+        }
+        return count > 0;
+    }
+
     public ListInfo queryListInfoAgentSessions(AgentSessionCondition conditions, long offset, int pagesize)
             throws AgentSessionException
 

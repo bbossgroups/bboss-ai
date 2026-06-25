@@ -37,10 +37,34 @@ public interface AgentSessionService {
 	AgentSession getAgentSession(String sessionid) throws AgentSessionException
 
 	;
+
+    /**
+     * 判断会话是否存在
+     * @param sessionid
+     * @return
+     * @throws AgentSessionException
+     */
+    boolean existAgentSession(String sessionid) throws AgentSessionException;
+
+    /**
+     * 分页查询会话记录
+     * @param conditions
+     * @param offset
+     * @param pagesize
+     * @return
+     * @throws AgentSessionException
+     */
 	ListInfo queryListInfoAgentSessions(AgentSessionCondition conditions, long offset, int pagesize)
 			throws AgentSessionException
 
 	;
+
+    /**
+     * 查询会话列表
+     * @param conditions
+     * @return
+     * @throws AgentSessionException
+     */
 	List<AgentSession> queryListAgentSessions(AgentSessionCondition conditions) throws AgentSessionException
 
 	;
