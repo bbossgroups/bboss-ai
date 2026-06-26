@@ -84,6 +84,8 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize);
 
     void recordTraceMessage(TraceMessage traceMessage);
+    void recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics);
+    
     LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,//Map<String, Object> message,
                                                 String agentId, String parentAgentId, String marks, String metadata, String messageType);
             

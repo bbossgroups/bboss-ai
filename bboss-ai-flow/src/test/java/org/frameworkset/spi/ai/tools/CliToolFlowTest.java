@@ -25,6 +25,7 @@ import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.ai.tool.BeanToolsRegist;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import org.frameworkset.util.concurrent.IntegerCount;
 import reactor.core.publisher.Flux;
 
 import java.util.concurrent.CountDownLatch;
@@ -59,18 +60,25 @@ public class CliToolFlowTest {
     public static void callMinimaxSimple() throws InterruptedException {
 		//MiniMax-M2.7
 		//定义问题变量
-		String message = "当前OS为windows，生成一段复合windows语法的shell脚本，先查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理。输出要求：返回工具执行命令结果";
+		String message = "当前OS为windows，生成一段符合windows语法的shell脚本，先查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理,脚本正常执行完毕的情况下，立即终止并返回执行结果。\n# 结果输出要求：直接返回脚本及脚本执行结果";
 		//设置模型调用参数，
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
+//		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
+//        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
+        //采用qwen3.7-plus模型时，需要阻止模型反复调用工具
+        message = "当前OS为windows，帮忙查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理。\n# 工具调用要求：只执行一次工具，执行后只分析结果，不要再返回工具调用信息和工具参数\n# 结果输出要求：直接返回脚本及脚本执行结果";
+
+        chatAgentMessage.setModel("deepseek-v4-pro").setMaas("deepseek").setRetry(3);
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个运维专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本中可以包含完成用户要求的多条指令代码，并将生成的脚本交由工具执行，输出执行结果");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        IntegerCount integerCount = new IntegerCount();
         // 定义工作流智能体，设置会话存储机制为DB
         AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()
-                .setSessionId("123456").setUserId("user123").setSessionSize(100)
+                .setUserId("user123").setSessionSize(100)
                 .setStoreType(StoreContext.STORE_TYPE_DB)
                 .setDataSource("visualops"))
                 .setAgentMessage(chatAgentMessage)
@@ -82,13 +90,16 @@ public class CliToolFlowTest {
 		scan2ndClosePortProcessAgent.setToolsRegist(toolsRegist);
         planAgent.addAgent(scan2ndClosePortProcessAgent);
         
-        planAgent.addAgent(new AIJudgeAgent("请评估问题答案是否处理了用户提出的问题,处理则返回输出：是，否则仅返回输出：否\n#用户问题:\n#[input.query,scope=node]\n# 问题答案：\n#[answer,scope=node]")
+        planAgent.addAgent(new AIJudgeAgent("请评估问题答案是否处理了用户提出的问题,处理则返回输出：是，如果没有查到进程则返回：是，否则仅返回输出：否\n#用户问题:\n#[input.query,scope=node]\n# 问题答案：\n#[answer,scope=node]")
 				.setAgentId("judgeAgent").setAgentName("评估智能体"));
         //构建最终飞书报告创建智能体：添加将问题答案创建为飞书文档的智能体
         planAgent.addConditionFlowNode(scan2ndClosePortProcessAgent,
                 nodeTriggerContext -> {
                     String judgeResult = (String) nodeTriggerContext.getFlowContextData("judgeAgent.judgeResult");
                     if("否".equals(judgeResult)){
+                        int i = integerCount.increament();
+                        if(i >= 5) //最多执行5次
+                            return false;
                         return true;
                     }
                     else{

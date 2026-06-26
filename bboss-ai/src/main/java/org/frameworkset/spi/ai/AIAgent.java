@@ -371,9 +371,14 @@ public class AIAgent<T extends AIAgent> {
 
                 }
             } else if (lastSubAgentSessionMessage != null) {//不为空，直接append主智能体中的最后一条消息
-                agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
-                mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
-                //记录消息引用关系
+                //如果父智能体的最后一个子智能体消息就是智能体自己产生消息,无需添加到自己的消息列表中（因为结果生成后，已经添加到消息列表）
+                if(!lastSubAgentSessionMessage.getMsgAgentId().equals(this.getAgentId())) {
+                    
+                    agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
+                    //记录消息引用关系
+                    mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
+                }
+               
             }
         }
     }
@@ -654,7 +659,8 @@ public class AIAgent<T extends AIAgent> {
 
 
     public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage ){
-        return chat(  maasName,   chatAgentMessage,(ChatContext)null);
+        ChatContext chatContext = new ChatContext();
+        return chat(  maasName,   chatAgentMessage,chatContext);
     }
     /**
      * 实现同步智能问答,在指定的数据源上执行
@@ -1181,6 +1187,16 @@ public class AIAgent<T extends AIAgent> {
             traceMessage.setAgentId(this.getAgentId());
             traceMessage.setParentAgentId(this.getParentAgentId());
             this.mainSessionStore.recordTraceMessage(traceMessage);
+        }
+        return (T)this;
+    }
+
+    public T recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics){
+        this.initSessionStore();
+        if(this.mainSessionStore != null) {
+            traceMessage.setAgentId(this.getAgentId());
+            traceMessage.setParentAgentId(this.getParentAgentId());
+            this.mainSessionStore.recordTraceMessage(traceMessage,tokenMetrics);
         }
         return (T)this;
     }

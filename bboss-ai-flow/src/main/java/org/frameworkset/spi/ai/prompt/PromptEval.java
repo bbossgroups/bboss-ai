@@ -119,7 +119,9 @@ public class PromptEval {
         if(newPrompt.length() > 0){
             prompt = newPrompt.toString();
         }
-        logger.info("new prompt:{}",prompt);
+        if(logger.isDebugEnabled()) {
+            logger.debug("new prompt:{}", prompt);
+        }
         return prompt;
        
     }

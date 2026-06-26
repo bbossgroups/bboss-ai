@@ -109,7 +109,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         chatObject.setStream(stream);
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
-        chatObject.setAiAgent(aiAgent);
+        chatObject.setAgent(aiAgent);
         return chatObject;
     }
 }

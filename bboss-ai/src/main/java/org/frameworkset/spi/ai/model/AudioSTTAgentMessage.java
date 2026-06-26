@@ -135,7 +135,7 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
         chatObject.setFiles( files);
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
-        chatObject.setAiAgent(aiAgent);
+        chatObject.setAgent(aiAgent);
         return chatObject;
     }
 

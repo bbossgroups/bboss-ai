@@ -45,10 +45,11 @@ public class CliToolTest {
 		String message = "当前OS为windows，生成一段shell脚本，首先查找占用端口808的进程，如果存在对应进程，则关闭进程，输出端口进程信息和关闭核对结果";
 		//设置模型调用参数，
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
+//		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
+        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个运维专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本中可以包含完成用户要求的多条指令代码，并将生成的脚本交由工具执行，输出执行结果");
 		
-		chatAgentMessage.setStream( true).setThinking(true).setTemperature(0.7);//.addParameter("max_tokens", 2048);
+		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		AIAgent aiAgent = new AIAgent();

@@ -262,19 +262,15 @@ public class AIAgentUtil {
         return streamChatCompletionEvent((String)null , message, (StoreFilePathFunction) null,   aiAgent);
     }
 
-    public static <T> void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ToolAgentMessage toolAgentMessage,
-                                                     FluxSink<T> sink,DisposeEventHandler disposeEventHandler, AIAgent aiAgent ){
-        streamChatCompletionEvent(  clientConfiguration,   toolAgentMessage,
-                 sink,  disposeEventHandler,   aiAgent,(ChatContext)null);
-    }
 
     public static <T> void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ToolAgentMessage toolAgentMessage,
                                                      FluxSink<T> sink,DisposeEventHandler disposeEventHandler, AIAgent aiAgent,ChatContext chatContext) {
         long startTime = System.currentTimeMillis();
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,toolAgentMessage);
 
+        
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,toolAgentMessage,   aiAgent,true,chatContext);
-        chatObject.getStreamDataBuilder().setStartTime(startTime);
+        chatObject.getStreamDataBuilder().setStartTime(startTime);        
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
  
             @Override
@@ -319,7 +315,7 @@ public class AIAgentUtil {
                 }
             };
 
-            traceLLMInput(message, chatObject.getAiAgent(),SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
+            traceLLMInput(message, chatObject.getAgent(),SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
             
             if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)){
                 Map header = new LinkedHashMap();
@@ -374,7 +370,8 @@ public class AIAgentUtil {
             List<FunctionTool> functionTools = baseStreamDataBuilder.getFunctionTools();
 
 
-            if (functionTools != null && functionTools.size() > 0) {
+            if (functionTools != null && functionTools.size() > 0) {//理论上不可能有工具调用
+//                chatObject.getChatContext().setToolCallStage(ChatContext.TOOL_CALL_STAGE_EXECUTE_TOOL);
                 streamDataHandler.streamChatCompletionEvent(clientConfiguration,chatObject,baseStreamDataBuilder,sink,disposeEventHandler);
 
                 //                    Flux<ServerEvent> innerflux = streamChatCompletionEvent(poolName, toolAgentMessage);
@@ -397,13 +394,15 @@ public class AIAgentUtil {
         }
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent){
-        return  streamChatCompletionEvent(  poolName,  chatMessage,    aiAgent, (ChatContext)null);
+        ChatContext chatContext = new ChatContext();
+        return  streamChatCompletionEvent(  poolName,  chatMessage,    aiAgent, chatContext);
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent, ChatContext chatStreamCallback){
         return  streamChatCompletionEvent(poolName,chatMessage,(StoreFilePathFunction) null, aiAgent,chatStreamCallback);
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent) {
-        return  streamChatCompletionEvent(poolName,chatMessage,storeFilePathFunction, aiAgent,(ChatContext)null);
+        ChatContext chatContext = new ChatContext();
+        return  streamChatCompletionEvent(poolName,chatMessage,storeFilePathFunction, aiAgent,chatContext);
     }
     /**
      * 创建流式调用的Flux,在指定的数据源上执行
@@ -416,7 +415,7 @@ public class AIAgentUtil {
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,true,chatStreamCallback);
         chatObject.setStoreFilePathFunction(storeFilePathFunction);
         chatObject.getStreamDataBuilder().setStartTime(startTime);
-        chatObject.setChatContext(chatStreamCallback);
+//        chatObject.setChatContext(chatStreamCallback);
         BaseStreamDataHandler<ServerEvent> streamDataHandler = new BaseStreamDataHandler<ServerEvent>() {
            
             @Override
@@ -527,7 +526,7 @@ public class AIAgentUtil {
                 }
             };
 
-            traceLLMInput(message, chatObject.getAiAgent(),SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
+            traceLLMInput(message, chatObject.getAgent(),SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
              
             if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)){
                 Map header = new LinkedHashMap();
@@ -579,9 +578,10 @@ public class AIAgentUtil {
             }
 
             List<FunctionTool> functionTools = baseStreamDataBuilder.getFunctionTools();
-
+            
 
             if (functionTools != null && functionTools.size() > 0) {
+                chatObject.getChatContext().setToolCallStage(ChatContext.TOOL_CALL_STAGE_EXECUTE_TOOL);
                 streamDataHandler.streamChatCompletionEvent(clientConfiguration,chatObject,baseStreamDataBuilder,sink,disposeEventHandler);
 
 //                    Flux<ServerEvent> innerflux = streamChatCompletionEvent(poolName, toolAgentMessage);
@@ -610,7 +610,7 @@ public class AIAgentUtil {
     }
 
     private static <T> Flux<T> buildFlux(ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler) {
-        AIAgent aiAgent = chatObject.getAiAgent();
+        AIAgent aiAgent = chatObject.getAgent();
         if(aiAgent != null){
             FluxSink<ServerEvent> fluxSink = aiAgent.getAgentFluxSink();
             if(fluxSink != null){
@@ -915,6 +915,7 @@ public class AIAgentUtil {
 //            return serverEvent;
         List<FunctionTool> functionTools = serverEvent.getFunctionTools();
         if(functionTools != null && functionTools.size() > 0){
+            chatContext.setToolCallStage(ChatContext.TOOL_CALL_STAGE_EXECUTE_TOOL);
             ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
             _chatMessage.addAssistantSessionMessage(serverEvent ,aiAgent);
             if(serverEvent.getData() != null && serverEvent.getData().length() > 0) {

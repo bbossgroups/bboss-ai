@@ -20,8 +20,35 @@ package org.frameworkset.spi.ai.callback;
  * @Date 2026/5/12
  */
 public class ChatContext {
+    /**
+     * 大模型检索匹配工具阶段、识别和提取工具参数
+     */
+    public static final int TOOL_CALL_STAGE_SEARCH_TOOL = 1;
+
+    /**
+     * 大模型执行工具阶段
+     */
+    public static final int TOOL_CALL_STAGE_EXECUTE_TOOL = 2;
+
+
+    /**
+     * 处理工具调用响应阶段
+     */
+    public static final int TOOL_CALL_STAGE_HANDLE_TOOL_RESPONSE = 3;
     private ChatStreamCallback chatStreamCallback;
- 
+    /**
+     * 会话是否使用工具调用
+     */
+    private boolean chatWithToolcall;
+
+
+    /**
+     * 如果会话使用工具调用chatWithToolcall为true，则用toolCallStage标记工具调用阶段，
+     * 默认为TOOL_CALL_STAGE_SEARCH_TOOL阶段
+     */
+    private int toolCallStage = TOOL_CALL_STAGE_SEARCH_TOOL;
+    
+    
 
     public void setChatStreamCallback(ChatStreamCallback chatStreamCallback) {
         this.chatStreamCallback = chatStreamCallback;
@@ -37,4 +64,20 @@ public class ChatContext {
         }
         return prompt;
     }
+
+    public boolean isChatWithToolcall() {
+        return chatWithToolcall;
+    }
+
+    public void setChatWithToolcall(boolean chatWithToolcall) {
+        this.chatWithToolcall = chatWithToolcall;
+    }
+    public int getToolCallStage() {
+        return toolCallStage;
+    }
+
+    public void setToolCallStage(int toolCallStage) {
+        this.toolCallStage = toolCallStage;
+    }
+
 }

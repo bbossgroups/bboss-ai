@@ -71,6 +71,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(tools != null && tools.size() > 0){
 //            Object tools = aiAgent.getTools();
             requestMap.put("tools",   tools);
+            chatContext.setChatWithToolcall(true);
         }
     }
 
@@ -665,7 +666,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         else{
             _agentMessage = new ObjectAgentMessage(agentMessage);
         }
-        return _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent,fromStreamAPI,  chatCallback);
+        ChatObject chatObject = _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent,fromStreamAPI,  chatCallback);
+        chatObject.setChatContext(chatCallback);
+        return chatObject;
          
  
     }

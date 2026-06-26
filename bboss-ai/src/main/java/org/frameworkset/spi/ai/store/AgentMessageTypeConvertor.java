@@ -80,6 +80,9 @@ public class AgentMessageTypeConvertor {
         else if(MESSAGE_TYPE_AGENT_RESULTMESSAGE_NAME.equals(role)) {
             return MESSAGE_TYPE_AGENT_RESULTMESSAGE;
         }
+        else if(MESSAGE_TYPE_TOOLSEARCH_MESSAGE_NAME.equals(role)) {
+            return MESSAGE_TYPE_TOOLSEARCH_MESSAGE;
+        }
 
 
 

@@ -94,7 +94,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         chatObject.setCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(clientConfiguration,this));
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
-        chatObject.setAiAgent(aiAgent);
+        chatObject.setAgent(aiAgent);
         return chatObject;
     }
 

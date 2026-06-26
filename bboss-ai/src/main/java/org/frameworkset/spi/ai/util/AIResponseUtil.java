@@ -23,6 +23,7 @@ import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.material.DownFileHttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownImageBase64HttpClientResponseHandler;
@@ -130,7 +131,7 @@ public class AIResponseUtil {
         ServerEvent serverEvent = new ServerEvent();
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
         ChatObject chatObject = streamDataBuilder.getChatObject();        
-        serverEvent.setAgent(chatObject.getAiAgent());
+        serverEvent.setAgent(chatObject.getAgent());
         if(firstEventTag.get()) {
             firstEventTag.set(false);
             serverEvent.setFirst(true);
@@ -146,7 +147,7 @@ public class AIResponseUtil {
         sink.next(serverEvent);
 
         serverEvent = new ServerEvent();
-        serverEvent.setAgent(chatObject.getAiAgent());
+        serverEvent.setAgent(chatObject.getAgent());
         serverEvent.setDone( true);
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
         sink.next(serverEvent);
@@ -952,7 +953,7 @@ public class AIResponseUtil {
                 serverEvent = new ServerEvent();
 
                 ChatObject chatObject = streamDataBuilder.getChatObject();
-                serverEvent.setAgent(chatObject.getAiAgent());
+                serverEvent.setAgent(chatObject.getAgent());
                 serverEvent.setData(content.getContent());
                 serverEvent.setGenUrl(content.getUrl());
                 serverEvent.setFinishReason(content.getFinishReason());
@@ -1020,7 +1021,7 @@ public class AIResponseUtil {
                 ServerEvent serverEvent = new ServerEvent();
 
                 ChatObject chatObject = streamDataBuilder.getChatObject();
-                serverEvent.setAgent(chatObject.getAiAgent());
+                serverEvent.setAgent(chatObject.getAgent());
                 if(firstEventTag.get()) {
                     firstEventTag.set(false);
                     serverEvent.setFirst(true);
@@ -1033,8 +1034,22 @@ public class AIResponseUtil {
                     serverEvent.setTokenMetrics(tokenMetrics);
                     tokenMetrics.setEndTime(System.currentTimeMillis());
                 }
-                
-                serverEvent.setFullStreamData(streamDataBuilder.addAgentResultSessionMessage(tokenMetrics));
+                ChatContext chatContext = chatObject.getChatContext();
+                String fullStreamData = null;
+                if(chatContext.isChatWithToolcall() ) {
+//                    if(chatContext.getToolCallStage() == ChatContext.TOOL_CALL_STAGE_SEARCH_TOOL) {
+                    List<FunctionTool> functionTools = streamDataBuilder.getFunctionTools();//接下来，还需要执行工具调用
+                    if(functionTools != null && functionTools.size() > 0){
+                        fullStreamData = streamDataBuilder.addChatWithToolCallSessionMessage(tokenMetrics);
+                    }
+                    else{
+                        fullStreamData = streamDataBuilder.addAgentResultSessionMessage(tokenMetrics);
+                    }
+                }
+                else{
+                    fullStreamData = streamDataBuilder.addAgentResultSessionMessage(tokenMetrics);
+                }
+                serverEvent.setFullStreamData(fullStreamData);
                 try {
                     ChatStreamCallback chatStreamCallback = chatObject.getChatStreamCallback();
                     if (chatStreamCallback != null) {
@@ -1129,7 +1144,7 @@ public class AIResponseUtil {
 
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
         ChatObject chatObject = streamDataBuilder.getChatObject();
-        serverEvent.setAgent(chatObject.getAiAgent());
+        serverEvent.setAgent(chatObject.getAgent());
         if (firstEventTag.get()) {
             firstEventTag.set(false);
             serverEvent.setFirst(true);

@@ -29,42 +29,6 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SessionMessage {
     /**
-     * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
-     */
-    public static final String MESSAGE_TYPE_USER_INPUTMESSAGE = "8";
-
-    /**
-     * LLM输入消息
-     */
-    public static final String MESSAGE_TYPE_LLM_INPUTMESSAGE = "9";
-
-    /**
-     * LLM输出消息
-     */
-    public static final String MESSAGE_TYPE_LLM_OUTPUTMESSAGE = "10";
-
-    /**
-     * 向量模型输入消息
-     */
-    public static final String MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE = "11";
-
-    /**
-     * RERANK模型输入消息
-     */
-    public static final String MESSAGE_TYPE_RERANK_INPUTMESSAGE = "12";
-
-
-    /**
-     * 向量模型输入消息
-     */
-    public static final String MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE = "13";
-    
-    /**
-     * RERANK模型输入消息
-     */
-    public static final String MESSAGE_TYPE_RERANK_OUTPUTMESSAGE = "14";
-    
-    /**
      * 智能体输出消息:ASSISTANT中的一种
      */
     public static final String MESSAGE_TYPE_AGENT_RESULTMESSAGE = "1";
@@ -100,6 +64,47 @@ public class SessionMessage {
      * 智能体拒答消息
      */
     public static final String MESSAGE_TYPE_REFUSE_MESSAGE = "7";
+    /**
+     * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
+     */
+    public static final String MESSAGE_TYPE_USER_INPUTMESSAGE = "8";
+
+    /**
+     * LLM输入消息
+     */
+    public static final String MESSAGE_TYPE_LLM_INPUTMESSAGE = "9";
+
+    /**
+     * LLM输出消息
+     */
+    public static final String MESSAGE_TYPE_LLM_OUTPUTMESSAGE = "10";
+
+    /**
+     * 向量模型输入消息
+     */
+    public static final String MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE = "11";
+
+    /**
+     * RERANK模型输入消息
+     */
+    public static final String MESSAGE_TYPE_RERANK_INPUTMESSAGE = "12";
+
+
+    /**
+     * 向量模型输入消息
+     */
+    public static final String MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE = "13";
+    
+    /**
+     * RERANK模型输入消息
+     */
+    public static final String MESSAGE_TYPE_RERANK_OUTPUTMESSAGE = "14";
+    /**
+     * 智能体工具搜索匹配消息
+     */
+    public static final String MESSAGE_TYPE_TOOLSEARCH_MESSAGE = "15";
+    
+   
 
 
     /**
@@ -148,6 +153,12 @@ public class SessionMessage {
      * 智能体辅助消息
      */
     public static final String MESSAGE_TYPE_ASSISTANT_MESSAGE_NAME = "assistant";
+
+
+    /**
+     * 智能体工具搜索匹配消息
+     */
+    public static final String MESSAGE_TYPE_TOOLSEARCH_MESSAGE_NAME = "toolsearch";
 
 
     /**

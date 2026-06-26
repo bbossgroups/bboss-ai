@@ -42,7 +42,7 @@ public class CLIShellFunctionTool {
 	}
 	
 	@Tool(name ="executeShell",description = "执行shell脚本，并返回执行结果:支持linux 和windows shell脚本执行，注意参数shell不能为空！")
-    public String executeShell(@ToolParam(name = "shell",description = "shell脚本",required = true) String shell){
+    public Map executeShell(@ToolParam(name = "shell",description = "shell脚本",required = true) String shell){
         String executeResult = null;        try {
             java.util.concurrent.CompletableFuture<String> future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
                 java.io.File tempScript = null;
@@ -54,26 +54,26 @@ public class CLIShellFunctionTool {
                     String charset = isWindows ? "GBK" : java.nio.charset.StandardCharsets.UTF_8.name();
 
                     ProcessBuilder processBuilder;
-                    if (isScript) {
-                        String suffix = isWindows ? ".bat" : ".sh";
-                        tempScript = java.io.File.createTempFile("cli_script_", suffix);
-                        java.nio.file.Files.write(tempScript.toPath(),
-                                shell.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                        if (!isWindows) {
-                            tempScript.setExecutable(true);
-                        }
-                        if (isWindows) {
-                            processBuilder = new ProcessBuilder("cmd", "/c", tempScript.getAbsolutePath());
-                        } else {
-                            processBuilder = new ProcessBuilder("sh", tempScript.getAbsolutePath());
-                        }
-                    } else {
+//                    if (isScript) {
+//                        String suffix = isWindows ? ".bat" : ".sh";
+//                        tempScript = java.io.File.createTempFile("cli_script_", suffix);
+//                        java.nio.file.Files.write(tempScript.toPath(),
+//                                shell.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+//                        if (!isWindows) {
+//                            tempScript.setExecutable(true);
+//                        }
+//                        if (isWindows) {
+//                            processBuilder = new ProcessBuilder("cmd", "/c", tempScript.getAbsolutePath());
+//                        } else {
+//                            processBuilder = new ProcessBuilder("sh", tempScript.getAbsolutePath());
+//                        }
+//                    } else {
                         if (isWindows) {
                             processBuilder = new ProcessBuilder("cmd", "/c",  "chcp", "65001", ">", "nul", "&&",shell);
                         } else {
                             processBuilder = new ProcessBuilder("sh", "-c", shell);
                         }
-                    }
+//                    }
 
                     processBuilder.redirectErrorStream(true);
                     Process proc = processBuilder.start();
@@ -110,7 +110,9 @@ public class CLIShellFunctionTool {
         } catch (Exception e) {
             logger.error("Error executing command: " + shell, e);
         }
-        return executeResult;
+        Map result = new java.util.HashMap();
+        result.put("executeResult",executeResult);
+        return result;
     }
 
 }

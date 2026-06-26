@@ -16,8 +16,10 @@ package org.frameworkset.spi.ai.util;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.SessionMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -149,6 +151,28 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         return streamData;
     }
 
+    public String addChatWithToolCallSessionMessage(TokenMetrics tokenMetrics){
+        String data = null;
+        StringBuilder newData = new StringBuilder();
+        if(fullReasoningStreamData != null){
+            tokenMetrics.setReasoningData(fullReasoningStreamData.toString());
+//            newData.append("<reasoning>").append(fullReasoningStreamData.toString()).append("</reasoning>\r\n");
+        }
+        if(this.fullStreamData != null){
+            newData. append(fullStreamData);
+
+        }
+        AIAgent agent = this.getChatObject().getAgent();
+        if(newData.length() > 0) {
+            data = newData.toString();
+            TraceMessage traceMessage = new TraceMessage();
+            Map<String, Object> assistantMessage = MessageBuilder.buildMessage(SessionMessage.MESSAGE_TYPE_TOOLSEARCH_MESSAGE_NAME,data );
+            traceMessage.setMessage(assistantMessage);
+            agent.recordTraceMessage(  traceMessage,tokenMetrics);
+            
+        }
+        return data;
+    }
     public String addAgentResultSessionMessage(TokenMetrics tokenMetrics){
         String data = null;
         StringBuilder newData = new StringBuilder();
@@ -161,9 +185,9 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
            
         }
         if(newData.length() > 0) {
-            AgentMessage agentMessage =   this.getChatObject().getAgentMessage();
             data = newData.toString();
-            agentMessage.addAgentResultSessionMessage(  tokenMetrics,data, this.getChatObject().getAiAgent());
+//            agentMessage.addAgentResultSessionMessage(  tokenMetrics,data, this.getChatObject().getAiAgent());
+            this.getChatObject().getAgent().addAgentResultSessionMessage(  tokenMetrics,data);
         }
         return data;
     }

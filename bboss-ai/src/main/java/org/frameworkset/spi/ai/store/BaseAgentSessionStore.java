@@ -254,6 +254,27 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.persistentSessionMessage(persistentMessage,traceMessage.getAgentId(), traceMessage.getParentAgentId(), (String)null, metadata, messageType);
     }
 
+
+    @Override
+    public void recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics){
+        PersistentMessage persistentMessage = new PersistentMessage();
+
+        Map<String, Object> message = traceMessage.getMessage();
+        persistentMessage.setMessage(message);
+        
+        tokenMetrics.setStartTime(traceMessage.getStartTime());
+        tokenMetrics.setEndTime(traceMessage.getEndTime());
+        persistentMessage.setTokenMetrics(tokenMetrics);
+        String metadata = null;
+        if(traceMessage.getMetaData() != null){
+            metadata = JsonUtil.object2json(traceMessage.getMetaData());
+        }
+        String role = (String) message.get("role");
+        String messageType = SimpleStringUtil.isNotEmpty(role)?messageType(role):MESSAGE_TYPE_TRACE_MESSAGE;
+
+        this.persistentSessionMessage(persistentMessage,traceMessage.getAgentId(), traceMessage.getParentAgentId(), (String)null, metadata, messageType);
+    }
+
     /**
      * 将角色转换为消息类型messageType，对应agent_session_message表中的messageType字段
      * @param role

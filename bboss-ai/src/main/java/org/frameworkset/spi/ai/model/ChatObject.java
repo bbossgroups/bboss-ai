@@ -33,7 +33,7 @@ public class ChatObject extends StoreChatObject{
     private boolean stream;
 
 
-    private AIAgent aiAgent;
+    private AIAgent agent;
     private boolean thinking;
     private boolean toolCall;
     private AgentMessage agentMessage;
@@ -50,12 +50,16 @@ public class ChatObject extends StoreChatObject{
         return completionsUrl;
     }
 
-    public void setAiAgent(AIAgent aiAgent) {
-        this.aiAgent = aiAgent;
+    public void setAgent(AIAgent agent) {
+        this.agent = agent;
     }
 
-    public AIAgent getAiAgent() {
-        return aiAgent;
+    public AIAgent getAgent() {
+        return agent;
+    }
+
+    public ChatContext getChatContext() {
+        return chatContext;
     }
 
     public void setCompletionsUrl(String completionsUrl) {
