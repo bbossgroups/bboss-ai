@@ -90,11 +90,11 @@
 			#if($title && !$title.equals(""))
 				and title like #[title]	
 			#end	  
-			#if($lastAccessTime_start )
-                and lastAccessTime>=#[lastAccessTime_start]
+			#if($timeStart )
+                and $timeConditionField >= #[timeStart]
             #end
-            #if($lastAccessTime_end )
-                and lastAccessTime<=#[lastAccessTime_end]
+            #if($timeEnd )
+                and $timeConditionField <= #[timeEnd]
             #end
             #if($sortKey && !$sortKey.equals(""))
                 order by $sortKey #if($sortDesc)desc#else asc#end

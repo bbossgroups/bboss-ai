@@ -484,7 +484,10 @@ public class AIAgent<T extends AIAgent> {
         return getVideoTaskResult(  maasName,  videoStoreAgentMessage, (StoreFilePathFunction)null);
     }
     public VideoGenResult getVideoTaskResult(String maasName, VideoStoreAgentMessage videoStoreAgentMessage, StoreFilePathFunction storeFilePathFunction){
-        return    AIAgentUtil.getVideoTaskResult(videoStoreAgentMessage.getMaas(),videoStoreAgentMessage,storeFilePathFunction);
+        if(maasName == null){
+            maasName = videoStoreAgentMessage.getMaas();
+        }
+        return    AIAgentUtil.getVideoTaskResult(maasName,videoStoreAgentMessage,storeFilePathFunction);
     }
     
 

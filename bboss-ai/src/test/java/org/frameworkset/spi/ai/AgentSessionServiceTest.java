@@ -17,7 +17,6 @@ package org.frameworkset.spi.ai;
 
 import com.frameworkset.common.poolman.util.SQLUtil;
 import com.frameworkset.util.JsonUtil;
-import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
 import org.frameworkset.spi.ai.store.AgentSession;
@@ -61,9 +60,9 @@ public class AgentSessionServiceTest {
         }
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         
-        agentSessionCondition.setLastAccessTime_start(dateFormat.parse("2023-01-01 00:00:00"));
-        agentSessionCondition.setLastAccessTime_end(dateFormat.parse("2025-12-31 23:59:59"));
-        agentSessionCondition.setSortKey("lastAccessTime");
+        agentSessionCondition.setTimeStart(dateFormat.parse("2023-01-01 00:00:00"));
+        agentSessionCondition.setTimeEnd(dateFormat.parse("2025-12-31 23:59:59"));
+        agentSessionCondition.setSortKey("createTime");
         agentSessionCondition.setSortDesc(true);
         List<AgentSession> sessions = agentSessionService.queryListAgentSessions(agentSessionCondition);
         logger.info("sessions:{}", JsonUtil.object2json(sessions));

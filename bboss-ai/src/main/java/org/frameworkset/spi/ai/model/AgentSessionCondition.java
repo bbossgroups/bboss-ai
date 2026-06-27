@@ -16,7 +16,6 @@
 
 package org.frameworkset.spi.ai.model;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
@@ -51,17 +50,27 @@ public class AgentSessionCondition implements java.io.Serializable {
 	 * 用户id
 	 */
 	private String userId;
-	private String sortKey;
+    /**
+     * 设置排序字段名称：默认为createTime，还可以设置为lastAccessTime
+     */
+	private String sortKey = "createTime";
 	private boolean sortDesc;
+
+
+
+    /**
+     * 设置时间条件查询条件字段名称：默认为createTime，还可以设置为lastAccessTime
+     */
+    private String timeConditionField = "createTime";
 
     /**
      * 查询开始时间：最后访问时间
      */
-    private Date lastAccessTime_start;
+    private Date timeStart;
     /**
      * 查询结束时间：最后访问时间
      */
-    private Date lastAccessTime_end;
+    private Date timeEnd;
 	public AgentSessionCondition() {
 	}
 	public void setAgentid(String agentid) {
@@ -120,19 +129,27 @@ public class AgentSessionCondition implements java.io.Serializable {
         this.title = title;
     }
 
-    public Date getLastAccessTime_start() {
-        return lastAccessTime_start;
+    public Date getTimeStart() {
+        return timeStart;
     }
 
-    public void setLastAccessTime_start(Date lastAccessTime_start) {
-        this.lastAccessTime_start = lastAccessTime_start;
+    public void setTimeStart(Date timeStart) {
+        this.timeStart = timeStart;
     }
 
-    public Date getLastAccessTime_end() {
-        return lastAccessTime_end;
+    public Date getTimeEnd() {
+        return timeEnd;
     }
 
-    public void setLastAccessTime_end(Date lastAccessTime_end) {
-        this.lastAccessTime_end = lastAccessTime_end;
+    public void setTimeEnd(Date timeEnd) {
+        this.timeEnd = timeEnd;
+    }
+
+    public String getTimeConditionField() {
+        return timeConditionField;
+    }
+
+    public void setTimeConditionField(String timeConditionField) {
+        this.timeConditionField = timeConditionField;
     }
 }
