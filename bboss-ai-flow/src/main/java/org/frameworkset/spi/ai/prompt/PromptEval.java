@@ -15,12 +15,16 @@ package org.frameworkset.spi.ai.prompt;
  * limitations under the License.
  */
 
+import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.VariableHandler;
 import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
+import org.frameworkset.spi.ai.util.ClasspathResourceReader;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
+import org.frameworkset.util.io.ClassPathResource;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -35,9 +39,36 @@ public class PromptEval {
     static class PromptVariable extends VariableHandler.Variable {
 
         private int scope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+        private String type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
+        private Object cacheValue = null;
+        private Object lock = new Object();
+        /**
+         * 变量值字符集，当type为file、url、resource时起作用
+         */
+        private String charset = "UTF-8"; // Default character set
 
         public int getScope() {
             return scope;
+        }
+
+        public String getCharset() {
+            return charset;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public Object getLock() {
+            return lock;
+        }
+
+        public void setCacheValue(Object cacheValue) {
+            this.cacheValue = cacheValue;
+        }
+
+        public Object getCacheValue() {
+            return cacheValue;
         }
 
         @Override
@@ -63,7 +94,26 @@ public class PromptEval {
                             throw new AIRuntimeException("scope must be node,flow or container:"+q+" in variable:"+this.getVariableName());
                         }
                     }
-                  
+                    else if (t.startsWith("type=")) {
+                        String q = t.substring("type=".length()).trim();
+                        if(q.equals("text"))
+                            type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
+                        else if(q.equals("file")){
+                            type = AIFlowConst.AIFLOW_VAR_TYPE_FILE;
+                           
+                        } else if(q.equals("url")){
+                            type = AIFlowConst.AIFLOW_VAR_TYPE_URL;
+                        } else if(q.equals("resource")){
+                            type = AIFlowConst.AIFLOW_VAR_TYPE_RESOURCE;
+                        }
+                        else{
+                            throw new AIRuntimeException("type must be text,file or url:"+q+" in variable:"+this.getVariableName());
+                        }
+                    
+                    }
+                    else if (t.startsWith("charset=")) {
+                        this.charset = t.substring("charset=".length()).trim();
+                    }
 
                 }
  
@@ -90,16 +140,32 @@ public class PromptEval {
                 newPrompt.append(tokens.get(k));
                 if(variables != null && k < variables.size()){
                     PromptVariable variable = (PromptVariable) variables.get(k);
-                    int scope = variable.getScope();
+                    String type = variable.getType();
                     Object value = null;
-                    if(scope == AIFlowConst.AIFLOW_VAR_SCOPE_FLOW){
-                         value = jobFlowNodeExecuteContext.getJobFlowContextData(variable.getVariableName());                        
+                    if(type == null || type.equals(AIFlowConst.AIFLOW_VAR_TYPE_TEXT)) {
+                        int scope = variable.getScope();
+                       
+                        if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_FLOW) {
+                            value = jobFlowNodeExecuteContext.getJobFlowContextData(variable.getVariableName());
+                        } else if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER) {
+                            value = jobFlowNodeExecuteContext.getContainerJobFlowNodeContextData(variable.getVariableName());
+                        } else if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_NODE) {
+                            value = jobFlowNodeExecuteContext.getContextData(variable.getVariableName());
+                        }
+                    } else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_FILE)) {
+                        
+                        value = PromptResourceCache.getInstance().cacheFileContent(variable.getVariableName(), variable.getCharset());
+                            
+                        
                     }
-                    else if(scope == AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER){
-                         value = jobFlowNodeExecuteContext.getContainerJobFlowNodeContextData(variable.getVariableName());                         
+                    else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_RESOURCE)) {
+                        value = PromptResourceCache.getInstance().cacheClasspathResource(variable.getVariableName(), variable.getCharset());
+                         
                     }
-                    else if(scope == AIFlowConst.AIFLOW_VAR_SCOPE_NODE){
-                        value = jobFlowNodeExecuteContext.getContextData(variable.getVariableName());
+
+                    else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_URL)) {
+                        value = PromptResourceCache.getInstance().cacheUrlResource(variable.getVariableName(), variable.getCharset());
+
                     }
                     if(value != null){
                         newPrompt.append(value);

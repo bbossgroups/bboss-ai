@@ -60,14 +60,17 @@ public class CliToolFlowTest {
     public static void callMinimaxSimple() throws InterruptedException {
 		//MiniMax-M2.7
 		//定义问题变量
-		String message = "当前OS为windows，生成一段符合windows语法的shell脚本，先查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理,脚本正常执行完毕的情况下，立即终止并返回执行结果。\n# 结果输出要求：直接返回脚本及脚本执行结果";
+//		String message = "当前OS为windows，生成一段符合windows语法的shell脚本，先查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理,脚本正常执行完毕的情况下，立即终止并返回执行结果。\n# 结果输出要求：直接返回脚本及脚本执行结果";
 		//设置模型调用参数，
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
 //		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
         //采用qwen3.7-plus模型时，需要阻止模型反复调用工具
-        message = "当前OS为windows，帮忙查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理。\n# 工具调用要求：只执行一次工具，执行后只分析结果，不要再返回工具调用信息和工具参数\n# 结果输出要求：直接返回脚本及脚本执行结果";
-
+//        String message = "当前OS为windows，帮忙查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理。\n# 工具调用要求：只执行一次工具，执行后只分析结果，不要再返回工具调用信息和工具参数\n# 结果输出要求：直接返回脚本及脚本执行结果";
+        String message = "#[prompt.txt,type=resource,charset=UTF-8]";
+//        String message = "#[prompt.txt,type=resource]";
+//        String message = "#[http://localhost:85/prompt.txt,type=url,charset=UTF-8]";
+//        String message = "#[C:\\workspace\\bbossgroups\\bboss-ai\\bboss-ai-flow\\src\\test\\resources\\prompt.txt,type=file,charset=UTF-8]";
         chatAgentMessage.setModel("deepseek-v4-pro").setMaas("deepseek").setRetry(3);
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个运维专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本中可以包含完成用户要求的多条指令代码，并将生成的脚本交由工具执行，输出执行结果");
 		
@@ -84,10 +87,9 @@ public class CliToolFlowTest {
                 .setAgentMessage(chatAgentMessage)
                 .setAgentName("命令执行工作流").setAgentId("commandExecutionWorkflowAgent");
         
-        ToolsRegist toolsRegist = new BeanToolsRegist(new CLIShellFunctionTool(60));
 		AINodeAgent scan2ndClosePortProcessAgent = new AINodeAgent()
 				.setAgentId("scan2ndClosePortProcessAgent").setAgentName("扫描并关闭端口进程");
-		scan2ndClosePortProcessAgent.setToolsRegist(toolsRegist);
+		scan2ndClosePortProcessAgent.registBeanTool(new CLIShellFunctionTool(60));
         planAgent.addAgent(scan2ndClosePortProcessAgent);
         
         planAgent.addAgent(new AIJudgeAgent("请评估问题答案是否处理了用户提出的问题,处理则返回输出：是，如果没有查到进程则返回：是，否则仅返回输出：否\n#用户问题:\n#[input.query,scope=node]\n# 问题答案：\n#[answer,scope=node]")
