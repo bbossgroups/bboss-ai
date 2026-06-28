@@ -15,14 +15,14 @@ package org.frameworkset.spi.ai.tool;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.model.FunctionCall;
-import org.frameworkset.spi.ai.model.FunctionCallException;
-import org.frameworkset.spi.ai.model.FunctionTool;
-import org.frameworkset.spi.ai.model.FunctionToolDefine;
+import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.SessionMessage;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 工具方法
@@ -41,7 +41,24 @@ public class BeanToolFunctionCall extends  BaseBeanToolFunctionCall implements F
     @Override
     public Object call(FunctionTool functionTool) throws FunctionCallException {
         try {
-            return toolMethod.invoke(toolBean,getArgs(  functionTool));
+            TraceMessage traceMessage = null;
+            Map message = null;
+            if(AgentTraceHolder.isToolTrace()) {
+                traceMessage = new TraceMessage();
+                traceMessage.setStartTime(System.currentTimeMillis());
+                message = new HashMap();
+                message.put("toolCallArgs", !isEmptyParameters() ? functionTool.getArguments() : null);
+            }
+            Object result = toolMethod.invoke(toolBean,getArgs(  functionTool));
+            if(AgentTraceHolder.isToolTrace()) {
+                traceMessage.setEndTime(System.currentTimeMillis());
+
+                message.put("toolCallResponse", result);
+                message.put("role", SessionMessage.MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME);
+                traceMessage.setMessage(message);
+                AgentTraceHolder.trace(traceMessage);
+            }
+            return result;
         } catch (IllegalAccessException e) {
             throw new FunctionCallException(e);
         } catch (InvocationTargetException e) {

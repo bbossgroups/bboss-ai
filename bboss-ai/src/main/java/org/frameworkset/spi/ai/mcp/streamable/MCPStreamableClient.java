@@ -17,11 +17,15 @@ package org.frameworkset.spi.ai.mcp.streamable;
 
 import org.frameworkset.spi.ai.mcp.MCPBaseClient;
 import org.frameworkset.spi.ai.mcp.model.*;
+import org.frameworkset.spi.ai.model.TraceMessage;
+import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -43,14 +47,24 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     @Override
     protected MCPToolCallResponse executeToolsCall(McpToolCallRequest mcpToolCallRequest) {
         Map headers = buildHeaders();
-//        if (sessionId != null) {
-//            headers = new HashMap<>();
-//            headers.put("Mcp-Session-Id", sessionId);
-//        }
+        TraceMessage traceMessage = null;
+        if(AgentTraceHolder.isToolTrace()) {
+            traceMessage = new TraceMessage();
+            traceMessage.setStartTime(System.currentTimeMillis());
+        }
         MCPToolCallResponse mcpToolCallResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
                 mcpToolCallRequest,headers,streamablePath, 
                 MCPToolCallResponse.class);
-//        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
+        if(AgentTraceHolder.isToolTrace()) {
+            traceMessage.setEndTime(System.currentTimeMillis());
+            Map message = new HashMap();
+            message.put("mcpserver", getMcpServer());
+            message.put("mcpToolCallRequest", mcpToolCallRequest);
+            message.put("mcpToolCallResponse", mcpToolCallResponse);
+            message.put("role", SessionMessage.MESSAGE_TYPE_MCPCALL_MESSAGE_NAME);
+            traceMessage.setMessage(message);
+            AgentTraceHolder.trace(traceMessage);
+        }
         return mcpToolCallResponse;
     }
 

@@ -52,7 +52,8 @@ public abstract class BaseStreamDataHandler<T> implements StreamDataHandler<T> {
         return httpUriRequestBase;
     }
      
-    public void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ChatObject chatObject, BaseStreamDataBuilder baseStreamDataBuilder,FluxSink<T> sink,DisposeEventHandler disposeEventHandler) {
+    public void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ChatObject chatObject, BaseStreamDataBuilder baseStreamDataBuilder,
+                                          FluxSink<T> sink,DisposeEventHandler disposeEventHandler) {
         ChatAgentMessage _chatMessage = (ChatAgentMessage) chatObject.getAgentMessage();
         _chatMessage.addAssistantSessionMessage(baseStreamDataBuilder,chatObject.getAgent() );
         ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage, baseStreamDataBuilder.getFunctionTools());

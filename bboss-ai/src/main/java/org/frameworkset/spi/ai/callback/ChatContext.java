@@ -15,6 +15,9 @@ package org.frameworkset.spi.ai.callback;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.model.ServerEvent;
+import reactor.core.publisher.FluxSink;
+
 /**
  * @author biaoping.yin
  * @Date 2026/5/12
@@ -47,8 +50,8 @@ public class ChatContext {
      * 默认为TOOL_CALL_STAGE_SEARCH_TOOL阶段
      */
     private int toolCallStage = TOOL_CALL_STAGE_SEARCH_TOOL;
-    
-    
+    private Object lock = new Object();
+    private FluxSink<ServerEvent> agentSink;
 
     public void setChatStreamCallback(ChatStreamCallback chatStreamCallback) {
         this.chatStreamCallback = chatStreamCallback;
@@ -80,4 +83,19 @@ public class ChatContext {
         this.toolCallStage = toolCallStage;
     }
 
+    public FluxSink<ServerEvent> getAgentSink() {
+        return agentSink;
+    }
+
+    public void setAgentSink(FluxSink<ServerEvent> agentSink) {
+        if(this.agentSink != null){
+            return;
+        }
+        synchronized (lock) {
+            if(this.agentSink != null){
+                return;
+            }
+            this.agentSink = agentSink;
+        }
+    }
 }

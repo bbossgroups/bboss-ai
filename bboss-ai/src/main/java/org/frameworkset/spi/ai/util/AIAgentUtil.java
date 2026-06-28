@@ -506,7 +506,9 @@ public class AIAgentUtil {
 //       
 //
 //    }
-    private static <T> void executeSink(DisposeEventHandler disposeEventHandler,FluxSink<T> sink,ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler,boolean fromAgentFlow){
+    private static <T> void executeSink(DisposeEventHandler disposeEventHandler,FluxSink<T> sink,
+                                        ClientConfiguration clientConfiguration,ChatObject chatObject ,
+                                        BaseStreamDataHandler<T> streamDataHandler,boolean fromAgentFlow){
         Object data = null;
         try {
 
@@ -611,15 +613,18 @@ public class AIAgentUtil {
 
     private static <T> Flux<T> buildFlux(ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler) {
         AIAgent aiAgent = chatObject.getAgent();
+        ChatContext chatContext = chatObject.getChatContext();
         if(aiAgent != null){
-            FluxSink<ServerEvent> fluxSink = aiAgent.getAgentFluxSink();
+            FluxSink<ServerEvent> fluxSink = aiAgent.getAgentFluxSink();            
             if(fluxSink != null){
+                chatContext.setAgentSink(fluxSink);
                 executeSink(aiAgent.getDisposeEventHandler(),(FluxSink<T>)fluxSink,  clientConfiguration,  chatObject ,  streamDataHandler,true);
                 return aiAgent.getFlux();
             }
             
         }
         return Flux.<T>create(sink -> {
+            chatContext.setAgentSink((FluxSink<ServerEvent>) sink);
             DisposeEventHandler disposeEventHandler = new DisposeEventHandler();
                     disposeEventHandler.onDispose(sink);
             executeSink(disposeEventHandler,sink,  clientConfiguration,  chatObject ,  streamDataHandler,false);

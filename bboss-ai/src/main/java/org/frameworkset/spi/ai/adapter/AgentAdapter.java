@@ -24,6 +24,7 @@ import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.ai.material.GenMaterialFileDownload;
 import org.frameworkset.spi.ai.mcp.model.MCPToolCallResponse;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.ai.util.*;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -359,36 +360,42 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return MessageBuilder.buildInputImagesMessage(message,imageUrls);
     }
 
-    protected List<Map<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent aiAgent) {
+    protected List<Map<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent aiAgent,ChatObject chatObject) {
         List<FunctionTool> tools = toolAgentMessage.getFunctionTools();
         List<Map<String, Object>> toolMessages = new ArrayList<>(tools.size());
-        for(FunctionTool tool : tools) {
-            String toolId = tool.getId();
-            String functionName = tool.getFunctionName();
-            FunctionCall functionCall = aiAgent.getFunctionCall(functionName);
-            try {
-                if (functionCall == null) {
-                    throw new FunctionCallException("FunctionCall of " + functionName + " is null.");
-                }
-                Object result = functionCall.call(tool);
-                if (result == null) {
-                    throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
-                }
-                Map<String, Object> toolMessage = null;
-                if (result instanceof String)
-                    toolMessage = MessageBuilder.buildToolMessage((String) result, toolId);
-                else if (result instanceof MCPToolCallResponse) {
-                    result = ((MCPToolCallResponse) result).getResult();
-                    toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
-                } else {
-                    toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
-                }
-                toolMessages.add(toolMessage);
+        try {
+            AgentTraceHolder.setChatObject(chatObject);
+            for (FunctionTool tool : tools) {
+                String toolId = tool.getId();
+                String functionName = tool.getFunctionName();
+                FunctionCall functionCall = aiAgent.getFunctionCall(functionName);
+                try {
+                    if (functionCall == null) {
+                        throw new FunctionCallException("FunctionCall of " + functionName + " is null.");
+                    }
+                    Object result = functionCall.call(tool);
+                    if (result == null) {
+                        throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
+                    }
+                    Map<String, Object> toolMessage = null;
+                    if (result instanceof String)
+                        toolMessage = MessageBuilder.buildToolMessage((String) result, toolId);
+                    else if (result instanceof MCPToolCallResponse) {
+                        result = ((MCPToolCallResponse) result).getResult();
+                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
+                    } else {
+                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
+                    }
+                    toolMessages.add(toolMessage);
 //                return toolMessage;
 
-            } catch (Exception e) {
-                throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
+                } catch (Exception e) {
+                    throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
+                }
             }
+        }
+        finally {
+            AgentTraceHolder.removeChatObject();
         }
         return toolMessages;
     }
@@ -428,7 +435,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent aiAgent,ChatObject chatObject,ChatContext chatContext){
 //        Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
 		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
-        List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,aiAgent);
+        List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,aiAgent,chatObject);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", toolAgentMessage.getModel());
 
@@ -667,7 +674,6 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             _agentMessage = new ObjectAgentMessage(agentMessage);
         }
         ChatObject chatObject = _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent,fromStreamAPI,  chatCallback);
-        chatObject.setChatContext(chatCallback);
         return chatObject;
          
  

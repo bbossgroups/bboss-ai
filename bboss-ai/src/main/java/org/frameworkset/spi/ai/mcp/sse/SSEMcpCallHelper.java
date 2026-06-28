@@ -16,13 +16,16 @@ package org.frameworkset.spi.ai.mcp.sse;
  */
 
 import com.frameworkset.util.JsonUtil;
-import org.frameworkset.spi.ai.mcp.MCPClient;
 import org.frameworkset.spi.ai.mcp.model.*;
+import org.frameworkset.spi.ai.model.TraceMessage;
+import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.util.concurrent.ThreadPoolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -158,8 +161,13 @@ public class SSEMcpCallHelper {
 		mcpCallObject.setRequestId(mcpToolCallRequest.getId());
         String requestId = mcpCallObject.getRequestId()+"";
 		mcpCallObjects.put(requestId, mcpCallObject);
+        TraceMessage traceMessage = null;
+        if(AgentTraceHolder.isToolTrace()) {
+            traceMessage = new TraceMessage();
+            traceMessage.setStartTime(System.currentTimeMillis());
+        }
 		try {
-            String data = HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolCallRequest, mcpClient.getMessagePath(),String.class);
+            HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolCallRequest, mcpClient.getMessagePath(),String.class);
 
 
         }
@@ -167,6 +175,17 @@ public class SSEMcpCallHelper {
             this.removeMcpCallObject(requestId);
             throw new McpCallException(e);
         }
-		return handleResponse(  mcpCallObject);
+        MCPToolCallResponse mcpToolCallResponse = handleResponse(  mcpCallObject);
+        if(AgentTraceHolder.isToolTrace()) {
+            traceMessage.setEndTime(System.currentTimeMillis());
+            Map message = new HashMap();
+            message.put("mcpserver", mcpClient.getMcpServer());
+            message.put("mcpToolCallRequest", mcpToolCallRequest);
+            message.put("mcpToolCallResponse", mcpToolCallResponse);
+            message.put("role", SessionMessage.MESSAGE_TYPE_MCPCALL_MESSAGE_NAME);
+            traceMessage.setMessage(message);
+            AgentTraceHolder.trace(traceMessage);
+        }
+        return mcpToolCallResponse;
     }
 }

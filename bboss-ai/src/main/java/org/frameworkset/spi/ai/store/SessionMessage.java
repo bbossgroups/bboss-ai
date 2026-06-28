@@ -103,9 +103,17 @@ public class SessionMessage {
      * 智能体工具搜索匹配消息
      */
     public static final String MESSAGE_TYPE_TOOLSEARCH_MESSAGE = "15";
-    
-   
 
+
+    /**
+     * 智能体mcp服务调用消息
+     */
+    public static final String MESSAGE_TYPE_MCPCALL_MESSAGE = "16";
+
+    /**
+     * 智能体工具服务调用消息
+     */
+    public static final String MESSAGE_TYPE_TOOLCALL_MESSAGE = "17";
 
     /**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
@@ -182,7 +190,16 @@ public class SessionMessage {
      * 智能体拒答消息
      */
     public static final String MESSAGE_TYPE_REFUSE_MESSAGE_NAME = "refuse";
-    
+
+    /**
+     * 智能体mcp服务调用消息名称
+     */
+    public static final String MESSAGE_TYPE_MCPCALL_MESSAGE_NAME = "mcpcall";
+
+    /**
+     * 智能体工具服务调用消息
+     */
+    public static final String MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME = "toolcall";
     private String msgId;
 
 

@@ -54,7 +54,7 @@ public class RoutingStreamTest {
 //          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.2",null);
 //        multiagentWeathor("zhipu","创建一篇关于中国首都介绍的飞书文档","glm-5.2",null);
 
-        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.6-plus","0cfd4d5f4f6f4f4f9e1c493f69b72ab3");
+        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.7-plus",null);
 
 
 //        multiagentWeathor("kimi","创建一篇关于中国首都介绍的飞书文档","kimi-k2.6",null);

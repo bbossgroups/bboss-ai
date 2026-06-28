@@ -45,6 +45,10 @@ public abstract class BaseBeanToolFunctionCall<T> implements FunctionCall<T> {
         this.emptyParameters = parameters == null || parameters.length == 0;
     }
 
+    public boolean isEmptyParameters() {
+        return emptyParameters;
+    }
+
     protected Object[] getArgs(FunctionTool functionTool){
         if(emptyParameters){
             return null;

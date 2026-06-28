@@ -48,6 +48,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
 //    }
     public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback){
         ChatObject chatObject = new ChatObject();
+        chatObject.setChatContext(chatCallback);
         chatObject.setAgent(aiAgent);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;

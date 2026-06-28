@@ -56,7 +56,6 @@ public abstract class MCPBaseClient<T extends MCPClientInf> implements MCPClient
         mcpToolCallRequest.setId(this.requestId.nextReqNo());
         mcpToolCallRequest.functionName(functionTool.getFunctionName());
         mcpToolCallRequest.arguments(functionTool.getArguments());
-//        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
 		MCPToolCallResponse mcpToolCallResponse = executeToolsCall(  mcpToolCallRequest);
         return mcpToolCallResponse;
     }

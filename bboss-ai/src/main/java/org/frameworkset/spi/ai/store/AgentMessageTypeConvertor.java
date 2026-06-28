@@ -83,6 +83,13 @@ public class AgentMessageTypeConvertor {
         else if(MESSAGE_TYPE_TOOLSEARCH_MESSAGE_NAME.equals(role)) {
             return MESSAGE_TYPE_TOOLSEARCH_MESSAGE;
         }
+        else if(MESSAGE_TYPE_MCPCALL_MESSAGE_NAME.equals(role)) {
+            return MESSAGE_TYPE_MCPCALL_MESSAGE;
+        }
+        else if(MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME.equals(role)) {
+            return MESSAGE_TYPE_TOOLCALL_MESSAGE;
+        }
+        
 
 
 

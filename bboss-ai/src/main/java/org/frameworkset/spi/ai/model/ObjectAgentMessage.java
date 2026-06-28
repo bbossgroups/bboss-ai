@@ -34,6 +34,7 @@ public class ObjectAgentMessage extends AgentMessage<ObjectAgentMessage>{
     @Override
     public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback) {
         ChatObject chatObject = new ChatObject();
+        chatObject.setChatContext(chatCallback);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Boolean stream = false;
         String aiChatRequestType = null;

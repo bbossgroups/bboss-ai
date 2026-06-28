@@ -15,8 +15,11 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
+import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
+import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 
 import java.util.*;
 
@@ -54,6 +57,10 @@ public class PreOrderTool {
         hotelData.put("devices","配套设施：健身房、保龄球、羽毛球、游泳池");
         hotelData.put("position","位于郊区，环境优雅，五星级环境");
         hotels.add(hotelData);
+        ServerEvent serverEvent = new ServerEvent();
+        serverEvent.setType(ServerEvent.TYPE_DATA);
+        serverEvent.setData("hotels:"+ JsonUtil.object2jsonPretty(hotels));
+        AgentTraceHolder.emitterServerEvent(serverEvent);
         return hotels;
         
     }

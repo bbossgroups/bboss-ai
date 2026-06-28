@@ -40,6 +40,7 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
     @Override
     public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatContext) {
         ChatObject chatObject = new ChatObject();
+        chatObject.setChatContext(chatContext);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
         Boolean stream = false;

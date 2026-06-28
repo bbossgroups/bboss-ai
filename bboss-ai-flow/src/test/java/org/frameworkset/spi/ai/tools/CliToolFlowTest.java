@@ -64,15 +64,15 @@ public class CliToolFlowTest {
 		//设置模型调用参数，
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
 //		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
-//        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
+        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
         //采用qwen3.7-plus模型时，需要阻止模型反复调用工具
 //        String message = "当前OS为windows，帮忙查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理。\n# 工具调用要求：只执行一次工具，执行后只分析结果，不要再返回工具调用信息和工具参数\n# 结果输出要求：直接返回脚本及脚本执行结果";
         String message = "#[prompt.txt,type=resource,charset=UTF-8]";
 //        String message = "#[prompt.txt,type=resource]";
 //        String message = "#[http://localhost:85/prompt.txt,type=url,charset=UTF-8]";
 //        String message = "#[C:\\workspace\\bbossgroups\\bboss-ai\\bboss-ai-flow\\src\\test\\resources\\prompt.txt,type=file,charset=UTF-8]";
-        chatAgentMessage.setModel("deepseek-v4-pro").setMaas("deepseek").setRetry(3);
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个运维专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本中可以包含完成用户要求的多条指令代码，并将生成的脚本交由工具执行，输出执行结果");
+//        chatAgentMessage.setModel("deepseek-v4-pro").setMaas("deepseek").setRetry(3);
+		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个命令执行专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本必须符合用户要求的指令代码，将指令脚本交由工具执行，并输出执行结果。");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
 		
