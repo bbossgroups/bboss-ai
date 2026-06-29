@@ -39,7 +39,7 @@ public class PromptEval {
     private static String pretoken = "#\\[";
     private static String endtoken = "\\]";
     
-    static class PromptVariable extends VariableHandler.Variable {
+    static class PromptVariable extends VariableHandler.TypeDefaultValueVariable {
 
         private int scope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
         private String type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
@@ -117,6 +117,10 @@ public class PromptEval {
                     else if (t.startsWith("charset=")) {
                         this.charset = t.substring("charset=".length()).trim();
                     }
+                    else{
+                        parserTypeAndDefaultObjectValue(t);
+                    }
+                    
 
                 }
  
@@ -152,9 +156,11 @@ public class PromptEval {
                 if(variables != null && k < variables.size()){
                     PromptVariable variable = (PromptVariable) variables.get(k);
                     String type = variable.getType();
+                   
                     Object value = null;
                     String varName = variable.getVariableName();
                     if(type == null || type.equals(AIFlowConst.AIFLOW_VAR_TYPE_TEXT)) {
+                        String defaultValue = variable.getDefaultValue();
                         int scope = variable.getScope();
 
                         if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_FLOW) {
@@ -163,6 +169,9 @@ public class PromptEval {
                             value = jobFlowNodeExecuteContext.getContainerJobFlowNodeContextData(varName);
                         } else if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_NODE) {
                             value = jobFlowNodeExecuteContext.getContextData(varName);
+                        }
+                        if(value == null && defaultValue != null){
+                            value = defaultValue;
                         }
                     } else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_FILE)) {
 

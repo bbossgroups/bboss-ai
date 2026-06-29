@@ -44,8 +44,8 @@ public class CLIShellFunctionTool {
 	}
     
  
-	@Tool(name ="executeShell",description = "执行shell脚本，并返回执行结果:支持linux 和windows shell脚本执行，注意参数shell不能为空！")
-    public Map executeShell(@ToolParam(name = "shell",description = "shell脚本",required = true) String shell){
+	@Tool(name ="executeShell",description = "可以执行命令行指令脚本，返回执行结果:支持linux 和windows 脚本执行。")
+    public Map executeShell(@ToolParam(name = "shell",description = "合法的可执行的shell脚本",required = true) String shell){
         String executeResult = null;        try {
             java.util.concurrent.CompletableFuture<String> future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
                 java.io.File tempScript = null;

@@ -92,7 +92,7 @@ public class CliToolFlowTest {
 		scan2ndClosePortProcessAgent.registBeanTool(new CLIShellFunctionTool(60));
         planAgent.addAgent(scan2ndClosePortProcessAgent);
         
-        planAgent.addAgent(new AIJudgeAgent("请评估问题答案是否处理了用户提出的问题,处理则返回输出：是，如果没有查到进程则返回：是，否则仅返回输出：否\n#用户问题:\n#[input.query,scope=node]\n# 问题答案：\n#[answer,scope=node]")
+        planAgent.addAgent(new AIJudgeAgent("评估问题答案是否成功处理了用户提出的问题,成功处理或者如果没有查到对应进程则输出：是；脚本执行报错或者没有正确处理则输出：否\n#用户问题:\n#[input.query1,scope=node,defalut=无]\n# 问题答案：\n#[answer,scope=node]")
 				.setAgentId("judgeAgent").setAgentName("评估智能体"));
         //构建最终飞书报告创建智能体：添加将问题答案创建为飞书文档的智能体
         planAgent.addConditionFlowNode(scan2ndClosePortProcessAgent,
