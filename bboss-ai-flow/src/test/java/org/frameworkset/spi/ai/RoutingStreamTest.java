@@ -77,7 +77,7 @@ public class RoutingStreamTest {
         //定义会话实体：设置模型、maas平台，用户问题
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()                            
                 .setModel(model)
-                .setMaas(maas).setPrompt(prompt).setStream(true);
+                .setMaas(maas).setPrompt(prompt).setStream(true).setThinking(true);
 
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
@@ -112,7 +112,7 @@ public class RoutingStreamTest {
 
         
         //构建裁判智能体：判断是否回答了问题
-        planAgent.addAgent(new AIJudgeAgent("评估结果是否回答了问题:\n#[input.query,scope=node]\n# 问题答案：\n#[answer,scope=node],回答请回复：是，否则回复：否").setAgentId("judgeAgent").setAgentName("评估智能体"));
+        planAgent.addAgent(new AIJudgeAgent("#[RoutingStreamJudge.prompt,type=resource]").setAgentId("judgeAgent").setAgentName("评估智能体"));
         
         //构建最终飞书报告创建智能体：添加将问题答案创建为飞书文档的智能体
         planAgent.addAgent(new AINodeAgent("将结果创建为飞书文档", feishuMcp).setAgentId("createDocAgent").setAgentName("飞书文档创建智能体"),

@@ -668,16 +668,17 @@ public class AIAgent<T extends AIAgent> {
     /**
      * 实现同步智能问答,在指定的数据源上执行
      */
-    public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage,ChatContext chatCallback){
+    public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage,ChatContext chatContext){
         reactMessage(  chatAgentMessage);
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this,chatCallback);
+        
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this,chatContext);
         if(serverEvent != null && serverEvent.getData() != null){
 //            Map<String,Object> message = chatAgentMessage.addAssistantSessionMessage(serverEvent.getData());
 //            addAgentResultSessionMessage(serverEvent.getData());
             addAgentResultSessionMessage(serverEvent);
             
-            if(chatCallback != null && chatCallback.getChatStreamCallback() != null){
-                chatCallback.getChatStreamCallback().streamDone(serverEvent);
+            if(chatContext != null && chatContext.getChatStreamCallback() != null){
+                chatContext.getChatStreamCallback().streamDone(serverEvent);
             }
         }
         return serverEvent;

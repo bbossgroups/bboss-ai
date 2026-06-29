@@ -76,9 +76,9 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
      * @return
      */
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, ChatContext chatContext) {
         ChatObject chatObject = new ChatObject();
-        chatObject.setChatContext(chatCallback);
+        chatObject.setChatContext(chatContext);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
         Boolean stream = false;
@@ -87,10 +87,10 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
         StreamDataBuilder streamDataBuilder = null;
 
         
-        parameters = agentAdapter.buildAudioSTTRequestMap(this,aiAgent,chatCallback);
+        parameters = agentAdapter.buildAudioSTTRequestMap(this,aiAgent,chatContext);
 //        this.audioSTTCompletionsUrl = agentAdapter.getAudioSTTCompletionsUrl(this);
         chatObject.setAudioSTTCompletionsUrl(agentAdapter.getAudioSTTCompletionsUrl(clientConfiguration,this));
-        if(!fromStreamAPI){
+        if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             parameters.put("stream",false);
         }
         stream = (Boolean)parameters.get("stream");

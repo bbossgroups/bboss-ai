@@ -47,17 +47,17 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
 //    }
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, ChatContext chatContext) {
         ChatObject chatObject = new ChatObject();
-        chatObject.setChatContext(chatCallback);
+        chatObject.setChatContext(chatContext);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
         Boolean stream = false;
         String aiChatRequestType = null;
         StreamDataBuilder streamDataBuilder = null;
         Object agentMessage = null;       
-        parameters = agentAdapter._buildGenAudioRequestMap(this,chatObject,clientConfiguration,aiAgent,   chatCallback);
-        if(!fromStreamAPI){
+        parameters = agentAdapter._buildGenAudioRequestMap(this,chatObject,clientConfiguration,aiAgent,   chatContext);
+        if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             parameters.put("stream",false);
         }
         stream = (Boolean)parameters.get("stream");

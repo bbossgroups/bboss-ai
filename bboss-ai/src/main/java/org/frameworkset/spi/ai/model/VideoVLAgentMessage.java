@@ -38,9 +38,9 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
     
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, ChatContext chatContext) {
         ChatObject chatObject = new ChatObject();
-        chatObject.setChatContext(chatCallback);
+        chatObject.setChatContext(chatContext);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
         Boolean stream = false;
@@ -48,9 +48,9 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
 
-        parameters = agentAdapter.buildVideoVLRequestMap(this,aiAgent,chatCallback);
+        parameters = agentAdapter.buildVideoVLRequestMap(this,aiAgent,chatContext);
 //        setVideoVLCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(this));
-        if(!fromStreamAPI){
+        if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             parameters.put("stream",false);
         }
         stream = (Boolean)parameters.get("stream");

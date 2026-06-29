@@ -105,6 +105,7 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
 
         judgeAgent.setPrompt(judgePrompt);
         ChatContext chatContext = new ChatContext();
+   
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**
              * 提示词预处理

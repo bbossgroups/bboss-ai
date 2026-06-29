@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.prompt;
  */
 
 import com.frameworkset.util.FileUtil;
+import com.frameworkset.util.SimpleStringUtil;
 import com.frameworkset.util.VariableHandler;
 import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
@@ -25,7 +26,9 @@ import org.frameworkset.util.io.ClassPathResource;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -128,12 +131,20 @@ public class PromptEval {
         }
 
     }
-    public String eval(String prompt, JobFlowNodeExecuteContext jobFlowNodeExecuteContext){
-        
+
+    /**
+     * 递归解析提示词中引用的外部资源包含提示词变量
+     * @param evaledResources
+     * @param prompt
+     * @param jobFlowNodeExecuteContext
+     * @return
+     */
+    private String evalResource(Map<String,Object> evaledResources, String prompt, JobFlowNodeExecuteContext jobFlowNodeExecuteContext){
         VariableHandler.URLStruction a = VariableHandler.parserStruction(prompt,new PromptStructionBuiler());
         StringBuilder newPrompt = new StringBuilder();
         if(a != null){
-           
+
+             
             List<VariableHandler.Variable> variables = a.getVariables();
             List<String> tokens = a.getTokens();
             for (int k = 0; tokens != null && k < tokens.size(); k++) {
@@ -142,29 +153,53 @@ public class PromptEval {
                     PromptVariable variable = (PromptVariable) variables.get(k);
                     String type = variable.getType();
                     Object value = null;
+                    String varName = variable.getVariableName();
                     if(type == null || type.equals(AIFlowConst.AIFLOW_VAR_TYPE_TEXT)) {
                         int scope = variable.getScope();
-                       
+
                         if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_FLOW) {
-                            value = jobFlowNodeExecuteContext.getJobFlowContextData(variable.getVariableName());
+                            value = jobFlowNodeExecuteContext.getJobFlowContextData(varName);
                         } else if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER) {
-                            value = jobFlowNodeExecuteContext.getContainerJobFlowNodeContextData(variable.getVariableName());
+                            value = jobFlowNodeExecuteContext.getContainerJobFlowNodeContextData(varName);
                         } else if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_NODE) {
-                            value = jobFlowNodeExecuteContext.getContextData(variable.getVariableName());
+                            value = jobFlowNodeExecuteContext.getContextData(varName);
                         }
                     } else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_FILE)) {
-                        
-                        value = PromptResourceCache.getInstance().cacheFileContent(variable.getVariableName(), variable.getCharset());
-                            
-                        
+
+                        if(evaledResources.containsKey(varName)){
+                            throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部文件资源！");
+                        }
+                        String value_ = PromptResourceCache.getInstance().cacheFileContent(varName, variable.getCharset());
+                        evaledResources.put(varName, DUMP);
+                        if(SimpleStringUtil.isNotEmpty(value_)) {
+                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext);
+                        }
+                        value = value_;
+
                     }
                     else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_RESOURCE)) {
-                        value = PromptResourceCache.getInstance().cacheClasspathResource(variable.getVariableName(), variable.getCharset());
-                         
+                        if(evaledResources.containsKey(varName)){
+                            throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部classpath文件资源！");
+                        }
+                        String value_ = PromptResourceCache.getInstance().cacheClasspathResource(varName, variable.getCharset());
+                        evaledResources.put(varName, DUMP);
+                        if(SimpleStringUtil.isNotEmpty(value_)) {
+                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext);
+                        }
+                        value = value_;
+
                     }
 
                     else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_URL)) {
-                        value = PromptResourceCache.getInstance().cacheUrlResource(variable.getVariableName(), variable.getCharset());
+                        if(evaledResources.containsKey(varName)){
+                            throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部url资源！");
+                        }
+                        String value_ = PromptResourceCache.getInstance().cacheUrlResource(varName, variable.getCharset());
+                        evaledResources.put(varName, DUMP);
+                        if(SimpleStringUtil.isNotEmpty(value_)) {
+                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext);
+                        }
+                        value = value_;
 
                     }
                     if(value != null){
@@ -178,9 +213,9 @@ public class PromptEval {
                             newPrompt.append("#[").append(variable.getVariableName()).append("]");
                         }
                     }
-                }                
-            }         
- 
+                }
+            }
+
         }
         if(newPrompt.length() > 0){
             prompt = newPrompt.toString();
@@ -189,6 +224,11 @@ public class PromptEval {
             logger.debug("new prompt:{}", prompt);
         }
         return prompt;
+    }
+    private static final Object DUMP = new Object();
+    public String eval(String prompt, JobFlowNodeExecuteContext jobFlowNodeExecuteContext){
+        
+         return evalResource(new HashMap<>(),prompt,jobFlowNodeExecuteContext);
        
     }
 }

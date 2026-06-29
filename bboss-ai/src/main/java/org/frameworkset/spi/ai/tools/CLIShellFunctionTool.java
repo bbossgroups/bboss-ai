@@ -43,13 +43,7 @@ public class CLIShellFunctionTool {
 		return this;
 	}
     
-	@Tool(name="getOS",description = "获取操作系统信息")
-    public Map getOS(){
-        String os = System.getProperty("os.name");
-        Map result = new java.util.HashMap();
-        result.put("os",os);      
-        return result;
-    }
+ 
 	@Tool(name ="executeShell",description = "执行shell脚本，并返回执行结果:支持linux 和windows shell脚本执行，注意参数shell不能为空！")
     public Map executeShell(@ToolParam(name = "shell",description = "shell脚本",required = true) String shell){
         String executeResult = null;        try {

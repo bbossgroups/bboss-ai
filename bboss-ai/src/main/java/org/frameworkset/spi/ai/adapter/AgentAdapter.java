@@ -501,6 +501,26 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     protected void buildThinking(ChatAgentMessage chatAgentMessage,ChatObject chatObject,Map<String, Object> requestMap){
         Map parameters = chatAgentMessage.getParameters();
         Boolean thinking = chatAgentMessage.getThinking();
+        ChatContext chatContext = chatObject.getChatContext();
+        if(chatContext != null && chatContext.getThinking() != null){
+            thinking = chatContext.getThinking();
+            if(thinking != null){
+                if( thinking == false) {
+                    Map data = new LinkedHashMap();
+                    data.put("type", "disabled");
+                    requestMap.put("thinking", data);
+                    chatObject.setThinking(false);
+                }
+                else{
+                    Map data = new LinkedHashMap();
+                    data.put("type", "enabled");
+                    requestMap.put("thinking", data);
+                    chatObject.setThinking(true);
+                }
+                return;
+            }
+        }
+        
         if(thinking != null){
             if(parameters != null) {
                 if (!parameters.containsKey("thinking")) {
@@ -662,7 +682,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
         return params;
     }
-    public ChatObject buildOpenAIRequestParameter(ClientConfiguration clientConfiguration,Object agentMessage, AIAgent aiAgent,boolean fromStreamAPI,ChatContext chatCallback){
+    public ChatObject buildOpenAIRequestParameter(ClientConfiguration clientConfiguration,Object agentMessage, AIAgent aiAgent,ChatContext chatCallback){
         AgentMessage _agentMessage = null;
         if(agentMessage instanceof AgentMessage){
             _agentMessage =  ((AgentMessage)agentMessage);
@@ -673,7 +693,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         else{
             _agentMessage = new ObjectAgentMessage(agentMessage);
         }
-        ChatObject chatObject = _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent,fromStreamAPI,  chatCallback);
+        ChatObject chatObject = _agentMessage.buildChatObject(clientConfiguration,this,   aiAgent,   chatCallback);
         return chatObject;
          
  

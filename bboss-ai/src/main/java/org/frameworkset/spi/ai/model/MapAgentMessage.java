@@ -35,13 +35,13 @@ public class MapAgentMessage extends AgentMessage<MapAgentMessage>{
         this.agentMessage = agentMessage;
     }
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent,boolean fromStreamAPI, ChatContext chatCallback) {
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, ChatContext chatContext) {
         ChatObject chatObject = new ChatObject();
-        chatObject.setChatContext(chatCallback);
+        chatObject.setChatContext(chatContext);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         String aiChatRequestType = null;
         StreamDataBuilder streamDataBuilder = null;
-        if(!fromStreamAPI){
+        if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             agentMessage.put("stream",false);
         }
         Boolean stream = (Boolean)agentMessage.get("stream");

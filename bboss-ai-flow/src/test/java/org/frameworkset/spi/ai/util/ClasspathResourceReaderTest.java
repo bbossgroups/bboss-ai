@@ -32,6 +32,9 @@ public class ClasspathResourceReaderTest {
         System.out.println(content);
         content = PromptResourceCache.getInstance().cacheFileContent("C:\\workspace\\bbossgroups\\bboss-ai\\bboss-ai-flow\\src\\test\\java\\org\\frameworkset\\spi\\ai\\tools\\CliToolFlowTest.java", "UTF-8");
         System.out.println(content);
+
+        content = PromptResourceCache.getInstance().cacheFileContent("C:\\workspace\\bbossgroups\\bboss-ai\\bboss-ai-flow\\src\\test\\java\\org\\frameworkset\\spi\\ai\\tools\\CliToolFlowTest.java", "UTF-8");
+        System.out.println(content);
       
     }
 }

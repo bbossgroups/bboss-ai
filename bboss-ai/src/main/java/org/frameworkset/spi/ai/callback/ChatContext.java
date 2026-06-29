@@ -45,6 +45,18 @@ public class ChatContext {
     private boolean chatWithToolcall;
 
 
+
+    /**
+     * 智能体会话级别控制是否开启流式返回
+     */
+    private Boolean streamable;
+
+    /**
+     * 智能体会话级别控制是否开启思考过程返回
+     */
+    private Boolean thinking;
+
+
     /**
      * 如果会话使用工具调用chatWithToolcall为true，则用toolCallStage标记工具调用阶段，
      * 默认为TOOL_CALL_STAGE_SEARCH_TOOL阶段
@@ -97,5 +109,21 @@ public class ChatContext {
             }
             this.agentSink = agentSink;
         }
+    }
+
+    public Boolean getStreamable() {
+        return streamable;
+    }
+
+    public void setStreamable(Boolean streamable) {
+        this.streamable = streamable;
+    }
+
+    public Boolean getThinking() {
+        return thinking;
+    }
+
+    public void setThinking(Boolean thinking) {
+        this.thinking = thinking;
     }
 }
