@@ -66,12 +66,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
     
  
-    protected void buildTools(ChatContext chatContext,AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap){
-        aiAgent.init();
-        List<FunctionToolDefine> tools = aiAgent.getToolsByToolSearch(chatContext,agentMessage);
+    protected void buildTools(ChatContext chatContext,AgentMessage agentMessage,AIAgent agent,Map<String, Object> requestMap){
+        agent.init();
+        List<FunctionToolDefine> tools = agent.getToolsByToolSearch(chatContext,agentMessage);
         if(tools != null && tools.size() > 0){
 //            Object tools = aiAgent.getTools();
-            requestMap.put("tools",   tools);
+            requestMap.put("tools",   tools);       
+            if(agent.getEnableLoopToolCall() != null && agent.getEnableLoopToolCall())
+                requestMap.put("tool_choice", "auto");            
             chatContext.setChatWithToolcall(true);
         }
     }
@@ -432,10 +434,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param toolAgentMessage
      * @return
      */
-    public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent aiAgent,ChatObject chatObject,ChatContext chatContext){
+    public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent agent,ChatObject chatObject,ChatContext chatContext){
 //        Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
-        List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,aiAgent,chatObject);
+		List<Map<String, Object>> sessionMemory = agent.getSessionMemory(true);
+        List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,agent,chatObject);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", toolAgentMessage.getModel());
 
@@ -446,7 +448,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             for(Map<String, Object> userMessage : userMessages) {
 
                 // 添加当前用户消息
-                toolAgentMessage.addSessionMessage(userMessage, aiAgent);
+                toolAgentMessage.addSessionMessage(userMessage, agent);
             }
             messages = new ArrayList<>(sessionMemory);
 
@@ -494,7 +496,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
         }
         buildThinking(  toolAgentMessage, chatObject, requestMap);
-//        buildTools(toolAgentMessage, requestMap);
+        if(agent.getEnableLoopToolCall() != null && agent.getEnableLoopToolCall()) {
+            buildTools(chatContext, toolAgentMessage, agent, requestMap);
+        }
         return requestMap;
     }
     

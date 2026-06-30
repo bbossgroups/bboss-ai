@@ -139,17 +139,22 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
                     this.sessionMemory = new ArrayList<>();
 
                 }
-                agentSession = agentSessions.get(this.getSessionId());
+                String sessionId = this.getSessionId();
+                if(sessionId == null){
+                    sessionId = SimpleStringUtil.getUUID32();
+                    this.setSessionId(sessionId);
+                }
+                agentSession = agentSessions.get(sessionId);
                 if (agentSession == null) {//不存在session，则创建一个session
                     agentSession = new AgentSession();
-                    agentSession.setSessionId(this.getSessionId());
+                    agentSession.setSessionId(sessionId);
                     agentSession.setUserId(this.getUserId());
                     agentSession.setAgentId(this.getAgentId() != null ? getAgentId() : agentId);
                     agentSession.setTitle(prompt.length() > 50 ? prompt.substring(0, 50) : prompt);
                     agentSession.setCreateTime(LocalDateTime.now());
                     agentSession.setLastAccessTime(agentSession.getCreateTime());
                     agentSession.setDomain(domain);
-                    agentSessions.put(this.getSessionId(), agentSession);
+                    agentSessions.put(sessionId, agentSession);
                     newSession = true;
 
                 } else {

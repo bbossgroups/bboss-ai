@@ -51,6 +51,14 @@ public class AIAgent<T extends AIAgent> {
     private String type;
     protected int sessionSize;
 
+    
+
+    /**
+     * 启用多轮工具调用
+     */
+    protected Boolean enableLoopToolCall;
+    
+
     public String genSubAgentName(String agentId) {
         return getAgentName() + "-" + agentId;
     }
@@ -662,7 +670,7 @@ public class AIAgent<T extends AIAgent> {
 
 
     public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage ){
-        ChatContext chatContext = new ChatContext();
+        ChatContext chatContext = AIAgentUtil.getChatContext(  chatAgentMessage, this);
         return chat(  maasName,   chatAgentMessage,chatContext);
     }
     /**
@@ -1229,5 +1237,12 @@ public class AIAgent<T extends AIAgent> {
         return toolSearcher;
     }
 
- 
+    public Boolean getEnableLoopToolCall() {
+        return enableLoopToolCall;
+    }
+
+    public T setEnableLoopToolCall(Boolean enableLoopToolCall) {
+        this.enableLoopToolCall = enableLoopToolCall;
+        return (T)this;
+    } 
 }

@@ -15,17 +15,13 @@ package org.frameworkset.spi.ai.prompt;
  * limitations under the License.
  */
 
-import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import com.frameworkset.util.VariableHandler;
 import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.util.ClasspathResourceReader;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
-import org.frameworkset.util.io.ClassPathResource;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,107 +30,9 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/5/12
  */
-public class PromptEval {
-    private static Logger logger = org.slf4j.LoggerFactory.getLogger(PromptEval.class);
-    private static String pretoken = "#\\[";
-    private static String endtoken = "\\]";
+public class FlowPromptEval extends PromptEval{
+    private static Logger logger = org.slf4j.LoggerFactory.getLogger(FlowPromptEval.class);
     
-    static class PromptVariable extends VariableHandler.TypeDefaultValueVariable {
-
-        private int scope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
-        private String type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
-        private Object cacheValue = null;
-        private Object lock = new Object();
-        /**
-         * 变量值字符集，当type为file、url、resource时起作用
-         */
-        private String charset = "UTF-8"; // Default character set
-
-        public int getScope() {
-            return scope;
-        }
-
-        public String getCharset() {
-            return charset;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public Object getLock() {
-            return lock;
-        }
-
-        public void setCacheValue(Object cacheValue) {
-            this.cacheValue = cacheValue;
-        }
-
-        public Object getCacheValue() {
-            return cacheValue;
-        }
-
-        @Override
-        /**
-         * 变量属性解析完毕后，对变量属性信息进行额外处理
-         */
-        public void afterSetAttribute(){
-            if(this.attributes != null) {
-//				int pos = this.attributes.indexOf(",");
-                String[] ts = attributes.split(",");
-
-                for (int i = 0; i < ts.length; i ++) {
-                    String t = ts[i];
-                    if (t.startsWith("scope=")) {
-                        String q = t.substring("scope=".length()).trim();
-                        if(q.equals("node"))
-                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_NODE;
-                        else if(q.equals("flow"))
-                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
-                        else if(q.equals("container"))
-                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER;
-                        else{
-                            throw new AIRuntimeException("scope must be node,flow or container:"+q+" in variable:"+this.getVariableName());
-                        }
-                    }
-                    else if (t.startsWith("type=")) {
-                        String q = t.substring("type=".length()).trim();
-                        if(q.equals("text"))
-                            type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
-                        else if(q.equals("file")){
-                            type = AIFlowConst.AIFLOW_VAR_TYPE_FILE;
-                           
-                        } else if(q.equals("url")){
-                            type = AIFlowConst.AIFLOW_VAR_TYPE_URL;
-                        } else if(q.equals("resource")){
-                            type = AIFlowConst.AIFLOW_VAR_TYPE_RESOURCE;
-                        }
-                        else{
-                            throw new AIRuntimeException("type must be text,file or url:"+q+" in variable:"+this.getVariableName());
-                        }
-                    
-                    }
-                    else if (t.startsWith("charset=")) {
-                        this.charset = t.substring("charset=".length()).trim();
-                    }
-                    else{
-                        parserTypeAndDefaultObjectValue(t);
-                    }
-                    
-
-                }
- 
-
-            }
-        }
-    }
-    static class PromptStructionBuiler extends VariableHandler.URLStructionBuiler {
-        @Override
-        public VariableHandler.Variable buildVariable() {
-            return new PromptVariable();
-        }
-
-    }
 
     /**
      * 递归解析提示词中引用的外部资源包含提示词变量
@@ -234,7 +132,7 @@ public class PromptEval {
         }
         return prompt;
     }
-    private static final Object DUMP = new Object();
+  
     public String eval(String prompt, JobFlowNodeExecuteContext jobFlowNodeExecuteContext){
         
          return evalResource(new HashMap<>(),prompt,jobFlowNodeExecuteContext);

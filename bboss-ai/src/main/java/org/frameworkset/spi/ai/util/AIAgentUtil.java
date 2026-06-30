@@ -22,9 +22,11 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.prompt.PromptEval;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
@@ -60,7 +62,7 @@ public class AIAgentUtil {
         return streamChatCompletion((String)null , message,   aiAgent);
     }
     public static Flux<String> streamChatCompletion(String poolName,Object chatMessage, AIAgent aiAgent ){
-        ChatContext chatContext = new ChatContext();
+        ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
         return streamChatCompletion(  poolName,  chatMessage,   aiAgent,chatContext);
     }
     /**
@@ -186,7 +188,7 @@ public class AIAgentUtil {
      * @return
      */
     public static AudioEvent multimodalAudioGeneration(String poolName,  AudioAgentMessage message, StoreFilePathFunction storeFilePathFunction,AIAgent aiAgent) {
-        ChatContext chatContext = new ChatContext();
+        ChatContext chatContext = AIAgentUtil.getChatContext(message, aiAgent);
         return multimodalAudioGeneration(  poolName,    message,   storeFilePathFunction,  aiAgent,chatContext);
     }
         /**
@@ -398,15 +400,74 @@ public class AIAgentUtil {
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
         }
     }
-    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent){
-        ChatContext chatContext = new ChatContext();
-        return  streamChatCompletionEvent(  poolName,  chatMessage,    aiAgent, chatContext);
+    public static ChatContext getChatContext(AgentMessage chatMessage, AIAgent agent){
+        
+        ChatContext   chatContext = new ChatContext();
+        if(chatMessage instanceof AgentMessage){
+            Map<String,Object> contextData = chatMessage.getContextData();
+            if(contextData != null)
+                chatContext.setContextData(contextData);
+        }       
+       
+        chatContext.setChatStreamCallback(new ChatStreamCallback() {
+            /**
+             * 提示词预处理
+             *
+             * @param prompt
+             * @return
+             */
+            @Override
+            public String evalPrompt(String prompt) {
+                PromptEval promptEval = new PromptEval();
+                return promptEval.eval(prompt, chatContext);
+            }
+
+            @Override
+            public void streamDone(ServerEvent serverEvent) {
+                outputResult(agent, serverEvent, chatContext);
+            }
+        });
+     
+        return chatContext;
+    }
+    public static void outputResult(AIAgent agent, ServerEvent serverEvent, ChatContext chatContext){
+        if(serverEvent != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("agentMessage id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+            }
+            String outputVaribleName = agent.getOutputVaribleName();
+            String data = serverEvent.getData();
+            if(data == null){
+                data = serverEvent.getFullStreamData();
+            }
+            if(data != null) {
+                if(agent.getAgentOutput() != null){
+                    try {
+                        agent.getAgentOutput().output(serverEvent);
+                    }
+                    catch (Exception e) {
+                        logger.error("Output agent[id="+agent.getAgentId()+",name="+agent.getAgentName()+"] result error:",e);
+                    }
+                }
+                if (SimpleStringUtil.isNotEmpty(outputVaribleName)) {
+
+                    chatContext.addContextData(outputVaribleName, data);
+                    
+                }
+            }
+        }
+    }
+    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent agent){
+        ChatContext chatContext = getChatContext( (AgentMessage) chatMessage,   agent);      
+     
+        
+        return  streamChatCompletionEvent(  poolName,  chatMessage,    agent, chatContext);
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent, ChatContext chatStreamCallback){
         return  streamChatCompletionEvent(poolName,chatMessage,(StoreFilePathFunction) null, aiAgent,chatStreamCallback);
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent) {
-        ChatContext chatContext = new ChatContext();
+        ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
         return  streamChatCompletionEvent(poolName,chatMessage,storeFilePathFunction, aiAgent,chatContext);
     }
     /**
@@ -867,7 +928,7 @@ public class AIAgentUtil {
 
     }
     public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent ) {
-        ChatContext chatContext = new ChatContext();
+        ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
         return chatCompletionEvent(  poolName,   chatMessage ,   aiAgent,chatContext);
     }
     
@@ -954,7 +1015,7 @@ public class AIAgentUtil {
      * 创建流式调用的Flux,在指定的数据源上执行
      */
     public static <T> Flux<T> streamChatCompletion(String poolName,Object chatMessage,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent){
-        ChatContext chatContext = new ChatContext();
+        ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
         return streamChatCompletion(poolName,chatMessage,streamDataHandler, aiAgent,chatContext);
     }
 

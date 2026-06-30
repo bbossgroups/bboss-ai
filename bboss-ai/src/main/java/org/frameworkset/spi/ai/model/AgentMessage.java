@@ -29,7 +29,10 @@ import java.util.Map;
  */
 public class AgentMessage<T extends AgentMessage> {
 
-
+    /**
+     * 存放智能体上下文数据,用于在多个智能体之间分享变量数据
+     */
+    private Map<String,Object> contextData ;
 
     /**
      * 模型调用报错时，是否重试
@@ -286,6 +289,15 @@ public class AgentMessage<T extends AgentMessage> {
 
     public T setRetryInterval(long retryInterval) {
         this.retryInterval = retryInterval;
+        return (T)this;
+    }
+
+    public Map<String, Object> getContextData() {
+        return contextData;
+    }
+
+    public T setContextData(Map<String, Object> contextData) {
+        this.contextData = contextData;
         return (T)this;
     }
 }

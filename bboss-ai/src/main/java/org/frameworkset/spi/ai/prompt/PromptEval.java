@@ -1,0 +1,233 @@
+package org.frameworkset.spi.ai.prompt;
+/**
+ * Copyright 2026 bboss
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import com.frameworkset.util.SimpleStringUtil;
+import com.frameworkset.util.VariableHandler;
+import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.model.AIFlowConst;
+import org.frameworkset.spi.ai.model.AIRuntimeException;
+import org.slf4j.Logger;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author biaoping.yin
+ * @Date 2026/5/12
+ */
+public class PromptEval {
+    private static Logger logger = org.slf4j.LoggerFactory.getLogger(PromptEval.class);
+    private static String pretoken = "#\\[";
+    private static String endtoken = "\\]";
+    
+    static class PromptVariable extends VariableHandler.TypeDefaultValueVariable {
+
+        private int scope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+        private String type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
+        private Object cacheValue = null;
+        private Object lock = new Object();
+        /**
+         * 变量值字符集，当type为file、url、resource时起作用
+         */
+        private String charset = "UTF-8"; // Default character set
+
+        public int getScope() {
+            return scope;
+        }
+
+        public String getCharset() {
+            return charset;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public Object getLock() {
+            return lock;
+        }
+
+        public void setCacheValue(Object cacheValue) {
+            this.cacheValue = cacheValue;
+        }
+
+        public Object getCacheValue() {
+            return cacheValue;
+        }
+
+        @Override
+        /**
+         * 变量属性解析完毕后，对变量属性信息进行额外处理
+         */
+        public void afterSetAttribute(){
+            if(this.attributes != null) {
+//				int pos = this.attributes.indexOf(",");
+                String[] ts = attributes.split(",");
+
+                for (int i = 0; i < ts.length; i ++) {
+                    String t = ts[i];
+                    if (t.startsWith("scope=")) {
+                        String q = t.substring("scope=".length()).trim();
+                        if(q.equals("node"))
+                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_NODE;
+                        else if(q.equals("flow"))
+                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+                        else if(q.equals("container"))
+                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER;
+                        else{
+                            throw new AIRuntimeException("scope must be node,flow or container:"+q+" in variable:"+this.getVariableName());
+                        }
+                    }
+                    else if (t.startsWith("type=")) {
+                        String q = t.substring("type=".length()).trim();
+                        if(q.equals("text"))
+                            type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
+                        else if(q.equals("file")){
+                            type = AIFlowConst.AIFLOW_VAR_TYPE_FILE;
+                           
+                        } else if(q.equals("url")){
+                            type = AIFlowConst.AIFLOW_VAR_TYPE_URL;
+                        } else if(q.equals("resource")){
+                            type = AIFlowConst.AIFLOW_VAR_TYPE_RESOURCE;
+                        }
+                        else{
+                            throw new AIRuntimeException("type must be text,file or url:"+q+" in variable:"+this.getVariableName());
+                        }
+                    
+                    }
+                    else if (t.startsWith("charset=")) {
+                        this.charset = t.substring("charset=".length()).trim();
+                    }
+                    else{
+                        parserTypeAndDefaultObjectValue(t);
+                    }
+                    
+
+                }
+ 
+
+            }
+        }
+    }
+    static class PromptStructionBuiler extends VariableHandler.URLStructionBuiler {
+        @Override
+        public VariableHandler.Variable buildVariable() {
+            return new PromptVariable();
+        }
+
+    }
+
+    /**
+     * 递归解析提示词中引用的外部资源包含提示词变量
+     * @param evaledResources
+     * @param prompt
+     * @param chatContext
+     * @return
+     */
+    private String evalResource(Map<String,Object> evaledResources, String prompt, ChatContext chatContext){
+        VariableHandler.URLStruction a = VariableHandler.parserStruction(prompt,new PromptStructionBuiler());
+        StringBuilder newPrompt = new StringBuilder();
+        if(a != null){
+
+             
+            List<VariableHandler.Variable> variables = a.getVariables();
+            List<String> tokens = a.getTokens();
+            for (int k = 0; tokens != null && k < tokens.size(); k++) {
+                newPrompt.append(tokens.get(k));
+                if(variables != null && k < variables.size()){
+                    PromptVariable variable = (PromptVariable) variables.get(k);
+                    String type = variable.getType();
+                   
+                    Object value = null;
+                    String varName = variable.getVariableName();
+                    if(type == null || type.equals(AIFlowConst.AIFLOW_VAR_TYPE_TEXT)) {
+                        String defaultValue = variable.getDefaultValue();
+
+                        value = chatContext.getContextData(varName);
+                        
+                        if(value == null && defaultValue != null){
+                            value = defaultValue;
+                        }
+                    } else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_FILE)) {
+
+                        if(evaledResources.containsKey(varName)){
+                            throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部文件资源！");
+                        }
+                        String value_ = PromptResourceCache.getInstance().cacheFileContent(varName, variable.getCharset());
+                        evaledResources.put(varName, DUMP);
+                        if(SimpleStringUtil.isNotEmpty(value_)) {
+                            value_ = this.evalResource(evaledResources, value_, chatContext);
+                        }
+                        value = value_;
+
+                    }
+                    else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_RESOURCE)) {
+                        if(evaledResources.containsKey(varName)){
+                            throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部classpath文件资源！");
+                        }
+                        String value_ = PromptResourceCache.getInstance().cacheClasspathResource(varName, variable.getCharset());
+                        evaledResources.put(varName, DUMP);
+                        if(SimpleStringUtil.isNotEmpty(value_)) {
+                            value_ = this.evalResource(evaledResources, value_, chatContext);
+                        }
+                        value = value_;
+
+                    }
+
+                    else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_URL)) {
+                        if(evaledResources.containsKey(varName)){
+                            throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部url资源！");
+                        }
+                        String value_ = PromptResourceCache.getInstance().cacheUrlResource(varName, variable.getCharset());
+                        evaledResources.put(varName, DUMP);
+                        if(SimpleStringUtil.isNotEmpty(value_)) {
+                            value_ = this.evalResource(evaledResources, value_, chatContext);
+                        }
+                        value = value_;
+
+                    }
+                    if(value != null){
+                        newPrompt.append(value);
+                    }
+                    else{
+                        if(variable.getAttributes() != null) {
+                            newPrompt.append("#[").append(variable.getVariableName()).append(",").append(variable.getAttributes()).append("]");
+                        }
+                        else{
+                            newPrompt.append("#[").append(variable.getVariableName()).append("]");
+                        }
+                    }
+                }
+            }
+
+        }
+        if(newPrompt.length() > 0){
+            prompt = newPrompt.toString();
+        }
+        if(logger.isDebugEnabled()) {
+            logger.debug("new prompt:{}", prompt);
+        }
+        return prompt;
+    }
+    protected static final Object DUMP = new Object();
+    public String eval(String prompt, ChatContext chatContext){
+        
+         return evalResource(new HashMap<>(),prompt,chatContext);
+       
+    }
+}

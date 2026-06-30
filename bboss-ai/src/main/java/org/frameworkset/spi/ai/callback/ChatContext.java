@@ -18,7 +18,10 @@ package org.frameworkset.spi.ai.callback;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import reactor.core.publisher.FluxSink;
 
+import java.util.Map;
+
 /**
+ * 智能体chat或者streamchat时，会创建一个ChatContext对象，用于保存会话级别的信息
  * @author biaoping.yin
  * @Date 2026/5/12
  */
@@ -55,6 +58,7 @@ public class ChatContext {
      * 智能体会话级别控制是否开启思考过程返回
      */
     private Boolean thinking;
+    private Map<String,Object> contextData;
 
 
     /**
@@ -64,6 +68,10 @@ public class ChatContext {
     private int toolCallStage = TOOL_CALL_STAGE_SEARCH_TOOL;
     private Object lock = new Object();
     private FluxSink<ServerEvent> agentSink;
+    /**
+     * 保存计算后的提示词，避免重复计算
+     */
+    private String evaledPrompt;
 
     public void setChatStreamCallback(ChatStreamCallback chatStreamCallback) {
         this.chatStreamCallback = chatStreamCallback;
@@ -74,10 +82,16 @@ public class ChatContext {
     }
     
     public String evalPrompt(String prompt){
-        if(chatStreamCallback != null) {
-            return chatStreamCallback.evalPrompt(prompt);
+        if(evaledPrompt != null){
+            return evaledPrompt;
         }
-        return prompt;
+        if(chatStreamCallback != null) {
+            evaledPrompt = chatStreamCallback.evalPrompt(prompt);
+        }
+        else {
+            evaledPrompt = prompt;
+        }
+        return evaledPrompt;
     }
 
     public boolean isChatWithToolcall() {
@@ -125,5 +139,24 @@ public class ChatContext {
 
     public void setThinking(Boolean thinking) {
         this.thinking = thinking;
+    }
+    
+    public ChatContext addContextData(String key,Object value){
+        if(contextData == null){
+            contextData = new java.util.LinkedHashMap<>();
+        }
+        contextData.put(key,value);
+        return this;
+    }
+    public Object getContextData(String key){
+        if(contextData == null){
+            return null;
+        }
+        return contextData.get(key);
+    }
+
+    public ChatContext setContextData(Map<String, Object> contextData) {
+        this.contextData = contextData;
+        return this;
     }
 }

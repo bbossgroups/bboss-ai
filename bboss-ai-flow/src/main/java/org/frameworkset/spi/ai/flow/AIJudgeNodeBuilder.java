@@ -20,7 +20,7 @@ import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.ai.prompt.PromptEval;
+import org.frameworkset.spi.ai.prompt.FlowPromptEval;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,8 +115,8 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
              */
             @Override
             public String evalPrompt(String prompt) {
-                PromptEval promptEval = new PromptEval();
-                return promptEval.eval(prompt, jobFlowNodeExecuteContext);
+                FlowPromptEval flowPromptEval = new FlowPromptEval();
+                return flowPromptEval.eval(prompt, jobFlowNodeExecuteContext);
             }
 
             @Override

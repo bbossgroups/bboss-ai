@@ -15,10 +15,9 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.model.ServerEvent;
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
-import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -44,15 +43,21 @@ public class CLIShellFunctionTool {
 	}
     
  
-	@Tool(name ="executeShell",description = "可以执行命令行指令脚本，返回执行结果:支持linux 和windows 脚本执行。")
-    public Map executeShell(@ToolParam(name = "shell",description = "合法的可执行的shell脚本",required = true) String shell){
-        String executeResult = null;        try {
+	@Tool(name ="executeBash",description = "可以执行命令行指令脚本，返回执行结果:支持linux 和windows 脚本执行。")
+    public Map executeBash(@ToolParam(name = "command",description = "合法的可执行的shell脚本",required = true) String command){
+        String executeResult = null;       
+        try {
+            if(SimpleStringUtil.isEmpty(command)){
+                Map result = new java.util.HashMap();
+                result.put("executeResult","没有输入命令，忽略执行!");
+                return result;
+            }
             java.util.concurrent.CompletableFuture<String> future = java.util.concurrent.CompletableFuture.supplyAsync(() -> {
                 java.io.File tempScript = null;
                 try {
                     String os = System.getProperty("os.name").toLowerCase();
                     boolean isWindows = os.contains("win");
-                    boolean isScript = shell != null && (shell.contains("\n") || shell.contains("\r"));
+//                    boolean isScript = command != null && (command.contains("\n") || command.contains("\r"));
                     // 根据操作系统选择对应的字符集
                     String charset = isWindows ? "GBK" : java.nio.charset.StandardCharsets.UTF_8.name();
 
@@ -72,9 +77,9 @@ public class CLIShellFunctionTool {
 //                        }
 //                    } else {
                         if (isWindows) {
-                            processBuilder = new ProcessBuilder("cmd", "/c",  "chcp", "65001", ">", "nul", "&&",shell);
+                            processBuilder = new ProcessBuilder("cmd", "/c",  "chcp", "65001", ">", "nul", "&&",command);
                         } else {
-                            processBuilder = new ProcessBuilder("sh", "-c", shell);
+                            processBuilder = new ProcessBuilder("sh", "-c", command);
                         }
 //                    }
 
@@ -92,7 +97,7 @@ public class CLIShellFunctionTool {
                     
                     return output.toString();
                 } catch (Exception e) {
-                    throw new RuntimeException("Command execution failed: " + shell, e);
+                    throw new RuntimeException("Command execution failed: " + command, e);
                 } finally {
                     if (tempScript != null && tempScript.exists()) {
                         tempScript.delete();
@@ -107,11 +112,11 @@ public class CLIShellFunctionTool {
 				executeResult = future.get();
 			}
             if(logger.isDebugEnabled()) {
-                logger.info("Command executed successfully: {}", shell);
+                logger.info("Command executed successfully: {}", command);
                 logger.info("Command output: {}", executeResult);
             }
         } catch (Exception e) {
-            logger.error("Error executing command: " + shell, e);
+            logger.error("Error executing command: " + command, e);
         }
         Map result = new java.util.HashMap();
         result.put("executeResult",executeResult);

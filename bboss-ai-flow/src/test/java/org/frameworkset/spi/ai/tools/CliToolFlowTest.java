@@ -72,7 +72,9 @@ public class CliToolFlowTest {
 //        String message = "#[http://localhost:85/prompt.txt,type=url,charset=UTF-8]";
 //        String message = "#[C:\\workspace\\bbossgroups\\bboss-ai\\bboss-ai-flow\\src\\test\\resources\\prompt.txt,type=file,charset=UTF-8]";
 //        chatAgentMessage.setModel("deepseek-v4-pro").setMaas("deepseek").setRetry(3);
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个命令执行专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本必须符合用户要求的指令代码，将指令脚本交由工具执行，并输出执行结果。");
+		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个命令执行专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，" +
+                "脚本必须符合用户要求的指令代码，将指令脚本交由工具执行，并输出执行结果。" +
+                "注意事项：脚本将通过java Process调用cmd或者sh来执行，确保脚本在目标操作系统上运行。");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
 		

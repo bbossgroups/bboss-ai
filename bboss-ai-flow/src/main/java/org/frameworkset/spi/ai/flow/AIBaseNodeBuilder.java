@@ -22,7 +22,7 @@ import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.prompt.PromptEval;
+import org.frameworkset.spi.ai.prompt.FlowPromptEval;
 import org.frameworkset.tran.jobflow.builder.CallableJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
@@ -75,8 +75,8 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
              */
             @Override
             public String evalPrompt(String prompt) {
-                PromptEval promptEval = new PromptEval();
-                return promptEval.eval(prompt, jobFlowNodeExecuteContext);
+                FlowPromptEval flowPromptEval = new FlowPromptEval();
+                return flowPromptEval.eval(prompt, jobFlowNodeExecuteContext);
             }
 
             @Override
