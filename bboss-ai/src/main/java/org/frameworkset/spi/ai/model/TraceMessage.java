@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -37,79 +38,96 @@ public class TraceMessage {
         return message;
     }
 
-    public void setMessage(Map<String, Object> message) {
+    public TraceMessage setMessage(Map<String, Object> message) {
         this.message = message;
+        return this;
     }
 
     public Long getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(Long startTime) {
+    public TraceMessage setStartTime(Long startTime) {
         this.startTime = startTime;
+        return this;
     }
 
     public Long getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(Long endTime) {
+    public TraceMessage setEndTime(Long endTime) {
         this.endTime = endTime;
+        return this;
     }
 
     public String getSessionId() {
         return sessionId;
     }
 
-    public void setSessionId(String sessionId) {
+    public TraceMessage setSessionId(String sessionId) {
         this.sessionId = sessionId;
+        return this;
     }
 
     public String getAgentId() {
         return agentId;
     }
 
-    public void setAgentId(String agentId) {
+    public TraceMessage setAgentId(String agentId) {
         this.agentId = agentId;
+        return this;
     }
 
     public String getParentAgentId() {
         return parentAgentId;
     }
 
-    public void setParentAgentId(String parentAgentId) {
+    public TraceMessage setParentAgentId(String parentAgentId) {
         this.parentAgentId = parentAgentId;
+        return this;
     }
 
     public String getRequestId() {
         return requestId;
     }
 
-    public void setRequestId(String requestId) {
+    public TraceMessage setRequestId(String requestId) {
         this.requestId = requestId;
+        return this;
     }
 
     public String getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public TraceMessage setUserId(String userId) {
         this.userId = userId;
+        return this;
     }
 
     public String getTraceId() {
         return traceId;
     }
 
-    public void setTraceId(String traceId) {
+    public TraceMessage setTraceId(String traceId) {
         this.traceId = traceId;
+        return this;
     }
 
     public Map<String, Object> getMetaData() {
         return metaData;
     }
 
-    public void setMetaData(Map<String, Object> metaData) {
+    public TraceMessage setMetaData(Map<String, Object> metaData) {
         this.metaData = metaData;
+        return this;
+    }
+    public TraceMessage put(String key, Object value){
+        if(message == null){
+            message = new LinkedHashMap<>();
+        }
+        message.put(key,value);
+        return this;
     }
 }

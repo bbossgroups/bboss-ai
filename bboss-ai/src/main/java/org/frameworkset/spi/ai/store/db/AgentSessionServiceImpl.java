@@ -36,7 +36,7 @@ import java.util.List;
  * yinbp @version v1.0
  */
 public class AgentSessionServiceImpl implements AgentSessionService {
-    private String datasource = "ecop";
+    private String datasource = "bboss";
 
     private static Logger log = LoggerFactory
             .getLogger(AgentSessionServiceImpl.class);

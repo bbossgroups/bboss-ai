@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.tool;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.SessionMessage;
 
@@ -40,26 +41,34 @@ public class BeanToolFunctionCall extends  BaseBeanToolFunctionCall implements F
  
     @Override
     public Object call(FunctionTool functionTool) throws FunctionCallException {
+        TraceMessage traceMessage = null;
         try {
-            TraceMessage traceMessage = null;
-            Map message = null;
+           
             if(AgentTraceHolder.isToolTrace()) {
                 traceMessage = new TraceMessage();
-                traceMessage.setStartTime(System.currentTimeMillis());
-                message = new HashMap();
-                message.put("toolCallArgs", !isEmptyParameters() ? functionTool.getArguments() : null);
+                traceMessage.setStartTime(System.currentTimeMillis())
+                        .put("toolCallArgs", !isEmptyParameters() ? functionTool.getArguments() : null)
+                        .put("role", SessionMessage.MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME);
             }
             Object result = toolMethod.invoke(toolBean,getArgs(  functionTool));
             if(AgentTraceHolder.isToolTrace()) {
-                traceMessage.setEndTime(System.currentTimeMillis());
-
-                message.put("toolCallResponse", result);
-                message.put("role", SessionMessage.MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME);
-                traceMessage.setMessage(message);
+                traceMessage.setEndTime(System.currentTimeMillis())
+                        .put("toolCallResponse", result);
+              
                 AgentTraceHolder.trace(traceMessage);
             }
             return result;
         } catch (IllegalAccessException e) {
+            if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
+                try {
+                    traceMessage.setEndTime(System.currentTimeMillis())
+                            .put("toolCallException", SimpleStringUtil.exceptionToString(e));
+                    
+                    AgentTraceHolder.trace(traceMessage);
+                } catch (Exception te) {
+
+                }
+            }
             throw new FunctionCallException(e);
         } catch (InvocationTargetException e) {
             throw new FunctionCallException(e);

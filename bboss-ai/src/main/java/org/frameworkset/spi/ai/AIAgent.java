@@ -1186,23 +1186,38 @@ public class AIAgent<T extends AIAgent> {
     }
     
     public T recordTraceMessage(TraceMessage traceMessage){
-        this.initSessionStore();
-        if(this.mainSessionStore != null) {
-            traceMessage.setAgentId(this.getAgentId());
-            traceMessage.setParentAgentId(this.getParentAgentId());
-            this.mainSessionStore.recordTraceMessage(traceMessage);
+        try {
+            this.initSessionStore();
+            if (this.mainSessionStore != null) {
+                traceMessage.setAgentId(this.getAgentId());
+                traceMessage.setParentAgentId(this.getParentAgentId());
+                this.mainSessionStore.recordTraceMessage(traceMessage);
+            }
+           
         }
-        return (T)this;
+        catch (Exception e){
+            if(logger.isDebugEnabled()){
+                logger.debug("recordTraceMessage error",e);
+            }
+        }
+        return (T) this;
     }
 
     public T recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics){
-        this.initSessionStore();
-        if(this.mainSessionStore != null) {
-            traceMessage.setAgentId(this.getAgentId());
-            traceMessage.setParentAgentId(this.getParentAgentId());
-            this.mainSessionStore.recordTraceMessage(traceMessage,tokenMetrics);
+        try {
+            this.initSessionStore();
+            if(this.mainSessionStore != null) {
+                traceMessage.setAgentId(this.getAgentId());
+                traceMessage.setParentAgentId(this.getParentAgentId());
+                this.mainSessionStore.recordTraceMessage(traceMessage,tokenMetrics);
+            }
         }
-        return (T)this;
+        catch (Exception e){
+            if(logger.isDebugEnabled()){
+                logger.debug("recordTraceMessage error",e);
+            }
+        }
+        return (T) this;
     }
 
     public T setToolSearcher(ToolSearcher toolSearcher) {
