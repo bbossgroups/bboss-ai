@@ -497,7 +497,19 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
         buildThinking(  toolAgentMessage, chatObject, requestMap);
         if(agent.getEnableLoopToolCall() != null && agent.getEnableLoopToolCall()) {
-            buildTools(chatContext, toolAgentMessage, agent, requestMap);
+            int maxLoopToolCalls = agent.getMaxLoopToolCalls();
+            boolean buildTools = true;
+            if(maxLoopToolCalls > 0){
+                int loopToolCalls = chatContext.increamentLoopToolCalls();
+                //判断工具调用轮次是否超过最大值，如果超过最大值，将不再往上下文中添加工具调用信息
+                if(loopToolCalls > maxLoopToolCalls){                    
+                    buildTools = false;
+                    logger.info("Loop tool calls exceeds max loop tool calls {} and stop loop tool call.",  maxLoopToolCalls);
+                }
+            }
+            if(buildTools) {
+                buildTools(chatContext, toolAgentMessage, agent, requestMap);
+            }
         }
         return requestMap;
     }

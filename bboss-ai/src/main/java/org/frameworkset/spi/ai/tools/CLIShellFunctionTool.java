@@ -43,7 +43,7 @@ public class CLIShellFunctionTool {
 	}
     
  
-	@Tool(name ="executeBash",description = "可以执行命令行指令脚本，返回执行结果:支持linux 和windows 脚本执行。")
+	@Tool(name ="executeBash",description = "执行shell脚本：可以通过Java Process调用cmd或者sh来执行shell脚本，返回执行结果，支持linux、unix、mac以及windows等系统的shell脚本执行")
     public Map executeBash(@ToolParam(name = "command",description = "合法的可执行的shell脚本",required = true) String command){
         String executeResult = null;       
         try {

@@ -50,6 +50,13 @@ public class ChatContext {
 
 
     /**
+     * 工具调用次数计数器
+     */
+    private int loopToolCalls;
+
+
+
+    /**
      * 智能体会话级别控制是否开启流式返回
      */
     private Boolean streamable;
@@ -158,5 +165,14 @@ public class ChatContext {
     public ChatContext setContextData(Map<String, Object> contextData) {
         this.contextData = contextData;
         return this;
+    }
+
+    public int getLoopToolCalls() {
+        return loopToolCalls;
+    }
+
+    public int increamentLoopToolCalls() {
+        this.loopToolCalls ++;
+        return this.loopToolCalls;
     }
 }

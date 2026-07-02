@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.model;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.util.BBOSSAIVersion;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.LinkedHashMap;
@@ -28,7 +29,7 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AgentMessage<T extends AgentMessage> {
-
+    private static final BBOSSAIVersion BBOSSAIVersion = new BBOSSAIVersion();
     /**
      * 存放智能体上下文数据,用于在多个智能体之间分享变量数据
      */

@@ -41,7 +41,7 @@ public class GetOSFunctionTool {
 		return this;
 	}
     
-	@Tool(name="getOS",description = "获取操作系统信息")
+	@Tool(name="getOS",description = "获取OS及OS版本信息")
     public Map getOS(){
         String os = System.getProperty("os.name");
         Map result = new java.util.HashMap();

@@ -15,9 +15,11 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
+import com.frameworkset.common.poolman.util.SQLUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import reactor.core.publisher.Flux;
 
@@ -27,20 +29,28 @@ import java.util.concurrent.CountDownLatch;
  * @author biaoping.yin
  * @Date 2026/6/24
  */
-public class CliToolLoopPortTest {
-	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CliToolLoopPortTest.class);
+public class CliToolLoopPortDBTest {
+	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CliToolLoopPortDBTest.class);
 	
 	public static void main(String[] args) {
 		try {
 			HttpRequestProxy.startHttpPools("application-stream.properties");
 //            String message = "当前OS为windows，生成一段shell脚本，首先查找占用端口808的进程，如果存在对应进程，则关闭进程，输出端口进程信息和关闭核对结果";
 //            message = "请依次执行以下命令：\n1.获取OS版本信息\n2.获取CPU信息\n3.打印OS和CPU信息\n4.查找端口808的进程\n5.如果存在对应进程，则关闭进程\n6.输出端口进程信息和关闭核对结果";
-           
+            initDB();
 			callMinimaxSimple( );
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
+    public static void initDB(){
+        SQLUtil.startPool("visualops",//数据源名称
+                "com.mysql.cj.jdbc.Driver",//mysql驱动
+                "jdbc:mysql://192.168.137.1:3306/bboss?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true",//mysql链接串
+                "root","123456",//数据库账号和口令
+                "select 1 " //数据库连接校验sql
+        );
+    }
 	public static void callMinimaxSimple( ) throws InterruptedException {
 		//MiniMax-M2.7
 		//定义问题变量
@@ -49,14 +59,19 @@ public class CliToolLoopPortTest {
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
 //		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
-        chatAgentMessage.setModel("deepseek-v4-pro");
-        chatAgentMessage.setMaas("deepseek");
+//        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwentokenplan").setRetry(3);
+        
+        chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
         chatAgentMessage.setRetry(3);
         String message = "#[loopprompt.txt,type=resource]";
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专家，可以根据用户要求生成符合要求的、完整的、可执行的shell脚本" +
+		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专家，可以根据用户要求获取系统信息，生成符合要求的、完整的、可执行的shell脚本" +
                 "，并将生成的脚本交由工具执行，输出执行结果。注意事项：通过Java Process调用cmd或者sh来执行脚本，确保脚本在目标操作系统上能够正常运行。");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
+        chatAgentMessage.setStoreContext(new StoreContext()
+                .setUserId("user123").setSessionSize(100).setRequestId("request123")
+                .setStoreType(StoreContext.STORE_TYPE_DB)
+                .setDataSource("visualops"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		AIAgent agent = new AIAgent();

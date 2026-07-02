@@ -1109,24 +1109,49 @@ public class AIResponseUtil {
      */
     private static void buildToolCalls(BaseStreamDataBuilder streamDataBuilder,StreamData content,ServerEvent serverEvent){
         List<Map> toolCalls = new ArrayList<>();
-        Map firstToolCall = content.getToolCallsChunk();
+        Map lastToolCall = content.getToolCallsChunk();
         StreamData streamDataChunk = null;
+        List<FunctionTool> functionTools = new ArrayList<>();
         StringBuilder argumentsBuilder = new StringBuilder();
-        FunctionTool functionTool = streamDataBuilder.functionTool(argumentsBuilder,firstToolCall);
+        FunctionTool functionTool = streamDataBuilder.functionTool(argumentsBuilder,lastToolCall);
+        String lastFunctionName = functionTool.getFunctionName();
         List<StreamData> _tools = content.getToolCallsStreamDatas();
         
         for(int i = 0; _tools != null && i < _tools.size(); i++){
-            streamDataChunk = _tools.get(i);             
-            streamDataBuilder.appendArguments(argumentsBuilder,streamDataChunk.getToolCallsChunk());
+            streamDataChunk = _tools.get(i);      
+            Map<String,Object> toolCall = streamDataChunk.getToolCallsChunk();
+            Map function = (Map)toolCall.get("function");
+            if(function != null){
+                String functionName = (String)function.get("name");
+                if(functionName != null && !functionName.equals(lastFunctionName)){
+                    String arguments = argumentsBuilder.toString();
+                    Map lastFunction = (Map)lastToolCall.get("function");
+                    lastFunction.put("arguments", arguments);
+                    functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
+                    toolCalls.add(lastToolCall);
+                    functionTools.add(functionTool);
+                    argumentsBuilder.setLength(0);
+                    lastToolCall = toolCall;
+                    functionTool = streamDataBuilder.functionTool(argumentsBuilder,toolCall);
+                    lastFunctionName = functionName;
+                }
+                else{
+                    streamDataBuilder.appendArguments(argumentsBuilder, toolCall);
+                }
+            }
+            else {
+                streamDataBuilder.appendArguments(argumentsBuilder, toolCall);
+            }
              
         }
-        String arguments = argumentsBuilder.toString();
-        Map function = (Map)firstToolCall.get("function");
-        function.put("arguments", arguments);
-        functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
-        toolCalls.add(firstToolCall);
-        List<FunctionTool> functionTools = new ArrayList<>();
-        functionTools.add(functionTool);
+        if(argumentsBuilder.length() > 0) {
+            String arguments = argumentsBuilder.toString();
+            Map function = (Map) lastToolCall.get("function");
+            function.put("arguments", arguments);
+            functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
+            toolCalls.add(lastToolCall);
+            functionTools.add(functionTool);
+        }
         serverEvent.setToolCalls(toolCalls);
         content.setToolCalls(toolCalls);
         serverEvent.setFunctionTools(functionTools);

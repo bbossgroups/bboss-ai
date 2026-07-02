@@ -101,10 +101,12 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
         
     }
     
-    private void setHeaderAgent(AIAgent headerAgent){
-        if(this.headerAgent == null) {
-            this.headerAgent = headerAgent;
-            headerAgent.setSequenceHeaderNode(true);
+    private void setHeaderAgent(AppendToParentAgent headerAgent){
+        if(headerAgent instanceof AIAgent) {
+            if (this.headerAgent == null) {
+                this.headerAgent = (AIAgent) headerAgent;
+                this.headerAgent.setSequenceHeaderNode(true);
+            }
         }
     }
 
@@ -498,7 +500,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     public void addConditionFlowNode(AppendToParentAgent agent, boolean defaultConditionNode) {
         initAISequenceJobFlowNodeBuilder();
 
-        setHeaderAgent(this);
+        setHeaderAgent(agent);
         agent.appendConditionJobFlowNodeToParentAgent(this,defaultConditionNode);
 
     }
@@ -509,7 +511,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     public String addConditionFlowNode(boolean allCondtionNodeMatchedfailedContinue,AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger,boolean defautlConditionNode) {
         this.initAISequenceJobFlowNodeBuilder();
 
-        setHeaderAgent(this);
+        setHeaderAgent(aiAgent);
         return aiAgent.appendConditionJobFlowNodeToParentAgent(allCondtionNodeMatchedfailedContinue,this,conditionNodeTrigger,defautlConditionNode);
 
 //        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
@@ -524,7 +526,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     public String addConditionFlowNode(AppendToParentAgent aiAgent , TriggerScriptAPI conditionNodeTrigger){
         this.initAISequenceJobFlowNodeBuilder();
 
-        setHeaderAgent(this);
+        setHeaderAgent(aiAgent);
 //        JobFlowNodeBuilder jobFlowNodeBuilder = jobFlowBuilder.getJobFlowNodeBuilder(aiAgent.getAgentId());
 //        
 //        
@@ -600,7 +602,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
      */
     public String addAnotherConditionJobFlowNodeAgent(AppendToParentAgent baseNodeAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
         this.initAISequenceJobFlowNodeBuilder();
-        setHeaderAgent(this);
+        setHeaderAgent(baseNodeAgent);
         
         return baseNodeAgent.addAnotherConditionJobFlowNodeAgent(this,   conditionNodeTrigger,  defaultConditionNode);
     }
@@ -615,7 +617,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
      */
     public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMathfailedContinue,AppendToParentAgent baseNodeAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
         this.initAISequenceJobFlowNodeBuilder();
-        setHeaderAgent(this);
+        setHeaderAgent(baseNodeAgent);
 
         return baseNodeAgent.addAnotherConditionJobFlowNodeAgent(allCondtionNodeMathfailedContinue,this,   conditionNodeTrigger,  defaultConditionNode);
     }
@@ -677,7 +679,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     public AISequenceAgent addAgent(AppendToParentAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
         initAISequenceJobFlowNodeBuilder();
 
-        setHeaderAgent((AIAgent) aiAgent);
+        setHeaderAgent(aiAgent);
         aiAgent.appendToParentAgent(this,triggerScriptAPI);
         return  this;
     }

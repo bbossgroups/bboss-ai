@@ -48,7 +48,10 @@ public class SessionMessage {
      */
     public static final String MESSAGE_TYPE_SYSTEM_MESSAGE = "3";
 
-
+    /**
+     * 智能体辅助消息:工具调用结果消息，需要提交给大模型
+     */
+    public static final String MESSAGE_TYPE_TOOL_MESSAGE = "4";
 
     /**
      * 智能体跟踪消息
@@ -115,6 +118,13 @@ public class SessionMessage {
      */
     public static final String MESSAGE_TYPE_TOOLCALL_MESSAGE = "17";
 
+
+    /**
+     * 智能体工具服务调用消息:其他消息类型，定义的消息名称（role）没有设置对应的编码，返回18
+     * 需要在AgentMessageTypeConvertor中建立映射关系
+     */
+    public static final String MESSAGE_TYPE_OTHER_MESSAGE = "18";
+
     /**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
      */
@@ -161,6 +171,11 @@ public class SessionMessage {
      * 智能体辅助消息
      */
     public static final String MESSAGE_TYPE_ASSISTANT_MESSAGE_NAME = "assistant";
+
+    /**
+     * 智能体辅助消息:工具调用结果消息，需要提交给大模型
+     */
+    public static final String MESSAGE_TYPE_TOOL_MESSAGE_NAME = "tool";
 
 
     /**

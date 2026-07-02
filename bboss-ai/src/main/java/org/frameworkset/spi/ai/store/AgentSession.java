@@ -116,9 +116,9 @@ public class AgentSession {
             else if (messageAgentId != null && messageAgentId.equals(agentId) ) {
                 if (agentMessages == null)
                     agentMessages = new ArrayList<>();
-                //messageType in ('0',1','2','3')
+                //messageType in ('0',1','2','3','4')
                 String messageType = assistantMessage.getMessageType();
-                if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3")) {
+                if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
                     agentMessages.add(assistantMessage);
                 }
             }
@@ -182,9 +182,9 @@ public class AgentSession {
                 if (messageAgentId == null) {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
-                    //messageType in ('0',1','2','3')
+                    //messageType in ('0',1','2','3','4')
                     String messageType = assistantMessage.getMessageType();
-                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3")) {
+                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
                         mainAgentMessages.add(assistantMessage);
                     }
                    
@@ -204,9 +204,9 @@ public class AgentSession {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
 
-                    //messageType in ('0',1','2','3')
+                    //messageType in ('0',1','2','3','4')
                     String messageType = assistantMessage.getMessageType();
-                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3")) {
+                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
                         mainAgentMessages.add(assistantMessage);
                     }
                    

@@ -42,6 +42,9 @@ public class AgentMessageTypeConvertor {
         else if("assistant".equals(role)){
             return MESSAGE_TYPE_ASSISTANT_MESSAGE;
         }
+        else if(MESSAGE_TYPE_TOOL_MESSAGE_NAME.equals(role)){
+            return MESSAGE_TYPE_TOOL_MESSAGE;
+        }
         else if("trace".equals(role)){
             return MESSAGE_TYPE_TRACE_MESSAGE;
         }
@@ -88,11 +91,10 @@ public class AgentMessageTypeConvertor {
         }
         else if(MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME.equals(role)) {
             return MESSAGE_TYPE_TOOLCALL_MESSAGE;
-        }
-        
+        }   
 
 
 
-        return MESSAGE_TYPE_ASSISTANT_MESSAGE;
+        return MESSAGE_TYPE_OTHER_MESSAGE;
     }
 }

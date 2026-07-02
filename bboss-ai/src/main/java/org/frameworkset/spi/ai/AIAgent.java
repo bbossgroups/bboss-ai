@@ -54,9 +54,17 @@ public class AIAgent<T extends AIAgent> {
     
 
     /**
-     * 启用多轮工具调用
+     * 启用多轮工具调用，true 启用，null或者false不启用
      */
     protected Boolean enableLoopToolCall;
+
+    
+
+    /**
+     * 工具调用最大轮数，超过最大轮数后，终止工具调用，直接进行总结
+     * 当enableLoopToolCall为true时，该参数才有效
+     */
+    protected int maxLoopToolCalls;
     
 
     public String genSubAgentName(String agentId) {
@@ -1240,9 +1248,26 @@ public class AIAgent<T extends AIAgent> {
     public Boolean getEnableLoopToolCall() {
         return enableLoopToolCall;
     }
-
+    /**
+     * 启用多轮工具调用，true 启用，null或者false不启用
+     */
     public T setEnableLoopToolCall(Boolean enableLoopToolCall) {
         this.enableLoopToolCall = enableLoopToolCall;
         return (T)this;
-    } 
+    }
+    /**
+     * 工具调用最大轮数，超过最大轮数后，终止工具调用，直接进行总结
+     * 当enableLoopToolCall为true时，该参数才有效
+     */
+    public int getMaxLoopToolCalls() {
+        return maxLoopToolCalls;
+    }
+    /**
+     * 工具调用最大轮数，超过最大轮数后，终止工具调用，直接进行总结
+     * 当enableLoopToolCall为true时，该参数才有效
+     */
+    public T setMaxLoopToolCalls(int maxLoopToolCalls) {
+        this.maxLoopToolCalls = maxLoopToolCalls;
+        return (T)this;
+    }
 }

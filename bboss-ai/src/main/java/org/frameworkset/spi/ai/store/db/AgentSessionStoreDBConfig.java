@@ -422,7 +422,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
          */
         selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
                 .append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and messageType = '1')) ")
-                .append("and messageType in ('0','1','2','3') order by createTime,seqNo asc").toString();
+                .append("and messageType in ('0','1','2','3','4') order by createTime,seqNo asc").toString();
 
         selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
                 .append(sessionMessageTableName).append(" where sessionId=? ").toString();
@@ -431,7 +431,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
                 .append("select *  from ")
                 .append(sessionMessageTableName)
                 .append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
-                .append("and messageType in ('0','1','2','3'))" )
+                .append("and messageType in ('0','1','2','3','4'))" )
                 .append(" or msgId in (select msgId from ")
                 .append(sessionMessageReferenceTableName)
                 .append(" where sessionId=? and refAgentId = ?) " )
