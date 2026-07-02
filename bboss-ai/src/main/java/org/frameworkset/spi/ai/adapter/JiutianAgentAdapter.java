@@ -179,7 +179,7 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
                     if(systemPrompt != null){
                         if(chatContext != null)
                         {
-                            systemPrompt = chatContext.evalPrompt(systemPrompt);
+                            systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                         }
                         systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                         imageAgentMessage.addSessionMessage(systemMessage,aiAgent);
@@ -193,7 +193,7 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
                 if(systemPrompt != null){
                     if(chatContext != null)
                     {
-                        systemPrompt = chatContext.evalPrompt(systemPrompt);
+                        systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                     }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     messages.add(systemMessage);

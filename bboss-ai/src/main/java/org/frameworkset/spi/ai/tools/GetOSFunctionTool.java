@@ -22,6 +22,12 @@ import org.slf4j.Logger;
 import java.util.Map;
 
 /**
+ * 操作系统信息查询工具类。
+ * <p>
+ * 提供获取当前运行环境操作系统名称及版本信息的能力，
+ * 适用于智能体通过 {@link Tool} 注解暴露为可调用工具的场景。
+ * </p>
+ *
  * @author biaoping.yin
  * @Date 2026/6/23
  */

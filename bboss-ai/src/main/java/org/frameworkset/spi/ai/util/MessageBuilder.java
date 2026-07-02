@@ -439,9 +439,9 @@ public class MessageBuilder {
         if(serverEvent.getData() != null) {
             userMessage.put("content", serverEvent.getData());
         }
-        if(serverEvent.getReasoningContent() != null){
-            userMessage.put("reasoning_content", serverEvent.getReasoningContent());
-        }
+//        if(serverEvent.getReasoningContent() != null){
+//            userMessage.put("reasoning_content", serverEvent.getReasoningContent());
+//        }
         if(serverEvent.getToolCalls() != null)
             userMessage.put("tool_calls",serverEvent.getToolCalls());
         return userMessage;
@@ -457,12 +457,12 @@ public class MessageBuilder {
         else if(baseStreamDataBuilder.getToolCallContentStreamData() != null){
             userMessage.put("content", baseStreamDataBuilder.getToolCallContentStreamData());
         }
-        if(streamData.getReasoningContent() != null){
-            userMessage.put("reasoning_content", streamData.getReasoningContent());
-        }
-        else if(baseStreamDataBuilder.getToolCallThinkingStreamData() != null){
-            userMessage.put("reasoning_content", baseStreamDataBuilder.getToolCallThinkingStreamData());
-        }
+//        if(streamData.getReasoningContent() != null){
+//            userMessage.put("reasoning_content", streamData.getReasoningContent());
+//        }
+//        else if(baseStreamDataBuilder.getToolCallThinkingStreamData() != null){
+//            userMessage.put("reasoning_content", baseStreamDataBuilder.getToolCallThinkingStreamData());
+//        }
         if(streamData.getToolCalls() != null)
             userMessage.put("tool_calls",streamData.getToolCalls());
         return userMessage;

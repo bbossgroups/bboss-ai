@@ -79,6 +79,11 @@ public class ChatContext {
      * 保存计算后的提示词，避免重复计算
      */
     private String evaledPrompt;
+	
+	/**
+	 * 保存计算后的系统提示词，避免重复计算
+	 */
+	private String evaledSystemPrompt;
 
     public void setChatStreamCallback(ChatStreamCallback chatStreamCallback) {
         this.chatStreamCallback = chatStreamCallback;
@@ -100,6 +105,19 @@ public class ChatContext {
         }
         return evaledPrompt;
     }
+	
+	public String evalSystemPrompt(String prompt){
+		if(evaledSystemPrompt != null){
+			return evaledSystemPrompt;
+		}
+		if(chatStreamCallback != null) {
+			evaledSystemPrompt = chatStreamCallback.evalPrompt(prompt);
+		}
+		else {
+			evaledSystemPrompt = prompt;
+		}
+		return evaledSystemPrompt;
+	}
 
     public boolean isChatWithToolcall() {
         return chatWithToolcall;

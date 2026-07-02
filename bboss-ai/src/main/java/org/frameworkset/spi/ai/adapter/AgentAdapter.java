@@ -153,7 +153,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 String systemPrompt = getSystemPrompt(videoVLAgentMessage,aiAgent);
                 if(systemPrompt != null){
                     if(chatContext != null){
-                        systemPrompt = chatContext.evalPrompt(systemPrompt);
+                        systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
 
                     }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
@@ -168,7 +168,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             String systemPrompt = getSystemPrompt(videoVLAgentMessage,aiAgent);
             if(systemPrompt != null){
                 if(chatContext != null){
-                    systemPrompt = chatContext.evalPrompt(systemPrompt);
+                    systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
 
                 }
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
@@ -214,7 +214,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
                 if(systemPrompt != null){
                     if(chatContext != null){
-                        systemPrompt = chatContext.evalPrompt(systemPrompt);
+                        systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                     }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     imageAgentMessage.addSessionMessage(systemMessage,aiAgent);
@@ -228,7 +228,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
             if(systemPrompt != null){
                 if(chatContext != null){
-                    systemPrompt = chatContext.evalPrompt(systemPrompt);
+                    systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                 }
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                 messages.add(systemMessage);
@@ -600,7 +600,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 String systemPrompt = getSystemPrompt(chatAgentMessage,aiAgent);
                 if(systemPrompt != null){
                     if(chatContext != null){
-                        systemPrompt = chatContext.evalPrompt(systemPrompt);
+                        systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                     }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     chatAgentMessage.addSessionMessage(systemMessage,message,aiAgent);
@@ -617,7 +617,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             String systemPrompt = getSystemPrompt(chatAgentMessage,aiAgent);
             if(systemPrompt != null){
                 if(chatContext != null){
-                    systemPrompt = chatContext.evalPrompt(systemPrompt);
+                    systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                 }
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);                 
                 messages.add(systemMessage);
