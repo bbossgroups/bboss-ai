@@ -28,17 +28,12 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
 public class StandaloneAgent 
         extends AIBaseNodeAgent<StandaloneAgent> {     
 
-    public StandaloneAgent(String prompt, String type, ToolsRegist toolsRegist, Integer sessionSize) {
-        super(prompt, type, toolsRegist, sessionSize);
+    public StandaloneAgent(String prompt,   ToolsRegist toolsRegist, Integer sessionSize) {
+        super(prompt,   toolsRegist, sessionSize);
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
     }
-
-    public StandaloneAgent(String prompt, String type, ToolsRegist toolsRegist) {
-        super(prompt, type, toolsRegist);
-        this.disablePush2ParentLastSubMessage = true;
-        this.disableReferenceParentLastSubMessage = true;
-    }
+ 
 
     public StandaloneAgent(String prompt, ToolsRegist toolsRegist) {
         super(prompt, toolsRegist);
@@ -52,11 +47,7 @@ public class StandaloneAgent
         this.disableReferenceParentLastSubMessage = true;
     }
 
-    public StandaloneAgent(String prompt, String type) {
-        super(prompt, type);
-        this.disablePush2ParentLastSubMessage = true;
-        this.disableReferenceParentLastSubMessage = true;
-    }
+ 
     public StandaloneAgent(String prompt, int sessionSize) {
         super(prompt, sessionSize);
         this.disablePush2ParentLastSubMessage = true;

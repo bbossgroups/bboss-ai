@@ -46,13 +46,11 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
         super(  );
     }
 
-    public AIBaseNodeAgent(String prompt, String type, ToolsRegist toolsRegist, Integer sessionSize) {
-        super(prompt, type, toolsRegist, sessionSize);
+    public AIBaseNodeAgent(String prompt,   ToolsRegist toolsRegist, Integer sessionSize) {
+        super(prompt,   toolsRegist, sessionSize);
     }
 
-    public AIBaseNodeAgent(String prompt, String type, ToolsRegist toolsRegist) {
-        super(prompt, type, toolsRegist);
-    }
+ 
 
     public AIBaseNodeAgent(String prompt, ToolsRegist toolsRegist) {
         super(prompt, toolsRegist);

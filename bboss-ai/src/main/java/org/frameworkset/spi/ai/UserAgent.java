@@ -31,13 +31,11 @@ public class UserAgent<T extends UserAgent> extends AIAgent<T> {
     public UserAgent() {
     }
 
-    public UserAgent(String prompt, String type, ToolsRegist toolsRegist, Integer sessionSize) {
-        super(prompt, type, toolsRegist, sessionSize);
+    public UserAgent(String prompt,   ToolsRegist toolsRegist, Integer sessionSize) {
+        super(prompt,   toolsRegist, sessionSize);
     }
 
-    public UserAgent(String prompt, String type, ToolsRegist toolsRegist) {
-        super(prompt, type, toolsRegist);
-    }
+ 
 
     public UserAgent(String prompt, ToolsRegist toolsRegist) {
         super(prompt, toolsRegist);
@@ -46,10 +44,7 @@ public class UserAgent<T extends UserAgent> extends AIAgent<T> {
     public UserAgent(String prompt, ToolsRegist toolsRegist, int sessionSize) {
         super(prompt, toolsRegist, sessionSize);
     }
-
-    public UserAgent(String prompt, String type) {
-        super(prompt, type);
-    }
+ 
 
     public UserAgent(String prompt) {
         super(prompt);

@@ -48,6 +48,15 @@ public class LastSessionMessage {
 
     private TokenMetrics tokenMetrics;
 
+    /**
+     * 智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+     */
+    private String agentNodeType;
+    /**
+     * 创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
+     */
+    private String subAgentIdBy;
+
     public String getRequestId() {
         return requestId;
     }
@@ -125,5 +134,21 @@ public class LastSessionMessage {
 
     public void setElapsed(long elapsed) {
         this.elapsed = elapsed;
+    }
+
+    public String getAgentNodeType() {
+        return agentNodeType;
+    }
+
+    public void setAgentNodeType(String agentNodeType) {
+        this.agentNodeType = agentNodeType;
+    }
+
+    public String getSubAgentIdBy() {
+        return subAgentIdBy;
+    }
+
+    public void setSubAgentIdBy(String subAgentIdBy) {
+        this.subAgentIdBy = subAgentIdBy;
     }
 }

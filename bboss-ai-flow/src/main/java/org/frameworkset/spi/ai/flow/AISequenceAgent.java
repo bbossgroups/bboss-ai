@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.flow;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
+import org.frameworkset.spi.ai.model.AgentResultSessionMessageContext;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
@@ -40,7 +41,8 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     private AISequenceJobFlowNodeBuilder sequenceJobFlowNodeBuilder;
     private AIAgent headerAgent;
     public AISequenceAgent(AIPlanAgent planAgent) {
-        
+
+        agentNodeType = AGENT_NODE_TYPE_SEQUENCE;
         this.planAgent = planAgent;
 //        this.disableStream = true;
         //不引用全局会话存储，但是要保存到全局会话记忆中
@@ -78,7 +80,15 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
                     if(lastSessionMessage != null) {
                          
                         String data = lastSessionMessage.getData();
-                        AISequenceAgent.this.addAgentResultSessionMessage(null,data);
+                        AgentResultSessionMessageContext agentResultSessionMessageContext = new AgentResultSessionMessageContext();
+                        if(lastSessionMessage.getSubAgentIdBy() != null){
+                            agentResultSessionMessageContext.setSubAgentIdBy(lastSessionMessage.getSubAgentIdBy());
+                        }
+                        else{
+                            agentResultSessionMessageContext.setSubAgentIdBy(lastSessionMessage.getMsgAgentId());
+                        }                        
+                        agentResultSessionMessageContext.setSubAgentIdBy(lastSessionMessage.getMsgAgentId());
+                        AISequenceAgent.this.addAgentResultSessionMessage(agentResultSessionMessageContext,data);
                         ServerEvent serverEvent = new ServerEvent();
                         serverEvent.setDone(true);
                         serverEvent.setAgent(AISequenceAgent.this);

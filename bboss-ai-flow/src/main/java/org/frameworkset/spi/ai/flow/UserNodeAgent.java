@@ -28,13 +28,11 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
 public class UserNodeAgent 
         extends AIBaseNodeAgent<UserNodeAgent> {     
 
-    public UserNodeAgent(String prompt, String type, ToolsRegist toolsRegist, Integer sessionSize) {
-        super(prompt, type, toolsRegist, sessionSize);
+    public UserNodeAgent(String prompt,   ToolsRegist toolsRegist, Integer sessionSize) {
+        super(prompt, toolsRegist, sessionSize);
     }
 
-    public UserNodeAgent(String prompt, String type, ToolsRegist toolsRegist) {
-        super(prompt, type, toolsRegist);
-    }
+ 
 
     public UserNodeAgent(String prompt, ToolsRegist toolsRegist) {
         super(prompt, toolsRegist);

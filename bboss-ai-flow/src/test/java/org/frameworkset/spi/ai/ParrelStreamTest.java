@@ -50,7 +50,7 @@ public class ParrelStreamTest {
 
 //        multiagentIntroduceProvinces("kimi","介绍省份智能体","kimi-k2.6",null);
 
-        multiagentIntroduceProvinces("qwenvlplus","介绍省份智能体","qwen3.6-plus",null);
+        multiagentIntroduceProvinces("qwenvlplus","介绍省份智能体","qwen3.7-plus",null);
     }
     public static void initDB(){
 

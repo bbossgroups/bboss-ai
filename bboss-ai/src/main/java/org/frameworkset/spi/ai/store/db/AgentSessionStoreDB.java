@@ -229,9 +229,12 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,
-                                                       String agentId, String parentAgentId, String marks, String metadata, String messageType){
+                                                       String agentId, String parentAgentId,String agentNodeType,String subAgentIdBy, String marks, String metadata, String messageType){
         try {
 
+            if(agentNodeType.equals(AIAgent.AGENT_NODE_TYPE_SEQUENCE)){
+                logger.info("persistentSessionMessage agentNodeType:{}",agentNodeType);
+            }
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role
             Map<String, Object> message = persistentMessage.getMessage();
@@ -256,7 +259,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
                     msgId,new Date(),this.getSessionId(),
                     parentAgentId, agentId,messageType,integerCount.increament(), JsonUtil.object2json(message),
-                    role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId());
+                    role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId(),agentNodeType,subAgentIdBy);
 
             if(messageType != null && messageType.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();
@@ -269,6 +272,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                 lastSessionMessage.setTokenMetrics(persistentMessage.getTokenMetrics());
                 lastSessionMessage.setMsgParentAgentId(parentAgentId);
                 lastSessionMessage.setElapsed(elapsed);
+                lastSessionMessage.setAgentNodeType(agentNodeType);
+                lastSessionMessage.setSubAgentIdBy(subAgentIdBy);
                 return lastSessionMessage;
             }
             else{

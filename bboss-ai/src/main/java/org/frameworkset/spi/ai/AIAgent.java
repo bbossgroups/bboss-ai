@@ -45,10 +45,31 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AIAgent<T extends AIAgent> {
+    /**
+     * 工作流中的智能体节点类型：标准化智能体节点、串行容器智能体节点、并行容器智能体节点、条件智能体节点
+     */
+    /**标准化智能体节点*/
+    public static final String AGENT_NODE_TYPE_SINGLE = "standard";
+    /**
+     * 串行容器智能体节点
+     */
+    public static final String AGENT_NODE_TYPE_SEQUENCE = "sequence";
+    /**
+     * 并行容器智能体节点
+     */
+    public static final String AGENT_NODE_TYPE_PARALLEL = "parallel";
+    /**
+     * 条件智能体节点
+     */
+    public static final String AGENT_NODE_TYPE_CONDITION = "condition";
+    
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(AIAgent.class);
     protected String prompt;
     protected String systemPrompt;
-    protected String type ;
+    /**
+     * 整体类型
+     */
+    protected String agentNodeType = AGENT_NODE_TYPE_SINGLE;
     protected int sessionSize;
 
     
@@ -304,9 +325,8 @@ public class AIAgent<T extends AIAgent> {
         return mainSessionStore;
     }
 
-    public AIAgent(String prompt, String type, ToolsRegist toolsRegist, Integer sessionSize){
+    public AIAgent(String prompt,  ToolsRegist toolsRegist, Integer sessionSize){
         this.prompt = prompt;
-        this.type = type;
         this.toolsRegist = toolsRegist;
 //        this.agentId = SimpleStringUtil.getUUID32();
         if(sessionSize != null ){
@@ -322,32 +342,28 @@ public class AIAgent<T extends AIAgent> {
         return (T)this;
     }
 
-    public AIAgent(String prompt, String type, ToolsRegist toolsRegist){
-        this(  prompt, type, toolsRegist,null);
-    }
+ 
 
     public AIAgent(String prompt,ToolsRegist toolsRegist){
-        this(  prompt, null, toolsRegist,null);
+        this(  prompt,   toolsRegist,null);
     }
 
-    public AIAgent(String prompt,ToolsRegist toolsRegist,int sessionSize){
-        this(  prompt, null, toolsRegist,sessionSize);
-    }
+ 
 
     public AIAgent(ToolsRegist toolsRegist){
-        this(  null, null, toolsRegist,null);
+        this(  null,   toolsRegist,null);
     }
 
     public AIAgent(String prompt,String type){
-        this(  prompt, type, null,null);
+        this(  prompt,  null,null);
     }
 
     public AIAgent(String prompt){
-        this(  prompt, null, null,null);
+        this(  prompt,   null,null);
     }
 
     public AIAgent(String prompt,int sessionSize){
-        this(  prompt, null, null,sessionSize);
+        this(  prompt,   null,sessionSize);
     }
     
     protected LastSessionMessage getLastSubAgentSessionMessage(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
@@ -701,11 +717,11 @@ public class AIAgent<T extends AIAgent> {
 //        return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage);
     }
     
-    public LastSessionMessage addAgentResultSessionMessage(TokenMetrics tokenMetrics,String message){
+    public LastSessionMessage addAgentResultSessionMessage(AgentResultSessionMessageContext agentResultSessionMessageContext,String message){
         LastSessionMessage lastSubAgentSessionMessage = null;
         if(this.agentSessionStore != null ) {
 
-            lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(  tokenMetrics,message);
+            lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(    agentResultSessionMessageContext,message);
 //            if( !isDisableGloableStore()) {
             if( !isDisablePush2ParentLastSubMessage()) {
                 this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
@@ -1207,6 +1223,7 @@ public class AIAgent<T extends AIAgent> {
             if (this.mainSessionStore != null) {
                 traceMessage.setAgentId(this.getAgentId());
                 traceMessage.setParentAgentId(this.getParentAgentId());
+                traceMessage.setAgentNodeType(this.getAgentNodeType());
                 this.mainSessionStore.recordTraceMessage(traceMessage);
             }
            
@@ -1225,6 +1242,7 @@ public class AIAgent<T extends AIAgent> {
             if(this.mainSessionStore != null) {
                 traceMessage.setAgentId(this.getAgentId());
                 traceMessage.setParentAgentId(this.getParentAgentId());
+                traceMessage.setAgentNodeType(this.getAgentNodeType());
                 this.mainSessionStore.recordTraceMessage(traceMessage,tokenMetrics);
             }
         }
@@ -1269,5 +1287,9 @@ public class AIAgent<T extends AIAgent> {
     public T setMaxLoopToolCalls(int maxLoopToolCalls) {
         this.maxLoopToolCalls = maxLoopToolCalls;
         return (T)this;
+    }
+
+    public String getAgentNodeType() {
+        return agentNodeType;
     }
 }

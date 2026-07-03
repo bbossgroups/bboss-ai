@@ -198,7 +198,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,// Map<String, Object> message,
-                                                       String agentId, String parentAgentId, String marks, String metadata,
+                                                       String agentId, String parentAgentId,String agentNodeType,String subAgentIdBy, String marks, String metadata,
                                                        String messageType){
 
 //        loadSessionMemory(message,  agentId);
@@ -224,6 +224,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setMarks(marks);
         sessionMessage.setMetadata(metadata);
         sessionMessage.setTraceId(this.getTraceId());
+        sessionMessage.setAgentNodeType(agentNodeType);
+        sessionMessage.setSubAgentIdBy(subAgentIdBy);
         TokenMetrics tokenMetrics_ = persistentMessage.getTokenMetrics();
         long elapsed = 0l;
 
@@ -251,6 +253,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             lastSessionMessage.setTokenMetrics(tokenMetrics_);
             lastSessionMessage.setElapsed(elapsed);
             lastSessionMessage.setMsgParentAgentId(parentAgentId);
+            lastSessionMessage.setAgentNodeType(agentNodeType);
+            lastSessionMessage.setSubAgentIdBy(subAgentIdBy);
             return lastSessionMessage;
         }
         else{

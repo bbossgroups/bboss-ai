@@ -51,7 +51,7 @@ public class SequenceStreamTest {
         HttpRequestProxy.startHttpPools("mcpserver.properties");
 
 
-        multiagentIntroduceProvinces("qwenvlplus","介绍省份智能体","qwen3.6-plus",null);
+        multiagentIntroduceProvinces("qwenvlplus","介绍省份智能体","qwen3.7-plus",null);
 
     }
     public static void initDB(){

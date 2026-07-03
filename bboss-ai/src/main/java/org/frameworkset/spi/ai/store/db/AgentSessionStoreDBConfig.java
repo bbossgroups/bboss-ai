@@ -101,7 +101,9 @@ public class AgentSessionStoreDBConfig {
     public static String sqlitex_createSessionMessageTableSQL = new StringBuilder().append("create table $sessionMessageTableName (msgId varchar(100),")  //消息id
             .append( "createTime number(20),") //创建时间
             .append( "parentAgentId varchar(100),")  //父agentid
-            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentId varchar(100),")  //创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
+            .append( "agentNodeType varchar(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+            .append( "subAgentIdBy varchar(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "sessionId varchar(100),")  //会话id
             .append( "requestId varchar(100), " )  //请求id
@@ -122,7 +124,9 @@ public class AgentSessionStoreDBConfig {
             .append( "requestId varchar(100), " )  //请求id
             .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
-            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentId varchar(100),")  //创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
+            .append( "agentNodeType varchar(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+            .append( "subAgentIdBy varchar(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, " )  //消息正文
@@ -140,7 +144,9 @@ public class AgentSessionStoreDBConfig {
             .append( "requestId varchar2(100), " )  //请求id
             .append( "traceId varchar2(100), " )  //trace id
             .append( "parentAgentId varchar2(100),")  //父agentid
-            .append( "agentId varchar2(100),")  //创建消息的agentid
+            .append( "agentId varchar2(100),")  //创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
+            .append( "agentNodeType varchar2(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+            .append( "subAgentIdBy varchar2(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
             .append( "messageType varchar2(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
@@ -158,7 +164,9 @@ public class AgentSessionStoreDBConfig {
             .append( "requestId varchar2(100), " )  //请求id
             .append( "traceId varchar2(100), " )  //trace id
             .append( "parentAgentId varchar2(100),")  //父agentid
-            .append( "agentId varchar2(100),")  //创建消息的agentid
+            .append( "agentId varchar2(100),")  //创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
+            .append( "agentNodeType varchar2(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+            .append( "subAgentIdBy varchar2(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
             .append( "messageType varchar2(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
@@ -175,7 +183,9 @@ public class AgentSessionStoreDBConfig {
             .append( "requestId varchar(100), " )  //请求id
             .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
-            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentId varchar(100),")  //创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
+            .append( "agentNodeType varchar(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+            .append( "subAgentIdBy varchar(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message nvarchar(max) NOT NULL,")  //消息正文
@@ -192,7 +202,9 @@ public class AgentSessionStoreDBConfig {
             .append( "requestId varchar(100), " )  //请求id
             .append( "traceId varchar(100), " )  //trace id
             .append( "parentAgentId varchar(100),")  //父agentid
-            .append( "agentId varchar(100),")  //创建消息的agentid
+            .append( "agentId varchar(100),")  //创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
+            .append( "agentNodeType varchar(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+            .append( "subAgentIdBy varchar(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message text NOT NULL,")  //消息正文
@@ -396,9 +408,14 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
          *         .append( "parentAgentId varchar(100),")  //父agentid
          *             .append( "agentId varchar(100),")  //创建消息的agentid
          *             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+         *             .append( "agentNodeType varchar(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+         *             .append( "subAgentIdBy varchar(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
          */
         insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
-                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,")
+                .append("seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId")
+                .append(",agentNodeType,subAgentIdBy")
+                .append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
 
         insertSessionMessageRerenceSQL = "INSERT INTO "+sessionMessageReferenceTableName+" (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
                                                     "VALUES (?, ?, ?, ?, ?)";

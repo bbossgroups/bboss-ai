@@ -66,12 +66,12 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 
     void addSessionMessage(PersistentMessage message);
 
-    LastSessionMessage addAgentResultSessionMessage(TokenMetrics tokenMetrics,String persistentMessage);
+    LastSessionMessage addAgentResultSessionMessage(AgentResultSessionMessageContext agentResultSessionMessageContext,String persistentMessage);
     LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent);
 
     LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId);
     void appendSessionMessageFromParent(Map<String,Object> message);
-    void addSessionMessage( Map<String,Object> systemMessage,String prompt,String agentId,String parentAgentId);
+    void addSessionMessage( Map<String,Object> systemMessage,String prompt,String agentId,String parentAgentId,String agentNodeType);
    
 //    Map<String, Object> addAssistantSessionMessage(String message);
 
@@ -87,7 +87,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     void recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics);
     
     LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,//Map<String, Object> message,
-                                                String agentId, String parentAgentId, String marks, String metadata, String messageType);
+                                                String agentId, String parentAgentId,String agentNodeType,String subAgentIdBy, String marks, String metadata, String messageType);
             
             //, TokenMetrics tokenMetrics);
     AgentSessionStore getMainAgentSessionStore() ;

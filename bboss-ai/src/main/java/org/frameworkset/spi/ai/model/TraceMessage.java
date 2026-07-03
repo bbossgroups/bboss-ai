@@ -27,8 +27,19 @@ public class TraceMessage {
     private Long startTime;
     private Long endTime;
     private String sessionId;
+    /**
+     * 创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
+     */
     private String agentId;
     private String parentAgentId;
+    /**
+     * 智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+     */
+    private String agentNodeType;
+    /**
+     * 创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
+     */
+    private String subAgentIdBy;
     private String requestId;
     private String userId;
     private String traceId;
@@ -74,6 +85,11 @@ public class TraceMessage {
         return agentId;
     }
 
+    /**
+     * 创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
+     * @param agentId
+     * @return
+     */
     public TraceMessage setAgentId(String agentId) {
         this.agentId = agentId;
         return this;
@@ -128,6 +144,34 @@ public class TraceMessage {
             message = new LinkedHashMap<>();
         }
         message.put(key,value);
+        return this;
+    }
+
+    public String getSubAgentIdBy() {
+        return subAgentIdBy;
+    }
+
+    /**
+     * 创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
+     * @param subAgentIdBy
+     * @return
+     */
+    public TraceMessage setSubAgentIdBy(String subAgentIdBy) {
+        this.subAgentIdBy = subAgentIdBy;
+        return this;
+    }
+
+    public String getAgentNodeType() {
+        return agentNodeType;
+    }
+
+    /**
+     * 智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+     * @param agentNodeType
+     * @return
+     */
+    public TraceMessage setAgentNodeType(String agentNodeType) {
+        this.agentNodeType = agentNodeType;
         return this;
     }
 }

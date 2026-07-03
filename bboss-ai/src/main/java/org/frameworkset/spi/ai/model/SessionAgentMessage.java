@@ -191,7 +191,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(agentSessionStore == null){
             return (T)this;
         }
-        agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId());
+        agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId(),agentSessionStore.getAiAgent().getAgentNodeType());
         
         return (T)this;
     }

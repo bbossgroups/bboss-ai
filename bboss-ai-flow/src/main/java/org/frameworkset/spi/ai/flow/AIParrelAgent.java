@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.flow;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
+import org.frameworkset.spi.ai.model.AgentResultSessionMessageContext;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
@@ -44,6 +45,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
     public AIParrelAgent( AIPlanAgent planAgent) {
         
         this.planAgent = planAgent;
+        agentNodeType = AGENT_NODE_TYPE_PARALLEL;
 //        this.disableStream = true;
         //不引用全局会话存储，但是要保存到全局会话记忆中
 //        this.disableGloableStore = true;
@@ -97,7 +99,20 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
                     List<LastSessionMessage> lastSessionMessages = getLastSessionMessages();
                     if(SimpleStringUtil.isNotEmpty(lastSessionMessages)) {                      
                         String data = buildResult(  lastSessionMessages);
-                        AIParrelAgent.this.addAgentResultSessionMessage(null,data);
+                        AgentResultSessionMessageContext agentResultSessionMessageContext= new AgentResultSessionMessageContext();
+                        StringBuilder subAgentIdsBy = new StringBuilder();
+                        for(LastSessionMessage lastSessionMessage:lastSessionMessages){
+                            if(subAgentIdsBy.length() > 0)
+                                subAgentIdsBy.append(",");
+                            if(lastSessionMessage.getSubAgentIdBy() != null) {
+                                subAgentIdsBy.append(lastSessionMessage.getSubAgentIdBy());
+                            }
+                            else{
+                                subAgentIdsBy.append(lastSessionMessage.getMsgAgentId());
+                            }
+                        }
+                        agentResultSessionMessageContext.setSubAgentIdBy(subAgentIdsBy.toString());
+                        AIParrelAgent.this.addAgentResultSessionMessage(agentResultSessionMessageContext,data);
                         ServerEvent serverEvent = new ServerEvent();
                         serverEvent.setDone(true);
                         serverEvent.setAgent(AIParrelAgent.this);
