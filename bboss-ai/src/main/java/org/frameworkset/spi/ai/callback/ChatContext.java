@@ -15,9 +15,11 @@ package org.frameworkset.spi.ai.callback;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import reactor.core.publisher.FluxSink;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,6 +55,16 @@ public class ChatContext {
      * 工具调用次数计数器
      */
     private int loopToolCalls;
+
+   
+
+    /**
+     * 智能体检索到的复合条件的工具列表
+     */
+    private List<FunctionToolDefine> agentTools;
+    
+    
+    private List<String> agentToolNames;
 
 
 
@@ -183,6 +195,38 @@ public class ChatContext {
     public ChatContext setContextData(Map<String, Object> contextData) {
         this.contextData = contextData;
         return this;
+    }
+    public List<FunctionToolDefine> getAgentTools() {
+        return agentTools;
+    }
+
+    public List<String> getAgentToolNames() {
+        if(agentToolNames != null)
+            return agentToolNames;
+        if(agentTools != null){
+            agentToolNames = new java.util.ArrayList<>();
+            for(FunctionToolDefine functionToolDefine : agentTools){
+                agentToolNames.add(functionToolDefine.getFunction().getName());
+            }
+        }
+        return agentToolNames;
+    }
+
+    public ChatContext setAgentTools(List<FunctionToolDefine> agentTools) {
+        this.agentTools = agentTools;
+        return this;
+    }
+    
+    public boolean containTool(String toolName){
+        if(agentTools == null){
+            return false;
+        }
+        for(FunctionToolDefine functionToolDefine : agentTools){
+            if(functionToolDefine.getFunction().getName().equals(toolName)){
+                return true;
+            }
+        }
+        return false;
     }
 
     public int getLoopToolCalls() {

@@ -16,7 +16,6 @@ package org.frameworkset.spi.ai.tools;
  */
 
 import org.frameworkset.spi.ai.model.annotation.Tool;
-import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -47,11 +46,15 @@ public class GetOSFunctionTool {
 		return this;
 	}
     
-	@Tool(name="getOS",description = "获取OS及OS版本信息")
+	@Tool(name="getOS",description = "获取OS、OS版本以及OS架构信息")
     public Map getOS(){
         String os = System.getProperty("os.name");
+        String osVersion = System.getProperty("os.version");
+        String osArch = System.getProperty("os.arch");
         Map result = new java.util.HashMap();
-        result.put("os",os);      
+        result.put("os", os);
+        result.put("osVersion", osVersion);
+        result.put("osArch", osArch);
         return result;
     } 
 }

@@ -47,6 +47,10 @@ public class BeanToolFunctionCall extends  BaseBeanToolFunctionCall implements F
             if(AgentTraceHolder.isToolTrace()) {
                 traceMessage = new TraceMessage();
                 traceMessage.setStartTime(System.currentTimeMillis())
+						.put("toolName",functionTool.getFunctionName())
+						.put("id",functionTool.getId())
+						.put("type",functionTool.getType())
+						.put("index",functionTool.getIndex())
                         .put("toolCallArgs", !isEmptyParameters() ? functionTool.getArguments() : null)
                         .put("role", SessionMessage.MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME);
             }

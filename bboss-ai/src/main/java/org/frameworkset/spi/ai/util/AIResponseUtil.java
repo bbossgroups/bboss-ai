@@ -1040,7 +1040,8 @@ public class AIResponseUtil {
 //                    if(chatContext.getToolCallStage() == ChatContext.TOOL_CALL_STAGE_SEARCH_TOOL) {
                     List<FunctionTool> functionTools = streamDataBuilder.getFunctionTools();//接下来，还需要执行工具调用
                     if(functionTools != null && functionTools.size() > 0){
-                        fullStreamData = streamDataBuilder.addChatWithToolCallSessionMessage(tokenMetrics);
+                        fullStreamData = streamDataBuilder.addChatWithToolCallSessionMessage(tokenMetrics,  sink,
+                                  firstEventTag,functionTools);
                     }
                     else{
                         fullStreamData = streamDataBuilder.addAgentResultSessionMessage(tokenMetrics);
@@ -1114,8 +1115,8 @@ public class AIResponseUtil {
         List<FunctionTool> functionTools = new ArrayList<>();
         StringBuilder argumentsBuilder = new StringBuilder();
         FunctionTool functionTool = streamDataBuilder.functionTool(argumentsBuilder,lastToolCall);
-        String lastFunctionName = functionTool.getFunctionName();
         List<StreamData> _tools = content.getToolCallsStreamDatas();
+        ChatContext chatContext = streamDataBuilder.getChatObject().getChatContext();
         
         for(int i = 0; _tools != null && i < _tools.size(); i++){
             streamDataChunk = _tools.get(i);      
@@ -1123,17 +1124,21 @@ public class AIResponseUtil {
             Map function = (Map)toolCall.get("function");
             if(function != null){
                 String functionName = (String)function.get("name");
-                if(functionName != null && !functionName.equals(lastFunctionName)){
+                if(functionName != null && argumentsBuilder.length() > 0){
                     String arguments = argumentsBuilder.toString();
                     Map lastFunction = (Map)lastToolCall.get("function");
                     lastFunction.put("arguments", arguments);
                     functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
-                    toolCalls.add(lastToolCall);
-                    functionTools.add(functionTool);
+                    if(chatContext.containTool(functionTool.getFunctionName())) {
+                        toolCalls.add(lastToolCall);
+                        functionTools.add(functionTool);
+                    }
+                    else{
+                        logger.warn("召回的Tool {} not contain in Agent tools：{}", functionTool.getFunctionName(),JsonUtil.object2json(chatContext.getAgentToolNames()));
+                    }
                     argumentsBuilder.setLength(0);
                     lastToolCall = toolCall;
                     functionTool = streamDataBuilder.functionTool(argumentsBuilder,toolCall);
-                    lastFunctionName = functionName;
                 }
                 else{
                     streamDataBuilder.appendArguments(argumentsBuilder, toolCall);
@@ -1149,8 +1154,15 @@ public class AIResponseUtil {
             Map function = (Map) lastToolCall.get("function");
             function.put("arguments", arguments);
             functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
-            toolCalls.add(lastToolCall);
-            functionTools.add(functionTool);
+            if(chatContext.containTool(functionTool.getFunctionName())) {
+
+                toolCalls.add(lastToolCall);
+                functionTools.add(functionTool);
+            }
+
+            else{
+                logger.warn("召回的Tool {} not contain in Agent tools：{}", functionTool.getFunctionName(),JsonUtil.object2json(chatContext.getAgentToolNames()));
+            }
         }
         serverEvent.setToolCalls(toolCalls);
         content.setToolCalls(toolCalls);

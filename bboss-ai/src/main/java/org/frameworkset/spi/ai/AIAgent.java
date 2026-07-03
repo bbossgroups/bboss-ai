@@ -48,7 +48,7 @@ public class AIAgent<T extends AIAgent> {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(AIAgent.class);
     protected String prompt;
     protected String systemPrompt;
-    private String type;
+    protected String type ;
     protected int sessionSize;
 
     

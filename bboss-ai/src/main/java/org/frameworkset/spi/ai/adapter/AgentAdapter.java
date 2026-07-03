@@ -70,6 +70,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         agent.init();
         List<FunctionToolDefine> tools = agent.getToolsByToolSearch(chatContext,agentMessage);
         if(tools != null && tools.size() > 0){
+            chatContext.setAgentTools(tools);
 //            Object tools = aiAgent.getTools();
             requestMap.put("tools",   tools);       
             if(agent.getEnableLoopToolCall() != null && agent.getEnableLoopToolCall())

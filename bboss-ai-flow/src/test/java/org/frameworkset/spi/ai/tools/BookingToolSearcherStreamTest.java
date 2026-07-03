@@ -181,7 +181,7 @@ public class BookingToolSearcherStreamTest {
         ToolsRegist mcpToolsRegist = new FeishuMcpRegist("feishumcp");
         planAgent.addAgent(new AINodeAgent(
                 "请根据用户的问题:#[input.query]，以及前面的汇总建议，创建一份详细的飞书报告。" +
-                        "报告需要包含：1)推荐的酒店及理由 2)推荐的航班及理由 3)总预算估算 4)最终操作建议。" +
+//                        "报告需要包含：1)推荐的酒店及理由 2)推荐的航班及理由 3)总预算估算 4)最终操作建议。" +
                         "请用清晰的中文输出。")
                 .setAgentId("feishudocAgent").setAgentName("飞书文档智能体").setToolsRegist(mcpToolsRegist).setToolSearcher(new KeywordToolSearcher("创建飞书云文档")) );
         // ==================== 阶段6：流式执行工作流 ====================

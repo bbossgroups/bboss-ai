@@ -61,6 +61,12 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      */
     public static final int TYPE_STEP = 6;
 
+
+    /**
+     * type：由智能体产生的消息，比如大模型输出匹配工具之前的提示消息为空时，补充一条匹配到工具信息消息
+     */
+    public static final int TYPE_AGENT = 7;
+
     /**
      * contentType：数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0
      */
