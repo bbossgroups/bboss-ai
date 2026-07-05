@@ -120,7 +120,7 @@ public class CLIShellFunctionTool {
 
         ProcessBuilder processBuilder;
         if (isWindows) {
-            processBuilder = new ProcessBuilder("cmd", "/c", "chcp", "65001", ">", "nul", "&&", command);
+            processBuilder = new ProcessBuilder("cmd", "/c", command);
         } else {
             processBuilder = new ProcessBuilder("sh", "-c", command);
         }

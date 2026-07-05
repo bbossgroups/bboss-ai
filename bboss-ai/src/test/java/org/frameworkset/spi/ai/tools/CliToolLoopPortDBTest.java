@@ -20,6 +20,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
+import org.frameworkset.spi.ai.tool.KeywordToolSearcher;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import reactor.core.publisher.Flux;
 
@@ -81,6 +82,8 @@ public class CliToolLoopPortDBTest {
         agent.registBeanTool(new GetOSFunctionTool(60));
         //注册脚本执行工具，会根据获取到的OS信息，生成对应的OS环境命令行脚本进行执行：框架内置工具
         agent.registBeanTool(new CLIShellFunctionTool(60));
+		agent.registBeanTool(new FileFunctionTool("C:\\data\\ai\\aigenfiles\\tools\\"))
+				.setKeywordToolSearcher("获取OS、OS版本、OS架构以及CPU信息","将内容写入到指定文件","执行shell脚本");
 		 
 		//通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
 		Flux<ServerEvent> flux = agent.streamChat(chatAgentMessage);

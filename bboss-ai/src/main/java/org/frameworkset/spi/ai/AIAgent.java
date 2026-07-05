@@ -1258,6 +1258,11 @@ public class AIAgent<T extends AIAgent> {
         this.toolSearcher = toolSearcher;
         return (T)this;
     }
+	
+	public T setKeywordToolSearcher(String ...keywords) {
+		this.toolSearcher = new KeywordToolSearcher(keywords);
+		return (T)this;
+	}
 
     public ToolSearcher getToolSearcher() {
         return toolSearcher;

@@ -230,11 +230,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,
                                                        String agentId, String parentAgentId,String agentNodeType,String subAgentIdBy, String marks, String metadata, String messageType){
-        try {
-
-            if(agentNodeType.equals(AIAgent.AGENT_NODE_TYPE_SEQUENCE)){
-                logger.info("persistentSessionMessage agentNodeType:{}",agentNodeType);
-            }
+        try { 
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role
             Map<String, Object> message = persistentMessage.getMessage();

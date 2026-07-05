@@ -45,16 +45,74 @@ public class GetOSFunctionTool {
 		this.timeout = timeout;
 		return this;
 	}
-    
-	@Tool(name="getOS",description = "获取OS、OS版本以及OS架构信息")
-    public Map getOS(){
+    @Tool(name="getOS2ndCpu",description = "获取OS、OS版本、OS架构以及CPU信息")
+    public Map getOS2ndCpu(){
         String os = System.getProperty("os.name");
         String osVersion = System.getProperty("os.version");
         String osArch = System.getProperty("os.arch");
+        int cpuCores = Runtime.getRuntime().availableProcessors();
+        String cpuName = getCpuName();
         Map result = new java.util.HashMap();
         result.put("os", os);
         result.put("osVersion", osVersion);
         result.put("osArch", osArch);
+        result.put("cpuCores", cpuCores);
+        result.put("cpuName", cpuName);
         return result;
-    } 
+    }
+    
+    /**
+     * 获取CPU名称/型号信息
+     */
+    private String getCpuName(){
+        try {
+            String osName = System.getProperty("os.name");
+            if (osName != null && osName.toLowerCase().contains("win")) {
+                Process process = Runtime.getRuntime().exec(new String[]{"wmic", "cpu", "get", "Name"});
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (!line.isEmpty() && !line.equalsIgnoreCase("Name")) {
+                        reader.close();
+                        process.destroy();
+                        return line;
+                    }
+                }
+                reader.close();
+                process.destroy();
+            } else if (osName != null && (osName.toLowerCase().contains("linux") || osName.toLowerCase().contains("mac"))) {
+                Process process = Runtime.getRuntime().exec(new String[]{"uname", "-p"});
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+                String cpuInfo = reader.readLine();
+                reader.close();
+                process.destroy();
+                if (cpuInfo != null && !cpuInfo.trim().isEmpty() && !cpuInfo.trim().equals("unknown")) {
+                    return cpuInfo.trim();
+                }
+                // Linux下尝试读取/proc/cpuinfo
+                if (osName.toLowerCase().contains("linux")) {
+                    Process proc = Runtime.getRuntime().exec(new String[]{"cat", "/proc/cpuinfo"});
+                    java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(proc.getInputStream()));
+                    String cpuLine;
+                    while ((cpuLine = br.readLine()) != null) {
+                        if (cpuLine.startsWith("model name")) {
+                            String[] parts = cpuLine.split(":", 2);
+                            br.close();
+                            proc.destroy();
+                            return parts.length > 1 ? parts[1].trim() : cpuLine;
+                        }
+                    }
+                    br.close();
+                    proc.destroy();
+                }
+            }
+        } catch (Exception e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("获取CPU信息失败", e);
+            }
+        }
+        return System.getProperty("os.arch");
+    }
+
 }
