@@ -12,5 +12,6 @@
 1.生成一段javascript代码，输出hello world
 2.执行生成的javascript代码
 
-# 输出代码和执行结果
+# 生成报告
 将前面生成的代码和执行结果以Markdown格式写入文件：C:\data\ai\aigenfiles\tools\code-gen-execute.md
+报告生成时间以服务器时间为准

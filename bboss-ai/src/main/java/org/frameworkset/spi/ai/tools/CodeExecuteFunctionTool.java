@@ -94,7 +94,19 @@ public class CodeExecuteFunctionTool {
 	 */
 	private boolean deleteTempFiles = true;
 	
+	/**
+	 * Python 解释器路径，默认值为 {@code python} 或 {@code python3}。
+	 */
 	private String pythonPath;
+	
+	/**
+	 * Node.js 解释器路径，默认值为 {@code node}。
+	 */
+	private String nodejsPath;
+	/**
+	 * Java 解释器路径，默认值为 {@code java}。
+	 */
+	private String javaPath;
 	
 	/** 临时文件根目录前缀 */
 	private static final String TEMP_DIR_PREFIX = "code_execute_";
@@ -213,7 +225,7 @@ public class CodeExecuteFunctionTool {
 		if (!dir.exists() && !dir.mkdirs()) {
 			throw new ToolExecuteException("无法创建编译输出目录: " + outputDir);
 		}
-		
+		StandardJavaFileManager fileManager = null;
 		try {
 			// 1. 编译
 			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -222,7 +234,7 @@ public class CodeExecuteFunctionTool {
 			}
 			
 			DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-			StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8);
+			fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8);
 			
 			JavaFileObject sourceFile = new StringJavaFileObject(className, code);
 			Iterable<? extends JavaFileObject> compilationUnits = Arrays.asList(sourceFile);
@@ -230,8 +242,7 @@ public class CodeExecuteFunctionTool {
 			Iterable<String> options = Arrays.asList("-d", outputDir, "-encoding", "UTF-8");
 			
 			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits);
-			boolean success = task.call();
-			fileManager.close();
+			boolean success = task.call();		
 			
 			if (!success) {
 				StringBuilder errorMsg = new StringBuilder("编译失败:\n");
@@ -276,6 +287,14 @@ public class CodeExecuteFunctionTool {
 		} catch (Exception e) {
 			throw new ToolExecuteException("Java 代码执行失败: " + e.getMessage(), e);
 		} finally {
+			 if(fileManager != null) {
+				 try {
+					 fileManager.close();
+				 } catch (Exception e) {
+					 
+				 }
+			 }
+			 
 			// 清理临时编译产物
 			deleteDirectory(dir);
 		}
@@ -318,7 +337,7 @@ public class CodeExecuteFunctionTool {
 		} catch (Exception e) {
 			throw new ToolExecuteException("Python 代码执行失败: " + e.getMessage(), e);
 		} finally {
-			if (tempFile != null && tempFile.exists()) {
+			if (tempFile != null && tempFile.exists() && deleteTempFiles) {
 				tempFile.delete();
 			}
 			// 清理工作目录
@@ -380,8 +399,14 @@ public class CodeExecuteFunctionTool {
 			try (Writer writer = new OutputStreamWriter(new java.io.FileOutputStream(tempFile), StandardCharsets.UTF_8)) {
 				writer.write(code);
 			}
-			
-			ProcessBuilder pb = new ProcessBuilder("node", tempFile.getAbsolutePath());
+			String nodejs = null;
+			if(SimpleStringUtil.isNotEmpty(nodejsPath)){
+				nodejs = SimpleStringUtil.getPath(nodejsPath,"node");
+			}
+			else{
+				nodejs = "node";
+			}
+			ProcessBuilder pb = new ProcessBuilder(nodejs, tempFile.getAbsolutePath());
 			pb.directory(workDirFile);
 			pb.redirectErrorStream(true);
 			Process proc = pb.start();
@@ -400,7 +425,7 @@ public class CodeExecuteFunctionTool {
 		} catch (Exception e) {
 			throw new ToolExecuteException("Node 执行 JavaScript 失败: " + e.getMessage(), e);
 		} finally {
-			if (tempFile != null && tempFile.exists()) {
+			if (tempFile != null && tempFile.exists() && deleteTempFiles) {
 				tempFile.delete();
 			}
 			// 清理工作目录
@@ -557,6 +582,24 @@ public class CodeExecuteFunctionTool {
 	
 	public CodeExecuteFunctionTool setPythonPath(String pythonPath) {
 		this.pythonPath = pythonPath;
+		return this;
+	}
+	
+	public String getNodejsPath() {
+		return nodejsPath;
+	}
+	
+	public CodeExecuteFunctionTool setNodejsPath(String nodejsPath) {
+		this.nodejsPath = nodejsPath;
+		return this;
+	}
+	
+	public String getJavaPath() {
+		return javaPath;
+	}
+	
+	public CodeExecuteFunctionTool setJavaPath(String javaPath) {
+		this.javaPath = javaPath;
 		return this;
 	}
 	

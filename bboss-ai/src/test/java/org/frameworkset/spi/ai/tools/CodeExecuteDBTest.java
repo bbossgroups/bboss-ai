@@ -67,7 +67,7 @@ public class CodeExecuteDBTest {
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专业的多语言代码生成和执行工具，可以根据用户要求生成符合要求的、完整的、可执行的代码，并且执行生成的代码" +
                 "，能够将生成的代码和执行结果以Markdown格式写入文件。");
 		
-		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
+		chatAgentMessage.setStream( true).setThinking(true).setTemperature(0.7);//.addParameter("max_tokens", 2048);
         chatAgentMessage.setStoreContext(new StoreContext()
                 .setUserId("user123").setSessionSize(100).setRequestId("request123")
                 .setStoreType(StoreContext.STORE_TYPE_DB)
@@ -81,9 +81,11 @@ public class CodeExecuteDBTest {
         agent.registBeanTool(new GetOSFunctionTool(60));
         //注册脚本执行工具，会根据获取到的OS信息，生成对应的OS环境命令行脚本进行执行：框架内置工具
         agent.registBeanTool(new CodeExecuteFunctionTool(60)
-				.setWorkspaceDir("C:\\data\\ai\\aigenfiles\\tools\\temp")
-				.setPythonPath("C:\\environment\\ml\\anaconda3"));
-		agent.registBeanTool(new FileFunctionTool("C:\\data\\ai\\aigenfiles\\tools\\"))
+				.setWorkspaceDir("C:/data/ai/aigenfiles/tools/temp")
+				.setPythonPath("C:/environment/ml/anaconda3")
+//				.setNodejsPath("C:/Program Files/nodejs/")
+		);
+		agent.registBeanTool(new FileFunctionTool("C:/data/ai/aigenfiles/tools/"))
 				.setKeywordToolSearcher("获取OS、OS版本、OS架构以及CPU信息","获取服务器时间",
 						"将内容写入到指定文件",
 						"编译并执行 Java 代码","执行 JavaScript 代码","执行 Python 代码");
