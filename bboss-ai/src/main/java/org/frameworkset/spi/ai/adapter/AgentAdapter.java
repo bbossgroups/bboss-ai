@@ -87,9 +87,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return null;
     }
     protected void filterParameters(ChatContext chatContext,AgentMessage agentMessage,AIAgent aiAgent,Map<String, Object> requestMap, Map<String, Object> parameters) {
-        if(SimpleStringUtil.isEmpty( parameters)){
-            if( agentMessage.getStream() != null){
-                requestMap.put("stream", agentMessage.getStream());
+        Boolean stream = chatContext.getStreamable();
+		if(stream == null){
+			stream = agentMessage.getStream();
+		}
+		if(SimpleStringUtil.isEmpty( parameters)){
+            if( stream != null){
+                requestMap.put("stream", stream);
             }
 
             if( agentMessage.getTemperature() != null){
@@ -102,8 +106,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         else {
             requestMap.putAll( parameters);
             //设置默认参数
-            if(!parameters.containsKey("stream") && agentMessage.getStream() != null){
-                requestMap.put("stream", agentMessage.getStream());
+            if(!parameters.containsKey("stream") && stream != null){
+                requestMap.put("stream", stream);
             }
 
             if(!parameters.containsKey("temperature") && agentMessage.getTemperature() != null){
@@ -464,16 +468,17 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
             
         }
-
-
-
         requestMap.put("messages", messages);
+		Boolean stream = chatContext.getStreamable();
+		if(stream == null){
+			stream = toolAgentMessage.getStream();
+		}
         Map parameters = toolAgentMessage.getParameters();
         if(SimpleStringUtil.isNotEmpty( parameters)){
 
             requestMap.putAll(parameters);
-            if(!parameters.containsKey("stream") && toolAgentMessage.getStream() != null){
-                requestMap.put("stream", toolAgentMessage.getStream());
+            if(!parameters.containsKey("stream") && stream != null){
+                requestMap.put("stream", stream);
             }
             if(!parameters.containsKey("temperature") && toolAgentMessage.getTemperature() != null){
                 requestMap.put("temperature", toolAgentMessage.getTemperature());
@@ -485,8 +490,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
         else {
             //设置默认参数
-            if( toolAgentMessage.getStream() != null){
-                requestMap.put("stream", toolAgentMessage.getStream());
+            if( stream != null){
+                requestMap.put("stream", stream);
             }
 
             if( toolAgentMessage.getTemperature() != null){
@@ -630,11 +635,15 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
         requestMap.put("messages", messages);
         Map parameters = chatAgentMessage.getParameters();
+		Boolean stream = chatContext.getStreamable();
+		if(stream == null){
+			stream = chatAgentMessage.getStream();
+		}
         if(SimpleStringUtil.isNotEmpty( parameters)){
 
             requestMap.putAll(parameters);
-            if(!parameters.containsKey("stream") && chatAgentMessage.getStream() != null){
-                requestMap.put("stream", chatAgentMessage.getStream());
+            if(!parameters.containsKey("stream") && stream != null){
+                requestMap.put("stream", stream);
             }
             if(!parameters.containsKey("temperature") && chatAgentMessage.getTemperature() != null){
                 requestMap.put("temperature", chatAgentMessage.getTemperature());
@@ -646,8 +655,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
         else {
             //设置默认参数
-            if( chatAgentMessage.getStream() != null){
-                requestMap.put("stream", chatAgentMessage.getStream());
+            if( stream != null){
+                requestMap.put("stream", stream);
             }
             
             if( chatAgentMessage.getTemperature() != null){
@@ -715,10 +724,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
          
  
     }
-    protected abstract Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent, ChatContext chatCallback);
+    protected abstract Map<String, Object> buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,AIAgent aiAgent, ChatContext chatContext);
   
     public Map<String, Object> _buildGenAudioRequestMap(AudioAgentMessage audioAgentMessage,StoreChatObject storeChatObject,
-                                                        ClientConfiguration clientConfiguration,AIAgent aiAgent, ChatContext chatCallback){
+                                                        ClientConfiguration clientConfiguration,AIAgent aiAgent, ChatContext chatContext){
 
         if(storeChatObject.getGenFileStoreDir() == null)
             storeChatObject.setGenFileStoreDir(clientConfiguration.getExtendConfig("genFileStoreDir"));
@@ -727,10 +736,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(storeChatObject.getStoreAudioType() == null){
             storeChatObject.setStoreAudioType(clientConfiguration.getExtendConfig("storeAudioType"));
         }
-        Map params = buildGenAudioRequestMap(audioAgentMessage,aiAgent,   chatCallback);
+		Boolean stream = chatContext.getStreamable();
+		if(stream == null){
+			stream = audioAgentMessage.getStream();
+		}
+        Map params = buildGenAudioRequestMap(audioAgentMessage,aiAgent,   chatContext);
 //        audioAgentMessage.setGenAudioCompletionsUrl(getGenAudioCompletionsUrl(audioAgentMessage));
-        if(audioAgentMessage.getStream() != null){
-            params.put("stream", audioAgentMessage.getStream());
+        if(stream != null){
+            params.put("stream", stream);
         }
         return params;
     }
@@ -840,8 +853,12 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(parameters != null) {
             requestMap.put("parameters", parameters);
         }
-        if(audioSTTAgentMessage.getStream() != null){
-            requestMap.put("stream", audioSTTAgentMessage.getStream());
+		Boolean stream = chatContext.getStreamable();
+		if(stream == null){
+			stream = audioSTTAgentMessage.getStream();
+		}
+        if(stream!= null){
+            requestMap.put("stream", stream);
         }
         if(audioSTTAgentMessage.getResultFormat() != null)
             requestMap.put("result_format", audioSTTAgentMessage.getResultFormat());

@@ -43,9 +43,13 @@ public class SiliconflowAgentAdapter extends QwenAgentAdapter{
 
     @Override
     protected void filterParameters(ChatContext chatContext, AgentMessage agentMessage, AIAgent aiAgent, Map<String, Object> requestMap, Map<String, Object> parameters) {
-        if(SimpleStringUtil.isEmpty( parameters)){
-            if( agentMessage.getStream() != null){
-                requestMap.put("stream", agentMessage.getStream());
+		Boolean stream = chatContext.getStreamable();
+		if(stream == null){
+			stream = agentMessage.getStream();
+		}
+		if(SimpleStringUtil.isEmpty( parameters)){
+            if( stream != null){
+                requestMap.put("stream", stream);
             }
              
 
@@ -63,8 +67,8 @@ public class SiliconflowAgentAdapter extends QwenAgentAdapter{
             parameters.remove("enable_thinking");
             parameters.remove("thinking_budget");
             requestMap.putAll( parameters);
-            if(!parameters.containsKey("stream") && agentMessage.getStream() != null){
-                requestMap.put("stream", agentMessage.getStream());
+            if(!parameters.containsKey("stream") && stream != null){
+                requestMap.put("stream", stream);
             }
             if(!parameters.containsKey("temperature") && agentMessage.getTemperature() != null){
                 requestMap.put("temperature", agentMessage.getTemperature());

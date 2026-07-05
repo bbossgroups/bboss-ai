@@ -83,7 +83,7 @@ public class CliToolLoopPortDBTest {
         //注册脚本执行工具，会根据获取到的OS信息，生成对应的OS环境命令行脚本进行执行：框架内置工具
         agent.registBeanTool(new CLIShellFunctionTool(60));
 		agent.registBeanTool(new FileFunctionTool("C:\\data\\ai\\aigenfiles\\tools\\"))
-				.setKeywordToolSearcher("获取OS、OS版本、OS架构以及CPU信息","将内容写入到指定文件","执行shell脚本");
+				.setKeywordToolSearcher("获取OS、OS版本、OS架构以及CPU信息","将内容写入到指定文件","执行shell脚本","获取服务器时间");
 		 
 		//通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
 		Flux<ServerEvent> flux = agent.streamChat(chatAgentMessage);

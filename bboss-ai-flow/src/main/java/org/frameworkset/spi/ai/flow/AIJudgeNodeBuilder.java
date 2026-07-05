@@ -121,16 +121,35 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
 
             @Override
             public void streamDone(ServerEvent serverEvent) {
+				String varName = judgeAgent.getOutputVaribleName();
+				JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
+				if(SimpleStringUtil.isEmpty(varName )){
+					varName = judgeAgent.getAgentId()+".judgeResult";
+					int varScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+					if(containerJobFlowNodeExecuteContext != null){
+						varScope = AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER;
+					}
+					else{
+						varScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
+					}
+					judgeAgent.setOutputVaribleName(varName,varScope);
+				}
                 AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext);
             }
         });
-        JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
+       
         AgentMessage agentMessage = judgeAgent.getAgentMessage() != null ? judgeAgent.getAgentMessage() : planAgent.getAgentMessage();
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
-        ServerEvent serverEvent = judgeAgent.chat((ChatAgentMessage)agentMessage,chatContext);
-        
+		if(!planAgent.isStream() || judgeAgent.isDisableStream()){
+			judgeAgent.chat((ChatAgentMessage)agentMessage,chatContext);
+		}
+		else{
+			judgeAgent.streamChat((ChatAgentMessage)agentMessage,chatContext);		
+		}
+		/**
+        ServerEvent serverEvent = judgeAgent.chat((ChatAgentMessage)agentMessage,chatContext);        
         if(serverEvent != null){
             FluxSink<ServerEvent> fluxSink = judgeAgent.getAgentFluxSink();
             if(fluxSink != null){
@@ -153,10 +172,11 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
                     varScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
                 }
                 judgeAgent.setOutputVaribleName(varName,varScope);
-                
+				AIFlowUtil.outputResult( judgeAgent, serverEvent,  jobFlowNodeExecuteContext);
             }
-            AIFlowUtil.outputResult( judgeAgent, serverEvent,  jobFlowNodeExecuteContext);
+            
         }
+		 */
         return null;
     }
 

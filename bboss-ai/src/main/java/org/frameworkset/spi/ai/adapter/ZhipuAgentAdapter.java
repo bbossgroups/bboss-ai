@@ -209,13 +209,16 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
                 throw new AIRuntimeException("audio must be File or byte[] or String");
             }
         }
-        
+		Boolean stream = chatContext.getStreamable();
+		if(stream == null){
+			stream = audioSTTAgentMessage.getStream();
+		}
         Map parameters = audioSTTAgentMessage.getParameters();
         if(parameters != null) {
             requestMap.putAll( parameters);
         }
-        if(audioSTTAgentMessage.getStream() != null){
-            requestMap.put("stream", audioSTTAgentMessage.getStream());
+        if(stream != null){
+            requestMap.put("stream", stream);
         }
          
         return requestMap;

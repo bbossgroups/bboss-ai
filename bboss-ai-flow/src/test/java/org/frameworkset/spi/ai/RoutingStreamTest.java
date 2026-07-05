@@ -54,9 +54,9 @@ public class RoutingStreamTest {
 //          multiagentWeathor("zhipu","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","glm-5.2",null);
 //        multiagentWeathor("zhipu","创建一篇关于中国首都介绍的飞书文档","glm-5.2",null);
 
-        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.7-plus",null);
-
-
+//        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.7-plus",null);
+		
+		multiagentWeathor("qwenvlplus","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","qwen3.7-plus",null);
 //        multiagentWeathor("kimi","创建一篇关于中国首都介绍的飞书文档","kimi-k2.6",null);
 //        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
 
@@ -77,7 +77,7 @@ public class RoutingStreamTest {
         //定义会话实体：设置模型、maas平台，用户问题
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()                            
                 .setModel(model)
-                .setMaas(maas).setPrompt(prompt).setStream(true).setThinking(true);
+                .setMaas(maas).setPrompt(prompt).setThinking(true);
 
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
@@ -130,7 +130,6 @@ public class RoutingStreamTest {
         //开始对话，执行对话流程，并返回会话结果
         Flux<ServerEvent> flux = planAgent.chatStream();
 // 用于累积完整的回答
-        StringBuilder completeAnswer = new StringBuilder();
         CountDownLatch countDownLatch = new CountDownLatch(1);
         flux
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
@@ -159,35 +158,16 @@ public class RoutingStreamTest {
                         
                            
                              
-                        if(event.isToolCallsType()) {
-                            System.out.println();
-                            System.out.println("开始执行工具：");
-                        }
+//                        if(event.isToolCallsType()) {
+//                            System.out.println();
+//                            System.out.println("开始执行工具：");
+//                        }
                             
  
-                        if(event.isDone() || event.finished()){
-                            System.out.println();
-                        }
-                        if(!event.isDone() ) {
-                            // 累积回答内容
-                            if(event.getData() != null) {
-                                completeAnswer.append(event.getData());
-                            }
-                        } else  {
-
-                            if( completeAnswer.length() > 0) {
-                                // 当收到完成信号且有累积内容时，将完整回答添加到会话记忆
-//                                chatAgentMessage.addAgentResultSessionMessage(completeAnswer.toString(),event.getAgent());
-                                completeAnswer.setLength(0);
-
-
-                            }
-                            else if(event.getData() != null){
-                                logger.info("{}",event.getData());
-//                                chatAgentMessage.addAgentResultSessionMessage(event.getData(),event.getAgent());
-                            }  
-
-                        }
+//                        if(event.isDone() || event.finished()){
+//                            System.out.println();
+//                        }
+                       
                     }
                 }).doOnComplete(() -> {
                     logger.info("\n=== 流完成 ===");

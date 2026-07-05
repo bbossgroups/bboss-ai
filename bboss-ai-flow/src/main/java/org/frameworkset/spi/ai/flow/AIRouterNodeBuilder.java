@@ -78,9 +78,82 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         return this;
     }
  
-    
+    private void handleRouteEvent(long startTime, ServerEvent serverEvent,JobFlowNodeExecuteContext jobFlowNodeExecuteContext) {
+		JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
+		JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
+		String data = serverEvent.getData();
+		if(data == null){
+			data = serverEvent.getFullStreamData();
+		}
+//		String data = serverEvent.getFullStreamData();
+		FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
+		
+		RouteChoice result = null;
+		if (data != null) {
+			MarkdownJsonExtractor extractor = new MarkdownJsonExtractor();
+			List<String> jsonList = extractor.extractAll(data);
+			if (jsonList != null && jsonList.size() > 0) {
+				String json = jsonList.get(jsonList.size() - 1);
+				try {
+					result = JsonUtil.json2Object(json, RouteChoice.class);
+				} catch (Exception e) {
+					try {
+						List<RouteChoice> results = JsonUtil.json2ListObject(json, RouteChoice.class);
+						if (results != null && results.size() > 1) {
+							throw new AIRuntimeException("route choice json size > 1:" + json + ". please check your prompt and route choice list");
+						}
+						result = results.get(0);
+					} catch (Exception e1) {
+						if (logger.isInfoEnabled()) {
+							logger.info("agent id :{},json:{}", agent.getAgentId(), json);
+						}
+					}
+					
+				}
+				if (result != null) {
+					if (containerJobFlowNodeExecuteContext != null) {
+						containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
+					} else {
+						jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+					}
+//					if (fluxSink != null) {
+//						fluxSink.next(serverEvent);
+//					} else {
+//						if (logger.isInfoEnabled()) {
+//							logger.info("agent id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+//						}
+//					}
+				}
+			} else {
+				ServerEvent traceServerEvent = new ServerEvent();
+				String message = "未匹配到智能体：" + data;
+				
+				traceServerEvent.setData(message);
+				traceServerEvent.setType(TYPE_TRACE);
+				TraceMessage traceMessage = new TraceMessage();
+				Map<String, Object> messageMap = new LinkedHashMap<>();
+				messageMap.put("text", message);
+				messageMap.put("data", data);
+				
+				messageMap.put("role", SessionMessage.MESSAGE_TYPE_TRACE_MESSAGE_NAME);
+				traceMessage.setMessage(messageMap);
+				traceMessage.setStartTime(startTime);
+				traceMessage.setEndTime(System.currentTimeMillis());
+				routeAgent.recordTraceMessage(traceMessage);
+//				if (fluxSink != null) {
+//					fluxSink.next(traceServerEvent);
+//				} else {
+//					if (logger.isInfoEnabled()) {
+//						logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), traceServerEvent.getData());
+//					}
+//				}
+				
+			}
+		}
+    }
     @Override
-    public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) throws Exception {      
+    public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) throws Exception {
+		long start = System.currentTimeMillis();
         List<RouteChoice> routeChoiceList = routeAgent.getRouteChoiceList();
         String prompt = routeAgent.getPrompt();
         if(SimpleStringUtil.isEmpty(prompt)){
@@ -110,93 +183,101 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
             @Override
             public void streamDone(ServerEvent serverEvent) {
                 AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext);
-            }
+					
+				handleRouteEvent(start, serverEvent, jobFlowNodeExecuteContext);
+			}
         });
-        int retry = 0;
-        do {
-            long start = System.currentTimeMillis();
-            ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage) agentMessage, chatContext);
-            if (serverEvent != null) {
-                
-                JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
-                JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
-
-                String data = serverEvent.getData();
-                FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
-               
-                RouteChoice result = null;
-                if (data != null) {
-                    MarkdownJsonExtractor extractor = new MarkdownJsonExtractor();
-                    List<String> jsonList = extractor.extractAll(data);
-                    if (jsonList != null && jsonList.size() > 0) {
-                        String json = jsonList.get(jsonList.size() - 1);
-                        try {
-                            result = JsonUtil.json2Object(json, RouteChoice.class);
-                        }
-                        catch (Exception e){
-                            try {
-                                List<RouteChoice> results = JsonUtil.json2ListObject(json, RouteChoice.class);
-                                if (results != null && results.size() > 1) {
-                                    throw new AIRuntimeException("route choice json size > 1:" + json + ". please check your prompt and route choice list");
-                                }
-                                result = results.get(0);
-                            }
-                            catch (Exception e1){
-                                if (logger.isInfoEnabled()) {
-                                    logger.info("agent id :{},json:{}", agent.getAgentId(), json);
-                                }
-                            }
-                            
-                        }
-                        if(result != null) {
-                            if (containerJobFlowNodeExecuteContext != null) {
-                                containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
-                            } else {
-                                jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
-                            }
-                            if (fluxSink != null) {
-                                fluxSink.next(serverEvent);
-                            } else {
-                                if (logger.isInfoEnabled()) {
-                                    logger.info("agent id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    else{
-                        ServerEvent traceServerEvent = new ServerEvent();
-                        String message = null;
-                        if(retry > 0)
-                            message = ("重试" + retry + "次，未匹配到智能体："+data);
-                        else{
-                            message =  ("未匹配到智能体："+data);
-                        }
-                        traceServerEvent.setData(message);
-                        traceServerEvent.setType(TYPE_TRACE);
-                        TraceMessage traceMessage = new TraceMessage();
-                        Map<String, Object> messageMap = new LinkedHashMap<>();
-                        messageMap.put("text",message);
-                        messageMap.put("data",data);
-						
-						messageMap.put("role", SessionMessage.MESSAGE_TYPE_TRACE_MESSAGE_NAME);
-                        traceMessage.setMessage(messageMap);
-                        traceMessage.setStartTime(start);
-                        traceMessage.setEndTime(System.currentTimeMillis());
-                        routeAgent.recordTraceMessage(traceMessage);
-                        if (fluxSink != null) {
-                            fluxSink.next(traceServerEvent);
-                        } else {
-                            if (logger.isInfoEnabled()) {
-                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), traceServerEvent.getData());
-                            }
-                        }
-                         
-                    }
-                }
-                retry ++;
-            }
-        } while (retry < routeAgent.getRetryTimes());
+		if(!planAgent.isStream() || routeAgent.isDisableStream()) {
+			routeAgent.chat((ChatAgentMessage) agentMessage, chatContext);
+		}
+		else{
+			routeAgent.streamChat((ChatAgentMessage) agentMessage, chatContext);
+		}
+//        int retry = 0;
+//        do {
+//            long start = System.currentTimeMillis();
+//            ServerEvent serverEvent = routeAgent.chat((ChatAgentMessage) agentMessage, chatContext);
+//            if (serverEvent != null) {
+//                
+//                JobFlowNodeExecuteContext containerJobFlowNodeExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowNodeExecuteContext();
+//                JobFlowExecuteContext jobFlowExecuteContext = jobFlowNodeExecuteContext.getContainerJobFlowExecuteContext();
+//
+//                String data = serverEvent.getData();
+//                FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
+//               
+//                RouteChoice result = null;
+//                if (data != null) {
+//                    MarkdownJsonExtractor extractor = new MarkdownJsonExtractor();
+//                    List<String> jsonList = extractor.extractAll(data);
+//                    if (jsonList != null && jsonList.size() > 0) {
+//                        String json = jsonList.get(jsonList.size() - 1);
+//                        try {
+//                            result = JsonUtil.json2Object(json, RouteChoice.class);
+//                        }
+//                        catch (Exception e){
+//                            try {
+//                                List<RouteChoice> results = JsonUtil.json2ListObject(json, RouteChoice.class);
+//                                if (results != null && results.size() > 1) {
+//                                    throw new AIRuntimeException("route choice json size > 1:" + json + ". please check your prompt and route choice list");
+//                                }
+//                                result = results.get(0);
+//                            }
+//                            catch (Exception e1){
+//                                if (logger.isInfoEnabled()) {
+//                                    logger.info("agent id :{},json:{}", agent.getAgentId(), json);
+//                                }
+//                            }
+//                            
+//                        }
+//                        if(result != null) {
+//                            if (containerJobFlowNodeExecuteContext != null) {
+//                                containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
+//                            } else {
+//                                jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+//                            }
+//                            if (fluxSink != null) {
+//                                fluxSink.next(serverEvent);
+//                            } else {
+//                                if (logger.isInfoEnabled()) {
+//                                    logger.info("agent id :{},agentResult:{}", agent.getAgentId(), serverEvent.getData());
+//                                }
+//                            }
+//                        }
+//                        break;
+//                    }
+//                    else{
+//                        ServerEvent traceServerEvent = new ServerEvent();
+//                        String message = null;
+//                        if(retry > 0)
+//                            message = ("重试" + retry + "次，未匹配到智能体："+data);
+//                        else{
+//                            message =  ("未匹配到智能体："+data);
+//                        }
+//                        traceServerEvent.setData(message);
+//                        traceServerEvent.setType(TYPE_TRACE);
+//                        TraceMessage traceMessage = new TraceMessage();
+//                        Map<String, Object> messageMap = new LinkedHashMap<>();
+//                        messageMap.put("text",message);
+//                        messageMap.put("data",data);
+//						
+//						messageMap.put("role", SessionMessage.MESSAGE_TYPE_TRACE_MESSAGE_NAME);
+//                        traceMessage.setMessage(messageMap);
+//                        traceMessage.setStartTime(start);
+//                        traceMessage.setEndTime(System.currentTimeMillis());
+//                        routeAgent.recordTraceMessage(traceMessage);
+//                        if (fluxSink != null) {
+//                            fluxSink.next(traceServerEvent);
+//                        } else {
+//                            if (logger.isInfoEnabled()) {
+//                                logger.info("agentMessage id :{},agentResult:{}", agent.getAgentId(), traceServerEvent.getData());
+//                            }
+//                        }
+//                         
+//                    }
+//                }
+//                retry ++;
+//            }
+//        } while (retry < routeAgent.getRetryTimes());
        
         
         return null;
