@@ -1,0 +1,16 @@
+请依次完成以下任务：
+
+# 生成并执行 Java 代码
+1.生成一段java代码，输出hello world
+2.执行生成的java代码
+
+# 生成并执行 python 代码
+1.生成一段python代码，输出hello world
+2.执行生成的python代码
+
+# 生成并执行 javascript 代码
+1.生成一段javascript代码，输出hello world
+2.执行生成的javascript代码
+
+# 输出代码和执行结果
+将前面生成的代码和执行结果以Markdown格式写入文件：C:\data\ai\aigenfiles\tools\code-gen-execute.md

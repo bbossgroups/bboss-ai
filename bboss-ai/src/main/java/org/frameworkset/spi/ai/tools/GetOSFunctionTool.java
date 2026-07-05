@@ -18,12 +18,15 @@ package org.frameworkset.spi.ai.tools;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.slf4j.Logger;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
 /**
  * 操作系统信息查询工具类。
  * <p>
- * 提供获取当前运行环境操作系统名称及版本信息的能力，
+ * 提供获取当前运行环境操作系统名称及版本信息的能力，获取当前运行环境操作系统架构信息，获取当前运行环境CPU核心数信息，
+ * 获取服务器时间
  * 适用于智能体通过 {@link Tool} 注解暴露为可调用工具的场景。
  * </p>
  *
@@ -60,8 +63,17 @@ public class GetOSFunctionTool {
         result.put("cpuName", cpuName);
         return result;
     }
-    
-    /**
+	
+	@Tool(name="getSystemTime",description = "获取服务器时间")
+	public Map getSystemTime(){
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Map result = new java.util.HashMap();
+		result.put("dateTime", dateFormat.format(new Date()));		 
+		return result;
+	}
+	
+	
+	/**
      * 获取CPU名称/型号信息
      */
     private String getCpuName(){
