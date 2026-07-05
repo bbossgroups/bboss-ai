@@ -64,8 +64,8 @@ public class CodeExecuteDBTest {
         chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
         chatAgentMessage.setRetry(3);
         String message = "#[codeexecute-prompt.txt,type=resource]";
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专业的Java代码生成器，可以根据用户要求生成符合要求的、完整的、可执行的Java代码，并且执行生成的java代码" +
-                "，能够将生成的java代码和执行结果以Markdown格式写入文件。");
+		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专业的多语言代码生成和执行工具，可以根据用户要求生成符合要求的、完整的、可执行的代码，并且执行生成的代码" +
+                "，能够将生成的代码和执行结果以Markdown格式写入文件。");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
         chatAgentMessage.setStoreContext(new StoreContext()
