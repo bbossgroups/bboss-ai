@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.tools;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.model.ToolExecuteException;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.slf4j.Logger;
@@ -86,6 +87,15 @@ public class CodeExecuteFunctionTool {
 	/** 临时编译输出目录 */
 	private String workspaceDir = System.getProperty("java.io.tmpdir");
 	
+	/**
+	 * 是否在执行完成后删除临时文件（包括编译输出目录）
+	 * 默认值为 {@code true}。
+	 * true 表示执行完成后删除临时文件，false 表示保留。
+	 */
+	private boolean deleteTempFiles = true;
+	
+	private String pythonPath;
+	
 	/** 临时文件根目录前缀 */
 	private static final String TEMP_DIR_PREFIX = "code_execute_";
 	
@@ -106,7 +116,10 @@ public class CodeExecuteFunctionTool {
 		return this;
 	}
 	
-	// ==================== 公开工具方法 ====================
+	public CodeExecuteFunctionTool setDeleteTempFiles(boolean deleteTempFiles) {
+		this.deleteTempFiles = deleteTempFiles;
+		return this;
+	}
 	
 	/**
 	 * 执行 Java 代码。
@@ -143,6 +156,8 @@ public class CodeExecuteFunctionTool {
 		
 		return handleFuture(future, result, "Java");
 	}
+	
+	// ==================== 公开工具方法 ====================
 	
 	/**
 	 * 执行 Python 代码。
@@ -196,14 +211,14 @@ public class CodeExecuteFunctionTool {
 	private ExecutionOutcome doExecuteJava(String code, String className, String outputDir) {
 		File dir = new File(outputDir);
 		if (!dir.exists() && !dir.mkdirs()) {
-			throw new RuntimeException("无法创建编译输出目录: " + outputDir);
+			throw new ToolExecuteException("无法创建编译输出目录: " + outputDir);
 		}
 		
 		try {
 			// 1. 编译
 			JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 			if (compiler == null) {
-				throw new RuntimeException("当前环境未提供 JavaCompiler，无法编译 Java 代码");
+				throw new ToolExecuteException("当前环境未提供 JavaCompiler，无法编译 Java 代码");
 			}
 			
 			DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
@@ -259,7 +274,7 @@ public class CodeExecuteFunctionTool {
 				}
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("Java 代码执行失败: " + e.getMessage(), e);
+			throw new ToolExecuteException("Java 代码执行失败: " + e.getMessage(), e);
 		} finally {
 			// 清理临时编译产物
 			deleteDirectory(dir);
@@ -269,12 +284,12 @@ public class CodeExecuteFunctionTool {
 	private ExecutionOutcome doExecutePython(String code, String workDir) {
 		String pythonCmd = findPythonCommand();
 		if (pythonCmd == null) {
-			throw new RuntimeException("未找到 python 或 python3 解释器，请确保已安装 Python 并将其加入系统 PATH");
+			throw new ToolExecuteException("未找到 python 或 python3 解释器，请确保已安装 Python 并将其加入系统 PATH");
 		}
 		
 		File workDirFile = new File(workDir);
 		if (!workDirFile.exists() && !workDirFile.mkdirs()) {
-			throw new RuntimeException("无法创建工作目录: " + workDir);
+			throw new ToolExecuteException("无法创建工作目录: " + workDir);
 		}
 		
 		File tempFile = null;
@@ -301,7 +316,7 @@ public class CodeExecuteFunctionTool {
 			int exitCode = proc.waitFor();
 			return new ExecutionOutcome(output.toString(), exitCode);
 		} catch (Exception e) {
-			throw new RuntimeException("Python 代码执行失败: " + e.getMessage(), e);
+			throw new ToolExecuteException("Python 代码执行失败: " + e.getMessage(), e);
 		} finally {
 			if (tempFile != null && tempFile.exists()) {
 				tempFile.delete();
@@ -345,7 +360,7 @@ public class CodeExecuteFunctionTool {
 				}
 				return new ExecutionOutcome(fullOutput.toString(), 0);
 			} catch (Exception e) {
-				throw new RuntimeException("JavaScript 引擎执行失败: " + e.getMessage(), e);
+				throw new ToolExecuteException("JavaScript 引擎执行失败: " + e.getMessage(), e);
 			}
 		}
 		
@@ -356,7 +371,7 @@ public class CodeExecuteFunctionTool {
 	private ExecutionOutcome executeJavaScriptByNode(String code, String workDir) {
 		File workDirFile = new File(workDir);
 		if (!workDirFile.exists() && !workDirFile.mkdirs()) {
-			throw new RuntimeException("无法创建工作目录: " + workDir);
+			throw new ToolExecuteException("无法创建工作目录: " + workDir);
 		}
 		
 		File tempFile = null;
@@ -383,7 +398,7 @@ public class CodeExecuteFunctionTool {
 			int exitCode = proc.waitFor();
 			return new ExecutionOutcome(output.toString(), exitCode);
 		} catch (Exception e) {
-			throw new RuntimeException("Node 执行 JavaScript 失败: " + e.getMessage(), e);
+			throw new ToolExecuteException("Node 执行 JavaScript 失败: " + e.getMessage(), e);
 		} finally {
 			if (tempFile != null && tempFile.exists()) {
 				tempFile.delete();
@@ -436,7 +451,7 @@ public class CodeExecuteFunctionTool {
 			Throwable cause = e.getCause() != null ? e.getCause() : e;
 			logger.error("{} 代码执行出错", language, cause);
 			result.put("success", false);
-			result.put("message", language + " 代码执行失败: " + cause.getMessage());
+			result.put("message", language + " 代码执行失败: " + SimpleStringUtil.exceptionToString(cause));
 			return result;
 		}
 		
@@ -472,6 +487,9 @@ public class CodeExecuteFunctionTool {
 	}
 	
 	private String findPythonCommand() {
+		if(SimpleStringUtil.isNotEmpty(this.pythonPath)) {
+			return SimpleStringUtil.getPath(this.pythonPath ,"python");
+		}
 		if (commandExists("python3")) {
 			return "python3";
 		}
@@ -513,7 +531,7 @@ public class CodeExecuteFunctionTool {
 	}
 	
 	private void deleteDirectory(File directory) {
-		if (directory == null || !directory.exists()) {
+		if (directory == null || !directory.exists() || !deleteTempFiles) {
 			return;
 		}
 		File[] files = directory.listFiles();
@@ -531,6 +549,15 @@ public class CodeExecuteFunctionTool {
 		if (!directory.delete()) {
 			logger.warn("无法删除临时目录: {}", directory.getAbsolutePath());
 		}
+	}
+	
+	public String getPythonPath() {
+		return pythonPath;
+	}
+	
+	public CodeExecuteFunctionTool setPythonPath(String pythonPath) {
+		this.pythonPath = pythonPath;
+		return this;
 	}
 	
 	// ==================== 内部数据类 ====================

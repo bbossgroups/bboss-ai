@@ -44,9 +44,8 @@ public class KeywordToolSearcher implements ToolSearcher {
 //            if (tool.getFunction() == null) continue;
             String name = tool.getFunction().getName();
             String desc = tool.getFunction().getDescription();
-            String text = (name + " " + desc).toLowerCase();
             for (String kw : keywords) {
-                if (text.contains(kw)) {
+                if (name.contains(kw) || desc.contains(kw)) {
                     matched.add(tool);
                     break;
                 }

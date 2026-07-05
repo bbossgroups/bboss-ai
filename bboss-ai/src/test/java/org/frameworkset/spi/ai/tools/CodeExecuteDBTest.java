@@ -81,7 +81,8 @@ public class CodeExecuteDBTest {
         agent.registBeanTool(new GetOSFunctionTool(60));
         //注册脚本执行工具，会根据获取到的OS信息，生成对应的OS环境命令行脚本进行执行：框架内置工具
         agent.registBeanTool(new CodeExecuteFunctionTool(60)
-				.setWorkspaceDir("C:\\data\\ai\\aigenfiles\\tools\\temp"));
+				.setWorkspaceDir("C:\\data\\ai\\aigenfiles\\tools\\temp")
+				.setPythonPath("C:\\environment\\ml\\anaconda3"));
 		agent.registBeanTool(new FileFunctionTool("C:\\data\\ai\\aigenfiles\\tools\\"))
 				.setKeywordToolSearcher("获取OS、OS版本、OS架构以及CPU信息","获取服务器时间",
 						"将内容写入到指定文件",
