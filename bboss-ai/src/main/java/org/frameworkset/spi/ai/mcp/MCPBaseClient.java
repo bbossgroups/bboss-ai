@@ -15,10 +15,18 @@ package org.frameworkset.spi.ai.mcp;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.mcp.model.*;
+import org.frameworkset.spi.ai.model.FunctionCallException;
 import org.frameworkset.spi.ai.model.FunctionTool;
+import org.frameworkset.spi.ai.model.TraceMessage;
+import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -50,14 +58,51 @@ public abstract class MCPBaseClient<T extends MCPClientInf> implements MCPClient
          
 	
     protected RequestId requestId = new RequestId();
+	protected void validateResponse(MCPToolCallResponse mcpToolCallResponse) throws FunctionCallException {
+		Map result = mcpToolCallResponse.getResult();
+		Boolean isError = (Boolean) result.get("isError");
+		if(isError != null && isError){
+			
+			throw new FunctionCallException(JsonUtil.object2json(mcpToolCallResponse));
+		}
+	}
 	protected abstract MCPToolCallResponse executeToolsCall(McpToolCallRequest mcpToolCallRequest);
 	public MCPToolCallResponse toolsCall(FunctionTool functionTool){
         McpToolCallRequest mcpToolCallRequest = new McpToolCallRequest();
         mcpToolCallRequest.setId(this.requestId.nextReqNo());
         mcpToolCallRequest.functionName(functionTool.getFunctionName());
         mcpToolCallRequest.arguments(functionTool.getArguments());
-		MCPToolCallResponse mcpToolCallResponse = executeToolsCall(  mcpToolCallRequest);
-        return mcpToolCallResponse;
+		TraceMessage traceMessage = null;
+		if(AgentTraceHolder.isToolTrace()) {
+			traceMessage = new TraceMessage();
+			traceMessage.setStartTime(System.currentTimeMillis())
+					.put("mcpserver", getMcpServer())
+					.put("mcpToolCallRequest", mcpToolCallRequest)
+					.put("role", SessionMessage.MESSAGE_TYPE_MCPCALL_MESSAGE_NAME);
+		}
+		try {
+			MCPToolCallResponse mcpToolCallResponse = executeToolsCall(  mcpToolCallRequest);
+			validateResponse(mcpToolCallResponse    );
+			if (AgentTraceHolder.isToolTrace()) {
+				traceMessage.setEndTime(System.currentTimeMillis())
+						.put("mcpToolCallResponse", mcpToolCallResponse);
+				
+				AgentTraceHolder.trace(traceMessage);
+			}
+			return mcpToolCallResponse;
+		}
+		catch (RuntimeException e){
+			if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
+				try {
+					traceMessage.setEndTime(System.currentTimeMillis())
+							.put("mcpToolCallException", SimpleStringUtil.exceptionToString(e));
+					AgentTraceHolder.trace(traceMessage);
+				} catch (Exception te) {
+					
+				}
+			}
+			throw e;
+		}
     }
 	protected abstract MCPListToolResponse executeListTools(McpListToolRequest mcpToolRequest);
     public MCPListToolResponse listTools(){

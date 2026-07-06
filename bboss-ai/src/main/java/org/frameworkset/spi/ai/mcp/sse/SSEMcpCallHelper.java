@@ -16,17 +16,12 @@ package org.frameworkset.spi.ai.mcp.sse;
  */
 
 import com.frameworkset.util.JsonUtil;
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.mcp.model.*;
-import org.frameworkset.spi.ai.model.TraceMessage;
-import org.frameworkset.spi.ai.store.SessionMessage;
-import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.util.concurrent.ThreadPoolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -168,36 +163,18 @@ public class SSEMcpCallHelper {
 		mcpCallObject.setRequestId(mcpToolCallRequest.getId());
         String requestId = mcpCallObject.getRequestId()+"";
 		mcpCallObjects.put(requestId, mcpCallObject);
-        TraceMessage traceMessage = null;
-        if(AgentTraceHolder.isToolTrace()) {
-            traceMessage = new TraceMessage();
-            traceMessage.setStartTime(System.currentTimeMillis())
-                    .put("mcpserver", mcpClient.getMcpServer())
-                    .put("mcpToolCallRequest", mcpToolCallRequest)
-                    .put("role", SessionMessage.MESSAGE_TYPE_MCPCALL_MESSAGE_NAME);
-        }
+         
 		try {
             HttpRequestProxy.sendJsonBody(mcpClient.getMcpServer(),mcpToolCallRequest, mcpClient.getMessagePath(),String.class);
             MCPToolCallResponse mcpToolCallResponse = handleResponse(  mcpCallObject);
-            if(AgentTraceHolder.isToolTrace()) {
-                traceMessage.setEndTime(System.currentTimeMillis())
-                        .put("mcpToolCallResponse", mcpToolCallResponse);
-                
-                AgentTraceHolder.trace(traceMessage);
-            }
+             
             return mcpToolCallResponse;
         }
-        catch (Exception e){
-            
-            if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
-                try {
-                    traceMessage.setEndTime(System.currentTimeMillis())
-                            .put("mcpToolCallException", SimpleStringUtil.exceptionToString(e));
-                    AgentTraceHolder.trace(traceMessage);
-                } catch (Exception te) {
-
-                }
-            }
+		catch (McpCallException e){
+			
+			throw e;
+		}
+        catch (Exception e){                   
            
             throw new McpCallException(e);
         }

@@ -35,18 +35,11 @@ public class MCPToolFunctionCall implements FunctionCall<MCPToolCallResponse> {
 		this.mcpClient = mcpClient;
 	}
 
-    protected void validateResponse(MCPToolCallResponse mcpToolCallResponse) throws FunctionCallException{
-        Map result = mcpToolCallResponse.getResult();
-        Boolean isError = (Boolean) result.get("isError");
-        if(isError != null && isError){
-
-            throw new FunctionCallException(JsonUtil.object2json(mcpToolCallResponse));
-        }
-    }
+ 
 	@Override
 	public MCPToolCallResponse call(FunctionTool functionTool) throws FunctionCallException {
         MCPToolCallResponse mcpToolCallResponse = mcpClient.toolsCall(functionTool);
-        validateResponse(mcpToolCallResponse    );
+      
 		return mcpToolCallResponse;
 	}
 }

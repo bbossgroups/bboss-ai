@@ -32,6 +32,12 @@ public class TokenMetrics {
     private long totalTokens;
     private long promptTokens;
     private long promptCachedTokens;
+	
+	
+	private long promptCacheHitTokens;
+	
+	
+	private long promptCacheMissTokens;
 
     private long promptTextTokens;
     private long completionTokens;
@@ -139,6 +145,14 @@ public class TokenMetrics {
     public void increasePromptTextTokens(long promptTextTokens) {
         this.promptTextTokens += promptTextTokens;
     }
+	
+	public void increasePromptCacheMissTokens(long promptCacheMissTokens) {
+		this.promptCacheMissTokens += promptCacheMissTokens;
+	}
+	
+	public void increasePromptCacheHitTokens(long promptCacheHitTokens) {
+		this.promptCacheHitTokens += promptCacheHitTokens;
+	}
 
     public Map getUsage() {
         return usage;
@@ -178,5 +192,20 @@ public class TokenMetrics {
     public void setReasoningData(String reasoningData) {
         this.reasoningData = reasoningData;
     }
-
+	
+	public long getPromptCacheHitTokens() {
+		return promptCacheHitTokens;
+	}
+	
+	public void setPromptCacheHitTokens(long promptCacheHitTokens) {
+		this.promptCacheHitTokens = promptCacheHitTokens;
+	}
+	
+	public long getPromptCacheMissTokens() {
+		return promptCacheMissTokens;
+	}
+	
+	public void setPromptCacheMissTokens(long promptCacheMissTokens) {
+		this.promptCacheMissTokens = promptCacheMissTokens;
+	}
 }

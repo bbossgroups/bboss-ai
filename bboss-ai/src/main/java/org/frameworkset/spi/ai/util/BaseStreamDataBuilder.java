@@ -117,6 +117,16 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         if(completion_tokens != null) {
             tokenMetrics.setCompletionTokens(completion_tokens);
         }
+		Integer prompt_cache_hit_tokens = (Integer)usage.get("prompt_cache_hit_tokens");
+		if(prompt_cache_hit_tokens != null) {
+            tokenMetrics.setPromptCacheHitTokens(prompt_cache_hit_tokens);
+        }
+		
+		Integer prompt_cache_miss_tokens = (Integer)usage.get("prompt_cache_miss_tokens");
+		if(prompt_cache_miss_tokens != null) {
+            tokenMetrics.setPromptCacheMissTokens(prompt_cache_miss_tokens);
+        }
+        
         Map completion_tokens_details = (Map)usage.get("completion_tokens_details");
         if(completion_tokens_details != null) {
             Integer reasoning_tokens = (Integer) completion_tokens_details.get("reasoning_tokens");
@@ -252,6 +262,8 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
             tokenMetrics.increaseCompletionTextTokens(streamTokenMetrics.getCompletionTextTokens());
             tokenMetrics.increasePromptCachedTokens(streamTokenMetrics.getPromptCachedTokens());
             tokenMetrics.increasePromptTextTokens(streamTokenMetrics.getPromptTextTokens());
+			tokenMetrics.increasePromptCacheHitTokens(streamTokenMetrics.getPromptCacheHitTokens());
+			tokenMetrics.increasePromptCacheMissTokens(streamTokenMetrics.getPromptCacheMissTokens());
             tokenMetrics.setEndTime(streamTokenMetrics.getEndTime());
         }
         streamData.setTotalTokenMetrics(tokenMetrics);

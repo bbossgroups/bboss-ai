@@ -15,18 +15,13 @@ package org.frameworkset.spi.ai.mcp.streamable;
  * limitations under the License.
  */
 
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.mcp.MCPBaseClient;
 import org.frameworkset.spi.ai.mcp.model.*;
-import org.frameworkset.spi.ai.model.TraceMessage;
-import org.frameworkset.spi.ai.store.SessionMessage;
-import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -48,39 +43,14 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     @Override
     protected MCPToolCallResponse executeToolsCall(McpToolCallRequest mcpToolCallRequest) {
         Map headers = buildHeaders();
-        TraceMessage traceMessage = null;
-        if(AgentTraceHolder.isToolTrace()) {
-            traceMessage = new TraceMessage();
-            traceMessage.setStartTime(System.currentTimeMillis())
-                    .put("mcpserver", getMcpServer())
-                    .put("mcpToolCallRequest", mcpToolCallRequest)
-                    .put("role", SessionMessage.MESSAGE_TYPE_MCPCALL_MESSAGE_NAME);
-        }
-        try {
+        
 
-            MCPToolCallResponse mcpToolCallResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
-                    mcpToolCallRequest, headers, streamablePath,
-                    MCPToolCallResponse.class);
-            if (AgentTraceHolder.isToolTrace()) {
-                traceMessage.setEndTime(System.currentTimeMillis())
-                        .put("mcpToolCallResponse", mcpToolCallResponse);
-          
-                AgentTraceHolder.trace(traceMessage);
-            }
-            return mcpToolCallResponse;
-        }
-        catch (RuntimeException e){
-            if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
-                try {
-                    traceMessage.setEndTime(System.currentTimeMillis())
-                            .put("mcpToolCallException", SimpleStringUtil.exceptionToString(e));                  
-                    AgentTraceHolder.trace(traceMessage);
-                } catch (Exception te) {
-
-                }
-            }
-            throw e;
-        }
+		MCPToolCallResponse mcpToolCallResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
+				mcpToolCallRequest, headers, streamablePath,
+				MCPToolCallResponse.class);
+		
+		return mcpToolCallResponse;
+        
     }
 
     private String streamablePath ;
