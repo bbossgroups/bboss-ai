@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+**
+ *  Copyright 2008-2010 biaoping.yin
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *
+ * Title: visualopsDict.xml
+ * Description: 字典配置表sql配置文件
+ * Company:asiainfo
+ * Copyright (c) 2015
+ * @Date 2020-07-25 15:57:06
+ * @author tc
+ * @version v1.0
+ **
+ -->
+<properties>
+
+    <property name="createLocalSessionTableName">
+        <![CDATA[
+			CREATE TABLE agent_session_local  ON CLUSTER vops_3shards_1replicas
+			(
+                sessionId String  COMMENT '会话id',  
+                 createTime DateTime COMMENT '创建时间',
+                 lastAccessTime DateTime COMMENT '最后访问时间',
+                 userId String COMMENT '用户id',
+                 agentId String COMMENT '代理id',
+                 title String COMMENT '会话标题',   
+                 domain String COMMENT '会话所属领域'         
+			)
+			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
+			ORDER BY (sessionId)
+		]]>
+    </property>
+
+    <!--删除clickhouse本地表-->
+    <property name="dropLocalSessionTableName">
+        <![CDATA[
+			drop TABLE agent_session_local  ON CLUSTER vops_3shards_1replicas
+		]]>
+    </property>
+
+
+    <!--基于clickhouse本地表创建clickhouse分布式表-->
+    <property name="createClusterSessionTableName">
+        <![CDATA[
+			CREATE TABLE agent_session on cluster vops_3shards_1replicas AS agent_session_local
+                ENGINE = Distributed(vops_3shards_1replicas, currentDatabase(), agent_session_local, rand())
+		]]>
+    </property>
+
+    <!--删除clickhouse分布式表-->
+    <property name="dropClusterSessionTableName">
+        <![CDATA[
+			drop TABLE agent_session  ON CLUSTER vops_3shards_1replicas
+		]]>
+    </property>
+
+    <property name="createLocalSessionMessageTableName">
+        <![CDATA[
+			CREATE TABLE agent_session_message_local  ON CLUSTER vops_3shards_1replicas
+			(
+                msgId String  COMMENT '消息id',  
+                 createTime DateTime COMMENT '创建时间',
+                 sessionId String COMMENT '会话id',
+                 requestId String COMMENT '请求id',
+                 traceId String COMMENT 'trace id',
+                 parentAgentId String COMMENT '父智能体id',
+                 agentId String COMMENT '创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值',
+                 agentNodeType String COMMENT '智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）',
+                 subAgentIdBy String COMMENT '创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值',
+                 messageType String COMMENT '0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中',
+                 seqNo Int32 COMMENT '消息序号',
+                 message String COMMENT '消息正文',
+                 tokenMetrics String COMMENT 'token消耗统计',
+                 elapsed Int32 COMMENT '耗时',
+                 role String COMMENT '角色',
+                 marks String COMMENT '消息标记',
+                 metadata String COMMENT '消息元数据'
+			)
+			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
+			ORDER BY (sessionId, createTime,seqNo)
+		]]>
+    </property>
+    <!--删除clickhouse本地表-->
+    <property name="dropLocalSessionMessageTableName">
+        <![CDATA[
+			drop TABLE agent_session_message_local  ON CLUSTER vops_3shards_1replicas
+		]]>
+    </property>
+    <!--基于clickhouse本地表创建clickhouse分布式表-->
+    <property name="createClusterSessionMessageTableName">
+        <![CDATA[
+			CREATE TABLE agent_session_message on cluster vops_3shards_1replicas AS agent_session_message_local
+                ENGINE = Distributed(vops_3shards_1replicas, currentDatabase(), agent_session_message_local, sipHash64(sessionId))
+		]]>
+    </property>
+
+    <!--删除clickhouse分布式表-->
+    <property name="dropClusterSessionMessageTableName">
+        <![CDATA[
+			drop TABLE agent_session_message  ON CLUSTER vops_3shards_1replicas
+		]]>
+    </property>
+
+
+    <property name="createLocalSessionMessageReferenceTableName">
+        <![CDATA[
+			CREATE TABLE agent_session_message_ref_local  ON CLUSTER vops_3shards_1replicas 
+			( msgId String  COMMENT  '消息id', 
+                 msgAgentId String COMMENT '消息所属智能体agentId', 
+                 refAgentId String COMMENT '引用消息智能体agentId',
+                 sessionId String COMMENT '会话id',
+                 requestId String COMMENT '请求id'
+            )
+			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
+			ORDER BY (sessionId)
+		]]>
+    </property>
+
+    <!--删除clickhouse本地表-->
+    <property name="dropLocalSessionMessageReferenceTableName">
+        <![CDATA[
+			drop TABLE agent_session_message_ref_local  ON CLUSTER vops_3shards_1replicas
+		]]>
+    </property>
+
+
+    <!--基于clickhouse本地表创建clickhouse分布式表-->
+    <property name="createClusterSessionMessageReferenceTableName">
+        <![CDATA[
+			CREATE TABLE agent_session_message_ref on cluster vops_3shards_1replicas AS agent_session_message_ref_local
+                ENGINE = Distributed(vops_3shards_1replicas, currentDatabase(), agent_session_message_ref_local, sipHash64(sessionId))
+		]]>
+    </property>
+
+    <!--删除clickhouse分布式表-->
+    <property name="dropClusterSessionMessageReferenceTableNamee">
+        <![CDATA[
+			drop TABLE agent_session_message_ref  ON CLUSTER vops_3shards_1replicas
+		]]>
+    </property>
+
+</properties>
