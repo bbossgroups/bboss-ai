@@ -18,6 +18,8 @@ package org.frameworkset.spi.ai.store.db;
 import com.frameworkset.common.poolman.DBUtil;
 import com.frameworkset.orm.adapter.DB;
 
+import java.util.List;
+
 /**
  * 数据库会话存储配置：sql语句
  * @author biaoping.yin
@@ -71,9 +73,10 @@ public class AgentSessionStoreDBConfig {
             .append("title varchar2(500) NOT NULL,")
             .append( "domain varchar2(100),")  //会话所属领域     
             .append( "constraint $sessionTableName_PK primary key(sessionId))").toString();
-    public static final String sqlserver_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName ( sessionId varchar(100) NOT NULL," )
+    public static final String sqlserver_createSessionTableSQL = new StringBuilder().append("CREATE TABLE $sessionTableName " )
+            .append( "( sessionId varchar(100) NOT NULL," ) //会话id
             .append( "createTime datetime NOT NULL,")  //创建时间
-            .append(" lastAccessTime datetime NOT NULL, " )
+            .append(" lastAccessTime datetime NOT NULL, " ) //最后访问时间
             .append("userId varchar(100) NOT NULL,") //用户id
             .append( "agentId varchar(100) NOT NULL,")  //代理id
             .append( "title varchar(500) NOT NULL,")  //会话标题   
@@ -98,6 +101,22 @@ public class AgentSessionStoreDBConfig {
             .append("COMMENT ON COLUMN $sessionTableName.agentId IS '代理id';")
             .append("COMMENT ON COLUMN $sessionTableName.title IS '会话标题';")
             .toString();
+	
+	public static final String clickhouse_createLocalSessionTableSQL = new StringBuilder().append("CREATE TABLE ${sessionTableName}_local  ON CLUSTER $clickhouseCluster ")
+			.append(" (")
+                .append("sessionId String  COMMENT '会话id',  ")  
+                 .append("createTime DateTime COMMENT '创建时间',")
+                 .append("lastAccessTime DateTime COMMENT '最后访问时间',")
+                 .append("userId String COMMENT '用户id',")
+                 .append("agentId String COMMENT '代理id',")
+                 .append("title String COMMENT '会话标题',")   
+                 .append("domain String COMMENT '会话所属领域'         ")
+			.append(")")
+			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
+			.append("ORDER BY (sessionId)").toString();
+	
+	public static final String clickhouse_createClusterSessionTableSQL = new StringBuilder().append("CREATE TABLE ${sessionTableName} on cluster $clickhouseCluster AS ${sessionTableName}_local").append("  ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${sessionTableName}_local, rand())").toString();
+	
     public static String sqlitex_createSessionMessageTableSQL = new StringBuilder().append("create table $sessionMessageTableName (msgId varchar(100),")  //消息id
             .append( "createTime number(20),") //创建时间
             .append( "parentAgentId varchar(100),")  //父agentid
@@ -117,6 +136,8 @@ public class AgentSessionStoreDBConfig {
             .append( "marks varchar(500),")
             .append( "metadata text,")
             .append( "PRIMARY KEY (msgId))").toString();
+	
+
 
     public static final String mysql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL comment '消息id'," )
             .append(" createTime datetime NOT NULL comment '创建时间', " )
@@ -214,8 +235,33 @@ public class AgentSessionStoreDBConfig {
             .append( "marks varchar(500),")
             .append( "metadata text,")
             .append( "primary key(msgId))").toString();
-
-    /**
+	
+	public static final String clickhouse_createLocalSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageTableName}_local  ON CLUSTER $clickhouseCluster ")
+			.append("(")
+			.append("    msgId String  COMMENT '消息id',")
+			.append("createTime DateTime COMMENT '创建时间',")
+			.append("sessionId String COMMENT '会话id',")
+			.append("requestId String COMMENT '请求id',")
+			.append("traceId String COMMENT 'trace id',")
+			.append("parentAgentId String COMMENT '父智能体id',")
+			.append("agentId String COMMENT '创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值',")
+			.append("agentNodeType String COMMENT '智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）',")
+			.append("subAgentIdBy String COMMENT '创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值',")
+			.append("messageType String COMMENT '0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中',")
+			.append("seqNo Int32 COMMENT '消息序号',")
+			.append("message String COMMENT '消息正文',")
+			.append("tokenMetrics String COMMENT 'token消耗统计',")
+			.append("elapsed Int32 COMMENT '耗时',")
+			.append("role String COMMENT '角色',")
+			.append("marks String COMMENT '消息标记',")
+			.append("metadata String COMMENT '消息元数据'")
+			.append(")")
+			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
+			.append("ORDER BY (sessionId, createTime,seqNo)").toString();
+	
+	public static final String clickhouse_createClusterSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageTableName} on cluster $clickhouseCluster AS ${sessionMessageTableName}_local ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${sessionMessageTableName}_local, sipHash64(sessionId))").toString();
+	
+	/**
      * 智能体之间消息引用关系表sqlite：后续智能体会引用前一个智能体的输出消息
      */
    public static final String sqlite_createSessionMessageReferenceTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageReferenceTableName ( msgId TEXT NOT NULL, " )
@@ -305,9 +351,21 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
            .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId)           ") // 唯一约束
            .append(")")
            .toString();
-
-
-    private String insertSessionSQL;
+	
+	public static final String clickhouse_createLocalSessionMessageReferenceTableSQL = new StringBuilder()
+			.append("CREATE TABLE ${sessionMessageReferenceTableName}_local  ON CLUSTER $clickhouseCluster ")
+			.append("( msgId String  COMMENT  '消息id',")
+			.append("msgAgentId String COMMENT '消息所属智能体agentId', ")
+			.append("refAgentId String COMMENT '引用消息智能体agentId',")
+			.append("sessionId String COMMENT '会话id',")
+			.append("requestId String COMMENT '请求id'")
+			.append(")")
+			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
+			.append("ORDER BY (sessionId)").toString();
+	
+	public static final String clickhouse_createClusterSessionMessageReferenceTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageReferenceTableName} on cluster $clickhouseCluster AS ${sessionMessageReferenceTableName}_local ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${sessionMessageReferenceTableName}_local, sipHash64(sessionId))").toString();
+	
+	private String insertSessionSQL;
     private String updateSessionLastAccessTimeSQL;
     private String deleteSessionSQL;
     private String deleteSessionByUserIdSQL;
@@ -328,7 +386,16 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 
     private String selectMaxSeqNoBySessionIdSQL;
 
-    private String selectSessionMessageBySessionId2ndAgentIdSQL;
+    private String selectSessionMessageBySessionId2ndAgentIdSQL0;
+	
+	
+	private String selectSessionMessageBySessionId2ndAgentIdSQL1;
+	
+	
+	 
+	
+	
+	private String selectAgentSessionMessageReferenceIdsBySessionIdSQL;
     
     private String existSQL;
 
@@ -443,24 +510,53 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 
         selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
                 .append(sessionMessageTableName).append(" where sessionId=? ").toString();
+		
+//		selectSessionMessageBySessionId2ndAgentIdSQL0 = new StringBuilder()
+//				.append("select *  from ")
+//				.append(sessionMessageTableName)
+//				.append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
+//				.append("and messageType in ('0','1','2','3','4'))" )
+//				.append(" or msgId in (select msgId from ")
+//				.append(sessionMessageReferenceTableName)
+//				.append(" where sessionId=? and refAgentId = ?) " )
+//				.append("order  by createTime, seqNo asc").toString();
 
-        selectSessionMessageBySessionId2ndAgentIdSQL = new StringBuilder()
+        selectSessionMessageBySessionId2ndAgentIdSQL0 = new StringBuilder()
                 .append("select *  from ")
                 .append(sessionMessageTableName)
                 .append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
-                .append("and messageType in ('0','1','2','3','4'))" )
-                .append(" or msgId in (select msgId from ")
-                .append(sessionMessageReferenceTableName)
-                .append(" where sessionId=? and refAgentId = ?) " )
-                .append("order  by createTime, seqNo asc").toString();
+                .append("and messageType in ('0','1','2','3','4'))" )               
+                 .toString();
+		 
+		selectSessionMessageBySessionId2ndAgentIdSQL1 = new StringBuilder()
+				.append(" order  by createTime, seqNo asc").toString();
+		
+		selectAgentSessionMessageReferenceIdsBySessionIdSQL = new StringBuilder()
+				.append("select msgId from ")
+				.append(sessionMessageReferenceTableName)
+                .append(" where sessionId=? and refAgentId = ?")
+                .toString();
     }
 
+	
     public String getSelectMaxSeqNoBySessionIdSQL() {
         return selectMaxSeqNoBySessionIdSQL;
     }
 
-    public String getSelectSessionMessageBySessionId2ndAgentIdSQL() {
-        return selectSessionMessageBySessionId2ndAgentIdSQL;
+    public String getSelectSessionMessageBySessionId2ndAgentIdSQL(List<String > refMsgIds) {
+		StringBuilder sql = new StringBuilder();		
+		sql.append(selectSessionMessageBySessionId2ndAgentIdSQL0);
+		if(refMsgIds != null && refMsgIds.size() > 0){
+				sql.append(" or  msgId in (");
+				for(int i = 0; i < refMsgIds.size(); i ++){
+					if(i > 0)
+						sql.append(",");
+					sql.append("'").append(refMsgIds.get(i)).append("'");
+				}				 
+				sql.append(") ");
+		}
+		sql.append(selectSessionMessageBySessionId2ndAgentIdSQL1);		
+        return sql.toString();
     }
 
     public String evalCreateSessionTableSQL(String dbName) {
@@ -482,6 +578,20 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
             sql = this.sqlite_createSessionTableSQL;
         return sql.replace("$sessionTableName", sessionTableName);
     }
+	
+	public String evalCreateClickhouseLocalSessionTableSQL( String clickhouseCluster) {
+		
+		String sql = this.clickhouse_createLocalSessionTableSQL;
+		return sql.replace("${sessionTableName}", sessionTableName).replace("$clickhouseCluster", clickhouseCluster);
+		
+	}
+	
+	public String evalCreateClusterSessionTableSQL( String clickhouseCluster) {
+		
+		String	sql = this.clickhouse_createClusterSessionTableSQL;
+		
+		return sql.replace("${sessionTableName}", sessionTableName).replace("$clickhouseCluster", clickhouseCluster);
+	}
     
     public String evalCreateSessionMessageTableSQL(String dbName) {
         DB adaptor  = DBUtil.getDBAdapter(dbName);
@@ -504,6 +614,27 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         
         return sql.replace("$sessionMessageTableName", sessionMessageTableName);
     }
+	
+	public String evalCreateClickhouseLocalSessionMessageTableSQL( String clickhouseCluster) {
+		
+		String sql = this.clickhouse_createLocalSessionMessageTableSQL;
+		return sql.replace("${sessionMessageTableName}", sessionMessageTableName).replace("$clickhouseCluster", clickhouseCluster);
+		
+	}
+	
+	public String evalCreateClusterSessionMessageTableSQL( String clickhouseCluster) {
+		
+		String	sql = this.clickhouse_createClusterSessionMessageTableSQL;
+		
+		return sql.replace("${sessionMessageTableName}", sessionMessageTableName).replace("$clickhouseCluster", clickhouseCluster);
+	}
+	public boolean isClickhouse(String dbName){
+		DB adaptor  = DBUtil.getDBAdapter(dbName);
+		String type = adaptor.getDBTYPE();
+		if("clickhouse".equalsIgnoreCase(type) || "yandex_clickhouse".equalsIgnoreCase(type))
+			return true;
+		return false;
+	}
 
     public String evalCreateSessionMessageReferenceTableSQL(String dbName) {
         DB adaptor  = DBUtil.getDBAdapter(dbName);
@@ -523,9 +654,27 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         else if("sqlite".equalsIgnoreCase(type)) {
             sql = sqlite_createSessionMessageReferenceTableSQL;
         }
+		else if("clickhouse".equalsIgnoreCase(type) || "yandex_clickhouse".equalsIgnoreCase(type)) {
+			sql = this.clickhouse_createLocalSessionMessageReferenceTableSQL;
+			return sql.replace("${sessionMessageReferenceTableName}", sessionMessageReferenceTableName);
+		}
 
         return sql.replace("$sessionMessageReferenceTableName", sessionMessageReferenceTableName);
     }
+	
+	public String evalCreateClickhouseLocalSessionMessageReferenceTableSQL( String clickhouseCluster) {
+		 
+		String sql = this.clickhouse_createLocalSessionMessageReferenceTableSQL;
+		return sql.replace("${sessionMessageReferenceTableName}", sessionMessageReferenceTableName).replace("$clickhouseCluster", clickhouseCluster);
+	 
+	}
+	
+	public String evalCreateClusterSessionMessageReferenceTableSQL( String clickhouseCluster) {
+	 
+		String	sql = this.clickhouse_createClusterSessionMessageReferenceTableSQL;
+		
+		return sql.replace("${sessionMessageReferenceTableName}", sessionMessageReferenceTableName).replace("$clickhouseCluster", clickhouseCluster);
+	}
 
 
     public String getInsertSessionSQL() {
@@ -599,4 +748,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     public String getExistMessageReferenceSQL() {
         return existMessageReferenceSQL;
     }
+	
+	public String getSelectAgentSessionMessageReferenceIdsBySessionIdSQL() {
+		return selectAgentSessionMessageReferenceIdsBySessionIdSQL;
+	}
 }

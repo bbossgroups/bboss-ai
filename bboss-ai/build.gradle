@@ -58,5 +58,19 @@ dependencies {
     )
 
     testCompileOnly group: 'com.bbossgroups.plugins', name: 'bboss-datatran-jdbc', version: bboss_es_version
+//    testCompileOnly group: 'org.yaml', name: 'snakeyaml', version: '2.6'
+//    testCompileOnly group: 'org.commonmark', name: 'commonmark', version: '0.28.0'
+//    testCompileOnly group: 'org.commonmark', name: 'commonmark-ext-gfm-tables', version: '0.28.0'
 
+    testImplementation(
+            [group: 'com.clickhouse', name: 'clickhouse-jdbc', version: "0.9.8", transitive: true],
+    )
+            {
+                exclude group: 'org.slf4j', module: 'slf4j-api'
+                exclude group: 'commons-codec', module: 'commons-codec'
+                exclude group: 'commons-io', module: 'commons-io'
+                exclude group: 'org.ow2.asm', module: 'asm'
+                exclude group: 'org.apache.commons', module: 'commons-lang3'
+            }
+ 
 }

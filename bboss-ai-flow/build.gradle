@@ -87,4 +87,15 @@ dependencies {
         exclude group: 'com.github.javaparser', module: 'javaparser-core'
 
     }
+
+    testImplementation(
+            [group: 'com.clickhouse', name: 'clickhouse-jdbc', version: "0.9.8", transitive: true],
+    )
+            {
+                exclude group: 'org.slf4j', module: 'slf4j-api'
+                exclude group: 'commons-codec', module: 'commons-codec'
+                exclude group: 'commons-io', module: 'commons-io'
+                exclude group: 'org.ow2.asm', module: 'asm'
+                exclude group: 'org.apache.commons', module: 'commons-lang3'
+            }
 }

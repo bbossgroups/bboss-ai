@@ -15,10 +15,13 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * @author biaoping.yin
  * @Date 2026/4/14
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RouteChoice {
     private String agentId;
     private String description;

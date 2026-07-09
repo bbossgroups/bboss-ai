@@ -46,7 +46,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     private AgentSessionStoreDBConfig agentSessionStoreDBConfig;
     
 
-    
+    private String clickhouseCluster;
     /**
      * 持久化对话记录的数据源名称
      */
@@ -75,6 +75,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     public AgentSessionStoreDB(StoreContext storeContext, AIAgent agent) {
         super(storeContext,   agent);
         this.dataSource = storeContext.getDataSource();
+		this.clickhouseCluster = storeContext.getClickhouseCluster();
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         agentSessionStoreDBConfig.setSessionTableName(storeContext.getSessionTableName());
         agentSessionStoreDBConfig.setSessionMessageTableName(storeContext.getSessionMessageTableName());
@@ -90,7 +91,14 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         catch (Exception exception){
             try {
                 logger.info("Creating session table {}...", agentSessionStoreDBConfig.getSessionTableName());
-                SQLExecutor.updateWithDBName(dataSource,agentSessionStoreDBConfig.evalCreateSessionTableSQL(this.dataSource));
+                
+				if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource,agentSessionStoreDBConfig.evalCreateSessionTableSQL(this.dataSource));
+				}
+				else{
+					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClickhouseLocalSessionTableSQL(this.clickhouseCluster));
+					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClusterSessionTableSQL(this.clickhouseCluster));
+				}
             } catch (SQLException e) {
                 throw new AIRuntimeException("Failed to create session table", e);
             }
@@ -102,7 +110,14 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         catch (Exception exception){
             try {
                 logger.info("Creating session message table {}...", agentSessionStoreDBConfig.getSessionMessageTableName());
-                SQLExecutor.updateWithDBName(dataSource,agentSessionStoreDBConfig.evalCreateSessionMessageTableSQL(this.dataSource));
+                
+				if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource,agentSessionStoreDBConfig.evalCreateSessionMessageTableSQL(this.dataSource));
+				}
+				else{
+					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClickhouseLocalSessionMessageTableSQL(this.clickhouseCluster));
+					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClusterSessionMessageTableSQL(this.clickhouseCluster));
+				}
             } catch (SQLException e) {
                 throw new AIRuntimeException("Failed to create session message table", e);
             }
@@ -114,7 +129,13 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         catch (Exception exception){
             try {
                 logger.info("Creating session message reference table {}...", agentSessionStoreDBConfig.getSessionMessageReferenceTableName());
-                SQLExecutor.updateWithDBName(dataSource,agentSessionStoreDBConfig.evalCreateSessionMessageReferenceTableSQL(this.dataSource));
+				if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateSessionMessageReferenceTableSQL(this.dataSource));
+				}
+				else{
+					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClickhouseLocalSessionMessageReferenceTableSQL(this.clickhouseCluster));
+					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClusterSessionMessageReferenceTableSQL(this.clickhouseCluster));
+				}
             } catch (SQLException e) {
                 throw new AIRuntimeException("Failed to create session message reference table "+agentSessionStoreDBConfig.getSessionMessageReferenceTableName(), e);
             }
@@ -143,6 +164,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 
     public AgentSessionStoreDB setDataSource(String dataSource) {
         this.dataSource = dataSource;
+		this.clickhouseCluster = storeContext.getClickhouseCluster();
         return this;
     }
     @Override
@@ -184,20 +206,24 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                                 prompt.length() > 50 ? prompt.substring(0, 50) : prompt,domain);
                         newSession = true;
                     } else {
-                        SQLExecutor.updateWithDBName(
-                                dataSource,
-                                agentSessionStoreDBConfig.getUpdateSessionLastAccessTimeSQL(),
-                                new Date(),
-                                getSessionId()
-                        );
+						//只有非clickhouse数据库才需要更新session最后访问时间，clickhouse数据库不支持更新最后访问时间
+						if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
+							SQLExecutor.updateWithDBName(
+									dataSource,
+									agentSessionStoreDBConfig.getUpdateSessionLastAccessTimeSQL(),
+									new Date(),
+									getSessionId()
+							);
+						}
                         //获取主智能体记忆记录
                         List<SessionMessage> sessionMessages = null;
                         if (this.getAgentId() == null) {
                             sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
                                     agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), this.getSessionId());
                         } else {
+							List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
                             sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(), this.getSessionId(), this.getAgentId(), this.getAgentId(),this.getSessionId(),this.getAgentId());
+                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(), this.getAgentId(), this.getAgentId());
                         }
 
 
@@ -279,16 +305,35 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             throw new AIRuntimeException("add session message error",e);
         }
     }
-    
-
+	
+	/**
+	 * 查询会话中智能体引用的消息记录清空
+	 * @param sessionId
+	 * @param agentId
+	 * @return
+	 */
+	public List<String> getAgentRefMsgIds(String sessionId,String agentId){
+		try {
+			List<String> agentRefMsgIds = SQLExecutor.queryListWithDBName(String.class, dataSource,
+					agentSessionStoreDBConfig.getSelectAgentSessionMessageReferenceIdsBySessionIdSQL(), sessionId,agentId);
+			return agentRefMsgIds;
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentRefMsgIds: agentId="+agentId + ",sessionId="+sessionId,exception);
+		}
+	}
     @Override
     public List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize){
         try {
+			List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
             List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(), this.getSessionId(),agentId,agentId,this.getSessionId(),agentId);
+                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(),agentId,agentId);
             return resolve(lastSubAgentSessionMessage,agentId,   agentSessionMessages,   agentSessionSize);
            
         }
+		catch (AIRuntimeException exception){
+			throw exception;
+		}
         catch (Exception exception){
             throw new AIRuntimeException("getAgentSessionMessage: agentId="+agentId + ",agentSessionSize="+agentSessionSize,exception);
         }

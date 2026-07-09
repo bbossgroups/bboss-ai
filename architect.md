@@ -6,6 +6,15 @@
 
 ![image-20260302140629787](/architect.png)
 
+clickhouse 会话存储支持：存储会话记录时，需要指定 clickhouse 集群名称，为每个集群节点定义名称为shard和replica的两个宏变量。
+
+通过以下方式设置clickhouse 集群名称，一定要设置，否则报错：storeContext.setClickhouseCluster("vops_3shards_1replicas")
+使用Clickhouse时，会话续问续答时，不会更新修改时间
+StoreContext storeContext = new StoreContext()
+.setSessionId(sessionId).setUserId("user123").setSessionSize(100)                 
+.setStoreType(StoreContext.STORE_TYPE_DB).setRequestId("request123").setClickhouseCluster("vops_3shards_1replicas")
+.setDataSource("visualops")
+
 ### 核心功能
 - 智能问答（Chat Completion）
 - 图片识别与生成（Vision/Image Generation）

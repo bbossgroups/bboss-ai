@@ -25,6 +25,7 @@ import java.util.Map;
 public class StoreContext {
     public static final String STORE_TYPE_DB = "db";
     public static final String STORE_TYPE_MEMORY = "memory";
+	private String clickhouseCluster;
     private AgentSessionStore mainSessionStore;
     private AgentMessageTypeConvertor agentMessageTypeConvertor;
     /**
@@ -186,4 +187,13 @@ public class StoreContext {
         this.domain = domain;
         return this;
     }
+	
+	public String getClickhouseCluster() {
+		return clickhouseCluster;
+	}
+	
+	public StoreContext setClickhouseCluster(String clickhouseCluster) {
+		this.clickhouseCluster = clickhouseCluster;
+		return this;
+	}
 }

@@ -15,7 +15,8 @@ package org.frameworkset.spi.ai;
  * limitations under the License.
  */
 
-import com.frameworkset.common.poolman.util.SQLUtil;
+import com.frameworkset.common.poolman.util.DBConf;
+import com.frameworkset.common.poolman.util.SQLManager;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.flow.*;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
@@ -36,7 +37,7 @@ import java.util.concurrent.CountDownLatch;
  * @author biaoping.yin
  * @Date 2026/4/13
  */
-public class RoutingStreamTest {
+public class RoutingStreamClickhouseTest {
     private static Logger logger = LoggerFactory.getLogger(StreamTest.class);
     public static void main(String[] args) throws InterruptedException, IOException {
 
@@ -61,18 +62,26 @@ public class RoutingStreamTest {
 //        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
 
     }
-    public static void initDB(){
- 
-
-        SQLUtil.startPool("visualops",//数据源名称
-                "com.mysql.cj.jdbc.Driver",//oracle驱动
-                "jdbc:mysql://192.168.137.1:3306/bboss?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true",//mysql链接串
-                "root","123456",//数据库账号和口令
-                "select 1 " //数据库连接校验sql
-        );
+	public static void initDB(){
 		
 		
-    }
+		DBConf tempConf = new DBConf();
+		tempConf.setPoolname("visualops");
+		tempConf.setDriver("com.clickhouse.jdbc.ClickHouseDriver");
+		tempConf.setJdbcurl("jdbc:clickhouse:http://100.13.6.4:28123,100.13.6.7:28123,100.13.4.6:28123/visualops?b.enableBalance=true&b.balance=roundbin");
+		tempConf.setUsername("default");
+		tempConf.setPassword("123456");
+		tempConf.setValidationQuery("select 1 ");
+		//tempConf.setTxIsolationLevel("READ_COMMITTED");
+		tempConf.setJndiName("jndi-visualops" );
+		tempConf.setInitialConnections(10);
+		tempConf.setMinimumSize(10);
+		tempConf.setMaximumSize(20);
+		tempConf.setUsepool(true);
+		
+		tempConf.setShowsql(true);
+		SQLManager. startPool(tempConf);
+	}
 
     public static void multiagentWeathor(String maas, String prompt,String model,String sessionId) throws InterruptedException {
         initDB();
@@ -87,7 +96,7 @@ public class RoutingStreamTest {
                 .setSessionId(sessionId).setUserId("user123")
                 .setRequestId(SimpleStringUtil.getUUID32())
                 .setSessionSize(100)                 
-                .setStoreType(StoreContext.STORE_TYPE_DB)
+                .setStoreType(StoreContext.STORE_TYPE_DB).setClickhouseCluster("vops_3shards_1replicas")
                 .setDataSource("visualops"))
                 .setAgentMessage(chatAgentMessage)
                 .setAgentName("工作流智能体").setAgentId("workflowAgent");
