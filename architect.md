@@ -8,7 +8,8 @@
 
 clickhouse 会话存储支持：存储会话记录时，需要指定 clickhouse 集群名称，为每个集群节点定义名称为shard和replica的两个宏变量。
 
-通过以下方式设置clickhouse 集群名称，一定要设置，否则报错：storeContext.setClickhouseCluster("vops_3shards_1replicas")
+通过以下方式设置clickhouse 集群名称，一定要设置，否则报错，如果表已经创建好了，可以不用创建：
+storeContext.setClickhouseCluster("vops_3shards_1replicas")
 使用Clickhouse时，会话续问续答时，不会更新修改时间
 StoreContext storeContext = new StoreContext()
 .setSessionId(sessionId).setUserId("user123").setSessionSize(100)                 

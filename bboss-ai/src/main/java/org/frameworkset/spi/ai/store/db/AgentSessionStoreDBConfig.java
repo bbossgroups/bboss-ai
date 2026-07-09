@@ -278,11 +278,7 @@ public class AgentSessionStoreDBConfig {
             .append(" msgAgentId varchar(100) NOT NULL comment '消息所属智能体agentId', " )
             .append( "refAgentId varchar(100) NOT NULL comment '引用消息智能体agentId'," )   
             .append("sessionId varchar(100) NOT NULL,") //会话id
-            .append( "requestId varchar(100), " )  //请求id
-             .append("INDEX idx_msgId (msgId), ")
-            .append("INDEX idx_msgAgentId (msgAgentId), ")
-            .append("INDEX idx_refAgentId (refAgentId), ")
-            .append("INDEX idx_msgId_agentId (msgId, msgAgentId), ")
+            .append( "requestId varchar(100), " )  //请求id          
             .append("UNIQUE INDEX uk_msg_ref (msgId, refAgentId)")
             .append( ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").toString();
 
@@ -296,8 +292,7 @@ public class AgentSessionStoreDBConfig {
         .append("refAgentId VARCHAR2(100) NOT NULL, ")                       // 引用消息智能体agentId
             .append("sessionId varchar2(100) NOT NULL,") //会话id
             .append( "requestId varchar2(100), " )  //请求id
-        .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
-        .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
+
         .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")        // 唯一约束
         .append(")")
         .toString();
@@ -312,8 +307,7 @@ public class AgentSessionStoreDBConfig {
             .append("refAgentId VARCHAR2(100) NOT NULL, ")                       // 引用消息智能体agentId
             .append("sessionId varchar2(100) NOT NULL,") //会话id
             .append( "requestId varchar(100), " )  //请求id
-            .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
-            .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
+ 
             .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")        // 唯一约束
             .append(")")
             .toString();
@@ -328,8 +322,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         .append("refAgentId VARCHAR(100) NOT NULL, ")                       // 引用消息智能体agentId
         .append("sessionId varchar(100) NOT NULL,") //会话id
         .append( "requestId varchar(100), " )  //请求id
-        .append("CONSTRAINT uk_ref_agentid UNIQUE (refAgentId), ")        // 唯一约束
-        .append("CONSTRAINT uk_msg_agentid UNIQUE (msgAgentId), ")        // 唯一约束    
+      
         .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId) ")     // 唯一约束
         .append(")")
         .toString();
@@ -346,8 +339,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
            .append("refAgentId VARCHAR(100) NOT NULL, ")                       // 引用消息智能体agentId
            .append("sessionId varchar(100) NOT NULL,") //会话id
            .append( "requestId varchar(100), " )  //请求id
-           .append("CONSTRAINT uk_ref_agentid UNIQUE (  refAgentId), ")        // 唯一约束
-           .append("CONSTRAINT uk_msg_agentid UNIQUE (  msgAgentId), ")        // 唯一约束    
+ 
            .append("CONSTRAINT uk_msg_ref UNIQUE (msgId, refAgentId)           ") // 唯一约束
            .append(")")
            .toString();
