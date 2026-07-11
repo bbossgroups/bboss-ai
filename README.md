@@ -7,12 +7,12 @@ maven坐标
 <dependency>
    <groupId>com.bbossgroups</groupId>
    <artifactId>bboss-ai</artifactId>
-   <version>6.5.3</version>
+   <version>6.5.5</version>
 </dependency>
 ```
 gradle坐标
 ```groovy
-implementation 'com.bbossgroups:bboss-ai:6.5.3'
+implementation 'com.bbossgroups:bboss-ai:6.5.5'
 ```
 
 
