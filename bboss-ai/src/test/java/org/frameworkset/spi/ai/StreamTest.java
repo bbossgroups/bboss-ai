@@ -196,6 +196,7 @@ public class StreamTest {
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
         chatAgentMessage.setModel("deepseek-v4-pro");
         chatAgentMessage.setMaas("deepseek");
+		chatAgentMessage.setThinking(true);
 //        chatAgentMessage.setModel("qwen3.7-plus");
 //        chatAgentMessage.setMaas("qwenvlplus");
         chatAgentMessage.setPrompt(message);

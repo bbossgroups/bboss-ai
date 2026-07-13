@@ -847,6 +847,7 @@ public class AIAgent<T extends AIAgent> {
 		
 		if(agentSessionStore == null && create){
 			this.agentSessionStore = new AgentSessionStoreMemory(new ArrayList<>());
+			this.agentSessionStore.setAIAgent(this);
 			this.mainSessionStore = this.agentSessionStore;
 			
 		}

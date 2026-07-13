@@ -73,7 +73,6 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     void appendSessionMessageFromParent(Map<String,Object> message);
     void addSessionMessage( Map<String,Object> systemMessage,String prompt,String agentId,String parentAgentId,String agentNodeType);
    
-//    Map<String, Object> addAssistantSessionMessage(String message);
 
     Map<String, Object> addAssistantSessionMessage(ServerEvent serverEvent);
     Map<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder);

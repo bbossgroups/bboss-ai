@@ -2,19 +2,11 @@
 
 ## 一、项目概述
 
-**bboss-ai** 是一个轻量级 Java AI Agent 开发客户端，基于 Apache HttpClient5、HttpCore5 以及 Project Reactor 构建。该项目提供了对大语言模型（LLM）和多模态模型的统一对接能力，支持同步调用和流式调用两种模式，并内置智能体工作流编排、会话管理、工具搜索等企业级特性。
+**bboss-ai** 是一个轻量级 Java AI Agent 开发客户端，基于 Apache HttpClient5、HttpCore5 以及 Project Reactor 构建。该项目提供了对大语言模型（LLM）和多模态模型的统一对接能力，支持同步调用和流式调用两种模式，并内置智能体工作流编排、会话管理、工具搜索等企业级特性。能够快速集成各大主流 AI 模型平台，实现智能问答、图片识别/生成、语音识别/生成、视频识别/生成等功能
 
 ![image-20260302140629787](/architect.png)
 
-clickhouse 会话存储支持：存储会话记录时，需要指定 clickhouse 集群名称，为每个集群节点定义名称为shard和replica的两个宏变量。
-
-通过以下方式设置clickhouse 集群名称，一定要设置，否则报错，如果表已经创建好了，可以不用创建：
-storeContext.setClickhouseCluster("vops_3shards_1replicas")
-使用Clickhouse时，会话续问续答时，不会更新修改时间
-StoreContext storeContext = new StoreContext()
-.setSessionId(sessionId).setUserId("user123").setSessionSize(100)                 
-.setStoreType(StoreContext.STORE_TYPE_DB).setRequestId("request123").setClickhouseCluster("vops_3shards_1replicas")
-.setDataSource("visualops")
+> **ClickHouse 生产级会话存储**：bboss-ai 支持基于 ClickHouse 分布式集群的生产级会话持久化能力。使用时需要指定 ClickHouse 集群名称，并为每个集群节点定义名为 `shard` 和 `replica` 的两个宏变量。ClickHouse 模式下会话续问续答时不会更新最后访问时间（受限于 ClickHouse 不支持高频 UPDATE）。详细使用方式参见 [3.2.6 会话管理](#326-会话管理session-store) 章节。
 
 ### 核心功能
 - 智能问答（Chat Completion）
@@ -25,10 +17,14 @@ StoreContext storeContext = new StoreContext()
 - 重排序（Rerank）
 - 工具调用（Function Calling）
 - MCP（Model Context Protocol）服务发现和调用，支持 SSE 和 Streamable HTTP 两种传输模式
+- 可快速发布供LLM调用的工具服务和MCP服务
 - 智能体工作流编排，支持串行、并行、条件分支、路由、判断等节点类型
 - Skills 技能模块，支持沙箱隔离和动态加载
 - 工具搜索（Tool Searcher），支持基于关键词和语义的工具过滤
-- 会话管理，支持内存存储和数据库持久化
+- 会话管理，支持内存存储和数据库持久化（MySQL、Oracle、达梦 DM、SQL Server、PostgreSQL、SQLite、ClickHouse）
+- 多轮工具调用（Loop Tool Call），支持智能体自主决策多步骤任务执行
+- 智能体全链路 Trace 可观测性，覆盖 LLM 调用、工具执行、工作流编排
+- 脚本执行工具（Shell/CLI）和代码执行工具（Python/NodeJS）
 - 定时调度执行能力
 
 ### 支持的平台
@@ -404,40 +400,428 @@ public class MCPServerController {
 
 #### 3.2.6 会话管理（Session Store）
 
-`AgentSessionStore` 体系提供智能体会话的存储和管理能力：
+`AgentSessionStore` 体系提供智能体会话的存储和管理能力，支持内存和多种关系型/列式数据库持久化，并提供独立的会话管理服务 API。
+
+**核心类：**
 
 | 类名 | 作用 |
 |------|------|
 | `AgentSessionStore` | 会话存储接口 |
+| `BaseAgentSessionStore` | 会话存储抽象基类，封装公共持久化逻辑 |
 | `AgentSessionStoreMemory` | 内存会话存储 |
-| `AgentSessionStoreDB` | 数据库持久化会话存储 |
-| `AgentSessionStoreBuilder` | 会话存储构建器 |
-| `AgentSessionService` | 会话管理服务接口 |
-| `SessionMessage` | 会话消息实体 |
-| `LastSessionMessage` | 最新会话消息 |
-| `StoreContext` | 存储上下文 |
+| `AgentSessionStoreDB` | 数据库持久化会话存储（支持 MySQL/Oracle/DM/SQLServer/PostgreSQL/SQLite/ClickHouse） |
+| `AgentSessionStoreDBConfig` | 数据库会话存储配置，管理各数据库方言的建表 SQL 和 CRUD SQL |
+| `AgentSessionStoreBuilder` | 会话存储构建器接口 |
+| `DefaultAgentSessionStoreBuilder` | 默认会话存储构建器，根据 `StoreContext.storeType` 创建对应存储实现 |
+| `AgentSessionService` | 会话管理服务接口（查询、删除、判断存在等） |
+| `AgentSessionServiceImpl` | 会话管理服务实现，基于 `ConfigSQLExecutor` |
+| `AgentSession` | 会话实体（sessionId、userId、agentId、domain、title、createTime、lastAccessTime） |
+| `AgentSessionCondition` | 会话查询条件（多 domain、标题模糊、时间范围、排序字段可配置） |
+| `SessionMessage` | 会话消息实体（含 19 种消息类型常量） |
+| `LastSessionMessage` | 最新会话消息（子智能体输出结果传递载体） |
+| `StoreContext` | 存储上下文（sessionId、userId、dataSource、clickhouseCluster、domain 等） |
+| `AgentMessageTypeConvertor` | 角色（role）到 messageType 的转换器 |
+| `AgentSessionException` | 会话管理异常 |
+| `AgentIdAssign` | 智能体 ID 分配器 |
+
+**支持的数据库：**
+
+`AgentSessionStoreDBConfig` 通过 `DBUtil.getDBAdapter(dbName)` 自动识别数据库类型并选用对应方言的建表 SQL，首次使用时自动创建以下三张表：
+
+| 表名 | 作用 | 支持数据库 |
+|------|------|-----------|
+| `agent_session` | 会话基本信息（sessionId、userId、agentId、title、domain、createTime、lastAccessTime） | MySQL、Oracle、DM、SQL Server、PostgreSQL、SQLite |
+| `agent_session_message` | 会话消息记录（msgId、message、tokenMetrics、role、messageType、agentNodeType、subAgentIdBy 等） | 同上 |
+| `agent_session_message_ref` | 智能体间消息引用关系（msgId、msgAgentId、refAgentId） | 同上 |
+
+**会话管理服务 API（`AgentSessionService`）：**
+
+| 方法 | 说明 |
+|------|------|
+| `deleteAgentSession(sessionid)` | 删除单个会话（含消息和引用关系，事务操作） |
+| `deleteBatchAgentSession(sessionids...)` | 批量删除会话 |
+| `getAgentSession(sessionid)` | 获取会话基本信息 |
+| `existAgentSession(sessionid)` | 判断会话是否存在 |
+| `queryListInfoAgentSessions(conditions, offset, pagesize)` | 分页查询会话列表 |
+| `queryListAgentSessions(conditions)` | 查询会话列表（不分页） |
+| `queryListSessionMessages(sessionid)` | 查询会话所有消息 |
+| `queryListSessionMessages(sessionid, agentId)` | 查询指定智能体的会话消息 |
+
+**会话查询条件（`AgentSessionCondition`）：**
+
+| 字段 | 说明 |
+|------|------|
+| `userId` | 用户 ID 精确匹配 |
+| `agentid` | 智能体 ID 精确匹配 |
+| `domain` | 单领域精确匹配 |
+| `domains` | 多领域联合查询（IN 条件） |
+| `title` | 会话标题模糊查询（LIKE） |
+| `timeConditionField` | 时间条件字段名，默认 `createTime`，可设为 `lastAccessTime` |
+| `timeStart` / `timeEnd` | 时间范围（作用于 `timeConditionField` 指定的字段） |
+| `sortKey` | 排序字段，默认 `createTime`，可设为 `lastAccessTime` |
+| `sortDesc` | 是否降序 |
+
+**存储上下文（`StoreContext`）核心属性：**
+
+| 属性 | 说明 |
+|------|------|
+| `storeType` | 存储类型：`memory`（默认）或 `db` |
+| `sessionId` | 会话 ID，为 null 时自动生成 UUID |
+| `userId` | 用户 ID |
+| `agentId` | 智能体 ID |
+| `domain` | 会话所属业务领域 |
+| `dataSource` | 数据源名称（db 模式必填） |
+| `clickhouseCluster` | ClickHouse 集群名称（ClickHouse 模式必填） |
+| `sessionTableName` | 会话表名，默认 `agent_session` |
+| `sessionMessageTableName` | 会话消息表名，默认 `agent_session_message` |
+| `sessionSize` | 会话记忆窗口大小，默认 20 |
+| `requestId` | 请求 ID |
+| `traceId` | 链路追踪 ID |
+| `resetSession` | 是否重置会话 |
+| `mainSessionStore` | 主会话存储（用于共享） |
+| `agentMessageTypeConvertor` | 消息类型转换器（支持自定义扩展） |
+
+##### ClickHouse 生产级会话存储
+
+bboss-ai 支持基于 ClickHouse 分布式集群的生产级会话存储，适用于海量会话数据的高吞吐写入和查询场景。
+
+**集群前置条件：**
+
+1. 部署 ClickHouse 集群（如 `vops_3shards_1replicas`）
+2. 为每个集群节点定义两个宏变量：
+   - `shard`：分片编号
+   - `replica`：副本编号
+
+   ClickHouse 配置文件示例：
+   ```xml
+   <macros>
+       <shard>01</shard>
+       <replica>node01</replica>
+   </macros>
+   ```
+
+3. 在 bboss 数据源配置中注册 ClickHouse 数据源（`visualops`）
+
+**表结构（自动创建）：**
+
+ClickHouse 模式下，框架会自动创建本地表（`*_local`）和分布式表两张表：
+
+| 表类型 | 表名 | 引擎 | 说明 |
+|--------|------|------|------|
+| 本地表 | `agent_session_local` | `ReplicatedMergeTree` | 按分片存储，`ORDER BY (sessionId)` |
+| 分布式表 | `agent_session` | `Distributed` | 路由表，`rand()` 随机分片 |
+| 本地表 | `agent_session_message_local` | `ReplicatedMergeTree` | `ORDER BY (sessionId, createTime, seqNo)` |
+| 分布式表 | `agent_session_message` | `Distributed` | `sipHash64(sessionId)` 哈希分片，保证同会话消息落在同一分片 |
+| 本地表 | `agent_session_message_ref_local` | `ReplicatedMergeTree` | `ORDER BY (sessionId)` |
+| 分布式表 | `agent_session_message_ref` | `Distributed` | `sipHash64(sessionId)` 哈希分片 |
+
+建表 SQL 模板（节选自 [clickhouse-agent.xml](bboss-ai/src/main/java/org/frameworkset/spi/ai/store/db/clickhouse-agent.xml)）：
+
+```sql
+-- 本地表
+CREATE TABLE agent_session_local ON CLUSTER vops_3shards_1replicas
+(
+    sessionId String COMMENT '会话id',
+    createTime DateTime COMMENT '创建时间',
+    lastAccessTime DateTime COMMENT '最后访问时间',
+    userId String COMMENT '用户id',
+    agentId String COMMENT '代理id',
+    title String COMMENT '会话标题',
+    domain String COMMENT '会话所属领域'
+)
+ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
+ORDER BY (sessionId);
+
+-- 分布式表
+CREATE TABLE agent_session ON CLUSTER vops_3shards_1replicas AS agent_session_local
+ENGINE = Distributed(vops_3shards_1replicas, currentDatabase(), agent_session_local, rand());
+```
+
+**ClickHouse 模式特殊行为：**
+
+1. **不更新最后访问时间**：ClickHouse 不支持高频 UPDATE，因此会话续问续答时不会执行 `UPDATE lastAccessTime` 操作（`AgentSessionStoreDBConfig.isClickhouse()` 判断后跳过）
+2. **分片策略**：会话消息表采用 `sipHash64(sessionId)` 哈希分片，确保同一会话的所有消息落在同一分片，避免跨分片 JOIN
+3. **建表语句**：通过 `ON CLUSTER` 在所有节点上创建，使用 `{shard}` 和 `{replica}` 宏变量自动适配副本路径
+4. **自动识别**：`AgentSessionStoreDBConfig.isClickhouse(dataSource)` 通过数据库适配器自动识别 ClickHouse 类型（`clickhouse` 或 `yandex_clickhouse`）
+
+**使用示例：**
+
+```java
+// 1. 初始化 ClickHouse 数据源
+HttpRequestProxy.startHttpPools("clickhouse-datasource.properties");
+// 或者通过 SQLUtil.startPool 初始化
+SQLUtil.startPool("visualops",
+    "com.clickhouse.jdbc.ClickHouseDriver",
+    "jdbc:clickhouse://127.0.0.1:8123/bboss",
+    "default", "", "select 1");
+
+// 2. 配置带 ClickHouse 集群的存储上下文
+StoreContext storeContext = new StoreContext()
+    .setSessionId(sessionId)
+    .setUserId("user123")
+    .setSessionSize(100)
+    .setStoreType(StoreContext.STORE_TYPE_DB)
+    .setRequestId("request123")
+    .setClickhouseCluster("vops_3shards_1replicas")  // 必填，否则建表报错
+    .setDataSource("visualops")
+    .setDomain("ops");
+
+// 3. 在 AIAgent 中使用
+ChatAgentMessage message = new ChatAgentMessage();
+message.setPrompt("帮我分析系统日志");
+message.setModel("deepseek-chat");
+message.setMaas("deepseek");
+message.setStoreContext(storeContext);
+
+AIAgent agent = new AIAgent();
+agent.setEnableLoopToolCall(true);
+agent.setMaxLoopToolCalls(80);
+Flux<ServerEvent> flux = agent.streamChat(message);
+```
+
+**注意事项：**
+
+- `clickhouseCluster` 必须设置，否则建表 SQL 会报错；如果表已经创建好，可以不用设置
+- ClickHouse 模式下 `lastAccessTime` 字段不会随续问更新，排序和查询建议使用 `createTime`
+- 建表语句通过 `ON CLUSTER` 在集群所有节点执行，需要对应集群已在 ClickHouse 中配置
+- 会话消息表的分布式表采用 `sipHash64(sessionId)` 分片，保证同会话消息在同一分片便于查询
 
 #### 3.2.7 工具注册与搜索
+
+**核心类：**
 
 | 类名 | 作用 |
 |------|------|
 | `ToolSearcher` | 工具搜索接口，根据 query 筛选相关工具 |
 | `KeywordToolSearcher` | 基于关键词的工具搜索实现 |
-| `BeanToolsRegist` | Bean 工具注册 |
-| `BeanToolFunctionCall` | Bean 工具函数调用 |
-| `BaseBeanToolFunctionCall` | Bean 工具调用基类 |
-| `BeanToolHandle` | Bean 工具解析处理 |
+| `BeanToolsRegist` | Bean 工具注册（本地智能体调用） |
+| `BeanToolFunctionCall` | Bean 工具函数调用（本地，带 Trace 记录） |
+| `MCPBeanToolsRegist` | MCP 服务端 Bean 工具注册（对外暴露） |
+| `MCPBeanToolFunctionCall` | MCP 服务端 Bean 工具调用（返回 `List<Map>`） |
+| `BaseBeanToolsRegist` | Bean 工具注册抽象基类，封装注解解析和工具索引管理 |
+| `BaseBeanToolFunctionCall` | Bean 工具调用抽象基类，封装参数解析和反射调用 |
+| `BeanToolHandle` | Bean 工具解析处理，扫描 `@Tool`/`@ToolParam` 注解构建 `FunctionToolDefine` |
+| `BeanToolFunctionCallBuilder` | Bean 工具函数调用构建器接口 |
+
+##### 基于注解快速发布工具服务
+
+bboss-ai 提供 `@Tool` 和 `@ToolParam` 两个注解（位于 `org.frameworkset.spi.ai.model.annotation` 包），允许开发者将普通 Java Bean 方法快速发布为可供 LLM 调用的工具服务。框架在运行时通过反射扫描注解，自动生成符合 OpenAI Function Calling 规范的 `FunctionToolDefine` 和 JSON Schema 参数定义，无需手写复杂的工具描述。
+
+**`@Tool` 注解（方法级）：**
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `name` | String | ""（取方法名） | 工具名称，为空时使用方法名 |
+| `description` | String | 必填 | 工具描述，供 LLM 理解工具用途 |
+| `type` | String | `"function"` | 工具类型 |
+| `strict` | boolean | `true` | 是否严格模式（严格校验参数） |
+| `additionalProperties` | boolean | `false` | 是否允许额外参数 |
+
+**`@ToolParam` 注解（参数级）：**
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `name` | String | 必填 | 参数名称 |
+| `description` | String | 必填 | 参数描述 |
+| `type` | String | `"object"` | 参数类型（自动推断：String→string、Number→number、Integer→integer、Boolean→boolean、List/Set→array、Map/Object→object） |
+| `required` | boolean | `false` | 是否必填 |
+| `bean` | boolean | `false` | 参数为 Bean 时递归解析子参数 |
+| `format` | String | "" | 预定义格式校验（email、hostname、ipv4、ipv6、uuid） |
+| `pattern` | String | "" | 正则表达式校验 |
+| `enumValues` | String[] | {} | 枚举值约束 |
+| `arrayItemType` | String | "" | 数组元素类型 |
+| `arrayItemDescription` | String | "" | 数组元素描述 |
+| `constValue` | String | "" | 固定常数值 |
+| `defaultValue` | String | "" | 默认值 |
+| `minimum` / `maximum` | String | "" | 最小/最大值（number/integer） |
+| `exclusiveMinimum` / `exclusiveMaximum` | String | "" | 不小于/不大于 |
+| `multipleOf` | String | "" | 倍数约束 |
+
+**工作原理：**
+
+`BeanToolHandle.parserTools()` 扫描 Bean 中所有标注 `@Tool` 的方法，对每个方法的参数标注 `@ToolParam` 的参数进行解析：
+
+1. 根据 Java 参数类型自动推断 JSON Schema 类型（String→string、Number→number、List→array 等）
+2. 将 `@ToolParam` 的 `description`、`format`、`pattern`、`enumValues`、`minimum`、`maximum` 等属性映射到 `Property` 对象
+3. 收集 `required=true` 的参数组成 `required` 数组
+4. 构建 `FunctionToolDefine` 对象，包含函数名、描述、参数 schema 和 `FunctionCall` 调用实现
+5. 通过 `BaseBeanToolsRegist` 管理工具索引，支持按名称查找和去重
+
+**本地工具服务发布示例（供智能体直接调用）：**
+
+```java
+@Service
+public class WeatherService {
+    @Tool(name = "get_weather", description = "获取指定城市的天气")
+    public String getWeather(
+        @ToolParam(name = "city", description = "城市名称", required = true) String city,
+        @ToolParam(name = "days", description = "预报天数", minimum = "1", maximum = "7") Integer days
+    ) {
+        // 业务逻辑实现
+        return "晴天，25°C";
+    }
+
+    @Tool(name = "get_weather_by_type", description = "按天气类型查询城市")
+    public List<String> getCitiesByWeatherType(
+        @ToolParam(name = "weatherType", description = "天气类型",
+                   enumValues = {"sunny", "rainy", "cloudy", "snowy"}, required = true) String weatherType
+    ) {
+        // 业务逻辑实现
+        return Arrays.asList("北京", "上海");
+    }
+}
+
+// 在智能体中注册并使用
+AIAgent agent = new AIAgent();
+agent.registBeanTool(new WeatherService());  // 自动扫描 @Tool 注解方法
+
+ChatAgentMessage message = new ChatAgentMessage();
+message.setPrompt("北京今天天气怎么样？");
+ServerEvent result = agent.chat("maasName", message);
+```
+
+`agent.registBeanTool(beanTool)` 内部调用 `BeanToolHandle.parserTools()` 扫描注解，将扫描到的 `FunctionToolDefine` 添加到 `tools` 列表，随请求一起传递给 LLM。调用时由 `BeanToolFunctionCall` 通过反射执行方法，并自动记录 Trace（`toolCallArgs`、`toolCallResponse`、`toolCallException`）。
+
+##### 基于注解快速发布 MCP 服务
+
+基于同一套 `@Tool`/`@ToolParam` 注解，开发者可以将 Bean 方法快速发布为 MCP 服务端工具，供外部 MCP 客户端（如 Claude Desktop、其他 AI 智能体）调用。
+
+**MCP 服务端核心类：**
+
+| 类名 | 作用 |
+|------|------|
+| `MCPToolService` / `MCPToolServiceImpl` | MCP 服务端接口，提供 SSE 和 Streamable HTTP 两种服务端接口 |
+| `MCPApiKeyService` / `MCPApiKeyServiceImpl` | API 密钥认证与工具注册管理 |
+| `MCPBeanToolsRegist` | MCP 服务端 Bean 工具注册器，继承 `BaseBeanToolsRegist` |
+| `MCPBeanToolFunctionCall` | MCP 服务端 Bean 工具调用，返回 `List<Map>` 类型 |
+| `MCPApiRequestUtil` | 服务端请求响应构建工具 |
+| `MCPSSEServer` | MCP SSE 服务端实现 |
+
+**MCP 服务端工作流程：**
+
+1. **注册工具**：通过 `MCPApiKeyServiceImpl.registMcpBeanTool(apiKey, bean)` 注册 Bean 工具到指定 API 密钥
+2. **认证校验**：客户端请求时通过 `auth(apiKey)` 校验密钥，通过 `auth(functionName, apiKey)` 校验工具访问权限
+3. **协议握手**：客户端发送 `initialize` 请求，服务端返回能力描述
+4. **工具列表**：客户端发送 `tools/list`，服务端通过 `getMcpServerApiKeyInfo(apiKey)` 返回工具列表
+5. **工具调用**：客户端发送 `tools/call`，服务端通过 `getFunctionToolDefine(apiKey, functionName)` 获取定义并通过 `MCPBeanToolFunctionCall.call()` 执行
+
+**MCP 服务端发布示例：**
+
+```java
+// 1. 使用 @Tool 注解定义工具 Bean
+@Service
+public class HotelFlightBookTool {
+    @Tool(name = "hotelQuery", description = "根据用户的行程需求，查询合适的酒店。")
+    public List<Map> hotelQuery(
+        @ToolParam(name = "startDay", description = "入驻时间,例如：5月25日", required = true) String startDay,
+        @ToolParam(name = "endDay", description = "离房时间,例如：5月28日", required = true) String endDay
+    ) {
+        // 业务逻辑实现
+        return hotels;
+    }
+
+    @Tool(name = "flightQuery", description = "根据用户的行程需求，查询合适的航班机票。")
+    public List<Map> flightQuery(
+        @ToolParam(name = "bookDay", description = "出发时间,例如：5月25日", required = true) String bookDay,
+        @ToolParam(name = "arriveDay", description = "到达时间,例如：5月28日", required = true) String arriveDay,
+        @ToolParam(name = "fromStation", description = "出发地,例如：长沙", required = true) String fromStation,
+        @ToolParam(name = "toStation", description = "到达地,例如：北京", required = true) String toStation
+    ) {
+        // 业务逻辑实现
+        return flights;
+    }
+}
+
+// 2. Spring Boot 配置类注册 MCP 服务
+@Configuration
+public class TestAgentMcpServiceFactory {
+    @Autowired
+    private HotelFlightBookTool hotelFlightBookTool;
+
+    @Bean("testConfigMCPToolService")
+    public MCPToolService buildTestConfigMCPToolService() {
+        MCPApiKeyServiceImpl mcpApiKeyService = new MCPApiKeyServiceImpl();
+        // 将 @Tool 注解方法注册为 MCP 服务工具
+        mcpApiKeyService.registMcpBeanTool("123456", hotelFlightBookTool);
+        // 支持注册多个 Bean 到同一 apiKey
+        // mcpApiKeyService.registMcpBeanTool("123456", anotherToolBean);
+        // 支持注册同一 Bean 到多个 apiKey
+        // mcpApiKeyService.registMcpBeanTool(new String[]{"key1", "key2"}, toolBean);
+
+        MCPToolServiceImpl mcpService = new MCPToolServiceImpl();
+        mcpService.setMcpApiKeyService(mcpApiKeyService);
+        return mcpService;
+    }
+}
+
+// 3. Spring Boot Controller 暴露 MCP 端点
+@RestController
+@RequestMapping("/mcp")
+public class MCPServerController {
+    @Autowired
+    @Qualifier("testConfigMCPToolService")
+    private MCPToolService testConfigMCPToolService;
+
+    // SSE 模式端点
+    @GetMapping("/sse")
+    public Flux<String> sse(@RequestHeader(name = "Authorization") String authorizationHeader) {
+        String apiKey = HttpRequestProxy.extractApiKeyFromBearer(authorizationHeader);
+        return testConfigMCPToolService.sse(apiKey);
+    }
+
+    @PostMapping("/message")
+    public String message(
+        @RequestHeader(name = "Authorization") String authorizationHeader,
+        @RequestParam(name = "sessionId") String sessionId,
+        @RequestBody String requestBody
+    ) {
+        String apiKey = HttpRequestProxy.extractApiKeyFromBearer(authorizationHeader);
+        return testConfigMCPToolService.message(apiKey, sessionId, requestBody);
+    }
+
+    // Streamable HTTP 模式端点
+    @PostMapping("/streamable")
+    public Object streamable(
+        @RequestHeader(name = "Authorization") String authorizationHeader,
+        @RequestBody String requestBody
+    ) {
+        String apiKey = HttpRequestProxy.extractApiKeyFromBearer(authorizationHeader);
+        return testConfigMCPToolService.streamable(apiKey, requestBody);
+    }
+}
+```
+
+**MCP 服务端注册 API 说明：**
+
+| 方法 | 说明 |
+|------|------|
+| `registMcpBeanTool(apiKey, bean)` | 注册 Bean 工具到单个 apiKey，可多次调用注册多个 Bean |
+| `registMcpBeanTool(apiKeys[], bean)` | 注册 Bean 工具到多个 apiKey |
+| `auth(apiKey)` | 校验 apiKey 是否存在 |
+| `auth(functionName, apiKey)` | 校验 apiKey 是否有访问指定工具的权限 |
+| `getMcpServerApiKeyInfo(apiKey)` | 获取 apiKey 对应的工具列表 |
+| `getFunctionToolDefine(apiKey, functionName)` | 获取指定工具定义 |
+
+**本地调用与 MCP 服务端调用的区别：**
+
+| 维度 | 本地工具（`BeanToolsRegist`） | MCP 服务端工具（`MCPBeanToolsRegist`） |
+|------|------------------------------|--------------------------------------|
+| 调用方式 | 智能体通过反射直接调用 | 通过 MCP 协议（SSE/Streamable HTTP）远程调用 |
+| 返回类型 | `Object`（任意类型） | `List<Map>`（MCP 协议规范） |
+| Trace 记录 | `BeanToolFunctionCall` 自动记录 Trace | 由 MCP 客户端记录调用轨迹 |
+| 适用场景 | 单进程内的智能体工具调用 | 跨进程/跨系统工具服务暴露 |
+| 认证 | 无需认证 | 基于 apiKey 认证和工具级权限控制 |
 
 #### 多次调用工具（Loop Tool Call）
 
-对于需要多步骤执行的复杂任务，智能体可能需要**多次调用工具**才能完成。bboss-ai 内置了循环工具调用机制，允许模型根据前序工具执行结果，自动决策是否继续调用下一个工具。
+对于需要多步骤执行的复杂任务，智能体可能需要**多次调用工具**才能完成。bboss-ai 内置了循环工具调用机制，允许模型根据前序工具执行结果，自动决策是否继续调用下一个工具。该机制同时适用于单智能体和多智能体（非工作流）场景。
 
 **核心 API：**
 
 | 方法 | 说明 |
 |------|------|
 | `AIAgent.setEnableLoopToolCall(boolean)` | 启用/禁用循环工具调用，默认 `false` |
-| `AIAgent.setMaxLoopToolCalls(int)` | 设置最大循环次数，防止无限循环 |
+| `AIAgent.setMaxLoopToolCalls(int)` | 设置最大循环次数，防止无限循环，默认 `80` 轮 |
 
 **典型使用场景：**
 - 运维场景：获取 OS 信息 → 生成脚本 → 执行命令 → 核对结果
@@ -448,6 +832,29 @@ public class MCPServerController {
 - 循环调用过程中，每次工具执行结果都会作为上下文反馈给模型
 - 模型自主决定何时终止工具调用并输出最终答案
 - 建议配合 `setRetry(int)` 使用，增强容错能力
+- `SequenceAgent` 多智能体场景也支持循环工具调用机制
+- 工具调用过程中可通过 `emitterServerEvent()` 向客户端实时推送中间数据
+
+#### 脚本与代码执行工具
+
+bboss-ai 内置了脚本执行和代码执行工具，支持在智能体工作流中动态生成和执行脚本：
+
+| 工具类 | 作用 |
+|--------|------|
+| `CLIShellFunctionTool` | Shell/CLI 脚本执行工具，根据 OS 类型自动选择 `cmd /c` 或 `sh -c` 执行脚本，支持超时控制（秒），已修复 Windows 环境中文乱码问题 |
+| 代码执行函数工具 | 支持指定 Python/NodeJS 安装路径执行代码，可用于数据分析、脚本生成等场景 |
+
+**使用示例：**
+
+```java
+AIAgent agent = new AIAgent();
+agent.setEnableLoopToolCall(true);
+agent.setMaxLoopToolCalls(80);
+// 注册 OS 信息获取工具
+agent.registBeanTool(new GetOSFunctionTool(60));
+// 注册 Shell 脚本执行工具（60 秒超时）
+agent.registBeanTool(new CLIShellFunctionTool(60));
+```
 
 #### 3.2.8 回调机制
 
@@ -493,9 +900,28 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 | 类名 | 作用 |
 |------|------|
 | `TraceMessage` | Trace 消息载体，包含消息内容、起止时间、agentId、parentAgentId、traceId、metaData 等 |
-| `TokenMetrics` | Token 用量指标，包含 model、totalTokens、promptTokens、completionTokens、completionReasoningTokens、reasoningData、elapsed 等 |
-| `SessionMessage` | 会话消息类型体系，定义了 18 种消息类型常量，覆盖用户输入、LLM 输入输出、Embedding、Rerank、工具搜索、MCP 调用、Trace 等 |
+| `TokenMetrics` | Token 用量指标，包含 model、maas、totalTokens、promptTokens、promptCachedTokens、promptCacheHitTokens、promptCacheMissTokens、promptTextTokens、completionTokens、completionReasoningTokens、completionTextTokens、reasoningData、startTime、endTime、elapsed 等 |
+| `SessionMessage` | 会话消息类型体系，定义了 19 种消息类型常量，覆盖用户输入、LLM 输入输出、Embedding、Rerank、工具搜索、MCP 调用、Trace 等 |
 | `AgentMessageTypeConvertor` | 角色（role）到 messageType 的转换器，支持用户自定义扩展（101 起） |
+
+**TokenMetrics 指标说明：**
+
+| 指标 | 说明 |
+|------|------|
+| `maas` | 大模型服务平台名称 |
+| `model` | 模型名称 |
+| `totalTokens` | 总 Token 数 |
+| `promptTokens` | 输入提示 Token 数 |
+| `promptCachedTokens` | 命中缓存的输入 Token 数 |
+| `promptCacheHitTokens` | Prompt 缓存命中 Token 数 |
+| `promptCacheMissTokens` | Prompt 缓存未命中 Token 数 |
+| `promptTextTokens` | 输入文本 Token 数 |
+| `completionTokens` | 输出 Token 数 |
+| `completionReasoningTokens` | 输出推理 Token 数（思维链） |
+| `completionTextTokens` | 输出文本 Token 数 |
+| `reasoningData` | 思考数据 |
+| `startTime` / `endTime` | 模型执行开始/结束时间戳 |
+| `elapsed` | 模型执行耗时（毫秒） |
 
 **消息类型对照表：**
 
@@ -811,9 +1237,13 @@ planAgent.addDefaultRouteChoiceAgent(new AIAgent("默认处理"));
 ```
 AIAgent
   ↓
+AgentSessionStoreBuilder（构建器）
+  ↓
 AgentSessionStore（主存储）
   ├── AgentSessionStoreMemory（内存）
   └── AgentSessionStoreDB（数据库）
+       ├── MySQL / Oracle / DM / SQL Server / PostgreSQL / SQLite
+       └── ClickHouse 分布式集群（本地表 + 分布式表）
        ↓
   子智能体会话隔离
        ↓
@@ -821,11 +1251,16 @@ AgentSessionStore（主存储）
 ```
 
 **会话管理特点：**
-- 支持内存和数据库两种持久化方式
+- 支持内存和数据库两种持久化方式，数据库支持 7 种数据库方言
+- ClickHouse 模式提供生产级分布式存储能力，支持分片和副本
 - 父子智能体会话记忆自动加载和传递
 - 可配置是否引用父智能体历史消息
 - 支持会话大小限制和历史消息裁剪
 - 支持 Token 用量统计和追踪
+- 提供独立的 `AgentSessionService` 会话管理 API（查询、删除、存在判断）
+- 支持多领域会话联合查询、标题模糊查询、时间范围查询
+- 查询排序字段和时间条件字段可配置（`createTime` / `lastAccessTime`）
+- ClickHouse 模式下会话续问续答时不更新最后访问时间（避免高频 UPDATE）
 
 ### 4.7 工具扩展机制
 
@@ -1117,6 +1552,102 @@ Flux<ServerEvent> flux = agent.streamChat(message);
 | `GetOSFunctionTool` | 获取当前操作系统名称，辅助生成适配的脚本命令 |
 | `CLIShellFunctionTool` | 根据 OS 类型自动选择 `cmd /c` 或 `sh -c` 执行脚本，支持超时控制（秒） |
 
+### 6.10 ClickHouse 生产级会话存储
+
+以下示例演示如何基于 ClickHouse 分布式集群实现生产级会话持久化，适用于海量会话数据的高吞吐写入场景。
+
+**前置准备：**
+
+1. ClickHouse 集群已部署（如 `vops_3shards_1replicas`），每个节点已配置 `shard` 和 `replica` 宏变量
+2. 通过 bboss 数据源配置文件初始化 ClickHouse 连接池
+
+**完整示例：**
+
+```java
+// 1. 初始化 ClickHouse 数据源（visualops）
+SQLUtil.startPool("visualops",
+    "com.clickhouse.jdbc.ClickHouseDriver",
+    "jdbc:clickhouse://127.0.0.1:8123/bboss",
+    "default", "", "select 1");
+
+String sessionId = "session-clickhouse-001";
+
+// 2. 配置 ClickHouse 存储上下文
+StoreContext storeContext = new StoreContext()
+    .setSessionId(sessionId)
+    .setUserId("user123")
+    .setSessionSize(100)
+    .setStoreType(StoreContext.STORE_TYPE_DB)
+    .setRequestId("request123")
+    .setClickhouseCluster("vops_3shards_1replicas")  // ClickHouse 集群名称，必填
+    .setDataSource("visualops")
+    .setDomain("ops");
+
+// 3. 构建消息并执行
+ChatAgentMessage message = new ChatAgentMessage();
+message.setPrompt("帮我分析系统日志，查找异常并生成处理建议");
+message.setModel("deepseek-chat");
+message.setMaas("deepseek");
+message.setRetry(3);
+message.setStoreContext(storeContext);
+
+AIAgent agent = new AIAgent();
+agent.setEnableLoopToolCall(true);
+agent.setMaxLoopToolCalls(80);
+
+// 首次调用：框架自动创建本地表和分布式表
+Flux<ServerEvent> flux = agent.streamChat(message);
+flux.subscribe(event -> System.out.print(event.getData()));
+
+// 4. 续问续答（复用同一 sessionId，自动加载历史会话记忆）
+ChatAgentMessage continueMessage = new ChatAgentMessage();
+continueMessage.setPrompt("针对上面发现的问题，给出详细的修复步骤");
+continueMessage.setModel("deepseek-chat");
+continueMessage.setMaas("deepseek");
+continueMessage.setStoreContext(storeContext);
+
+Flux<ServerEvent> flux2 = agent.streamChat(continueMessage);
+flux2.subscribe(event -> System.out.print(event.getData()));
+```
+
+**会话管理服务查询示例：**
+
+```java
+// 创建会话管理服务
+AgentSessionServiceImpl sessionService = new AgentSessionServiceImpl();
+sessionService.setDatasource("visualops");
+
+// 判断会话是否存在
+boolean exists = sessionService.existAgentSession(sessionId);
+
+// 分页查询会话列表（支持多领域联合查询）
+AgentSessionCondition condition = new AgentSessionCondition();
+condition.setUserId("user123");
+condition.setDomains(new String[]{"ops", "dev", "prod"});
+condition.setTitle("%异常%");
+condition.setTimeConditionField("createTime");  // 时间字段
+condition.setTimeStart(startDate);
+condition.setTimeEnd(endDate);
+condition.setSortKey("createTime");
+condition.setSortDesc(true);
+
+ListInfo result = sessionService.queryListInfoAgentSessions(condition, 0, 20);
+List<AgentSession> sessions = result.getDatas();
+
+// 查询会话消息
+List<SessionMessage> messages = sessionService.queryListSessionMessages(sessionId);
+
+// 删除会话（事务操作，同时删除会话、消息、引用关系）
+sessionService.deleteAgentSession(sessionId);
+```
+
+**注意事项：**
+
+- ClickHouse 模式下 `clickhouseCluster` 必须设置，否则建表 SQL 会报错；如果表已经创建好可以不设置
+- ClickHouse 模式下会话续问续答时不会更新 `lastAccessTime`，因此排序和查询建议使用 `createTime`
+- 会话消息表分布式表采用 `sipHash64(sessionId)` 分片，确保同一会话消息落在同一分片
+- 建表 SQL 通过 `ON CLUSTER` 在集群所有节点执行，首次调用时自动完成建表
+
 ---
 
 ## 七、总结
@@ -1130,6 +1661,9 @@ bboss-ai 是一个功能完善的 Java AI 客户端框架，具有以下特点�
 5. **工作流编排**：支持串行、并行、条件分支、路由、判断等丰富的节点类型
 6. **工具扩展**：支持 Function Calling、MCP 协议（SSE/Streamable HTTP）、Skill 技能模块
 7. **工具搜索**：支持基于关键词和语义的工具过滤，减少上下文占用
-8. **轻量级设计**：模块化结构，依赖精简
+8. **多轮工具调用**：支持智能体自主决策多步骤任务执行，默认最大 80 轮
+9. **生产级会话存储**：支持 ClickHouse 分布式集群，提供高吞吐会话持久化能力
+10. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路
+11. **轻量级设计**：模块化结构，依赖精简
 
 该框架适合需要集成多种 AI 能力的 Java 企业级应用使用。
