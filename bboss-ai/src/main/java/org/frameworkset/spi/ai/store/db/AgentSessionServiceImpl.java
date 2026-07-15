@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.store.db;
 
 import com.frameworkset.common.poolman.ConfigSQLExecutor;
 import com.frameworkset.orm.transaction.TransactionManager;
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.ListInfo;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
 import org.frameworkset.spi.ai.store.AgentSession;
@@ -88,6 +89,9 @@ public class AgentSessionServiceImpl implements AgentSessionService {
     public void deleteBatchAgentSession(String... sessionids) throws AgentSessionException
 
     {
+        if(sessionids == null || sessionids.length == 0) {
+            return;
+        }
         init();
         if (log.isInfoEnabled()) {
             log.info("deleteBatchAgentSession start::sessionids count={}", sessionids != null ? sessionids.length : 0);
@@ -104,7 +108,7 @@ public class AgentSessionServiceImpl implements AgentSessionService {
             }
         } catch (Exception e) {
             log.error("batch delete AgentSession failed::sessionids count={}", sessionids != null ? sessionids.length : 0, e);
-            throw new AgentSessionException("batch delete AgentSession failed::sessionids=" + sessionids, e);
+            throw new AgentSessionException("batch delete AgentSession failed::sessionids=" + JsonUtil.object2json(sessionids), e);
         } finally {
             tm.release();
         }
@@ -140,6 +144,7 @@ public class AgentSessionServiceImpl implements AgentSessionService {
      */
     @Override
     public boolean existAgentSession(String sessionid) throws AgentSessionException {
+        init();
         int count = 0;
         try {
             count = executor.queryObjectWithDBName(Integer.class, datasource, "existAgentSession", sessionid);

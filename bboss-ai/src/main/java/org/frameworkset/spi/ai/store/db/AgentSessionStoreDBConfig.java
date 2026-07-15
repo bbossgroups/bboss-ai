@@ -80,7 +80,7 @@ public class AgentSessionStoreDBConfig {
             .append("userId varchar(100) NOT NULL,") //用户id
             .append( "agentId varchar(100) NOT NULL,")  //代理id
             .append( "title varchar(500) NOT NULL,")  //会话标题   
-            .append( "domain varchar2(100),")  //会话所属领域             
+            .append( "domain varchar(100),")  //会话所属领域             
             .append( "constraint $sessionTableName_PK primary key(sessionId))") //增量状态同步表主键
             .toString();
 
@@ -90,7 +90,7 @@ public class AgentSessionStoreDBConfig {
             .append( "userId varchar(100),")  //用户id
             .append( " agentId varchar(100)  NOT NULL,") //代理id
             .append( "title varchar(500) ,")  //会话标题
-            .append( "domain varchar2(100),")  //会话所属领域     
+            .append( "domain varchar(100),")  //会话所属领域     
             .append( "primary key(sessionId))")//增量状态同步表主键
             .toString();
 
