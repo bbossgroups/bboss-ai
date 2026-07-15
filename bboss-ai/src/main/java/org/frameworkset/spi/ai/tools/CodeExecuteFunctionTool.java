@@ -312,17 +312,18 @@ public class CodeExecuteFunctionTool {
 		}
 		
 		File tempFile = null;
+		Process proc = null;
 		try {
 			tempFile = new File(workDir, "script_" + UUID.randomUUID().toString().replace("-", "") + ".py");
 			try (Writer writer = new OutputStreamWriter(new java.io.FileOutputStream(tempFile), StandardCharsets.UTF_8)) {
 				writer.write(code);
 			}
-			
+
 			ProcessBuilder pb = new ProcessBuilder(pythonCmd, tempFile.getAbsolutePath());
 			pb.directory(workDirFile);
 			pb.redirectErrorStream(true);
-			Process proc = pb.start();
-			
+			proc = pb.start();
+
 			StringBuilder output = new StringBuilder();
 			try (java.io.BufferedReader reader = new java.io.BufferedReader(
 					new java.io.InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8))) {
@@ -331,12 +332,16 @@ public class CodeExecuteFunctionTool {
 					output.append(line).append("\n");
 				}
 			}
-			
+
 			int exitCode = proc.waitFor();
 			return new ExecutionOutcome(output.toString(), exitCode);
 		} catch (Exception e) {
 			throw new ToolExecuteException("Python 代码执行失败: " + e.getMessage(), e);
 		} finally {
+			// 超时或异常时销毁进程，避免孤儿进程残留
+			if (proc != null && proc.isAlive()) {
+				proc.destroyForcibly();
+			}
 			if (tempFile != null && tempFile.exists() && deleteTempFiles) {
 				tempFile.delete();
 			}
@@ -394,6 +399,7 @@ public class CodeExecuteFunctionTool {
 		}
 		
 		File tempFile = null;
+		Process proc = null;
 		try {
 			tempFile = new File(workDir, "script_" + UUID.randomUUID().toString().replace("-", "") + ".js");
 			try (Writer writer = new OutputStreamWriter(new java.io.FileOutputStream(tempFile), StandardCharsets.UTF_8)) {
@@ -409,8 +415,8 @@ public class CodeExecuteFunctionTool {
 			ProcessBuilder pb = new ProcessBuilder(nodejs, tempFile.getAbsolutePath());
 			pb.directory(workDirFile);
 			pb.redirectErrorStream(true);
-			Process proc = pb.start();
-			
+			proc = pb.start();
+
 			StringBuilder output = new StringBuilder();
 			try (java.io.BufferedReader reader = new java.io.BufferedReader(
 					new java.io.InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8))) {
@@ -419,12 +425,16 @@ public class CodeExecuteFunctionTool {
 					output.append(line).append("\n");
 				}
 			}
-			
+
 			int exitCode = proc.waitFor();
 			return new ExecutionOutcome(output.toString(), exitCode);
 		} catch (Exception e) {
 			throw new ToolExecuteException("Node 执行 JavaScript 失败: " + e.getMessage(), e);
 		} finally {
+			// 超时或异常时销毁进程，避免孤儿进程残留
+			if (proc != null && proc.isAlive()) {
+				proc.destroyForcibly();
+			}
 			if (tempFile != null && tempFile.exists() && deleteTempFiles) {
 				tempFile.delete();
 			}
@@ -525,6 +535,7 @@ public class CodeExecuteFunctionTool {
 	}
 	
 	private boolean commandExists(String cmd) {
+		Process proc = null;
 		try {
 			String os = System.getProperty("os.name").toLowerCase();
 			ProcessBuilder pb;
@@ -534,11 +545,22 @@ public class CodeExecuteFunctionTool {
 				pb = new ProcessBuilder("which", cmd);
 			}
 			pb.redirectErrorStream(true);
-			Process proc = pb.start();
+			proc = pb.start();
+			// 读取并丢弃输出，防止输出缓冲区写满导致 waitFor() 永久阻塞
+			try (java.io.InputStream is = proc.getInputStream()) {
+				byte[] buf = new byte[1024];
+				while (is.read(buf) != -1) {
+					// ignore output
+				}
+			}
 			int exitCode = proc.waitFor();
 			return exitCode == 0;
 		} catch (Exception e) {
 			return false;
+		} finally {
+			if (proc != null && proc.isAlive()) {
+				proc.destroyForcibly();
+			}
 		}
 	}
 	

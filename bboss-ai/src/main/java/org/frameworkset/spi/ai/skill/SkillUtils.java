@@ -165,7 +165,7 @@ public class SkillUtils {
 	 * {UrlResource}) — uses
 	 * {JarURLConnection}</li>
 	 * <li>{ClassPathResource} where the directory lacks an explicit JAR entry —
-	 * uses Spring's {ResourcePatternResolver} with a manual JAR scan fallback</li>
+	 * uses bboss's {ResourcePatternResolver} with a manual JAR scan fallback</li>
 	 * </ul>
 	 * @param resource the resource pointing to a skills directory
 	 * @return a list of Skill objects parsed from SKILL.md files
@@ -200,17 +200,17 @@ public class SkillUtils {
 	}
 	
 	/**
-	 * Discovers SKILL.md files under the given classpath prefix using Spring's
+	 * Discovers SKILL.md files under the given classpath prefix using bboss's
 	 * {@link ResourcePatternResolver}. Falls back to manual JAR scanning for JARs that
 	 * lack explicit directory entries (a known limitation of
-	 * {@link PathMatchingResourcePatternResolver} — see Spring Framework issue #16711).
+	 * {@link PathMatchingResourcePatternResolver}  
 	 * @param classpathPrefix the classpath prefix to scan (e.g.,
 	 * "META-INF/resources/skills")
 	 * @return a list of Skill objects parsed from discovered SKILL.md files
 	 * @throws IOException if an I/O error occurs during scanning or reading
 	 */
 	private static List<Skill> loadFromClasspath(String classpathPrefix) throws IOException {
-		// Primary: Spring's ResourcePatternResolver — works for well-formed JARs with
+		// Primary: bboss's ResourcePatternResolver — works for well-formed JARs with
 		// explicit directory entries and for resources on the filesystem.
 		ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 		Resource[] resources = resolver.getResources("classpath*:" + classpathPrefix + "/**/SKILL.md");
@@ -227,7 +227,7 @@ public class SkillUtils {
 		}
 		
 		// Fallback: Manual JAR scanning for JARs without directory entries.
-		// Uses the same strategy as Spring's own
+		// Uses the same strategy as bboss's own
 		// PathMatchingResourcePatternResolver.addAllClassLoaderJarRoots().
 		return scanClasspathJarsForSkills(classpathPrefix);
 	}
@@ -235,7 +235,7 @@ public class SkillUtils {
 	/**
 	 * Scans all classpath JARs for SKILL.md files under the given prefix. Discovers JARs
 	 * via {@code ClassLoader.getResources("META-INF/MANIFEST.MF")} — a technique used by
-	 * Spring internally when standard classpath resolution is insufficient.
+	 * bboss internally when standard classpath resolution is insufficient.
 	 */
 	private static List<Skill> scanClasspathJarsForSkills(String classpathPrefix) throws IOException {
 		String prefix = classpathPrefix.endsWith("/") ? classpathPrefix : classpathPrefix + "/";

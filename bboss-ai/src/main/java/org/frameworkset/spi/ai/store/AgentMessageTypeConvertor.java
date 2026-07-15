@@ -91,8 +91,10 @@ public class AgentMessageTypeConvertor {
         }
         else if(MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME.equals(role)) {
             return MESSAGE_TYPE_TOOLCALL_MESSAGE;
-        }   
-
+        }
+		else if(MESSAGE_TYPE_SKILLCALL_MESSAGE_NAME.equals(role)) {
+			return MESSAGE_TYPE_SKILLCALL_MESSAGE;
+		}
 
 
         return MESSAGE_TYPE_OTHER_MESSAGE;

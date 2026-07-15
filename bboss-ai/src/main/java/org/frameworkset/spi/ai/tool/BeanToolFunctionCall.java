@@ -62,20 +62,32 @@ public class BeanToolFunctionCall extends  BaseBeanToolFunctionCall implements F
                 AgentTraceHolder.trace(traceMessage);
             }
             return result;
-        } catch (IllegalAccessException e) {
-            if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
-                try {
-                    traceMessage.setEndTime(System.currentTimeMillis())
-                            .put("toolCallException", SimpleStringUtil.exceptionToString(e));
-                    
-                    AgentTraceHolder.trace(traceMessage);
-                } catch (Exception te) {
-
-                }
-            }
-            throw new FunctionCallException(e);
-        } catch (InvocationTargetException e) {
-            throw new FunctionCallException(e);
-        }
+        } 
+		catch (FunctionCallException e) {
+			if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
+				try {
+					traceMessage.setEndTime(System.currentTimeMillis())
+							.put("toolCallException", SimpleStringUtil.exceptionToString(e));
+					
+					AgentTraceHolder.trace(traceMessage);
+				} catch (Exception te) {
+					
+				}
+			}
+			throw  e;
+		}
+		catch (Exception e) {
+			if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
+				try {
+					traceMessage.setEndTime(System.currentTimeMillis())
+							.put("toolCallException", SimpleStringUtil.exceptionToString(e));
+					
+					AgentTraceHolder.trace(traceMessage);
+				} catch (Exception te) {
+					
+				}
+			}
+			throw new FunctionCallException(e);
+		}
     }
 }

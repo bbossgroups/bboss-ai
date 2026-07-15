@@ -19,7 +19,6 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.mcp.MCPClient;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.feishu.BaseFeishuConfig;
-import org.frameworkset.spi.feishu.FeishuAuthorTokenFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 /**

@@ -190,8 +190,10 @@ public class StreamTest {
         countDownLatch.await();
     }
     public static void callDeepseekSimple() throws InterruptedException {
-        //定义问题变量
-        String message = "介绍一下bboss jobflow";
+        //定义提示词
+        String message = "介绍一下bboss jobflow #[version]";
+		AIAgent aiAgent = new AIAgent();
+		aiAgent.addParam("version","7.5.7");//添加version参数，用于在问题中替换#[version]
         //设置模型调用参数，
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
         chatAgentMessage.setModel("deepseek-v4-pro");
@@ -205,7 +207,7 @@ public class StreamTest {
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        AIAgent aiAgent = new AIAgent();
+        
         Flux<ServerEvent> flux = aiAgent.streamChat(chatAgentMessage);
                 flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk.getData())) //打印流式调用返回的问题答案片段

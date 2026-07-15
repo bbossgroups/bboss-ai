@@ -194,8 +194,8 @@ public class ChatContext {
 
     public ChatContext addContextDatas(Map<String, Object> contextData) {
         
-		if(contextData == null){
-			contextData = new java.util.LinkedHashMap<>();
+		if(this.contextData == null){
+			this.contextData = new java.util.LinkedHashMap<>();
 		}
 		this.contextData.putAll(contextData);
 		return this;

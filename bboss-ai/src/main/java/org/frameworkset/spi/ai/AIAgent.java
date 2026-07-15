@@ -989,18 +989,28 @@ public class AIAgent<T extends AIAgent> {
         return toolCalls.get(toolName);
     }
 
-    public T setToolsRegist(ToolsRegist toolsRegist) {
-        reset();
-        this.toolsRegist = toolsRegist;
-        return (T)this;
+    public T setToolsRegist(ToolsRegist toolsRegist) {     
+        return registTools(toolsRegist);
     }
 	
 	public T registTools(ToolsRegist toolsRegist) {
 		reset();
 		toolsRegist.init();
-		List<FunctionToolDefine> toolDefines = toolsRegist.registTools();
-		if(CollectionUtils.isNotEmpty(toolDefines)){
-			registTools(toolDefines);
+		List<FunctionToolDefine> functionToolDefines = toolsRegist.registTools();
+		if(functionToolDefines != null && functionToolDefines.size() > 0){	
+			 
+			FunctionCall functionCall = null;
+			for (FunctionToolDefine functionToolDefine : functionToolDefines) {
+				functionCall = functionToolDefine.getFunctionCall();
+				if (functionCall == null) {
+					functionCall = toolsRegist.getFunctionCall(functionToolDefine.getFunction().getName());
+					if (functionCall != null) {
+						functionToolDefine.setFunctionCall(functionCall);
+					}
+				}
+			}
+			this.registTools(functionToolDefines);
+			 
 		}
 		if(this.toolsRegists == null){
 			this.toolsRegists = new ArrayList<>();

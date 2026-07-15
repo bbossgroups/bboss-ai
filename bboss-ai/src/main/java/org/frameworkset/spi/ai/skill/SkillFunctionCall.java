@@ -15,10 +15,15 @@ package org.frameworkset.spi.ai.skill;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.FunctionCall;
 import org.frameworkset.spi.ai.model.FunctionCallException;
 import org.frameworkset.spi.ai.model.FunctionTool;
+import org.frameworkset.spi.ai.model.TraceMessage;
+import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 /**
@@ -34,25 +39,74 @@ public class SkillFunctionCall implements FunctionCall {
 	
 	@Override
 	public Object call(FunctionTool functionTool) throws FunctionCallException {
-		Map<String,Object> arguments = functionTool.getArguments();
-		String skillName = (String)arguments.get("skillName");
-		if(skillName == null || skillName.length() == 0){
-			throw new FunctionCallException("skillName is null");
-		}
-		Skill skill = this.skillsMap.get(skillName);
-		StringBuilder builder = new StringBuilder();
-		if (skill != null) {
+		TraceMessage traceMessage = null;
+		try {
 			
-			builder.append("Base directory for this skill: ");
-			builder.append(skill.getBasePath()).append("\n\n");
-			builder.append(skill.getContent());
+			if(AgentTraceHolder.isToolTrace()) {
+				traceMessage = new TraceMessage();
+				traceMessage.setStartTime(System.currentTimeMillis())
+						.put("toolName",functionTool.getFunctionName())
+						.put("id",functionTool.getId())
+						.put("type",functionTool.getType())
+						.put("index",functionTool.getIndex())
+						.put("toolCallArgs",   functionTool.getArguments()  )
+						.put("role", SessionMessage.MESSAGE_TYPE_TOOLCALL_MESSAGE_NAME);
+			}
+			Map<String,Object> arguments = functionTool.getArguments();
+			String skillName = (String)arguments.get("skillName");
+			if(skillName == null || skillName.length() == 0){
+				throw new FunctionCallException("skillName is null");
+			}
+			Skill skill = this.skillsMap.get(skillName);
+			StringBuilder builder = new StringBuilder();
+			if (skill != null) {
+				
+				builder.append("Base directory for this skill: ");
+				builder.append(skill.getBasePath()).append("\n\n");
+				builder.append(skill.getContent());
 //			return "Base directory for this skill: %s\n\n%s".formatted(skill.basePath(), skill.content());
-			
+				
+			}
+			else{
+				builder.append("Skill not found: " ).append(skillName);
+			}
+			String result = builder.toString();
+			if(AgentTraceHolder.isToolTrace()) {
+				traceMessage.setEndTime(System.currentTimeMillis())
+						.put("toolCallResponse", result);
+				
+				AgentTraceHolder.trace(traceMessage);
+			}
+			return result;
+		}   
+		catch (FunctionCallException e) {
+			if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
+				try {
+					traceMessage.setEndTime(System.currentTimeMillis())
+							.put("toolCallException", SimpleStringUtil.exceptionToString(e));
+					
+					AgentTraceHolder.trace(traceMessage);
+				} catch (Exception te) {
+					
+				}
+			}
+			throw  e;
 		}
-		else{
-			builder.append("Skill not found: " ).append(skillName);
+		catch (Exception e) {
+			if(AgentTraceHolder.isToolTrace() && traceMessage != null) {
+				try {
+					traceMessage.setEndTime(System.currentTimeMillis())
+							.put("toolCallException", SimpleStringUtil.exceptionToString(e));
+					
+					AgentTraceHolder.trace(traceMessage);
+				} catch (Exception te) {
+					
+				}
+			}
+			throw new FunctionCallException(e);
 		}
-		return builder.toString();
+		
+		
 		 
 	}
 }
