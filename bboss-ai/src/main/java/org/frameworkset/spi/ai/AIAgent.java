@@ -71,9 +71,12 @@ public class AIAgent<T extends AIAgent> {
      */
     protected String agentNodeType = AGENT_NODE_TYPE_SINGLE;
     protected int sessionSize;
-
-    
-
+	
+	
+	/**
+	 * 自定义参数，用于在智能体运行时，传递额外的参数
+	 */	
+	protected Map<String,Object> params;
     /**
      * 启用多轮工具调用，true 启用，null或者false不启用
      */
@@ -104,7 +107,7 @@ public class AIAgent<T extends AIAgent> {
     
     protected AgentOutput agentOutput;
 
-    protected AgentSessionStore mainSessionStore;
+    protected volatile AgentSessionStore mainSessionStore;
     protected StoreContext storeContext;
 
     public AIAgent(StoreContext storeContext) {
@@ -118,32 +121,36 @@ public class AIAgent<T extends AIAgent> {
         synchronized (mainSessionStoreLock) {
             if(mainSessionStore != null)
                 return;
-            if (mainSessionStore == null ) {
-                if(storeContext != null) {
-                    AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
-                    mainSessionStore = agentSessionStoreBuilder.build(storeContext, this);
-                    mainSessionStore.setAIAgent(this);
-                    this.agentSessionStore = mainSessionStore;
-                    if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
-                        ((SessionAgentMessage) agentMessage).setMainSessionStore(mainSessionStore);
-                    }
-                    if (storeContext.isResetSession() && storeContext.getSessionId() != null) {
-                        mainSessionStore.removeSession(storeContext.getSessionId());
-                    }
-                }
-                else{
-                    if(parentAgent != null){
-                        this.mainSessionStore = parentAgent.getMainSessionStore();
-                    }
-                    if(mainSessionStore == null && parentSessionStore != null){
-                        this.mainSessionStore = parentSessionStore.getMainAgentSessionStore();
-                        if(this.mainSessionStore == null){
-                            this.mainSessionStore = parentSessionStore;
-                        }
-                    }
-                    
-                }
-            }
+           
+			if(storeContext != null) {
+				AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
+				AgentSessionStore mainSessionStore = agentSessionStoreBuilder.build(storeContext, this);
+				mainSessionStore.setAIAgent(this);
+				
+				if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
+					((SessionAgentMessage) agentMessage).setMainSessionStore(mainSessionStore);
+				}
+				if (storeContext.isResetSession() && storeContext.getSessionId() != null) {
+					mainSessionStore.removeSession(storeContext.getSessionId());
+				}
+				this.mainSessionStore = mainSessionStore;
+				this.agentSessionStore = mainSessionStore;
+			}
+			else{
+				AgentSessionStore mainSessionStore = null;
+				if(parentAgent != null){
+					mainSessionStore = parentAgent.getMainSessionStore();
+				}
+				if(mainSessionStore == null && parentSessionStore != null){
+					mainSessionStore = parentSessionStore.getMainAgentSessionStore();
+					if(mainSessionStore == null){
+						mainSessionStore = parentSessionStore;
+					}
+				}
+				this.mainSessionStore = mainSessionStore;
+				
+			}
+            
         }
     }
  
@@ -178,6 +185,9 @@ public class AIAgent<T extends AIAgent> {
 
     @JsonIgnore
     protected ToolsRegist toolsRegist;
+	
+	@JsonIgnore
+	protected List<ToolsRegist> toolsRegists;
     @JsonIgnore
     protected ToolSearcher toolSearcher;
     
@@ -851,6 +861,9 @@ public class AIAgent<T extends AIAgent> {
 			this.mainSessionStore = this.agentSessionStore;
 			
 		}
+		if(this.agentSessionStore == null) {
+			return null;
+		}
 		return this.agentSessionStore.getSessionMemory();
 	}
 
@@ -887,7 +900,7 @@ public class AIAgent<T extends AIAgent> {
         this.tools.addAll( tools);
         return (T)this;
     }
-    private boolean toolInited = false;
+    private volatile boolean toolInited = false;
     private Object initLock = new Object();
 
     /**
@@ -981,6 +994,20 @@ public class AIAgent<T extends AIAgent> {
         this.toolsRegist = toolsRegist;
         return (T)this;
     }
+	
+	public T registTools(ToolsRegist toolsRegist) {
+		reset();
+		toolsRegist.init();
+		List<FunctionToolDefine> toolDefines = toolsRegist.registTools();
+		if(CollectionUtils.isNotEmpty(toolDefines)){
+			registTools(toolDefines);
+		}
+		if(this.toolsRegists == null){
+			this.toolsRegists = new ArrayList<>();
+		}
+		this.toolsRegists.add( toolsRegist);
+		return (T)this;
+	}
     public void destroy(){
         reset();
 
@@ -1036,7 +1063,7 @@ public class AIAgent<T extends AIAgent> {
     public T registToolCalls(Map<String,FunctionCall> toolCalls) {
         reset();
         if(this.toolCalls == null){
-            toolCalls = new LinkedHashMap<>();
+            this.toolCalls = new LinkedHashMap<>();
         }
         this.toolCalls.putAll(toolCalls);
         return (T)this;
@@ -1298,4 +1325,30 @@ public class AIAgent<T extends AIAgent> {
     public String getAgentNodeType() {
         return agentNodeType;
     }
+	
+	public T addParam(String key,Object value){
+		if(params == null){
+			params = new java.util.LinkedHashMap<>();
+		}
+		params.put(key,value);
+		return (T)this;
+	}
+	public Object getParam(String key){
+		if(params == null){
+			return null;
+		}
+		return params.get(key);
+	}
+	
+	public Map<String, Object> getParams() {
+		return params;
+	}
+	
+	public T addAllParams(Map<String, Object> params) {
+		if(this.params == null){
+			this.params = new java.util.LinkedHashMap<>();
+		}
+		this.params.putAll(params);
+		return (T)this;
+	}
 }

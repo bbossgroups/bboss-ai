@@ -31,6 +31,8 @@ import java.util.List;
 public class MCPToolsRegist implements ToolsRegist {
 	protected String mcpServer;
     protected MCPClient mcpClient;
+	protected Object lock = new Object();
+	protected boolean initialized ;
 	public MCPToolsRegist(String mcpServer){
 		this.mcpServer = mcpServer;
 	}
@@ -38,8 +40,16 @@ public class MCPToolsRegist implements ToolsRegist {
 		return new MCPClient(mcpServer);
 	}
 	public void init(){
-		mcpClient = buildMCPClient();
-		mcpClient.init();
+		if(initialized == true){
+			return;
+		}
+		synchronized (lock) {
+			if (initialized) {
+				return;
+			}
+			mcpClient = buildMCPClient();
+			mcpClient.init();
+		}
 	}
 	public void destroy(){
 		if(mcpClient != null){
@@ -51,6 +61,11 @@ public class MCPToolsRegist implements ToolsRegist {
 	public List<FunctionToolDefine> registTools() {
 		MCPListToolResponse mcpListToolResponse = mcpClient.listTools();
 		List<FunctionToolDefine> functionToolDefines = MCPToolsUtils.convertMcpTools2FunctionTools(mcpListToolResponse);
+		if(functionToolDefines != null && !functionToolDefines.isEmpty()) {
+			for (FunctionToolDefine functionToolDefine : functionToolDefines) {
+				functionToolDefine.setToolsRegist(this);
+			}
+		}
 		return functionToolDefines;
 	}	 
 	

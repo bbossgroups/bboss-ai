@@ -521,57 +521,57 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     }
     
     protected void buildThinking(ChatAgentMessage chatAgentMessage,ChatObject chatObject,Map<String, Object> requestMap){
-        Map parameters = chatAgentMessage.getParameters();
+//        Map parameters = chatAgentMessage.getParameters();
         Boolean thinking = chatAgentMessage.getThinking();
         ChatContext chatContext = chatObject.getChatContext();
         if(chatContext != null && chatContext.getThinking() != null){
             thinking = chatContext.getThinking();
-            if(thinking != null){
-                if( thinking == false) {
-                    Map data = new LinkedHashMap();
-                    data.put("type", "disabled");
-                    requestMap.put("thinking", data);
-                    chatObject.setThinking(false);
-                }
-                else{
-                    Map data = new LinkedHashMap();
-                    data.put("type", "enabled");
-                    requestMap.put("thinking", data);
-                    chatObject.setThinking(true);
-                }
-                return;
-            }
-        }
+            
+        }		
+		if(thinking != null){
+			if( thinking == false) {
+				Map data = new LinkedHashMap();
+				data.put("type", "disabled");
+				requestMap.put("thinking", data);
+				chatObject.setThinking(false);
+			}
+			else{
+				Map data = new LinkedHashMap();
+				data.put("type", "enabled");
+				requestMap.put("thinking", data);
+				chatObject.setThinking(true);
+			}
+		}
         
-        if(thinking != null){
-            if(parameters != null) {
-                if (!parameters.containsKey("thinking")) {
-                    Map data =  new LinkedHashMap();
-                    data.put("type", thinking?"enabled":"disabled");
-                    requestMap.put("thinking", data);
-                }
-            }
-            else{
-//                chatAgentMessage.addMapParameter("thinking", "type", "enabled");//kimi-k2.5禁用思维模式,启用：enabled
-                Map data =  new LinkedHashMap();
-                data.put("type", thinking?"enabled":"disabled");
-                requestMap.put("thinking", data);
-            }
-            chatObject.setThinking(thinking);
-        }   
-        else{
-            if (parameters !=null && parameters.containsKey("thinking")) {
-                Map data =  (Map) parameters.get("thinking");
-                String type = (String)data.get("type");
-                if("enabled".equals(type)){
-                    chatObject.setThinking(true);
-                }
-                else{
-                    chatObject.setThinking(false);
-                }
-              
-            }
-        }
+//        if(thinking != null){
+//            if(parameters != null) {
+//                if (!parameters.containsKey("thinking")) {
+//                    Map data =  new LinkedHashMap();
+//                    data.put("type", thinking?"enabled":"disabled");
+//                    requestMap.put("thinking", data);
+//                }
+//            }
+//            else{
+////                chatAgentMessage.addMapParameter("thinking", "type", "enabled");//kimi-k2.5禁用思维模式,启用：enabled
+//                Map data =  new LinkedHashMap();
+//                data.put("type", thinking?"enabled":"disabled");
+//                requestMap.put("thinking", data);
+//            }
+//            chatObject.setThinking(thinking);
+//        }   
+//        else{
+//            if (parameters !=null && parameters.containsKey("thinking")) {
+//                Map data =  (Map) parameters.get("thinking");
+//                String type = (String)data.get("type");
+//                if("enabled".equals(type)){
+//                    chatObject.setThinking(true);
+//                }
+//                else{
+//                    chatObject.setThinking(false);
+//                }
+//              
+//            }
+//        }
         
         
         

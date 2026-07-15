@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.util;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
@@ -28,6 +29,8 @@ import reactor.core.publisher.FluxSink;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.frameworkset.spi.ai.util.AIResponseUtil.getFunctionToolDefine;
 
 /**
  * @author biaoping.yin
@@ -339,22 +342,35 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
 
     public StreamData functionTools(List<Map> tool_calls, String finishReason){
 
+		
         if(tool_calls != null) {
             //tool_calls -> {ArrayList@5174}  size = 1
 //            List<Map> tool_calls  = (List)message.get("tool_calls");
             if(tool_calls != null && tool_calls.size() > 0) {
                 List<FunctionTool> functionTools = new ArrayList<>();
+				List<FunctionToolDefine> functionToolDefines = this.getChatObject().getChatContext().getAgentTools();
                 for (Map tool_call : tool_calls) {
+					Map function = (Map)tool_call.get("function");
                     FunctionTool functionTool = new FunctionTool();
+					functionTool.setFunctionName((String)function.get("name"));
+					FunctionToolDefine functionToolDefine = getFunctionToolDefine(functionToolDefines, functionTool.getFunctionName());
+					if(functionToolDefine != null){
+						functionTool.setInputType(functionToolDefine.getInputType());
+					}
                     functionTool.setId((String)tool_call.get("id"));
                     functionTool.setIndex((Integer)tool_call.get("index"));
                     functionTool.setType((String)tool_call.get("type"));
-                    Map function = (Map)tool_call.get("function");
+                   
                     String arguments = (String)function.get("arguments");
                     if(arguments != null) {
-                        functionTool.setArguments(SimpleStringUtil.json2Object(arguments,Map.class));
+						if(functionTool.getInputType() == null) {
+							functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
+						}
+						else{
+							functionTool.setObjectArguments(JsonUtil.json2Object(arguments, functionTool.getInputType()));
+						}
                     }
-                    functionTool.setFunctionName((String)function.get("name"));
+                   
                     functionTools.add(functionTool);
                 }
 
@@ -370,7 +386,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         return null;
     }
 
-    public FunctionTool functionTool(StringBuilder argumentsBuilder,Map tool_call ){        
+    public FunctionTool functionTool(List<FunctionToolDefine> agentTools,StringBuilder argumentsBuilder,Map tool_call ){        
             //tool_calls -> {ArrayList@5174}  size = 1
 //            List<Map> tool_calls  = (List)message.get("tool_calls");
 
@@ -381,7 +397,11 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
             Map function = (Map)tool_call.get("function");
             String arguments = (String)function.get("arguments");
             argumentsBuilder.append( arguments);
-            functionTool.setFunctionName((String)function.get("name"));                  
+            functionTool.setFunctionName((String)function.get("name"));
+			FunctionToolDefine functionToolDefine = getFunctionToolDefine(agentTools, functionTool.getFunctionName());
+			if(functionToolDefine != null){
+				functionTool.setInputType(functionToolDefine.getInputType());
+			}
 
             return functionTool;        
       

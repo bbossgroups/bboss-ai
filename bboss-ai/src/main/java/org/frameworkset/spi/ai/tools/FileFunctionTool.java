@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
@@ -48,17 +49,27 @@ public class FileFunctionTool {
     private static final String DEFAULT_CHARSET = java.nio.charset.StandardCharsets.UTF_8.name();
 
     /** 允许操作的基目录，为空则不限制 */
-    private String baseDirectory;
+    private List<String> baseDirectories;
 
     public FileFunctionTool() {
     }
 
     public FileFunctionTool(String baseDirectory) {
-        this.baseDirectory = baseDirectory;
+		baseDirectories = new ArrayList<>();
+        baseDirectories.add(baseDirectory);
     }
 
-    public FileFunctionTool setBaseDirectory(String baseDirectory) {
-        this.baseDirectory = baseDirectory;
+    public FileFunctionTool addBaseDirectory(String... baseDirectory) {
+		if(baseDirectories == null){
+			baseDirectories = new ArrayList<>();
+		}
+		if(baseDirectory != null && baseDirectory.length > 0) {
+			for (String baseDirectoryItem : baseDirectory) {
+				if (!SimpleStringUtil.isEmpty(baseDirectoryItem)) {
+					baseDirectories.add(baseDirectoryItem);
+				}
+			}
+		}
         return this;
     }
 
@@ -392,16 +403,23 @@ public class FileFunctionTool {
             throw new IllegalArgumentException("路径不能为空");
         }
         java.io.File file = new java.io.File(path);
-        if (!SimpleStringUtil.isEmpty(baseDirectory)) {
-            java.io.File base = new java.io.File(baseDirectory);
-            String basePath = base.getAbsolutePath();
-            String targetPath = file.getAbsolutePath();
-            // 统一分隔符并规范化路径，防止路径穿越
-            String normalizedBase = basePath.replace('\\', '/').replaceAll("/+", "/");
-            String normalizedTarget = targetPath.replace('\\', '/').replaceAll("/+", "/");
-            if (!normalizedTarget.startsWith(normalizedBase)) {
-                throw new IllegalArgumentException("路径超出允许的操作范围，只允许操作: " + baseDirectory);
-            }
+		
+        if (baseDirectories != null && baseDirectories.size() > 0) {
+			boolean isOk = false;
+			for(String baseDirectory:baseDirectories) {
+				java.io.File base = new java.io.File(baseDirectory);
+				String basePath = base.getAbsolutePath();
+				String targetPath = file.getAbsolutePath();
+				// 统一分隔符并规范化路径，防止路径穿越
+				String normalizedBase = basePath.replace('\\', '/').replaceAll("/+", "/");
+				String normalizedTarget = targetPath.replace('\\', '/').replaceAll("/+", "/");
+				if (normalizedTarget.startsWith(normalizedBase)) {
+					isOk = true;
+				}
+			}
+			if (!isOk) {
+				throw new IllegalArgumentException("路径"+path+"超出允许的操作范围，只允许操作以下目录: " + JsonUtil.object2json(baseDirectories));
+			}
         }
         return file;
     }

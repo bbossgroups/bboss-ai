@@ -1100,6 +1100,17 @@ public class AIResponseUtil {
         return false;
     }
 
+	public static FunctionToolDefine getFunctionToolDefine(List<FunctionToolDefine> agentTools, String functionName) {
+		if(agentTools == null || agentTools.size() == 0) {
+			return null;
+		}
+		for(FunctionToolDefine functionToolDefine: agentTools) {
+			if(functionToolDefine.getFunction().getName().equals(functionName)) {
+				return functionToolDefine;
+			}
+		}
+		return null;
+	}
     /**
      * {"choices":[{"delta":{"content":null,"reasoning_content":null,"tool_calls":[{"index":0,"id":"","type":"function","function":{"arguments":"{\"params\": "}}]},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1771930232,"system_fingerprint":null,"model":"qwen3.5-plus","id":"chatcmpl-be905ede-8111-989a-948f-97b3f9c2c440"}
    
@@ -1112,12 +1123,13 @@ public class AIResponseUtil {
         List<Map> toolCalls = new ArrayList<>();
         Map lastToolCall = content.getToolCallsChunk();
         StreamData streamDataChunk = null;
+		ChatContext chatContext = streamDataBuilder.getChatObject().getChatContext();
+		List<FunctionToolDefine> agentTools = chatContext.getAgentTools();
         List<FunctionTool> functionTools = new ArrayList<>();
         StringBuilder argumentsBuilder = new StringBuilder();
-        FunctionTool functionTool = streamDataBuilder.functionTool(argumentsBuilder,lastToolCall);
+        FunctionTool functionTool = streamDataBuilder.functionTool(agentTools,argumentsBuilder,lastToolCall);
         List<StreamData> _tools = content.getToolCallsStreamDatas();
-        ChatContext chatContext = streamDataBuilder.getChatObject().getChatContext();
-        
+
         for(int i = 0; _tools != null && i < _tools.size(); i++){
             streamDataChunk = _tools.get(i);      
             Map<String,Object> toolCall = streamDataChunk.getToolCallsChunk();
@@ -1128,7 +1140,14 @@ public class AIResponseUtil {
                     String arguments = argumentsBuilder.toString();
                     Map lastFunction = (Map)lastToolCall.get("function");
                     lastFunction.put("arguments", arguments);
-                    functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
+					if(SimpleStringUtil.isNotEmpty(arguments)) {
+						
+						if (functionTool.getInputType() == null) {
+							functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
+						} else {
+							functionTool.setObjectArguments(JsonUtil.json2Object(arguments, functionTool.getInputType()));
+						}
+					}
                     if(chatContext.containTool(functionTool.getFunctionName())) {
                         toolCalls.add(lastToolCall);
                         functionTools.add(functionTool);
@@ -1138,7 +1157,7 @@ public class AIResponseUtil {
                     }
                     argumentsBuilder.setLength(0);
                     lastToolCall = toolCall;
-                    functionTool = streamDataBuilder.functionTool(argumentsBuilder,toolCall);
+                    functionTool = streamDataBuilder.functionTool(agentTools,argumentsBuilder,toolCall);
                 }
                 else{
                     streamDataBuilder.appendArguments(argumentsBuilder, toolCall);
@@ -1153,7 +1172,14 @@ public class AIResponseUtil {
             String arguments = argumentsBuilder.toString();
             Map function = (Map) lastToolCall.get("function");
             function.put("arguments", arguments);
-            functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
+			if(SimpleStringUtil.isNotEmpty(arguments)) {
+				
+				if (functionTool.getInputType() == null) {
+					functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
+				} else {
+					functionTool.setObjectArguments(JsonUtil.json2Object(arguments, functionTool.getInputType()));
+				}
+			}
             if(chatContext.containTool(functionTool.getFunctionName())) {
 
                 toolCalls.add(lastToolCall);

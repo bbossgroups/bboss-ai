@@ -45,6 +45,8 @@ public class AgentMessage<T extends AgentMessage> {
      */
     private long retryInterval = 500L;
     private Boolean thinking;
+	
+	private String effort;
     /**
      * maas平台数据源名称
      */
@@ -301,4 +303,13 @@ public class AgentMessage<T extends AgentMessage> {
         this.contextData = contextData;
         return (T)this;
     }
+	
+	public String getEffort() {
+		return effort;
+	}
+	
+	public T setEffort(String effort) {
+		this.effort = effort;
+		return (T)this;
+	}
 }

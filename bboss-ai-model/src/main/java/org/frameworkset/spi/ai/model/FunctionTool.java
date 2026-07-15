@@ -28,6 +28,10 @@ public class FunctionTool {
     private String type;
     private String functionName;
     private Map arguments;
+	private Object objectArguments;
+	
+	
+	private Class inputType ;
     
     private List<Map> toolcalls;
 
@@ -85,4 +89,21 @@ public class FunctionTool {
     public void setToolcalls(List<Map> toolcalls) {
         this.toolcalls = toolcalls;
     }
+	
+	
+	public Class getInputType() {
+		return inputType;
+	}
+	
+	public void setInputType(Class inputType) {
+		this.inputType = inputType;
+	}
+	
+	public Object getObjectArguments() {
+		return objectArguments;
+	}
+	
+	public void setObjectArguments(Object objectArguments) {
+		this.objectArguments = objectArguments;
+	}
 }

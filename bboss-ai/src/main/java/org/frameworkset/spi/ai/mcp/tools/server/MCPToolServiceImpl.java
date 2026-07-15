@@ -97,7 +97,16 @@ public class MCPToolServiceImpl implements MCPToolService {
                 FunctionToolDefine functionToolDefine = mcpApiKeyService.getFunctionToolDefine(apiKey,functionName);
                 FunctionCall<List<Map>> functionCall = functionToolDefine.getFunctionCall();
                 FunctionTool functionTool = new FunctionTool();
-                functionTool.setArguments(arguments);
+				functionTool.setInputType(functionToolDefine.getInputType());
+				if(functionTool.getInputType() == null) {
+					functionTool.setArguments(arguments);
+				}
+				else{
+					
+					if(arguments != null) {
+						functionTool.setObjectArguments(JsonUtil.json2Object(JsonUtil.object2json(arguments), functionTool.getInputType()));
+					}
+				}
                 functionTool.setFunctionName(functionName);
                 
                 if (mcpApiKeyService.auth(functionName, apiKey)) {
@@ -170,7 +179,16 @@ public class MCPToolServiceImpl implements MCPToolService {
                 FunctionToolDefine functionToolDefine = mcpApiKeyService.getFunctionToolDefine(apiKey,functionName);
                 FunctionCall<List<Map>> functionCall = functionToolDefine.getFunctionCall();
                 FunctionTool functionTool = new FunctionTool();
-                functionTool.setArguments(arguments);
+				functionTool.setInputType(functionToolDefine.getInputType());
+				if(functionTool.getInputType() == null) {
+					functionTool.setArguments(arguments);
+				}
+				else{
+					 
+					if(arguments != null) {
+						functionTool.setObjectArguments(JsonUtil.json2Object(JsonUtil.object2json(arguments), functionTool.getInputType()));
+					}
+				}
                 functionTool.setFunctionName(functionName);
 
                 if (mcpApiKeyService.auth(functionName, apiKey)) {

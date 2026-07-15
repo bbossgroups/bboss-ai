@@ -406,8 +406,12 @@ public class AIAgentUtil {
         if(chatMessage instanceof AgentMessage){
             Map<String,Object> contextData = chatMessage.getContextData();
             if(contextData != null)
-                chatContext.setContextData(contextData);
-        }       
+                chatContext.addContextDatas(contextData);
+        }     
+		Map<String,Object> params = agent.getParams();
+		if(params != null && params.size() > 0) {
+			chatContext.addContextDatas(params);
+		}
        
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**

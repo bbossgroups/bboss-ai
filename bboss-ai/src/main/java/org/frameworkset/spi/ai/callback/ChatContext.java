@@ -192,9 +192,13 @@ public class ChatContext {
         return contextData.get(key);
     }
 
-    public ChatContext setContextData(Map<String, Object> contextData) {
-        this.contextData = contextData;
-        return this;
+    public ChatContext addContextDatas(Map<String, Object> contextData) {
+        
+		if(contextData == null){
+			contextData = new java.util.LinkedHashMap<>();
+		}
+		this.contextData.putAll(contextData);
+		return this;
     }
     public List<FunctionToolDefine> getAgentTools() {
         return agentTools;

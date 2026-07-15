@@ -39,6 +39,8 @@ public abstract class BaseBeanToolsRegist implements ToolsRegist {
     public BaseBeanToolsRegist(Object toolBean){
         this.toolBean = toolBean;
     }
+	private Object lock = new Object();
+	private boolean initialized = false;
     protected abstract BaseBeanToolFunctionCall buildBeanToolFunctionCall(Method toolMethod, Object toolBean, FunctionToolDefine functionToolDefine, Parameter[] parameters);
     @Override
     public void init(){
@@ -54,7 +56,15 @@ public abstract class BaseBeanToolsRegist implements ToolsRegist {
 //                functionToolDefinesIndexByName.put(functionToolDefine.getFunction().getName(), functionToolDefine);
 //            }
 //        }
-        registBeanTools(toolBean);
+		if(initialized){
+			return;
+		}
+		synchronized (lock) {
+			if(initialized){
+				return;
+			}
+			registBeanTools(toolBean);
+		}
     }
     protected Object registLock = new Object();
     public void registBeanTools(Object toolBean) {
@@ -79,6 +89,7 @@ public abstract class BaseBeanToolsRegist implements ToolsRegist {
                     if(functionToolDefinesIndexByName.containsKey(name)){
                         continue;
                     }
+					functionToolDefine.setToolsRegist(this);
                     newFunctionToolDefines.add(functionToolDefine);
                     functionToolDefinesIndexByName.put(name, functionToolDefine);
                 }

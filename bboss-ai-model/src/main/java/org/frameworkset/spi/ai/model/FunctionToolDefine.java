@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.model;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.frameworkset.spi.ai.tools.ToolsRegist;
 
 /**
  * [
@@ -43,9 +44,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public class FunctionToolDefine {
     private String type = "function";
+	private Class inputType ;
     private Function function;
     @JsonIgnore
     private FunctionCall functionCall;
+	
+
+	
+	@JsonIgnore
+	private ToolsRegist toolsRegist;
 
     public String getType() {
         return type;
@@ -164,6 +171,24 @@ public class FunctionToolDefine {
 			function = new Function();
 		}
 		function.setParameters(parameters);
+		return this;
+	}
+	
+	public Class getInputType() {
+		return inputType;
+	}
+	
+	public FunctionToolDefine setInputType(Class inputType) {
+		this.inputType = inputType;
+		return this;
+	}
+	
+	public ToolsRegist getToolsRegist() {
+		return toolsRegist;
+	}
+	
+	public FunctionToolDefine setToolsRegist(ToolsRegist toolsRegist) {
+		this.toolsRegist = toolsRegist;
 		return this;
 	}
 }

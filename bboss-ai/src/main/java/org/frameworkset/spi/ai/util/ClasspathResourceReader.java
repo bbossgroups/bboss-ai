@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 
 /**
  * 类路径资源读取工具（改进版）
@@ -48,35 +49,8 @@ public class ClasspathResourceReader {
             charsetName = "UTF-8";
         }
         Charset charset = Charset.forName(charsetName);
-
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        if (classLoader == null) {
-            classLoader = ClasspathResourceReader.class.getClassLoader();
-        }
-
-        String normalizedPath = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
-
-        // ★ 关键点：字符集在这里指定（包装 InputStreamReader）
-        try (InputStream is = classLoader.getResourceAsStream(normalizedPath);
-             InputStreamReader isr = new InputStreamReader(is, charset);  // 在此绑定字符集
-             BufferedReader reader = new BufferedReader(isr)) {
-
-            if (is == null) {
-                throw new IOException("Resource not found: " + resourcePath);
-            }
-
-            // 使用 StringBuilder 逐行拼接（适合普通文本）
-            StringBuilder sb = new StringBuilder();
-            char[] buffer = new char[8192];
-            int len;
-            while ((len = reader.read(buffer)) != -1) {
-                sb.append(buffer, 0, len);
-            }
-            return sb.toString();
-        } catch (NullPointerException e) {
-            // 如果 is 为 null，InputStreamReader 构造会抛出 NPE，这里转为明确的业务异常
-            throw new IOException("Resource not found: " + resourcePath, e);
-        }
+		return readClasspathResource(resourcePath, charset);
+        
     }
 
     /**
@@ -95,18 +69,67 @@ public class ClasspathResourceReader {
             charset = "UTF-8";
         }
         Charset charsetObj = Charset.forName(charset);
-
-        try (InputStream is = new URL(url).openStream();
-             InputStreamReader isr = new InputStreamReader(is, charsetObj);
-             BufferedReader reader = new BufferedReader(isr)) {
-
-            StringBuilder sb = new StringBuilder();
-            char[] buffer = new char[8192];
-            int len;
-            while ((len = reader.read(buffer)) != -1) {
-                sb.append(buffer, 0, len);
-            }
-            return sb.toString();
-        }
+		try (InputStream is = new URL(url).openStream();
+			 InputStreamReader isr = new InputStreamReader(is, charsetObj);
+			 BufferedReader reader = new BufferedReader(isr)) {
+			
+			StringBuilder sb = new StringBuilder();
+			char[] buffer = new char[8192];
+			int len;
+			while ((len = reader.read(buffer)) != -1) {
+				sb.append(buffer, 0, len);
+			}
+			return sb.toString();
+		}
+        
     }
+	
+	public static String readClasspathResource(String resourcePath, Charset charset) throws IOException {
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		if (classLoader == null) {
+			classLoader = ClasspathResourceReader.class.getClassLoader();
+		}
+		
+		String normalizedPath = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+		InputStream is = null;
+		// ★ 关键点：字符集在这里指定（包装 InputStreamReader）
+		try  {
+			is = classLoader.getResourceAsStream(normalizedPath);
+			return readClasspathResource(  is,   charset,   resourcePath);
+		}
+		finally {
+			if(is != null){
+				is.close();
+			}
+		}
+			
+		 
+		
+	}
+	
+	public static String readClasspathResource(InputStream is, Charset charset,String resourcePath) throws IOException {
+		if (is == null) {
+			throw new IOException("Resource not found: " + resourcePath);
+		}
+		try (
+				
+			 InputStreamReader isr = new InputStreamReader(is, charset);  // 在此绑定字符集
+			 BufferedReader reader = new BufferedReader(isr)) {			
+			
+			// 使用 StringBuilder 逐行拼接（适合普通文本）
+			StringBuilder sb = new StringBuilder();
+			char[] buffer = new char[8192];
+			int len;
+			while ((len = reader.read(buffer)) != -1) {
+				sb.append(buffer, 0, len);
+			}
+			return sb.toString();
+		} catch (IOException e) {
+			// 如果 is 为 null，InputStreamReader 构造会抛出 NPE，这里转为明确的业务异常
+			throw e;
+		}catch (Exception e) {
+			// 如果 is 为 null，InputStreamReader 构造会抛出 NPE，这里转为明确的业务异常
+			throw new IOException("Resource not found: " + resourcePath, e);
+		}
+	}
 }

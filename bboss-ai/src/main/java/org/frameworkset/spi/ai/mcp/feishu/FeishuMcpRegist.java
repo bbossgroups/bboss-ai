@@ -69,45 +69,53 @@ public class FeishuMcpRegist extends MCPToolsRegist {
     protected MCPClient buildMCPClient(){
         return new FeishuMCPClient(mcpServer,baseFeishuConfig);
     }
-
+	
     @Override
     public void init() {
-        ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
-        if(clientConfiguration.getAuthorTokenExpiredTime() > 1500000L)
-            clientConfiguration.setAuthorTokenExpiredTime(1500000L);
-        if(baseFeishuConfig == null){
-            BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
+		if(initialized == true){
+			return;
+		}
+		synchronized (lock) {
+			if (initialized) {
+				return;
+			}
+			ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
+			if (clientConfiguration.getAuthorTokenExpiredTime() > 1500000L)
+				clientConfiguration.setAuthorTokenExpiredTime(1500000L);
+			if (baseFeishuConfig == null) {
+				BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
 //            bboss应用
-            baseFeishuConfig.setFeishuAppId(appId)
-                    .setFeishAppSecret(appSecret);
- 
-            String feishuDatasource = SimpleStringUtil.getUUID32();
-            baseFeishuConfig.addHttpConfig("http.poolNames", feishuDatasource)
-                    .addHttpConfig(feishuDatasource+ ".http.hosts", "https://open.feishu.cn")
-                    .addHttpConfig(feishuDatasource+ ".http.maxTotal", 10)
-                    .addHttpConfig(feishuDatasource+ ".http.defaultMaxPerRoute", 10)
-                    .addHttpConfig(feishuDatasource+ ".http.timeoutConnection", clientConfiguration.getTimeoutConnection())
-                    .addHttpConfig(feishuDatasource+ ".http.connectionRequestTimeout", clientConfiguration.getConnectionRequestTimeout())
+				baseFeishuConfig.setFeishuAppId(appId)
+						.setFeishAppSecret(appSecret);
+				
+				String feishuDatasource = SimpleStringUtil.getUUID32();
+				baseFeishuConfig.addHttpConfig("http.poolNames", feishuDatasource)
+						.addHttpConfig(feishuDatasource + ".http.hosts", "https://open.feishu.cn")
+						.addHttpConfig(feishuDatasource + ".http.maxTotal", 10)
+						.addHttpConfig(feishuDatasource + ".http.defaultMaxPerRoute", 10)
+						.addHttpConfig(feishuDatasource + ".http.timeoutConnection", clientConfiguration.getTimeoutConnection())
+						.addHttpConfig(feishuDatasource + ".http.connectionRequestTimeout", clientConfiguration.getConnectionRequestTimeout())
 //                    #socket通讯超时时间，如果在通讯过程中出现sockertimeout异常，可以适当调整timeoutSocket参数值，单位：毫秒
-                    .addHttpConfig(feishuDatasource+ ".http.timeoutSocket", clientConfiguration.getTimeoutSocket())
-                    .addHttpConfig(feishuDatasource+ ".http.authorTokenFunction","org.frameworkset.spi.feishu.FeishuAuthorTokenFunction")
-                    .addHttpConfig(feishuDatasource+ ".http.authorTokenExpiredTime",clientConfiguration.getAuthorTokenExpiredTime())
-                    .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appId",appId)
-                    .addHttpConfig(feishuDatasource+ ".http.extendConfigs.appSecret", appSecret)
-                    
-                    .setMcpTools(tools);
-            this.baseFeishuConfig = baseFeishuConfig;
-        }
-        baseFeishuConfig.build();
-        
-        if(clientConfiguration != null && clientConfiguration.getAuthorTokenFunctionObject() != null) {
-            FeishuMCPAuthorTokenFunction feishuAuthorTokenFunction = (FeishuMCPAuthorTokenFunction) clientConfiguration.getAuthorTokenFunctionObject();
-            if(feishuAuthorTokenFunction != null) {
-                feishuAuthorTokenFunction.setFeishuDatasource(baseFeishuConfig.getFeishuDataSource());
-            }
-        }
-        baseFeishuConfig.initFeishHelper();
-        super.init();
+						.addHttpConfig(feishuDatasource + ".http.timeoutSocket", clientConfiguration.getTimeoutSocket())
+						.addHttpConfig(feishuDatasource + ".http.authorTokenFunction", "org.frameworkset.spi.feishu.FeishuAuthorTokenFunction")
+						.addHttpConfig(feishuDatasource + ".http.authorTokenExpiredTime", clientConfiguration.getAuthorTokenExpiredTime())
+						.addHttpConfig(feishuDatasource + ".http.extendConfigs.appId", appId)
+						.addHttpConfig(feishuDatasource + ".http.extendConfigs.appSecret", appSecret)
+						
+						.setMcpTools(tools);
+				this.baseFeishuConfig = baseFeishuConfig;
+			}
+			baseFeishuConfig.build();
+			
+			if (clientConfiguration != null && clientConfiguration.getAuthorTokenFunctionObject() != null) {
+				FeishuMCPAuthorTokenFunction feishuAuthorTokenFunction = (FeishuMCPAuthorTokenFunction) clientConfiguration.getAuthorTokenFunctionObject();
+				if (feishuAuthorTokenFunction != null) {
+					feishuAuthorTokenFunction.setFeishuDatasource(baseFeishuConfig.getFeishuDataSource());
+				}
+			}
+			baseFeishuConfig.initFeishHelper();
+			super.init();
+		}
         
     }
 

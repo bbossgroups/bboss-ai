@@ -23,14 +23,10 @@ import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
-import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Jiutian模型智能体适配器
@@ -137,6 +133,26 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
          
         return imageEvent;
     }
+	
+	@Override
+	protected void buildThinking(ChatAgentMessage chatAgentMessage,ChatObject chatObject,Map<String, Object> requestMap){
+//        Map parameters = chatAgentMessage.getParameters();
+		Boolean thinking = chatAgentMessage.getThinking();
+		ChatContext chatContext = chatObject.getChatContext();
+		if(chatContext != null && chatContext.getThinking() != null){
+			thinking = chatContext.getThinking();
+			
+		}
+		if(thinking != null){
+			Map reasoning = new LinkedHashMap();
+			reasoning.put("enabled", thinking);
+			requestMap.put("reasoning", reasoning);
+			chatObject.setThinking(thinking);			 
+		}
+		
+	}
+	
+	
 
     @Override
     public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
