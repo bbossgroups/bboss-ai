@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.hitl.cluster;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.nosql.redis.RedisTool;
 import org.frameworkset.spi.ai.hitl.HitlTaskCallListener;
 import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
@@ -28,9 +29,15 @@ import redis.clients.jedis.JedisPubSub;
 public class RedisHitlTaskCallListener implements HitlTaskCallListener {
 	private String redis;
 	private Thread thread;
-	public static final String channel = "event:hitlTaskCallResult";
+	public static final String DEFAULT_CHANNEL = "event:hitlTaskCallResult";
+	private String channel = DEFAULT_CHANNEL;
 	public RedisHitlTaskCallListener(String redis) {
 		this.redis = redis;
+	}
+	public RedisHitlTaskCallListener(String redis,String channel) {
+		this.redis = redis;
+		if(SimpleStringUtil.isNotEmpty(channel))
+			this.channel = channel;
 	}
 	public void start(){
 		if(thread != null && thread.isAlive())

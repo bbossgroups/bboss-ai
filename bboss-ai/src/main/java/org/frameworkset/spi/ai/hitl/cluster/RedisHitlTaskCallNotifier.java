@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.hitl.cluster;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.nosql.redis.RedisTool;
 import org.frameworkset.spi.ai.hitl.HitlTaskCallNotifier;
 
@@ -25,8 +26,14 @@ import org.frameworkset.spi.ai.hitl.HitlTaskCallNotifier;
  */
 public class RedisHitlTaskCallNotifier implements HitlTaskCallNotifier {
 	private String redis;
+	private String channel = RedisHitlTaskCallListener.DEFAULT_CHANNEL;
 	public RedisHitlTaskCallNotifier(String redis) {
 		this.redis = redis;
+	}
+	public RedisHitlTaskCallNotifier(String redis,String channel) {
+		this.redis = redis;
+		if(SimpleStringUtil.isNotEmpty(channel))
+			this.channel = channel;
 	}
 	/**
 	 * 人工介入任务调用结果通知
@@ -34,7 +41,7 @@ public class RedisHitlTaskCallNotifier implements HitlTaskCallNotifier {
 	 */
 	public void notifyHitlTaskCallResult(String hitlTaskId){
 		RedisTool redisTool = RedisTool.getInstance(redis);//获取指定名称的redis数据源
-		redisTool.publish(RedisHitlTaskCallListener.channel,hitlTaskId);//发布人工介入任务调用结果通知
+		redisTool.publish(channel,hitlTaskId);//发布人工介入任务调用结果通知
 	}
 	
 	

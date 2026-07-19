@@ -61,7 +61,7 @@ public class StoreContext {
 	/**
 	 * 人工介入任务数据库表数据源
 	 */
-	private String hitlDatasource = "bboss";
+	private String hitlDatasource ;
     
     private String domain;
     

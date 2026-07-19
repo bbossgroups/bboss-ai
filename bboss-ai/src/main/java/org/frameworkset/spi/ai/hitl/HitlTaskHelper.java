@@ -17,6 +17,8 @@ package org.frameworkset.spi.ai.hitl;
 
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
+import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallNotifier;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionService;
@@ -339,6 +341,11 @@ public class HitlTaskHelper {
 		return hitlTaskCallNotifier;
 	}
 	
+	public HitlTaskHelper setRedisChannel(String redis,String channel) {
+		this.hitlTaskCallListener = new RedisHitlTaskCallListener(redis,channel);
+		this.hitlTaskCallNotifier = new RedisHitlTaskCallNotifier(redis,channel);
+		return this;
+	}
 	public HitlTaskHelper setHitlTaskCallNotifier(HitlTaskCallNotifier hitlTaskCallNotifier) {
 		this.hitlTaskCallNotifier = hitlTaskCallNotifier;
 		return this;
