@@ -48,6 +48,20 @@ public class StoreContext {
     private String userId;
     private String agentId;
     private String dataSource;
+	
+	public String getHitlDatasource() {
+		return hitlDatasource;
+	}
+	
+	public StoreContext setHitlDatasource(String hitlDatasource) {
+		this.hitlDatasource = hitlDatasource;
+		return this;
+	}
+	
+	/**
+	 * 人工介入任务数据库表数据源
+	 */
+	private String hitlDatasource = "bboss";
     
     private String domain;
     

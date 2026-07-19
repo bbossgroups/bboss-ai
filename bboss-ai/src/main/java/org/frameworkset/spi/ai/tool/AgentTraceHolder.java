@@ -20,6 +20,7 @@ import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.TokenMetrics;
 import org.frameworkset.spi.ai.model.TraceMessage;
+import org.frameworkset.spi.ai.util.ServerEventUtil;
 
 /**
  * @author biaoping.yin
@@ -76,6 +77,7 @@ public class AgentTraceHolder {
         ChatObject chatObject = getChatObject();
         if(chatObject != null){
             ChatContext chatContext = chatObject.getChatContext();
+			ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
             chatContext.getAgentSink().next(serverEvent);
         }
     }

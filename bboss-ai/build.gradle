@@ -72,5 +72,7 @@ dependencies {
                 exclude group: 'org.ow2.asm', module: 'asm'
                 exclude group: 'org.apache.commons', module: 'commons-lang3'
             }
- 
+    api group: 'com.bbossgroups', name: 'bboss-data', version: bboss_data
+  
+
 }

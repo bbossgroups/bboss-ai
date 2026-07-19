@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.model.AgentResultSessionMessageContext;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
+import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.JobFlowNode;
 import org.frameworkset.tran.jobflow.NodeTrigger;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
@@ -114,6 +115,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
                         agentResultSessionMessageContext.setSubAgentIdBy(subAgentIdsBy.toString());
                         AIParrelAgent.this.addAgentResultSessionMessage(agentResultSessionMessageContext,data);
                         ServerEvent serverEvent = new ServerEvent();
+						ServerEventUtil.buildServerEventAgentInfo(serverEvent,AIParrelAgent.this);
                         serverEvent.setDone(true);
                         serverEvent.setAgent(AIParrelAgent.this);
                         serverEvent.setData(data);

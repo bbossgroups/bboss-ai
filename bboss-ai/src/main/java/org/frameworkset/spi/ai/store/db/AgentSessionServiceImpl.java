@@ -20,6 +20,7 @@ import com.frameworkset.common.poolman.ConfigSQLExecutor;
 import com.frameworkset.orm.transaction.TransactionManager;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.ListInfo;
+import org.frameworkset.spi.ai.hitl.HitlCallTask;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
 import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionException;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -37,8 +39,12 @@ import java.util.List;
  * yinbp @version v1.0
  */
 public class AgentSessionServiceImpl implements AgentSessionService {
-    private String datasource = "bboss";
-
+    private String datasource ;
+	/**
+	 * 人工介入任务数据库表数据源
+	 */
+	private String hitlDatasource  ;	
+	private String clickhouseCluster ;
     private static Logger log = LoggerFactory
             .getLogger(AgentSessionServiceImpl.class);
 
@@ -46,19 +52,173 @@ public class AgentSessionServiceImpl implements AgentSessionService {
     private AgentSessionStoreDBConfig agentSessionStoreDBConfig;
 
     private Object lock = new Object();
-    private void init(){
-        if(executor == null) {
-            synchronized (lock) {
-                if (executor == null) {
-                    executor = new ConfigSQLExecutor("org/frameworkset/spi/ai/store/db/agentSession.xml");
-                }
-                agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
-                agentSessionStoreDBConfig.init();
-            }
-        }
+	private boolean inited = false;
+    public void init(){
+		if(inited )
+				return;
+		synchronized (lock) {
+			if(inited)
+				return;
+			if (executor == null) {
+				executor = new ConfigSQLExecutor("org/frameworkset/spi/ai/store/db/agentSession.xml");
+			}
+			agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
+			if(hitlDatasource == null)
+				hitlDatasource = datasource;
+			agentSessionStoreDBConfig.init(clickhouseCluster, hitlDatasource, datasource);
+			inited = true;
+		}
 
     }
+	
+	/**
+	 * 获取人工任务
+	 * @param hitlTaskId
+	 * @return
+	 */
+	public HitlCallTask getHitlCallTask(String hitlTaskId){
+		init();
+		try {
+			return executor.queryObjectWithDBName(HitlCallTask.class,hitlDatasource, "getHitlCallTask",  hitlTaskId);
+		} catch (SQLException e) {
+			throw new AgentSessionException("getHitlCallTask failed::hitlTaskId=" + hitlTaskId, e);
+		}
+	}
+	public void persistentHitlCallTask(HitlCallTask hitlCallTask){
+		init();
+		// 1. 保存人工介入任务到数据库表中
+		// 2. 发送人工介入任务到客户端
+		try {
+			executor.insertBean(hitlDatasource, "insertHitlCallTask", hitlCallTask);
+		} catch (SQLException e) {
+			throw new AgentSessionException("persistentHitlCallTask failed::sessionid=" + JsonUtil.object2json(hitlCallTask), e);
+		}
+		
+	}
+	
+	/**
+	 * 处理人工任务
+	 * @param hitlTaskData
+	 * @param hitlTaskId
+	 */
+	public String handledHitlCallTask(Object  hitlTaskData,Throwable throwable,String hitlTaskId){
+		init();
+		String _hitlTaskData = null;
+		try {
+			
+			if(hitlTaskData != null){
+				if(hitlTaskData instanceof String){
+					_hitlTaskData = (String)hitlTaskData;
+				}
+				else{
+					_hitlTaskData = JsonUtil.object2json(hitlTaskData);
+				}
+			}
+			String _throwable = null;
+			if(throwable != null){
+				_throwable = throwable.getMessage();
+			}
+			executor.updateWithDBName(hitlDatasource, "handledHitlCallTask", _hitlTaskData,_throwable,new Date(),hitlTaskId);
+		} catch (SQLException e) {
+			throw new AgentSessionException("handledHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",hitlTaskData=" + _hitlTaskData, e);
+		}
+		return _hitlTaskData;
+		
+	}
+	
+	/**
+	 * 拒绝人工任务
+	 * @param hitlTaskContent
+	 * @param hitlTaskId
+	 */
+	public String refusedHitlCallTask(Object  hitlTaskContent,Throwable throwable,String hitlTaskId){
+		init();
+		String _hitlTaskContent = null;
+		try {
+			if(hitlTaskContent != null){
+				if(hitlTaskContent instanceof String){
+					_hitlTaskContent = (String)hitlTaskContent;
+				}
+				else{
+					_hitlTaskContent = JsonUtil.object2json(hitlTaskContent);
+				}
+			}
+			String _throwable = null;
+			if(throwable != null){
+				_throwable = throwable.getMessage();
+			}
+			executor.updateWithDBName(hitlDatasource, "refusedHitlCallTask", _hitlTaskContent,_throwable,new Date(),hitlTaskId);
+		} catch (SQLException e) {
+			throw new AgentSessionException("refusedHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",hitlTaskContent=" + _hitlTaskContent, e);
+		}
+		return _hitlTaskContent;
+		
+	}
+	
+	/**
+	 * 完成人工任务
+	 * @param hitlTaskHandleResult
+	 * @param hitlTaskId
+	 */
+	public void completeHitlCallTask(String  hitlTaskHandleResult,String hitlTaskId){
+		init();
+		try {
+			executor.updateWithDBName(hitlDatasource, "completeHitlCallTask", hitlTaskHandleResult,new Date(),hitlTaskId);
+		} catch (SQLException e) {
+			throw new AgentSessionException("completeHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",hitlTaskContent=" + hitlTaskHandleResult, e);
+		}
+		
+	}
+	
+	
+	
+	/**
+	 * 完成人工任务
+	 * @param hitlTaskHandleResult
+	 * @param hitlTaskId
+	 */
+	public void timeoutHitlCallTask(String  hitlTaskHandleResult,String hitlTaskId){
+		init();
+		try {
+			executor.updateWithDBName(hitlDatasource, "timeoutHitlCallTask", hitlTaskHandleResult,new Date(),hitlTaskId);
+		} catch (SQLException e) {
+			throw new AgentSessionException("timeoutHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",hitlTaskContent=" + hitlTaskHandleResult, e);
+		}
+		
+	}
+	
+	/**
+	 * 销毁人工任务
+	 * @param reason
+	 * @param hitlTaskId
+	 */
+	public void destroyHitlCallTask(String reason, String hitlTaskId){
+		init();
+		try {
+			executor.updateWithDBName(hitlDatasource, "destroyHitlCallTask", reason,new Date(),hitlTaskId);
+		} catch (SQLException e) {
+			throw new AgentSessionException("destroyHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",reason=" + reason, e);
+		}
+		
+	}
+	
+	/**
+	 * 归档人工任务
+	 * @param archiveTime
+	 */
+	public void deleteCompleteHitlCallTaskSQLWithCompleteTime(Date archiveTime){
+		init();
+		try {
+			executor.deleteWithDBName(hitlDatasource, "deleteCompleteHitlCallTaskSQLWithCompleteTime", archiveTime);
+		} catch (SQLException e) {
+			throw new AgentSessionException("deleteCompleteHitlCallTaskSQLWithCompleteTime failed::archiveTime=" + archiveTime, e);
+		}
+		
+	}
+ 
 
+ 
+  
     public void deleteAgentSession(String sessionid) throws AgentSessionException
 
     {
@@ -224,6 +384,7 @@ public class AgentSessionServiceImpl implements AgentSessionService {
     }
 
     public List<SessionMessage> queryListSessionMessages(String sessionid) throws AgentSessionException {
+        init();
         if (log.isDebugEnabled()) {
             log.debug("queryListSessionMessages start::sessionid={}", sessionid);
         }
@@ -240,4 +401,15 @@ public class AgentSessionServiceImpl implements AgentSessionService {
     public void setExecutor(ConfigSQLExecutor executor) {
         this.executor = executor;
     }
+	public String getClickhouseCluster() {
+		return clickhouseCluster;
+	}
+	
+	public void setClickhouseCluster(String clickhouseCluster) {
+		this.clickhouseCluster = clickhouseCluster;
+	}
+	
+	public void setHitlDatasource(String hitlDatasource) {
+		this.hitlDatasource = hitlDatasource;
+	}
 }

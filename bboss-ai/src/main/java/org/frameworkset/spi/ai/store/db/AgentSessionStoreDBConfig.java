@@ -16,8 +16,14 @@ package org.frameworkset.spi.ai.store.db;
  */
 
 import com.frameworkset.common.poolman.DBUtil;
+import com.frameworkset.common.poolman.SQLExecutor;
 import com.frameworkset.orm.adapter.DB;
+import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.model.AIRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -26,6 +32,7 @@ import java.util.List;
  * @Date 2026/4/5
  */
 public class AgentSessionStoreDBConfig {
+	private static Logger logger = LoggerFactory.getLogger(AgentSessionStoreDBConfig.class);
     public static String sqlite_createSessionTableSQL = new StringBuilder().append("create table $sessionTableName (sessionId varchar(100),")  //会话id
             .append( "createTime number(20),") //创建时间
             .append(" lastAccessTime number(20), " )
@@ -100,6 +107,163 @@ public class AgentSessionStoreDBConfig {
             .append("COMMENT ON COLUMN $sessionTableName.userId IS '用户id';")
             .append("COMMENT ON COLUMN $sessionTableName.agentId IS '代理id';")
             .append("COMMENT ON COLUMN $sessionTableName.title IS '会话标题';")
+            .toString();
+
+    public static String sqlite_createHitlCallTaskTableSQL = new StringBuilder().append("create table $hitlCallTaskTableName (hitlTaskId varchar(100),")  //人工介入任务id
+            .append( "traceId varchar(100),")  //trace id
+            .append( "agentId varchar(100),")  //智能体id
+            .append( "agentName varchar(200),")  //智能体名称
+            .append( "parentAgentId varchar(100),")  //父智能体id
+            .append( "parentAgentName varchar(200),")  //父智能体名称
+            .append( "sessionId varchar(100),")  //会话id
+            .append( "requestId varchar(100),")  //请求id
+            .append( "userId varchar(100),")  //用户id
+            .append( "hitlTaskReason text,")  //人工介入任务内容,LLM生成	
+			.append(" hitlTaskData text,")  //人工介入任务内容,人工辅助提供
+			.append(" exception text,")  //异常信息
+            .append( "hitlTaskStatus int,")  //人工介入任务状态：0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束
+            .append( "hitlTaskHandleResult text,")  //人工介入任务处理结果说明
+            .append( "hitlTaskCreateTime number(20),")  //人工介入任务创建时间
+            .append( "hitlTaskHandleTime number(20),")  //人工介入任务处理时间
+            .append( "hitlTaskCompleteTime number(20),")  //人工介入任务完成时间
+            .append( "PRIMARY KEY (hitlTaskId))").toString();
+
+    public static final String mysql_createHitlCallTaskTableSQL = new StringBuilder().append("CREATE TABLE $hitlCallTaskTableName ( hitlTaskId varchar(100) NOT NULL comment '人工介入任务id'," )
+            .append(" traceId varchar(100) comment 'trace id', " )
+            .append(" agentId varchar(100) comment '智能体id', " )
+            .append(" agentName varchar(200) comment '智能体名称', " )
+            .append(" parentAgentId varchar(100) comment '父智能体id', " )
+            .append(" parentAgentName varchar(200) comment '父智能体名称', " )
+            .append(" sessionId varchar(100) comment '会话id', " )
+            .append(" requestId varchar(100) comment '请求id', " )
+            .append(" userId varchar(100) comment '用户id', " )
+            .append(" hitlTaskReason LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci comment '人工介入任务内容，LLM生成', " )			
+			.append(" hitlTaskData LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci comment '人工介入任务内容，人工辅助提供', ")  //人工介入任务内容,人工辅助提供
+			.append(" exception LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci comment '异常信息', ")  //异常信息
+            .append(" hitlTaskStatus int comment '人工介入任务状态：0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束', " )
+            .append(" hitlTaskHandleResult LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci comment '人工介入任务处理结果说明', " )
+            .append(" hitlTaskCreateTime datetime comment '人工介入任务创建时间', " )
+            .append(" hitlTaskHandleTime datetime comment '人工介入任务处理时间', " )
+            .append(" hitlTaskCompleteTime datetime comment '人工介入任务完成时间', " )
+            .append( "PRIMARY KEY(hitlTaskId)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").toString();
+
+    public static final String oracle_createHitlCallTaskTableSQL = new StringBuilder().append("CREATE TABLE $hitlCallTaskTableName ( hitlTaskId varchar2(100) NOT NULL," )
+            .append(" traceId varchar2(100),")
+            .append(" agentId varchar2(100),")
+            .append(" agentName varchar2(200),")
+            .append(" parentAgentId varchar2(100),")
+            .append(" parentAgentName varchar2(200),")
+            .append(" sessionId varchar2(100),")
+            .append(" requestId varchar2(100),")
+            .append(" userId varchar2(100),")
+            .append(" hitlTaskReason clob,")  //人工介入任务内容,LLM生成
+			.append(" hitlTaskData clob,")  //人工介入任务内容,人工辅助提供
+			.append(" exception clob, ")  //异常信息
+            .append(" hitlTaskStatus int,")
+            .append(" hitlTaskHandleResult clob,")
+            .append(" hitlTaskCreateTime timestamp,")
+            .append(" hitlTaskHandleTime timestamp,")
+            .append(" hitlTaskCompleteTime timestamp,")
+            .append( "constraint $hitlCallTaskTableName_PK primary key(hitlTaskId))").toString();
+
+    public static final String oracle_addCommentsToHitlCallTaskTableSQL = new StringBuilder()
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskId IS '人工介入任务id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.traceId IS 'trace id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.agentId IS '智能体id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.agentName IS '智能体名称';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.parentAgentId IS '父智能体id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.parentAgentName IS '父智能体名称';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.sessionId IS '会话id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.requestId IS '请求id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.userId IS '用户id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskReason IS '人工介入任务内容，LLM生成';")  //人工介入任务内容,LLM生成
+			.append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskData IS '人工介入任务内容，人工辅助提供';")  //人工介入任务内容,人工辅助提供	
+			.append("COMMENT ON COLUMN $hitlCallTaskTableName.exception IS '异常信息';")  //异常信息
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskStatus IS '人工介入任务状态：0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskHandleResult IS '人工介入任务处理结果说明';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskCreateTime IS '人工介入任务创建时间';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskHandleTime IS '人工介入任务处理时间';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskCompleteTime IS '人工介入任务完成时间';")
+            .toString();
+
+    public static final String dm_createHitlCallTaskTableSQL = new StringBuilder().append("CREATE TABLE $hitlCallTaskTableName ( hitlTaskId varchar2(100) NOT NULL," )
+            .append(" traceId varchar2(100),")
+            .append(" agentId varchar2(100),")
+            .append(" agentName varchar2(200),")
+            .append(" parentAgentId varchar2(100),")
+            .append(" parentAgentName varchar2(200),")
+            .append(" sessionId varchar2(100),")
+            .append(" requestId varchar2(100),")
+            .append(" userId varchar2(100),")
+            .append(" hitlTaskReason clob,")  //人工介入任务内容,LLM生成
+			.append(" hitlTaskData clob,")  //人工介入任务内容,人工辅助提供
+			.append(" exception clob, ")  //异常信息
+            .append(" hitlTaskStatus int,")
+            .append(" hitlTaskHandleResult clob,")
+            .append(" hitlTaskCreateTime timestamp,")
+            .append(" hitlTaskHandleTime timestamp,")
+            .append(" hitlTaskCompleteTime timestamp,")
+            .append( "constraint $hitlCallTaskTableName_PK primary key(hitlTaskId))").toString();
+
+    public static final String sqlserver_createHitlCallTaskTableSQL = new StringBuilder().append("CREATE TABLE $hitlCallTaskTableName " )
+            .append( "( hitlTaskId varchar(100) NOT NULL," ) //人工介入任务id
+            .append( "traceId varchar(100),")  //trace id
+            .append(" agentId varchar(100),")  //智能体id
+            .append(" agentName varchar(200),")  //智能体名称
+            .append(" parentAgentId varchar(100),")  //父智能体id
+            .append(" parentAgentName varchar(200),")  //父智能体名称
+            .append(" sessionId varchar(100),")  //会话id
+            .append(" requestId varchar(100),")  //请求id
+            .append(" userId varchar(100),")  //用户id
+            .append(" hitlTaskReason nvarchar(max),")  //人工介入任务内容,LLM生成
+			.append(" hitlTaskData nvarchar(max),")  //人工介入任务内容,人工辅助提供
+			.append(" exception nvarchar(max),")  //异常信息
+            .append(" hitlTaskStatus int,")  //人工介入任务状态：0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束
+            .append(" hitlTaskHandleResult nvarchar(max),")  //人工介入任务处理结果说明
+            .append(" hitlTaskCreateTime datetime,")  //人工介入任务创建时间
+            .append(" hitlTaskHandleTime datetime,")  //人工介入任务处理时间
+            .append(" hitlTaskCompleteTime datetime,")  //人工介入任务完成时间
+            .append( "constraint $hitlCallTaskTableName_PK primary key(hitlTaskId))") //主键
+            .toString();
+
+    public static final String postgresql_createHitlCallTaskTableSQL = new StringBuilder().append("CREATE TABLE $hitlCallTaskTableName (hitlTaskId varchar(100) NOT NULL," )
+            .append( "traceId varchar(100),")  //trace id
+            .append(" agentId varchar(100),")  //智能体id
+            .append(" agentName varchar(200),")  //智能体名称
+            .append(" parentAgentId varchar(100),")  //父智能体id
+            .append(" parentAgentName varchar(200),")  //父智能体名称
+            .append(" sessionId varchar(100),")  //会话id
+            .append(" requestId varchar(100),")  //请求id
+            .append(" userId varchar(100),")  //用户id
+            .append(" hitlTaskReason text,")  //人工介入任务内容,LLM生成	
+			.append(" hitlTaskData text,")  //人工介入任务内容,人工辅助生成
+			.append(" exception text,")  //异常信息
+            .append(" hitlTaskStatus int,")  //人工介入任务状态：0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束
+            .append(" hitlTaskHandleResult text,")  //人工介入任务处理结果说明
+            .append(" hitlTaskCreateTime timestamp,")  //人工介入任务创建时间
+            .append(" hitlTaskHandleTime timestamp,")  //人工介入任务处理时间
+            .append(" hitlTaskCompleteTime timestamp,")  //人工介入任务完成时间
+            .append( "primary key(hitlTaskId))")//主键
+            .toString();
+
+    public static final String postgresql_addCommentsToHitlCallTaskTableSQL = new StringBuilder()
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskId IS '人工介入任务id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.traceId IS 'trace id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.agentId IS '智能体id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.agentName IS '智能体名称';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.parentAgentId IS '父智能体id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.parentAgentName IS '父智能体名称';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.sessionId IS '会话id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.requestId IS '请求id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.userId IS '用户id';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskReason IS '人工介入任务内容,LLM生成';")  //人工介入任务内容,LLM生成
+			.append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskData IS '人工介入任务内容,人工辅助提供';")  //人工介入任务内容,人工辅助提供
+			.append("COMMENT ON COLUMN $hitlCallTaskTableName.exception IS '异常信息';")  //异常信息
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskStatus IS '人工介入任务状态：0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskHandleResult IS '人工介入任务处理结果说明';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskCreateTime IS '人工介入任务创建时间';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskHandleTime IS '人工介入任务处理时间';")
+            .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskCompleteTime IS '人工介入任务完成时间';")
             .toString();
 	
 	public static final String clickhouse_createLocalSessionTableSQL = new StringBuilder().append("CREATE TABLE ${sessionTableName}_local  ON CLUSTER $clickhouseCluster ")
@@ -394,8 +558,19 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     private String existMessageSQL;
     
     private String existMessageReferenceSQL;
+	
+	private String existHitlCallTaskSQL;
 
-    public String getInsertSessionMessageRerenceSQL() {
+    private String insertHitlCallTaskSQL;
+
+    private String handledHitlCallTaskSQL;
+	private String refusedHitlCallTaskSQL;
+    private String completeHitlCallTaskSQL;
+	private String timeoutHitlCallTaskSQL;
+
+    private String deleteCompleteHitlCallTaskSQLWithCompleteTimeSQL;
+	
+	public String getInsertSessionMessageRerenceSQL() {
         return insertSessionMessageRerenceSQL;
     }
 
@@ -405,7 +580,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 
 
     private String deleteSessionMessageRerenceBySessionIdSQL;
-    private String dataSource;
+ 
     /**
      * 会话基本信息存储表名称
      */
@@ -425,13 +600,12 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
      */
     private String sessionMessageReferenceTableName = "agent_session_message_ref";
 
-    public void setDataSource(String dataSource) {
-        this.dataSource = dataSource;
-    }
+    /**
+     * 人工介入任务表名称
+     */
+    private String hitlCallTaskTableName = "agent_hitl_calltask";
 
-    public String getDataSource() {
-        return dataSource;
-    }
+ 
 
     public void setSessionTableName(String sessionTableName) {
         this.sessionTableName = sessionTableName;
@@ -443,66 +617,176 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     public String getDeleteSessionMessageRerenceBySessionIdSQL() {
         return deleteSessionMessageRerenceBySessionIdSQL;
     }
-    public void init(){
-        existSQL = new StringBuilder().append("select 1 from ").append(sessionTableName).toString();
-        existMessageSQL = new StringBuilder().append("select 1 from ").append(sessionMessageTableName).toString();
-        existMessageReferenceSQL = new StringBuilder().append("select 1 from ").append(sessionMessageReferenceTableName).toString();
-        insertSessionSQL = "INSERT INTO "+sessionTableName+" (sessionId, createTime, lastAccessTime,userId, agentId, title,domain) \n" +
-                "VALUES (?, ?, ?, ?, ?,?,?)";
-        updateSessionLastAccessTimeSQL = "UPDATE "+sessionTableName+" SET lastAccessTime = ? WHERE sessionId = ?";
-        
-        deleteSessionByUserIdSQL = new StringBuilder().append("delete from ")
-                .append(sessionTableName).append(" where  userId=?").toString();
-
-        deleteSessionBySessionIdSQL = new StringBuilder().append("delete from ")
-                .append(sessionTableName).append(" where sessionId=? ").toString();
-
-        selectSessionByUserIdSQL = new StringBuilder().append("select * from ")
-                .append(sessionTableName).append(" where userId=? order by createTime desc").toString();
-
-        selectSessionBySessionIdSQL = new StringBuilder().append("select * from ")
-                .append(sessionTableName).append(" where sessionId=? ").toString();
-
-        /**
-         *         .append( "parentAgentId varchar(100),")  //父agentid
-         *             .append( "agentId varchar(100),")  //创建消息的agentid
-         *             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
-         *             .append( "agentNodeType varchar(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
-         *             .append( "subAgentIdBy varchar(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
-         */
-        insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
-                .append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,")
-                .append("seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId")
-                .append(",agentNodeType,subAgentIdBy")
-                .append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
-
-        insertSessionMessageRerenceSQL = "INSERT INTO "+sessionMessageReferenceTableName+" (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
-                                                    "VALUES (?, ?, ?, ?, ?)";
-        deleteSessionMessageSQL = "DELETE FROM "+sessionMessageTableName+" where msgId=? and jobType=?";
-        deleteSessionMessageByUserIdSQL = new StringBuilder().append("delete from ")
-                .append(sessionMessageTableName).append(" where userId=? ").toString();
-
-        deleteSessionMessageBySessionIdSQL = new StringBuilder().append("delete from ")
-                .append(sessionMessageTableName).append(" where sessionId=? ").toString();
-
-        deleteSessionMessageRerenceBySessionIdSQL = new StringBuilder().append("delete from ")
-                .append(sessionMessageReferenceTableName).append(" where sessionId=? ").toString();
-
-        selectSessionMessageByUserIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where userId=? order by createTime,seqNo desc").toString();
-
-        /**
-         * 查询最近的消息,恢复到对话中 
-         * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
-         * 排除掉智能体跟踪消息
-         */
-        selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
-                .append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and messageType = '1')) ")
-                .append("and messageType in ('0','1','2','3','4') order by createTime,seqNo asc").toString();
-
-        selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
-                .append(sessionMessageTableName).append(" where sessionId=? ").toString();
+	private volatile boolean inited;
+	private Object lock = new Object();
+	public void initTable(String clickhouseCluster, String hitlDatasource,String dataSource){
+		try {
+			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistSQL());
+		}
+		catch (Exception exception){
+			try {
+				logger.info("Creating session table {}...", getSessionTableName());
+				
+				if(!isClickhouse(dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource,evalCreateSessionTableSQL(dataSource));
+				}
+				else{
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClickhouseLocalSessionTableSQL(clickhouseCluster));
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClusterSessionTableSQL(clickhouseCluster));
+				}
+			} catch (SQLException e) {
+				throw new AIRuntimeException("Failed to create session table", e);
+			}
+		}
 		
+		try {
+			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMessageSQL());
+		}
+		catch (Exception exception){
+			try {
+				logger.info("Creating session message table {}...", getSessionMessageTableName());
+				
+				if(!isClickhouse(dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource,evalCreateSessionMessageTableSQL(dataSource));
+				}
+				else{
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClickhouseLocalSessionMessageTableSQL(clickhouseCluster));
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClusterSessionMessageTableSQL(clickhouseCluster));
+				}
+			} catch (SQLException e) {
+				throw new AIRuntimeException("Failed to create session message table", e);
+			}
+		}
+		
+		try {
+			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMessageReferenceSQL());
+		}
+		catch (Exception exception){
+			try {
+				logger.info("Creating session message reference table {}...", getSessionMessageReferenceTableName());
+				if(!isClickhouse(dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource, evalCreateSessionMessageReferenceTableSQL(dataSource));
+				}
+				else{
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClickhouseLocalSessionMessageReferenceTableSQL(clickhouseCluster));
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClusterSessionMessageReferenceTableSQL(clickhouseCluster));
+				}
+			} catch (SQLException e) {
+				throw new AIRuntimeException("Failed to create session message reference table "+getSessionMessageReferenceTableName(), e);
+			}
+		}
+		
+		try {
+			SQLExecutor.queryObjectWithDBName(int.class, hitlDatasource, getExistHitlCallTaskSQL());
+		}
+		catch (Exception exception){
+			try {
+				logger.info("Creating HitlCallTaskTable table {}...", getHitlCallTaskTableName());			
+				
+				SQLExecutor.updateWithDBName(hitlDatasource,evalCreateHitlCallTaskTableSQL(hitlDatasource));
+				
+			} catch (SQLException e) {
+				throw new AIRuntimeException("Failed to create HitlCallTaskTable table", e);
+			}
+		}
+	
+	}
+    public void init(String clickhouseCluster, String hitlDatasource,String dataSource){
+		if(inited )
+			return;
+		synchronized (lock) {
+			if (inited)
+				return;
+			existSQL = new StringBuilder().append("select 1 from ").append(sessionTableName).toString();
+			existMessageSQL = new StringBuilder().append("select 1 from ").append(sessionMessageTableName).toString();
+			existMessageReferenceSQL = new StringBuilder().append("select 1 from ").append(sessionMessageReferenceTableName).toString();
+			existHitlCallTaskSQL = new StringBuilder().append("select 1 from ").append(hitlCallTaskTableName).toString();
+			
+			insertHitlCallTaskSQL = new StringBuilder().append("insert into ").append(hitlCallTaskTableName)
+					.append(" (hitlTaskId,traceId,agentId,agentName,parentAgentId,parentAgentName,")
+					.append("sessionId,requestId,userId,hitlTaskReason,hitlTaskStatus,hitlTaskHandleResult,")
+					.append("hitlTaskCreateTime,hitlTaskHandleTime,hitlTaskCompleteTime")
+					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+			
+			//处理人工介入任务：更新状态为已处理(1)或已拒绝(2)，记录处理结果和处理时间
+			handledHitlCallTaskSQL = new StringBuilder().append("update ").append(hitlCallTaskTableName)
+					.append(" set hitlTaskStatus=1,hitlTaskReason=?,hitlTaskHandleTime=?")
+					.append(" where hitlTaskId=?").toString();
+			
+			refusedHitlCallTaskSQL = new StringBuilder().append("update ").append(hitlCallTaskTableName)
+					.append(" set hitlTaskStatus=2,hitlTaskReason=?,hitlTaskHandleTime=?")
+					.append(" where hitlTaskId=?").toString();
+			
+			//完成人工介入任务：更新状态为已结束(5)或者已超时(3)，记录完成时间   ：hitlTaskStatus 0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束
+			completeHitlCallTaskSQL = new StringBuilder().append("update ").append(hitlCallTaskTableName)
+					.append(" set hitlTaskStatus=5,hitlTaskHandleResult=?,hitlTaskCompleteTime=?")
+					.append(" where hitlTaskId=?").toString();
+			
+			timeoutHitlCallTaskSQL = new StringBuilder().append("update ").append(hitlCallTaskTableName)
+					.append(" set hitlTaskStatus=3,hitlTaskHandleResult=?,hitlTaskCompleteTime=?")
+					.append(" where hitlTaskId=?").toString();
+			
+			//根据完成时间清理已结束(5)的人工介入任务
+			deleteCompleteHitlCallTaskSQLWithCompleteTimeSQL = new StringBuilder().append("delete from ")
+					.append(hitlCallTaskTableName)
+					.append(" where hitlTaskStatus=5 and hitlTaskCompleteTime<?").toString();
+			
+			insertSessionSQL = "INSERT INTO " + sessionTableName + " (sessionId, createTime, lastAccessTime,userId, agentId, title,domain) \n" +
+					"VALUES (?, ?, ?, ?, ?,?,?)";
+			updateSessionLastAccessTimeSQL = "UPDATE " + sessionTableName + " SET lastAccessTime = ? WHERE sessionId = ?";
+			
+			deleteSessionByUserIdSQL = new StringBuilder().append("delete from ")
+					.append(sessionTableName).append(" where  userId=?").toString();
+			
+			deleteSessionBySessionIdSQL = new StringBuilder().append("delete from ")
+					.append(sessionTableName).append(" where sessionId=? ").toString();
+			
+			selectSessionByUserIdSQL = new StringBuilder().append("select * from ")
+					.append(sessionTableName).append(" where userId=? order by createTime desc").toString();
+			
+			selectSessionBySessionIdSQL = new StringBuilder().append("select * from ")
+					.append(sessionTableName).append(" where sessionId=? ").toString();
+			
+			/**
+			 *         .append( "parentAgentId varchar(100),")  //父agentid
+			 *             .append( "agentId varchar(100),")  //创建消息的agentid
+			 *             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+			 *             .append( "agentNodeType varchar(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
+			 *             .append( "subAgentIdBy varchar(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
+			 */
+			insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
+					.append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,")
+					.append("seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId")
+					.append(",agentNodeType,subAgentIdBy")
+					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+			
+			insertSessionMessageRerenceSQL = "INSERT INTO " + sessionMessageReferenceTableName + " (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
+					"VALUES (?, ?, ?, ?, ?)";
+			deleteSessionMessageSQL = "DELETE FROM " + sessionMessageTableName + " where msgId=? and jobType=?";
+			deleteSessionMessageByUserIdSQL = new StringBuilder().append("delete from ")
+					.append(sessionMessageTableName).append(" where userId=? ").toString();
+			
+			deleteSessionMessageBySessionIdSQL = new StringBuilder().append("delete from ")
+					.append(sessionMessageTableName).append(" where sessionId=? ").toString();
+			
+			deleteSessionMessageRerenceBySessionIdSQL = new StringBuilder().append("delete from ")
+					.append(sessionMessageReferenceTableName).append(" where sessionId=? ").toString();
+			
+			selectSessionMessageByUserIdSQL = new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" where userId=? order by createTime,seqNo desc").toString();
+			
+			/**
+			 * 查询最近的消息,恢复到对话中 
+			 * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+			 * 排除掉智能体跟踪消息
+			 */
+			selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and messageType = '1')) ")
+					.append("and messageType in ('0','1','2','3','4') order by createTime,seqNo asc").toString();
+			
+			selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
+					.append(sessionMessageTableName).append(" where sessionId=? ").toString();
+
 //		selectSessionMessageBySessionId2ndAgentIdSQL0 = new StringBuilder()
 //				.append("select *  from ")
 //				.append(sessionMessageTableName)
@@ -512,22 +796,25 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 //				.append(sessionMessageReferenceTableName)
 //				.append(" where sessionId=? and refAgentId = ?) " )
 //				.append("order  by createTime, seqNo asc").toString();
-
-        selectSessionMessageBySessionId2ndAgentIdSQL0 = new StringBuilder()
-                .append("select *  from ")
-                .append(sessionMessageTableName)
-                .append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
-                .append("and messageType in ('0','1','2','3','4'))" )               
-                 .toString();
-		 
-		selectSessionMessageBySessionId2ndAgentIdSQL1 = new StringBuilder()
-				.append(" order  by createTime, seqNo asc").toString();
-		
-		selectAgentSessionMessageReferenceIdsBySessionIdSQL = new StringBuilder()
-				.append("select msgId from ")
-				.append(sessionMessageReferenceTableName)
-                .append(" where sessionId=? and refAgentId = ?")
-                .toString();
+			
+			selectSessionMessageBySessionId2ndAgentIdSQL0 = new StringBuilder()
+					.append("select *  from ")
+					.append(sessionMessageTableName)
+					.append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
+					.append("and messageType in ('0','1','2','3','4'))")
+					.toString();
+			
+			selectSessionMessageBySessionId2ndAgentIdSQL1 = new StringBuilder()
+					.append(" order  by createTime, seqNo asc").toString();
+			
+			selectAgentSessionMessageReferenceIdsBySessionIdSQL = new StringBuilder()
+					.append("select msgId from ")
+					.append(sessionMessageReferenceTableName)
+					.append(" where sessionId=? and refAgentId = ?")
+					.toString();
+			initTable(  clickhouseCluster,   hitlDatasource,  dataSource);
+			inited = true;
+		}
     }
 
 	
@@ -662,11 +949,48 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	}
 	
 	public String evalCreateClusterSessionMessageReferenceTableSQL( String clickhouseCluster) {
-	 
+
 		String	sql = this.clickhouse_createClusterSessionMessageReferenceTableSQL;
-		
+
 		return sql.replace("${sessionMessageReferenceTableName}", sessionMessageReferenceTableName).replace("$clickhouseCluster", clickhouseCluster);
 	}
+
+    public String getHitlCallTaskTableName() {
+        return hitlCallTaskTableName;
+    }
+
+    public void setHitlCallTaskTableName(String hitlCallTaskTableName) {
+        this.hitlCallTaskTableName = hitlCallTaskTableName;
+    }
+
+    public String evalCreateHitlCallTaskTableSQL(String dbName) {
+        DB adaptor  = DBUtil.getDBAdapter(dbName);
+        String type = adaptor.getDBTYPE();
+        String sql = null;
+        if ("mysql".equalsIgnoreCase(type)) {
+            sql = mysql_createHitlCallTaskTableSQL;
+        } else if ("oracle".equalsIgnoreCase(type)) {
+            sql = oracle_createHitlCallTaskTableSQL;
+        } else if ("dm".equalsIgnoreCase(type)) {
+            sql = dm_createHitlCallTaskTableSQL;
+        } else if ("sqlserver".equalsIgnoreCase(type)) {
+            sql = sqlserver_createHitlCallTaskTableSQL;
+        } else if ("postgresql".equalsIgnoreCase(type)) {
+            sql = postgresql_createHitlCallTaskTableSQL;
+        }
+        else if("sqlite".equalsIgnoreCase(type)) {
+            sql = sqlite_createHitlCallTaskTableSQL;
+        }
+        return sql.replace("$hitlCallTaskTableName", hitlCallTaskTableName);
+    }
+
+    public String evalOracleAddCommentsToHitlCallTaskTableSQL() {
+        return oracle_addCommentsToHitlCallTaskTableSQL.replace("$hitlCallTaskTableName", hitlCallTaskTableName);
+    }
+
+    public String evalPostgresqlAddCommentsToHitlCallTaskTableSQL() {
+        return postgresql_addCommentsToHitlCallTaskTableSQL.replace("$hitlCallTaskTableName", hitlCallTaskTableName);
+    }
 
 
     public String getInsertSessionSQL() {
@@ -741,7 +1065,35 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         return existMessageReferenceSQL;
     }
 	
+	public String getExistHitlCallTaskSQL() {
+		return existHitlCallTaskSQL;
+	}
+
+	public String getInsertHitlCallTaskSQL() {
+		return insertHitlCallTaskSQL;
+	}
+
+	public String getHandledHitlCallTaskSQL() {
+		return handledHitlCallTaskSQL;
+	}
+
+	public String getCompleteHitlCallTaskSQL() {
+		return completeHitlCallTaskSQL;
+	}
+
+	public String getDeleteCompleteHitlCallTaskSQLWithCompleteTimeSQL() {
+		return deleteCompleteHitlCallTaskSQLWithCompleteTimeSQL;
+	}
+	
 	public String getSelectAgentSessionMessageReferenceIdsBySessionIdSQL() {
 		return selectAgentSessionMessageReferenceIdsBySessionIdSQL;
+	}
+	
+	public String getRefusedHitlCallTaskSQL() {
+		return refusedHitlCallTaskSQL;
+	}
+	
+	public String getTimeoutHitlCallTaskSQL() {
+		return timeoutHitlCallTaskSQL;
 	}
 }

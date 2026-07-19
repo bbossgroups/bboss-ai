@@ -51,6 +51,10 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
      * 持久化对话记录的数据源名称
      */
     private String dataSource;
+	/**
+	 * 人工介入任务数据库表数据源
+	 */
+	private String hitlDatasource = "bboss";
     public AgentSessionStoreDB(List<Map<String, Object>> sessionMemory) {
         super(sessionMemory);
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
@@ -75,6 +79,10 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     public AgentSessionStoreDB(StoreContext storeContext, AIAgent agent) {
         super(storeContext,   agent);
         this.dataSource = storeContext.getDataSource();
+		this.hitlDatasource = storeContext.getHitlDatasource();
+		if(hitlDatasource == null){
+			hitlDatasource = dataSource;
+		}
 		this.clickhouseCluster = storeContext.getClickhouseCluster();
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         agentSessionStoreDBConfig.setSessionTableName(storeContext.getSessionTableName());
@@ -84,62 +92,10 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
  
     @Override
     public void init(){
-        agentSessionStoreDBConfig.init();
-        try {
-            SQLExecutor.queryObjectWithDBName(int.class, this.dataSource, agentSessionStoreDBConfig.getExistSQL());
-        }
-        catch (Exception exception){
-            try {
-                logger.info("Creating session table {}...", agentSessionStoreDBConfig.getSessionTableName());
-                
-				if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
-					SQLExecutor.updateWithDBName(dataSource,agentSessionStoreDBConfig.evalCreateSessionTableSQL(this.dataSource));
-				}
-				else{
-					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClickhouseLocalSessionTableSQL(this.clickhouseCluster));
-					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClusterSessionTableSQL(this.clickhouseCluster));
-				}
-            } catch (SQLException e) {
-                throw new AIRuntimeException("Failed to create session table", e);
-            }
-        }
-
-        try {
-            SQLExecutor.queryObjectWithDBName(int.class, this.dataSource, agentSessionStoreDBConfig.getExistMessageSQL());
-        }
-        catch (Exception exception){
-            try {
-                logger.info("Creating session message table {}...", agentSessionStoreDBConfig.getSessionMessageTableName());
-                
-				if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
-					SQLExecutor.updateWithDBName(dataSource,agentSessionStoreDBConfig.evalCreateSessionMessageTableSQL(this.dataSource));
-				}
-				else{
-					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClickhouseLocalSessionMessageTableSQL(this.clickhouseCluster));
-					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClusterSessionMessageTableSQL(this.clickhouseCluster));
-				}
-            } catch (SQLException e) {
-                throw new AIRuntimeException("Failed to create session message table", e);
-            }
-        }
-
-        try {
-            SQLExecutor.queryObjectWithDBName(int.class, this.dataSource, agentSessionStoreDBConfig.getExistMessageReferenceSQL());
-        }
-        catch (Exception exception){
-            try {
-                logger.info("Creating session message reference table {}...", agentSessionStoreDBConfig.getSessionMessageReferenceTableName());
-				if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
-					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateSessionMessageReferenceTableSQL(this.dataSource));
-				}
-				else{
-					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClickhouseLocalSessionMessageReferenceTableSQL(this.clickhouseCluster));
-					SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.evalCreateClusterSessionMessageReferenceTableSQL(this.clickhouseCluster));
-				}
-            } catch (SQLException e) {
-                throw new AIRuntimeException("Failed to create session message reference table "+agentSessionStoreDBConfig.getSessionMessageReferenceTableName(), e);
-            }
-        }
+		if(hitlDatasource == null){
+			hitlDatasource = dataSource;
+		}
+        agentSessionStoreDBConfig.init( clickhouseCluster,   hitlDatasource,  dataSource);        
         
         if(this.sessionId != null){
 
@@ -167,7 +123,13 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 		this.clickhouseCluster = storeContext.getClickhouseCluster();
         return this;
     }
-    @Override
+	
+	public AgentSessionStoreDB setHitlDatasource(String hitlDatasource) {
+		this.hitlDatasource = hitlDatasource;
+		return this;
+	}
+	
+	@Override
     public boolean loadSessionMemory(String prompt,String agentId){
         String domain = this.storeContext != null ?this.storeContext.getDomain():null;
         return loadSessionMemory(  prompt,domain,  agentId);

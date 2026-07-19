@@ -72,6 +72,9 @@ public class AIAgent<T extends AIAgent> {
     protected String agentNodeType = AGENT_NODE_TYPE_SINGLE;
     protected int sessionSize;
 	
+	protected long hitlTaskTimeout = -1L;
+	
+	
 	
 	/**
 	 * 自定义参数，用于在智能体运行时，传递额外的参数
@@ -94,8 +97,17 @@ public class AIAgent<T extends AIAgent> {
     public String genSubAgentName(String agentId) {
         return getAgentName() + "-" + agentId;
     }
-   
-    /**
+	
+	public long getHitlTaskTimeout() {
+		return hitlTaskTimeout;
+	}
+	
+	public T setHitlTaskTimeout(long hitlTaskTimeout) {
+		this.hitlTaskTimeout = hitlTaskTimeout;
+		return (T) this;
+	}
+	
+	/**
      * 输出变量名
      */
     protected String outputVaribleName;
@@ -252,6 +264,13 @@ public class AIAgent<T extends AIAgent> {
         }
         return null;
     }
+	public String getParentAgentName(){
+		AIAgent parent = getParentAgent();
+		if(parent != null){
+			return parent.getAgentName();
+		}
+		return null;
+	}
 
     public T setMainSessionStore(AgentSessionStore mainSessionStore) {
         this.mainSessionStore = mainSessionStore;
@@ -1360,5 +1379,25 @@ public class AIAgent<T extends AIAgent> {
 		}
 		this.params.putAll(params);
 		return (T)this;
+	}
+	
+	public String getSessionId() {
+		if(this.mainSessionStore != null){
+			return this.mainSessionStore.getSessionId();
+		}
+		return null;
+	}
+	public String getRequestId() {
+		if(this.mainSessionStore != null){
+			return this.mainSessionStore.getRequestId();
+		}
+		return null;
+	}
+	
+	public String getUserId() {
+		if(this.mainSessionStore != null){
+			return this.mainSessionStore.getUserId();
+		}
+		return null;
 	}
 }

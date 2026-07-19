@@ -102,4 +102,8 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     void removeSession(String sessionId);
 
     String genSubAgentName(String agentId);
+	
+	String getRequestId();
+	
+	String getUserId();
 }

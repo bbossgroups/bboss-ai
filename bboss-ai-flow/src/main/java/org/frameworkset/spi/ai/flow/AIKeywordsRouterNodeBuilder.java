@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.TraceMessage;
 import org.frameworkset.spi.ai.prompt.FlowPromptEval;
 import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
@@ -105,7 +106,7 @@ public class AIKeywordsRouterNodeBuilder extends AIBaseNodeBuilder {
             }
         }
         ServerEvent traceServerEvent = new ServerEvent();
-
+		ServerEventUtil.buildServerEventAgentInfo(traceServerEvent,routeAgent);
         String message = result == null? "未匹配到智能体" : "匹配到智能体："+result.getAgentId()+","+result.getDescription();
         traceServerEvent.setData(message);
         traceServerEvent.setType(TYPE_TRACE);

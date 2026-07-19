@@ -33,6 +33,7 @@ import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServerEvent extends MultimodalGeneration implements AIEvent{
+	
     /**
      * type：数据消息
      */
@@ -66,6 +67,12 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      * type：由智能体产生的消息，比如大模型输出匹配工具之前的提示消息为空时，补充一条匹配到工具信息消息
      */
     public static final int TYPE_AGENT = 7;
+	
+	
+	/**
+	 * type：人工介入消息
+	 */
+	public static final int TYPE_HITL = 8;
 
     /**
      * contentType：数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0
@@ -76,6 +83,9 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 
     public static final int TOKEN_METRICS = 5;
     public static final int MCP_TOOL_CALLS = 3;
+	private String sessionId;
+	private String requestId;
+	private String userId;
     private Double confidence;
     /**
      * 数据内容
@@ -112,6 +122,10 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      * 工具返回数据：内容
      */
     private String content;
+	/**
+	 * 人工介入任务id
+	 */
+	private String hitlTaskId;
 
     /**
      * 工具返回数据：推理内容
@@ -433,4 +447,40 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     public void setParentAgentName(String parentAgentName) {
         this.parentAgentName = parentAgentName;
     }
+	
+	public String getSessionId() {
+		return sessionId;
+	}
+	
+	public void setSessionId(String sessionId) {
+		this.sessionId = sessionId;
+	}
+	
+	public String getRequestId() {
+		return requestId;
+	}
+	
+	public void setRequestId(String requestId) {
+		this.requestId = requestId;
+	}
+	
+	public String getUserId() {
+		return userId;
+	}
+	
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+	
+	public String getHitlTaskId() {
+		return hitlTaskId;
+	}
+	
+	public void setHitlTaskId(String hitlTaskId) {
+		this.hitlTaskId = hitlTaskId;
+	}
+	
+	public boolean isHitl() {
+		return this.type == TYPE_HITL;
+	}
 }

@@ -16,8 +16,13 @@
 
 package org.frameworkset.spi.ai.store;
 
+import com.frameworkset.util.JsonUtil;
+import org.frameworkset.spi.ai.hitl.HitlCallTask;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
 import com.frameworkset.util.ListInfo;
+
+import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -26,7 +31,48 @@ import java.util.List;
  * yinbp @version v1.0
  */
 public interface AgentSessionService {
-	 
+	void setClickhouseCluster(String clickhouseCluster);
+	
+	void setHitlDatasource(String hitlDatasource);
+	
+	void persistentHitlCallTask(HitlCallTask hitlCallTask);
+	
+	HitlCallTask getHitlCallTask(String hitlTaskId);
+	
+	/**
+	 * 处理人工任务
+	 * @param hitlTaskData
+	 * @param hitlTaskId
+	 */
+	String handledHitlCallTask(Object  hitlTaskData,Throwable throwable,String hitlTaskId);
+	
+	/**
+	 * 拒绝人工任务
+	 * @param hitlTaskData
+	 * @param hitlTaskId
+	 */
+	String refusedHitlCallTask(Object  hitlTaskData,Throwable throwable,String hitlTaskId);
+	
+	/**
+	 * 完成人工任务
+	 * @param hitlTaskHandleResult
+	 * @param hitlTaskId
+	 */
+	void completeHitlCallTask(String  hitlTaskHandleResult,String hitlTaskId);
+	
+	/**
+	 * 人工任务处理超时
+	 * @param hitlTaskHandleResult
+	 * @param hitlTaskId
+	 */
+	void timeoutHitlCallTask(String  hitlTaskHandleResult,String hitlTaskId);
+	
+	/**
+	 * 销毁人工任务
+	 * @param reason
+	 * @param hitlTaskId
+	 */
+	void destroyHitlCallTask(String reason, String hitlTaskId);
 	void deleteAgentSession(String sessionid) throws AgentSessionException
 
 	;
@@ -71,4 +117,8 @@ public interface AgentSessionService {
     List<SessionMessage> queryListSessionMessages(String sessionid) throws AgentSessionException;
     List<SessionMessage> queryListSessionMessages(String sessionid,String agentId) throws AgentSessionException;
     void setDatasource(String datasource);
+	
+	void init();
+	
+
 }

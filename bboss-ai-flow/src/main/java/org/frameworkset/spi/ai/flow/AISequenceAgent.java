@@ -21,6 +21,7 @@ import org.frameworkset.spi.ai.model.AgentResultSessionMessageContext;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
+import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.JobFlowNode;
 import org.frameworkset.tran.jobflow.NodeTrigger;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
@@ -90,6 +91,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
                         agentResultSessionMessageContext.setSubAgentIdBy(lastSessionMessage.getMsgAgentId());
                         AISequenceAgent.this.addAgentResultSessionMessage(agentResultSessionMessageContext,data);
                         ServerEvent serverEvent = new ServerEvent();
+						ServerEventUtil.buildServerEventAgentInfo(serverEvent,AISequenceAgent.this);
                         serverEvent.setDone(true);
                         serverEvent.setAgent(AISequenceAgent.this);
                         serverEvent.setData(data);

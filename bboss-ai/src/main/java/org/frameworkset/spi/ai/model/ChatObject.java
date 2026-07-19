@@ -21,6 +21,7 @@ import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
+import reactor.core.publisher.FluxSink;
 
 import java.io.File;
 import java.util.Map;
@@ -178,4 +179,15 @@ public class ChatObject extends StoreChatObject{
     public void setChatContext(ChatContext chatContext) {
         this.chatContext = chatContext;
     }
+	
+	public FluxSink<ServerEvent> getAgentFluxSink() {
+		FluxSink<ServerEvent> sink = null;
+		if(agent != null){
+			sink = agent.getAgentFluxSink();
+		}
+		if(sink == null){
+			sink = chatContext.getAgentSink();
+		}
+		return sink;
+	}
 }

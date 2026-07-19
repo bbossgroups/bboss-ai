@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.FlowPromptEval;
 import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
@@ -126,6 +127,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
 				}
 			} else {
 				ServerEvent traceServerEvent = new ServerEvent();
+				ServerEventUtil.buildServerEventAgentInfo(serverEvent,routeAgent);
 				String message = "未匹配到智能体：" + data;
 				
 				traceServerEvent.setData(message);

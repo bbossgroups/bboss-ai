@@ -126,11 +126,12 @@ public class AIResponseUtil {
         if(logger.isWarnEnabled()) {
             logger.warn("服务端异常：", throwable);
         }
-
-        String error = SimpleStringUtil.exceptionToString(throwable);
+		ChatObject chatObject = streamDataBuilder.getChatObject();
+		String error = SimpleStringUtil.exceptionToString(throwable);
         ServerEvent serverEvent = new ServerEvent();
+		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
-        ChatObject chatObject = streamDataBuilder.getChatObject();        
+        
         serverEvent.setAgent(chatObject.getAgent());
         if(firstEventTag.get()) {
             firstEventTag.set(false);
@@ -147,6 +148,7 @@ public class AIResponseUtil {
         sink.next(serverEvent);
 
         serverEvent = new ServerEvent();
+		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
         serverEvent.setAgent(chatObject.getAgent());
         serverEvent.setDone( true);
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
@@ -953,6 +955,7 @@ public class AIResponseUtil {
                 serverEvent = new ServerEvent();
 
                 ChatObject chatObject = streamDataBuilder.getChatObject();
+				ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
                 serverEvent.setAgent(chatObject.getAgent());
                 serverEvent.setData(content.getContent());
                 serverEvent.setGenUrl(content.getUrl());
@@ -1021,6 +1024,7 @@ public class AIResponseUtil {
                 ServerEvent serverEvent = new ServerEvent();
 
                 ChatObject chatObject = streamDataBuilder.getChatObject();
+				ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
                 serverEvent.setAgent(chatObject.getAgent());
                 if(firstEventTag.get()) {
                     firstEventTag.set(false);
@@ -1207,6 +1211,7 @@ public class AIResponseUtil {
 
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
         ChatObject chatObject = streamDataBuilder.getChatObject();
+		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
         serverEvent.setAgent(chatObject.getAgent());
         if (firstEventTag.get()) {
             firstEventTag.set(false);
