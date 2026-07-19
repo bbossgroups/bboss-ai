@@ -38,12 +38,12 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * 单节点场景案例：进程内人工介入任务和智能体之间的通讯机制，适合于智能体单节点部署场景
+ * 智能体集群部署场景：基于redis实现人工介入任务和智能体之间的通讯机制，适合于智能体集群部署场景
  * @author biaoping.yin
  * @Date 2026/7/15
  */
-public class ChecklistCodeViewAgentHitlTest {
-	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ChecklistCodeViewAgentHitlTest.class);
+public class ChecklistCodeViewAgentHitlResisTest {
+	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ChecklistCodeViewAgentHitlResisTest.class);
 	
 	public static void main(String[] args) {
 		try {
@@ -51,13 +51,15 @@ public class ChecklistCodeViewAgentHitlTest {
 //            String message = "当前OS为windows，生成一段shell脚本，首先查找占用端口808的进程，如果存在对应进程，则关闭进程，输出端口进程信息和关闭核对结果";
 //            message = "请依次执行以下命令：\n1.获取OS版本信息\n2.获取CPU信息\n3.打印OS和CPU信息\n4.查找端口808的进程\n5.如果存在对应进程，则关闭进程\n6.输出端口进程信息和关闭核对结果";
 			initDB();
+			initRedis();
 			AgentSessionService agentSessionService = new AgentSessionServiceImpl();
 			agentSessionService.setDatasource("visualops");
 			agentSessionService.setHitlDatasource("visualops");
 			
 			HitlTaskHelper.getHitlTaskHelper()
 					.setAgentSessionService(agentSessionService)
-				 
+					.setHitlTaskCallNotifier(new RedisHitlTaskCallNotifier("test"))
+					.setHitlTaskCallListener(new RedisHitlTaskCallListener("test"))
 					.init();
 			callMinimaxSimple();
 		} catch (InterruptedException e) {
@@ -65,7 +67,31 @@ public class ChecklistCodeViewAgentHitlTest {
 		}
 	}
 	
-	 
+	public static void initRedis() {
+		//构建名称为test的redis数据源，可以通过RedisFactory.builRedisDB构建其他的数据源
+		//不同的数据源设置不同的name，如果对应的name已经被其他redis集群使用，则忽略创建
+		RedisConfig redisConfig = new RedisConfig();
+		redisConfig.setName("test")
+				.setAuth("ecs123456")
+				//集群节点可以通过逗号分隔，也可以通过\n符分隔
+//          .setServers("101.13.4.15:6359\n101.13.4.15:6369\n101.13.4.15:6379\n101.13.4.15:6389")
+				 
+				
+				.setMaxRedirections(5)
+				.setMode(RedisDB.mode_cluster)
+				.setConnectionTimeout(10000)
+				.setSocketTimeout(10000)
+				.setPoolMaxWaitMillis(2000)
+				.setPoolMaxTotal(50)
+				.setPoolTimeoutRetry(3)
+				.setPoolTimeoutRetryInterval(500l)
+				.setMaxIdle(-1)
+				.setMinIdle(-1)
+				.setTestOnBorrow(true)
+				.setTestOnReturn(false)
+				.setTestWhileIdle(false);
+		RedisFactory.builRedisDB(redisConfig);
+	}
 	
 	public static void initDB() {
 		
@@ -125,17 +151,15 @@ public class ChecklistCodeViewAgentHitlTest {
 						String hitlTaskId = chunk.getHitlTaskId();
 						if (hitlTaskId != null) {
 							//模拟人工任务处理:通过，并通知智能体继续处理
-//							Map<String, Object> hitlTaskData = new LinkedHashMap<>();
-//							hitlTaskData.put("confirm", "确认修改文件");
-//							hitlTaskData.put("otherData", "用户补充意见：各个问题都符合要求,可以整改");
-//							HitlTaskHelper.handleHitlCallTask(hitlTaskData, null, hitlTaskId);
-							//模拟人工任务处理:拒绝，并通知智能体拒绝处理
 							Map<String, Object> hitlTaskData = new LinkedHashMap<>();
-							hitlTaskData.put("confirm", "不要修改文件");
+							hitlTaskData.put("confirm", "确认修改文件");
+							hitlTaskData.put("otherData", "用户补充意见：各个问题都符合要求,可以整改");
+							HitlTaskHelper.handleHitlCallTask(hitlTaskData, null, hitlTaskId);
+//							//模拟人工任务处理:拒绝，并通知智能体拒绝处理
+//							hitlTaskData = new LinkedHashMap<>();
+//							hitlTaskData.put("confirm", "不要修改文件");
 //							hitlTaskData.put("otherData", "用户补充意见：还有其他问题需要注意，比如变量命名、代码格式等，请继续检查和修复");
-							
-							hitlTaskData.put("otherData", "暂不修复");
-							HitlTaskHelper.refuseHitlCallTask(hitlTaskData, null, hitlTaskId);
+//							HitlTaskHelper.refuseHitlCallTask(hitlTaskData, null, hitlTaskId);
 							
 						}
 					}

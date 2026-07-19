@@ -61,13 +61,13 @@ public class HitlTaskcallTool {
 			// 【修复问题5】返回结果 null 保护
 			if (hitlTaskResult == null) {
 				logger.warn("hitlTaskTool: createHitlCallTask returned null for reason: " + hitlTaskReason);
-				return Collections.emptyMap();
+				return Collections.singletonMap("message", "HITL task created successfully, but result is null, ignore operation and continue!");
 			}
 			
 			return hitlTaskResult;
 		} catch (Exception e) {
 			logger.error( "hitlTaskTool: failed to create HITL task for reason: " + hitlTaskReason, e);
-			return Collections.singletonMap("error", "Failed to create HITL task: " + SimpleStringUtil.exceptionToString(e));
+			return Collections.singletonMap("error", "Failed to execute HITL task ,ignore operation and continue: " + SimpleStringUtil.exceptionToString(e) );
 		}
 	}
 }

@@ -151,7 +151,7 @@ public class HitlTaskHelper {
 		getHitlTaskHelper()._handleHitlCallTask(hitlTaskId);
 	}
 	private void _handleHitlCallTask(String hitlTaskId){
-		HitlCallObject hitlCallObject = this._getHitlCallObject(hitlTaskId);
+		HitlCallObject hitlCallObject = this.removeHitlCallObject(hitlTaskId);
 		if(hitlCallObject == null)
 			return;
 		
@@ -185,7 +185,6 @@ public class HitlTaskHelper {
 		}
 		finally {
 			hitlCallObject.countDown();
-			this.removeHitlCallObject(hitlTaskId);
 		}
 	}
 	/**
