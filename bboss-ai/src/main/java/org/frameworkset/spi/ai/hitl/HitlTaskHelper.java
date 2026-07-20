@@ -31,6 +31,7 @@ import reactor.core.publisher.FluxSink;
 
 import java.time.LocalDateTime;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -308,11 +309,20 @@ public class HitlTaskHelper {
 			if(!hitlCallObject.isFromHumanCountDown()){
 				if(!hitlCallObject.isFromDestoryCountDown()) {
 					agentSessionService.timeoutHitlCallTask("任务处理超时", hitlTaskId);
+					if(result == null){
+						result = new LinkedHashMap<>();
+						result.put("error", "人工任务处理超时,如任务涉及处理操作，则忽略或者取消相关操作！");
+					}
 				}
 				else {
 					logger.info("任务被销毁:hitlTaskId={}",hitlTaskId);
+					if(result == null){
+						result = new LinkedHashMap<>();
+						result.put("error", "任务被销毁,如任务涉及处理操作，则忽略或者取消相关操作！");
+					}
 //					agentSessionService.destroyHitlCallTask("任务被销毁", hitlTaskId);
 				}
+				
 			}
 			else{
 				agentSessionService.completeHitlCallTask("任务完成",hitlTaskId);

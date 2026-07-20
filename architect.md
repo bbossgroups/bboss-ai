@@ -25,6 +25,11 @@
 - 多轮工具调用（Loop Tool Call），支持智能体自主决策多步骤任务执行
 - 智能体全链路 Trace 可观测性，覆盖 LLM 调用、工具执行、工作流编排
 - 脚本执行工具（Shell/CLI）和代码执行工具（Python/NodeJS）
+- 支持人工介入Hitl（Human-in-the-Loop）功能，即在智能体执行过程中，用户可以介入并参与到任务执行中，人工反馈数据和智能体之间数据交互机制：
+  - 智能体采用单节点单进程模式部署时，用户和智能体检通过内存共享数据，进行智能体中断和唤醒处理；
+  - 智能体采用集群模式部署时，用户和智能体之间数据交互通过redis发布/订阅模式实现数据共享，进行智能体中断和唤醒处理
+  - 如果接收人工提交数据的节点就是中断智能体所在的节点时，无需通过redis发布/订阅模式进行数据交互，直接通过内存共享数据即可
+  - 采用内置人工介入工具HitlTaskcallTool，实现Hitl功能，亦可以自定义人工介入工具，实现自定义Hitl功能
 - 定时调度执行能力
 
 ### 支持的平台
@@ -835,26 +840,166 @@ public class MCPServerController {
 - `SequenceAgent` 多智能体场景也支持循环工具调用机制
 - 工具调用过程中可通过 `emitterServerEvent()` 向客户端实时推送中间数据
 
-#### 脚本与代码执行工具
+#### 3.2.12 内置工具体系
 
-bboss-ai 内置了脚本执行和代码执行工具，支持在智能体工作流中动态生成和执行脚本：
+bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools` 包下，共暴露 14 个 `@Tool` 方法，覆盖 Shell 执行、多语言代码执行、文件系统操作、操作系统信息查询四大场景。
 
-| 工具类 | 作用 |
-|--------|------|
-| `CLIShellFunctionTool` | Shell/CLI 脚本执行工具，根据 OS 类型自动选择 `cmd /c` 或 `sh -c` 执行脚本，支持超时控制（秒），已修复 Windows 环境中文乱码问题 |
-| 代码执行函数工具 | 支持指定 Python/NodeJS 安装路径执行代码，可用于数据分析、脚本生成等场景 |
+##### 工具总览
 
-**使用示例：**
+| 工具类 | 功能域 | 暴露工具数 | 主要能力 |
+|--------|--------|------------|----------|
+| `CLIShellFunctionTool` | Shell 执行 | 1 | 跨平台执行 cmd/sh 脚本，超时控制 |
+| `CodeExecuteFunctionTool` | 代码执行 | 3 | 动态编译运行 Java，调用 Python/Node 执行 Python/JavaScript |
+| `FileFunctionTool` | 文件系统 | 9 | 文件读写、拷贝、删除、属性查询、编码识别、目录遍历 |
+| `GetOSFunctionTool` | 系统信息 | 1 | 获取 OS 名称/版本/架构及 CPU 核数/型号 |
+| `HitlTaskcallTool` | 人工介入 | 1 | HITL（Human-in-the-Loop）人工介入工具，当 AI 无法独立完成任务时调用 |
+
+##### 通用配置约定
+
+| 配置项 | 适用工具 | 说明 |
+|--------|----------|------|
+| **超时** | `CLIShellFunctionTool`、`CodeExecuteFunctionTool`、`GetOSFunctionTool` | 支持构造器 `new XxxTool(long timeout)` 或 `setTimeout(long)`，单位秒，默认 60 秒；超时后任务被取消并返回提示信息 |
+| **线程池** | Shell 与代码执行工具 | 使用独立的守护线程池（`cli-shell-executor` / `code-execute-executor`），避免阻塞 `ForkJoinPool.commonPool` |
+| **链式配置** | 所有工具 | `setTimeout` / `setBaseDirectory` / `setCompileOutputDir` 均返回 `this`，支持链式调用 |
+
+##### CLIShellFunctionTool —— Shell 命令执行工具
+
+**功能说明**：跨平台（Windows/Linux/Unix/Mac）执行 Shell 脚本。
+- **Windows**：调用 `cmd /c`
+- **其他平台**：调用 `sh -c`
+- **字符编码**：自动合并 stdout 与 stderr，Windows 使用 GBK 解码，其余平台使用 UTF-8
+
+**工具方法**：`executeBash(command)` —— 执行 Shell 命令
+
+##### CodeExecuteFunctionTool —— 多语言代码执行工具
+
+**功能说明**：支持 Java、Python、JavaScript 三种语言的动态执行，统一返回标准化的执行结果结构（`success`、`exitCode`、`output`、`message`）。
+
+**工具方法**：
+- `executeJava(code)` —— 编译并执行 Java 代码，自动包装到 `Main` 类的 `main` 方法中
+- `executePython(code)` —— 通过系统 Python 解释器执行 Python 代码
+- `executeJavaScript(code)` —— 优先使用 JDK 内置 Nashorn 引擎，回退到系统 `node` 命令
+
+**执行机制**：
+- **Java**：使用 `JavaCompiler` 内存编译 → `URLClassLoader` 加载 → 反射调用 `main` 方法 → 执行后自动清理临时目录
+- **Python**：写入临时 `.py` 文件 → 调用系统 Python → 执行后删除临时文件
+- **JavaScript**：Nashorn 模式直接 `ScriptEngine.eval()`，Node 模式写入临时 `.js` 文件执行
+
+##### FileFunctionTool —— 文件系统操作工具
+
+**功能说明**：提供文件与目录的增删改查、内容读写、编码识别、属性获取等 9 个工具方法，支持通过 `baseDirectory` 限制操作范围防止路径穿越攻击。
+
+**工具方法分类**：
+
+| 类别 | 方法 | 功能 |
+|------|------|------|
+| **文件操作** | `copyFile`、`deleteFile`、`createFile`、`fileExists` | 拷贝、删除、创建、检查存在 |
+| **文件读写** | `readFile`、`writeFile`、`readDirectoryFiles` | 读取、写入、遍历目录读取 |
+| **文件信息** | `getFileAttributes`、`detectFileEncoding` | 获取属性、检测编码 |
+
+**路径安全**：设置 `baseDirectory` 后，所有路径经规范化后必须以基目录开头，否则抛出 `IllegalArgumentException`。
+
+##### GetOSFunctionTool —— 操作系统信息查询工具
+
+**功能说明**：获取当前运行环境的操作系统及 CPU 信息，无入参。
+
+**工具方法**：`getOS2ndCpu()` —— 返回 `os`、`osVersion`、`osArch`、`cpuCores`、`cpuName`
+
+**CPU 型号获取机制**：
+
+| 平台 | 命令/来源 |
+|------|----------|
+| Windows | `wmic cpu get Name` |
+| Linux | 读取 `/proc/cpuinfo` 的 `model name` |
+| Mac / Unix | `uname -p` |
+| 失败回退 | `os.arch` |
+
+##### HitlTaskcallTool —— 人工介入工具（HITL）
+
+**功能说明**：HITL（Human-in-the-Loop）人工介入工具，当 AI 无法独立完成任务、遇到关键决策点、需要人工审批或验证时调用。
+
+**适用场景**：
+1. 复杂问题需要人类专业判断
+2. 敏感操作需要人工确认
+3. 任务执行结果不符合预期需要人工介入调整
+4. 超出 AI 权限范围的操作
+
+**工具方法**：`hitlTaskTool(hitlTaskReason)` —— 发起人工介入请求
+
+**参数说明**：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `hitlTaskReason` | String | 是 | 人工介入原因，需包含：1.任务背景与已执行步骤 2.当前卡住的具体原因 3.建议人类关注的关键点 4.期望人类提供的具体帮助 |
+
+**上下文内容要求**：精简聚焦，包含三要素——已执行步骤、卡住原因、建议关注要点，让人类在 3 秒内快速理解并做出决策。
+
+**异常处理机制**：
+- **参数 null/空白校验**：防止空任务传递给人工
+- **chatObject null 检查**：防御非对话上下文调用
+- **HitlTaskHelper null 检查**：防御组件未初始化场景
+- **异常捕获**：记录错误日志并返回友好提示，不中断智能体执行
+
+**技能中的声明方式**：
+
+在 SKILL.md 技能文件中，通过自然语言描述触发条件和调用逻辑，LLM 会自动识别并检测已注册的工具：
+
+```markdown
+## step 5: 问题修复
+- 请生成修复后的代码
+- 调用文件处理工具保存修改后的代码
+- 如果存在人工介入工具hitlTaskTool，则调用人工介入任务工具hitlTaskTool，通知人工介入确认后，才能保存修复后的代码到原始文件，否则忽略保存代码到原始文件。
+- 修复问题时，要指出问题的位置和原因。
+- 修复后，要检查是否解决了问题。
+```
+
+**工具检测与调用流程**：
+1. **LLM 解析**：读取技能内容，识别到 `hitlTaskTool` 工具名
+2. **工具列表检查**：查询已注册的 `FunctionToolDefine` 列表
+3. **名称匹配**：通过名称精确匹配查找工具
+4. **条件判断**：根据"如果存在...则调用"的描述执行条件判断
+5. **生成调用请求**：如果找到匹配工具，生成 `FunctionTool` 调用对象
+6. **执行工具调用**：`BeanToolFunctionCall.call()` 执行实际的工具方法
+
+##### 通用注册方式
 
 ```java
 AIAgent agent = new AIAgent();
-agent.setEnableLoopToolCall(true);
-agent.setMaxLoopToolCalls(80);
-// 注册 OS 信息获取工具
-agent.registBeanTool(new GetOSFunctionTool(60));
-// 注册 Shell 脚本执行工具（60 秒超时）
+
+// 注册所有内置工具（推荐方式）
+agent.registBeanTool(new GetOSFunctionTool(60));          // 60 秒超时
 agent.registBeanTool(new CLIShellFunctionTool(60));
+agent.registBeanTool(new CodeExecuteFunctionTool(60));
+agent.registBeanTool(new FileFunctionTool("/data/safe"));  // 限制文件操作基目录
+agent.registBeanTool(new HitlTaskcallTool());              // 人工介入工具
 ```
+
+##### 安全风险与注意事项
+
+**高危工具警示**：
+
+| 工具方法 | 风险等级 | 说明 |
+|----------|----------|------|
+| `executeBash` | 🔴 高危 | 会真实执行任意 Shell 命令 |
+| `executeJava` | 🔴 高危 | 会动态编译并执行任意 Java 代码 |
+| `executePython` | 🔴 高危 | 会调用系统解释器执行任意 Python 代码 |
+| `executeJavaScript` | 🔴 高危 | 会执行任意 JavaScript 代码 |
+
+**安全建议**：
+- 运行在隔离容器中
+- 使用专用低权限系统账户
+- 限制网络访问
+- 开启严格的资源配额
+- 为 `FileFunctionTool` 设置 `baseDirectory` 限制操作范围
+
+**环境依赖**：
+
+| 工具 | 依赖要求 |
+|------|----------|
+| `executeJava` | JDK（非 JRE），需提供 `JavaCompiler` |
+| `executePython` | 系统 PATH 中包含 `python3` 或 `python` |
+| `executeJavaScript` | JDK 内置 Nashorn 引擎或系统 PATH 中包含 `node` |
+| `executeBash` | Windows 需 `cmd.exe`；其他平台需 `/bin/sh` |
 
 #### 3.2.8 回调机制
 
