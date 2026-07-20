@@ -21,7 +21,10 @@ import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallNotifier;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.TraceMessage;
 import org.frameworkset.spi.ai.store.AgentSessionService;
+import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.slf4j.Logger;
 import reactor.core.publisher.FluxSink;
@@ -274,10 +277,20 @@ public class HitlTaskHelper {
 		hitlCallObject.setHitlCallTask(hitlCallTask);
 		hitlCallObject.setTimeout(chatObject.getAgent().getHitlTaskTimeout());
 		hitlCallObject.setResponseType(Map.class);
-		
+	
 		try {
+			
 			persistentHitlCallTask( hitlCallTask);
 			this.hitlCallObjects.put(hitlCallObject.getHitlTaskId(), hitlCallObject);
+			long startTime = System.currentTimeMillis();
+			if(AgentTraceHolder.isToolTrace()) {
+				TraceMessage traceMessage = new TraceMessage();
+				traceMessage.setStartTime(startTime)
+						.put("hitlTaskReason", hitlTaskReason)
+						.put("hitlTaskId", hitlTaskId)
+						.put("role", SessionMessage.MESSAGE_TYPE_HITL_MESSAGE_NAME);
+				AgentTraceHolder.trace(traceMessage);
+			}
 			FluxSink<ServerEvent> sink = chatObject.getAgentFluxSink();
 			if(sink != null) {
 				//推送人工消息到客户端
@@ -286,7 +299,7 @@ public class HitlTaskHelper {
 				serverEvent.setHitlTaskId(hitlTaskId);
 				serverEvent.setType(ServerEvent.TYPE_HITL);
 				ServerEventUtil.buildServerEventAgentInfo(serverEvent, chatObject.getAgent());
-				sink.next(serverEvent);
+				sink.next(serverEvent);			 
 				
 			}
 			hitlCallObject.await();
@@ -305,12 +318,33 @@ public class HitlTaskHelper {
 				agentSessionService.completeHitlCallTask("任务完成",hitlTaskId);
 			}
 			Throwable hitlCallException = hitlCallObject.getHitlCallException();
+			
 			if(hitlCallException != null) {
+				if(AgentTraceHolder.isToolTrace()) {
+					TraceMessage traceMessage = new TraceMessage();
+					traceMessage.setStartTime(startTime).setEndTime(System.currentTimeMillis())
+							.put("hitlTaskHandlerException", hitlCallException)							
+							.put("hitlTaskId", hitlTaskId)
+							.put("role", SessionMessage.MESSAGE_TYPE_HITL_HANDLE_MESSAGE_NAME);
+					if(result != null){
+						traceMessage.put("hitlTaskHandleData", result);
+					}
+					AgentTraceHolder.trace(traceMessage);
+				}
 				if(hitlCallException instanceof HitlCallException) {
 					throw (HitlCallException) hitlCallException;
 				}
 				else
 					throw new HitlCallException(hitlCallException);
+			}
+			else{
+				if(AgentTraceHolder.isToolTrace()) {
+					TraceMessage traceMessage = new TraceMessage();
+					traceMessage.setStartTime(startTime).setEndTime(System.currentTimeMillis())
+							.put("hitlTaskHandleData", result)
+							.put("role", SessionMessage.MESSAGE_TYPE_HITL_HANDLE_MESSAGE_NAME);
+					AgentTraceHolder.trace(traceMessage);
+				}
 			}
 			return result;
 		}

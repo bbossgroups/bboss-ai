@@ -129,6 +129,16 @@ public class SessionMessage {
 	 * 智能体Skill调用消息
 	 */
 	public static final String MESSAGE_TYPE_SKILLCALL_MESSAGE = "19";
+	
+	/**
+	 * 智能体人工介入消息：大模型提供输入内容，需要人工介入处理
+	 */
+	public static final String MESSAGE_TYPE_HITL_MESSAGE = "20";
+	
+	/**
+	 * 智能体人工介入处理消息：人工介入处理完成后，返回给大模型的消息和数据内容
+	 */
+	public static final String MESSAGE_TYPE_HITL_HANDLE_MESSAGE = "21";
 
     /**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
@@ -225,6 +235,18 @@ public class SessionMessage {
 	 * 智能体Skill调用消息
 	 */
 	public static final String MESSAGE_TYPE_SKILLCALL_MESSAGE_NAME = "skillcall";
+	
+	/**
+	 * 智能体人工介入消息
+	 */
+	public static final String MESSAGE_TYPE_HITL_MESSAGE_NAME = "hitltask";
+	
+	
+	/**
+	 * 智能体人工介入处理消息
+	 */
+	public static final String MESSAGE_TYPE_HITL_HANDLE_MESSAGE_NAME = "hitlhandle";
+	
     private String msgId;
 
 

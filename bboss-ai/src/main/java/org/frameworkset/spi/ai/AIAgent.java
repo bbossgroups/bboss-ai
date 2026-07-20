@@ -72,6 +72,9 @@ public class AIAgent<T extends AIAgent> {
     protected String agentNodeType = AGENT_NODE_TYPE_SINGLE;
     protected int sessionSize;
 	
+	/**
+	 * 人工介入任务超时时间，单位毫秒，默认-1毫秒,一直不超时
+	 */
 	protected long hitlTaskTimeout = -1L;
 	
 	
@@ -101,7 +104,9 @@ public class AIAgent<T extends AIAgent> {
 	public long getHitlTaskTimeout() {
 		return hitlTaskTimeout;
 	}
-	
+	/**
+	 * 设置人工介入任务超时时间，单位毫秒，默认-1毫秒,一直不超时
+	 */
 	public T setHitlTaskTimeout(long hitlTaskTimeout) {
 		this.hitlTaskTimeout = hitlTaskTimeout;
 		return (T) this;

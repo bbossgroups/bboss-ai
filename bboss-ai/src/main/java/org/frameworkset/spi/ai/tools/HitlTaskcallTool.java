@@ -39,9 +39,7 @@ public class HitlTaskcallTool {
 	public Map<String,Object> hitlTaskTool(@ToolParam(name = "hitlTaskReason",required = true,
 														description = "人工介入原因，需包含：1.任务背景与已执行步骤 2.当前卡住的具体原因（技术障碍/权限限制/信息缺失等）3.建议人类关注的关键点或待决策事项 4.期望人类提供的具体帮助；格式清晰，精简聚焦，便于人类快速理解。") 
 											   String hitlTaskReason){
-//		ChatObject chatObject = AgentTraceHolder.getChatObject();
-//		Map<String,Object> hitlTaskResult = HitlTaskHelper.getHitlTaskHelper().createHitlCallTask(hitlTaskReason, chatObject);
-//		return hitlTaskResult;		
+
 		// 【修复问题1】参数 null/空白校验：防止空任务传递给人工
 		if (hitlTaskReason == null || hitlTaskReason.trim().isEmpty()) {
 			logger.warn("hitlTaskTool called with null or empty hitlTaskReason, rejecting request");

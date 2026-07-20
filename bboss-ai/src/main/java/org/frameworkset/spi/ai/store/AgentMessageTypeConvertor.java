@@ -95,6 +95,12 @@ public class AgentMessageTypeConvertor {
 		else if(MESSAGE_TYPE_SKILLCALL_MESSAGE_NAME.equals(role)) {
 			return MESSAGE_TYPE_SKILLCALL_MESSAGE;
 		}
+		else if(MESSAGE_TYPE_HITL_MESSAGE_NAME.equals(role)) {
+			return MESSAGE_TYPE_HITL_MESSAGE;
+		}
+		else if(MESSAGE_TYPE_HITL_HANDLE_MESSAGE_NAME.equals(role)) {
+			return MESSAGE_TYPE_HITL_HANDLE_MESSAGE;
+		}
 
 
         return MESSAGE_TYPE_OTHER_MESSAGE;
