@@ -44,7 +44,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     protected GenFileDownload genFileDownload;
     private boolean inited;
 
-     
+    public String getReasoningContent( Map delta ){
+		String reasoning_content = (String) delta.get("reasoning_content");
+		return reasoning_content;
+	} 
     protected AgentAdapter initAgentAdapter(){
         if(inited)
             return this;

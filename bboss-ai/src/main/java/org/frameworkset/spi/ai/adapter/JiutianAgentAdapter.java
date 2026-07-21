@@ -36,7 +36,14 @@ import java.util.*;
 public class JiutianAgentAdapter extends QwenAgentAdapter{
     private Logger logger = org.slf4j.LoggerFactory.getLogger(JiutianAgentAdapter.class);
     private static String downImageUrl = "/largemodel/moma/api/v1/fs/getFile";
-    @Override
+	public String getReasoningContent( Map delta ){
+		String reasoning_content = (String) delta.get("reasoning");
+		if(reasoning_content == null){
+			reasoning_content = (String) delta.get("reasoning_content");
+		}
+		return reasoning_content;
+	}
+	@Override
     public String getChatCompletionsUrl(ClientConfiguration clientConfiguration,ChatAgentMessage chatAgentMessage) {
         return "/largemodel/moma/api/v3/chat/completions";
     }
@@ -137,15 +144,32 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
 	@Override
 	protected void buildThinking(ChatAgentMessage chatAgentMessage,ChatObject chatObject,Map<String, Object> requestMap){
 //        Map parameters = chatAgentMessage.getParameters();
-		Boolean thinking = chatAgentMessage.getThinking();
 		ChatContext chatContext = chatObject.getChatContext();
-		if(chatContext != null && chatContext.getThinking() != null){
-			thinking = chatContext.getThinking();
+		ClientConfiguration clientConfiguration = chatContext.getClientConfiguration();
+		if(clientConfiguration != null) {
+			String standard_reasoning = clientConfiguration.getExtendConfig("standard_reasoning");
+			if (standard_reasoning != null && standard_reasoning.equals("true")) {
+				super.buildThinking(chatAgentMessage, chatObject, requestMap);
+				return;
+			}
+		}
+		Boolean thinking = chatAgentMessage.getThinking();
+		String effort = chatAgentMessage.getEffort();
+		
+		if(chatContext != null ){
+			if(chatContext.getThinking() != null)
+				thinking = chatContext.getThinking();
+			if(chatContext.getEffort() != null){
+				effort = chatContext.getEffort();
+			}
 			
 		}
 		if(thinking != null){
 			Map reasoning = new LinkedHashMap();
 			reasoning.put("enabled", thinking);
+			if(effort != null) {
+				reasoning.put("effort", effort);
+			}
 			requestMap.put("reasoning", reasoning);
 			chatObject.setThinking(thinking);			 
 		}

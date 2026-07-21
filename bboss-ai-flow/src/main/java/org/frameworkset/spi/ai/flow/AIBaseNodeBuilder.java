@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.prompt.FlowPromptEval;
+import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.tran.jobflow.builder.CallableJobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
@@ -65,7 +66,7 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
-        ChatContext chatContext = new ChatContext();
+        ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, agent);
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**
              * 提示词预处理

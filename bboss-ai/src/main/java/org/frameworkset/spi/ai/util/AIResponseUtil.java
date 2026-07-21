@@ -404,7 +404,7 @@ public class AIResponseUtil {
                            Map delta = (Map) choice.get("delta");
                            if (delta != null) {
  
-                               String reasoning_content = (String) delta.get("reasoning_content");
+                               String reasoning_content = agentAdapter.getReasoningContent(delta);//(String) delta.get("reasoning_content");
                                String content = (String) delta.get("content");
                                Object tool_call = delta.get("tool_calls");
                                if(tokenMetrics != null){
@@ -423,7 +423,7 @@ public class AIResponseUtil {
                            } else {
                                Map message = (Map) choice.get("message");
                                if (message != null) {
-                                   String reasoning_content = (String) message.get("reasoning_content");
+                                   String reasoning_content = agentAdapter.getReasoningContent(message);//(String) message.get("reasoning_content");
                                    String content = (String) message.get("content");
                                    if(tokenMetrics != null){
                                        tokenMetrics.setEndTime(System.currentTimeMillis());
@@ -460,7 +460,7 @@ public class AIResponseUtil {
                                if (message != null) {
                                    StreamData streamData = streamDataBuilder.functionTools((List<Map>) message.get("tool_calls"), finishReason);
                                    if (streamData != null) {
-                                       String reasoning_content = (String) message.get("reasoning_content");
+                                       String reasoning_content = agentAdapter.getReasoningContent(message);//(String) message.get("reasoning_content");
                                        if(tokenMetrics != null){
                                            tokenMetrics.setEndTime(System.currentTimeMillis());
                                        }
@@ -991,9 +991,11 @@ public class AIResponseUtil {
                                                 boolean stream, String line, FluxSink<ServerEvent> sink, 
                                                 BooleanWrapperInf firstEventTag,
                                                 BaseStreamDataBuilder streamDataBuilder, FluxSinkStatus fluxSinkStatus){
-        if(logger.isDebugEnabled()){
-            logger.debug("line: " + line);
-        }
+//        if(logger.isDebugEnabled()){
+//            logger.debug("line: " + line);
+//        }
+		
+//		System.out.println("line: " + line);
 
 //        if(logger.isInfoEnabled()){
 //            logger.info("line: " + line);

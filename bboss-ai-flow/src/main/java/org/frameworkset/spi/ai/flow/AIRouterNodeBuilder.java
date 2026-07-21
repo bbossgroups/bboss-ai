@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.FlowPromptEval;
 import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -168,7 +169,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         }
         jobFlowNodeExecuteContext.addContextData("route.ChoiceList", JsonUtil.object2json(routeChoiceList));
         routeAgent.setPrompt(prompt);
-        ChatContext chatContext = new ChatContext();
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, routeAgent);
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**
              * 提示词预处理

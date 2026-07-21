@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.callback;
 
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 import reactor.core.publisher.FluxSink;
 
 import java.util.List;
@@ -55,6 +56,7 @@ public class ChatContext {
      * 工具调用次数计数器
      */
     private int loopToolCalls;
+	 
 
    
 
@@ -77,6 +79,22 @@ public class ChatContext {
      * 智能体会话级别控制是否开启思考过程返回
      */
     private Boolean thinking;
+	
+
+	/**
+	 * 九天模型
+	 * 控制思考的力度，设置effort后，将忽略enabled的值，effort共有6种取值：
+	 * "xhigh" - 为思考分配最大比例的令牌（约占最大令牌数的 95%）
+	 * "high" - 为思考分配较大比例的令牌（约占最大令牌数的 80%）
+	 * "medium" - 分配中等比例的令牌（约占最大令牌数的 50%）
+	 * "low" - 分配较小比例的令牌（约占最大令牌数的 20%）
+	 * "minimal" - 分配更小比例的令牌（约占最大令牌数的 10%）
+	 * "none" - 完全禁用思考功能
+	 */
+	private String effort;
+
+	
+	private ClientConfiguration clientConfiguration;
     private Map<String,Object> contextData;
 
 
@@ -241,4 +259,19 @@ public class ChatContext {
         this.loopToolCalls ++;
         return this.loopToolCalls;
     }
+	public String getEffort() {
+		return effort;
+	}
+	
+	public void setEffort(String effort) {
+		this.effort = effort;
+	}
+	
+	public ClientConfiguration getClientConfiguration() {
+		return clientConfiguration;
+	}
+	
+	public void setClientConfiguration(ClientConfiguration clientConfiguration) {
+		this.clientConfiguration = clientConfiguration;
+	}
 }

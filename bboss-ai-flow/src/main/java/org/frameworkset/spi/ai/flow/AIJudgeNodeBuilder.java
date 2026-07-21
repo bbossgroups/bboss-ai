@@ -21,6 +21,7 @@ import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.FlowPromptEval;
+import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +105,11 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
 //        }
 
         judgeAgent.setPrompt(judgePrompt);
-        ChatContext chatContext = new ChatContext();
+		AgentMessage agentMessage = judgeAgent.getAgentMessage() != null ? judgeAgent.getAgentMessage() : planAgent.getAgentMessage();
+		if(agentMessage == null){
+			throw new AIRuntimeException("agentMessage is null");
+		}
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, judgeAgent);
    
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**
@@ -138,10 +143,7 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
             }
         });
        
-        AgentMessage agentMessage = judgeAgent.getAgentMessage() != null ? judgeAgent.getAgentMessage() : planAgent.getAgentMessage();
-        if(agentMessage == null){
-            throw new AIRuntimeException("agentMessage is null");
-        }
+       
 		if(!planAgent.isStream() || judgeAgent.isDisableStream()){
 			judgeAgent.chat((ChatAgentMessage)agentMessage,chatContext);
 		}

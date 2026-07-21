@@ -700,18 +700,18 @@ public class AIAgent<T extends AIAgent> {
     /**
      * 实现流式智能问答功能,在指定的数据源上执行
      */
-    public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage, ChatContext chatStreamCallback ){
+    public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage, ChatContext chatContext ){
         reactMessage(  chatAgentMessage);
 //        chatAgentMessage.init();
 
-        return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this,chatStreamCallback);
+        return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this,chatContext);
     }
 
     /**
      * 实现流式智能问答功能,在指定的数据源上执行
      */
-    public Flux<ServerEvent> streamChat(ChatAgentMessage chatAgentMessage, ChatContext chatStreamCallback){
-        return streamChat(chatAgentMessage.getMaas(),   chatAgentMessage, chatStreamCallback );
+    public Flux<ServerEvent> streamChat(ChatAgentMessage chatAgentMessage, ChatContext chatContext){
+        return streamChat(chatAgentMessage.getMaas(),   chatAgentMessage, chatContext );
     }
     
     /**

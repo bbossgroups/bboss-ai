@@ -72,6 +72,9 @@ public class AIAgentUtil {
         long startTime = System.currentTimeMillis();
         chatContext.setStreamable(true);
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
+		if(chatContext.getClientConfiguration() == null) {
+			chatContext.setClientConfiguration(clientConfiguration);
+		}
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
        
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,chatContext);
@@ -197,9 +200,13 @@ public class AIAgentUtil {
          * @param message
          * @return
          */
-    public static AudioEvent multimodalAudioGeneration(String poolName,  AudioAgentMessage message, StoreFilePathFunction storeFilePathFunction,AIAgent aiAgent,ChatContext chatContext) {
+    public static AudioEvent multimodalAudioGeneration(String poolName,  AudioAgentMessage message, StoreFilePathFunction storeFilePathFunction,
+													   AIAgent aiAgent,ChatContext chatContext) {
         
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
+		if(chatContext.getClientConfiguration() == null) {
+			chatContext.setClientConfiguration(config);
+        }
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config, message);
         StoreChatObject storeChatObject = agentAdapter.buildGenAudioRequestParameter(config, message,aiAgent,  chatContext);
         storeChatObject.setStoreFilePathFunction(storeFilePathFunction);
@@ -400,6 +407,20 @@ public class AIAgentUtil {
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
         }
     }
+	public static ChatContext getChatContextOnly(AgentMessage chatMessage, AIAgent agent) {
+		
+		ChatContext chatContext = new ChatContext();
+		if (chatMessage instanceof AgentMessage) {
+			Map<String, Object> contextData = chatMessage.getContextData();
+			if (contextData != null)
+				chatContext.addContextDatas(contextData);
+		}
+		Map<String, Object> params = agent.getParams();
+		if (params != null && params.size() > 0) {
+			chatContext.addContextDatas(params);
+		}
+		return chatContext;
+	}
     public static ChatContext getChatContext(AgentMessage chatMessage, AIAgent agent){
         
         ChatContext   chatContext = new ChatContext();
@@ -467,8 +488,8 @@ public class AIAgentUtil {
         
         return  streamChatCompletionEvent(  poolName,  chatMessage,    agent, chatContext);
     }
-    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent, ChatContext chatStreamCallback){
-        return  streamChatCompletionEvent(poolName,chatMessage,(StoreFilePathFunction) null, aiAgent,chatStreamCallback);
+    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent aiAgent, ChatContext chatContext){
+        return  streamChatCompletionEvent(poolName,chatMessage,(StoreFilePathFunction) null, aiAgent,chatContext);
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent) {
         ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
@@ -477,10 +498,14 @@ public class AIAgentUtil {
     /**
      * 创建流式调用的Flux,在指定的数据源上执行
      */
-    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent, ChatContext chatContext) {
+    public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, 
+															  StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent, ChatContext chatContext) {
         long startTime = System.currentTimeMillis();
         chatContext.setStreamable(true);
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
+		if(chatContext.getClientConfiguration() == null) {
+			chatContext.setClientConfiguration(clientConfiguration);
+        }
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
          
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,chatContext);
@@ -940,6 +965,9 @@ public class AIAgentUtil {
     public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent,ChatContext chatContext) {
         long startTime = System.currentTimeMillis();
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
+		if(chatContext.getClientConfiguration() == null) {
+			chatContext.setClientConfiguration(config);
+        }
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,chatMessage);
         chatContext.setThinking(false);
         chatContext.setStreamable(false);
@@ -1030,6 +1058,9 @@ public class AIAgentUtil {
         long startTime = System.currentTimeMillis();
         chatContext.setStreamable(true);
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
+		if(chatContext.getClientConfiguration() == null) {
+			chatContext.setClientConfiguration(clientConfiguration);
+        }
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(clientConfiguration,chatMessage);
         final ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(clientConfiguration,chatMessage,   aiAgent,chatContext);
         chatObject.getStreamDataBuilder().setStartTime(startTime);

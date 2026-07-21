@@ -45,7 +45,16 @@ public class AgentMessage<T extends AgentMessage> {
      */
     private long retryInterval = 500L;
     private Boolean thinking;
-	
+	/**
+	 * 九天模型
+	 * 控制思考的力度，设置effort后，将忽略enabled的值，effort共有6种取值：
+	 * "xhigh" - 为思考分配最大比例的令牌（约占最大令牌数的 95%）
+	 * "high" - 为思考分配较大比例的令牌（约占最大令牌数的 80%）
+	 * "medium" - 分配中等比例的令牌（约占最大令牌数的 50%）
+	 * "low" - 分配较小比例的令牌（约占最大令牌数的 20%）
+	 * "minimal" - 分配更小比例的令牌（约占最大令牌数的 10%）
+	 * "none" - 完全禁用思考功能
+	 */
 	private String effort;
     /**
      * maas平台数据源名称
