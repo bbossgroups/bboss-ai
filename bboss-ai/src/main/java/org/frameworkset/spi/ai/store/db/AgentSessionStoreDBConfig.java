@@ -675,18 +675,19 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create session message reference table "+getSessionMessageReferenceTableName(), e);
 			}
 		}
-		
-		try {
-			SQLExecutor.queryObjectWithDBName(int.class, hitlDatasource, getExistHitlCallTaskSQL());
-		}
-		catch (Exception exception){
+		String sqlhitl = evalCreateHitlCallTaskTableSQL(hitlDatasource);
+		if(sqlhitl != null) {
 			try {
-				logger.info("Creating HitlCallTaskTable table {}...", getHitlCallTaskTableName());			
-				
-				SQLExecutor.updateWithDBName(hitlDatasource,evalCreateHitlCallTaskTableSQL(hitlDatasource));
-				
-			} catch (SQLException e) {
-				throw new AIRuntimeException("Failed to create HitlCallTaskTable table", e);
+				SQLExecutor.queryObjectWithDBName(int.class, hitlDatasource, getExistHitlCallTaskSQL());
+			} catch (Exception exception) {
+				try {
+					logger.info("Creating HitlCallTaskTable table {}...", getHitlCallTaskTableName());
+					
+					SQLExecutor.updateWithDBName(hitlDatasource, evalCreateHitlCallTaskTableSQL(hitlDatasource));
+					
+				} catch (SQLException e) {
+					throw new AIRuntimeException("Failed to create HitlCallTaskTable table", e);
+				}
 			}
 		}
 	
@@ -981,6 +982,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         else if("sqlite".equalsIgnoreCase(type)) {
             sql = sqlite_createHitlCallTaskTableSQL;
         }
+		if(sql == null)
+			return null;
         return sql.replace("$hitlCallTaskTableName", hitlCallTaskTableName);
     }
 

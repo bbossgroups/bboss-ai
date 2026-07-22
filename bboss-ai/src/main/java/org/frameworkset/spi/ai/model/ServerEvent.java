@@ -385,8 +385,20 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
     public boolean isToolCallsType() {
         return contentType == TOOL_CALLS;
     }
-    
-    public boolean isToolCallResponse(){
+	
+	
+	/**
+	 * 判断事件是否是步骤消息类型
+	 * 代表新一轮工具调用开始
+	 * @return
+	 */
+	public boolean isStepType() {
+		return type == TYPE_STEP;
+	}
+	
+	
+	
+	public boolean isToolCallResponse(){
         return toolCallResponse;
     }
 

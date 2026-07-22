@@ -33,8 +33,14 @@ import java.util.Map;
  */
 public class HitlTaskcallTool {
 	private static Logger logger = org.slf4j.LoggerFactory.getLogger(HitlTaskcallTool.class);
-	@Tool(name = "hitlTaskTool", description = "人工介入工具(HITL - Human-in-the-Loop)：当AI无法独立完成任务、遇到关键决策点、需要人工审批或验证时调用；" +
-									"适用于：1.复杂问题需要人类专业判断 2.敏感操作需要人工确认 3.任务执行结果不符合预期需要人工介入调整 4.超出AI权限范围的操作；" +
+	
+	/**
+	 * Human-in-the-Loop，人工介入工具
+	 * @param hitlTaskReason
+	 * @return
+	 */
+	@Tool(name = "hitlTaskTool", description = "人工介入工具：当AI无法独立完成任务、遇到关键决策点、需要人工审批或验证时调用；" +
+									"适用于：1.复杂问题需要人类专业判断 2.敏感操作需要人工确认 3.任务执行结果不符合预期需要人工介入调整 4.超出AI权限范围的操作；5.需要人工审核的操作；6.需要人工确认的操作" +
 									"上下文内容要求：精简聚焦，包含三要素——已执行步骤、卡住原因、建议关注要点，让人类在3秒内快速理解并做出决策。")
 	public Map<String,Object> hitlTaskTool(@ToolParam(name = "hitlTaskReason",required = true,
 														description = "人工介入原因，需包含：1.任务背景与已执行步骤 2.当前卡住的具体原因（技术障碍/权限限制/信息缺失等）3.建议人类关注的关键点或待决策事项 4.期望人类提供的具体帮助；格式清晰，精简聚焦，便于人类快速理解。") 

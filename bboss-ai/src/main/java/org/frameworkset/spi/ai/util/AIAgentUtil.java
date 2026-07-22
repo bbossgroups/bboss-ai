@@ -386,6 +386,11 @@ public class AIAgentUtil {
 
             if (functionTools != null && functionTools.size() > 0) {//理论上不可能有工具调用
 //                chatObject.getChatContext().setToolCallStage(ChatContext.TOOL_CALL_STAGE_EXECUTE_TOOL);
+				//推送步骤消息到客户端，说明有新的步骤开始
+				ServerEvent serverEvent = new ServerEvent();//向客户端推送人工介入消息
+				serverEvent.setType(ServerEvent.TYPE_STEP);
+				ServerEventUtil.buildServerEventAgentInfo(serverEvent, chatObject.getAgent());
+				sink.next((T)serverEvent);
                 streamDataHandler.streamChatCompletionEvent(clientConfiguration,chatObject,baseStreamDataBuilder,sink,disposeEventHandler);
 
                 //                    Flux<ServerEvent> innerflux = streamChatCompletionEvent(poolName, toolAgentMessage);
@@ -680,7 +685,12 @@ public class AIAgentUtil {
 
             if (functionTools != null && functionTools.size() > 0) {
                 chatObject.getChatContext().setToolCallStage(ChatContext.TOOL_CALL_STAGE_EXECUTE_TOOL);
-                streamDataHandler.streamChatCompletionEvent(clientConfiguration,chatObject,baseStreamDataBuilder,sink,disposeEventHandler);
+				//推送步骤消息到客户端，说明有新的步骤开始
+				ServerEvent serverEvent = new ServerEvent();//向客户端推送人工介入消息
+				serverEvent.setType(ServerEvent.TYPE_STEP);
+				ServerEventUtil.buildServerEventAgentInfo(serverEvent, chatObject.getAgent());
+				sink.next((T)serverEvent);
+				streamDataHandler.streamChatCompletionEvent(clientConfiguration,chatObject,baseStreamDataBuilder,sink,disposeEventHandler);
 
 //                    Flux<ServerEvent> innerflux = streamChatCompletionEvent(poolName, toolAgentMessage);
 //                    // 使用concatWith确保顺序执行：先完成当前事件，再执行工具调用
