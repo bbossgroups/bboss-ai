@@ -15,7 +15,6 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.annotation.Tool;
@@ -32,46 +31,58 @@ import java.util.Map;
  * @Date 2026/7/16
  */
 public class HitlTaskcallTool {
-	private static Logger logger = org.slf4j.LoggerFactory.getLogger(HitlTaskcallTool.class);
+	private static final Logger logger = org.slf4j.LoggerFactory.getLogger(HitlTaskcallTool.class);
 	
 	/**
 	 * Human-in-the-Loop，人工介入工具
-	 * @param hitlTaskReason
-	 * @return
+	 * @param hitlTaskReason 人工介入原因描述
+	 * @return 人工介入任务执行结果，包含状态信息
 	 */
 	@Tool(name = "hitlTaskTool", description = "人工介入工具：当AI无法独立完成任务、遇到关键决策点、需要人工审批或验证时调用；" +
-									"适用于：1.复杂问题需要人类专业判断 2.敏感操作需要人工确认 3.任务执行结果不符合预期需要人工介入调整 4.超出AI权限范围的操作；5.需要人工审核的操作；6.需要人工确认的操作" +
+									"适用于：1.复杂问题需要人类专业判断 2.敏感操作需要人工确认 3.任务执行结果不符合预期需要人工介入调整 4.超出AI权限范围的操作；5.需要人工审核的操作；6.需要人工确认的操作。" +
 									"上下文内容要求：精简聚焦，包含三要素——已执行步骤、卡住原因、建议关注要点，让人类在3秒内快速理解并做出决策。")
 	public Map<String,Object> hitlTaskTool(@ToolParam(name = "hitlTaskReason",required = true,
 														description = "人工介入原因，需包含：1.任务背景与已执行步骤 2.当前卡住的具体原因（技术障碍/权限限制/信息缺失等）3.建议人类关注的关键点或待决策事项 4.期望人类提供的具体帮助；格式清晰，精简聚焦，便于人类快速理解。") 
 											   String hitlTaskReason){
 
-		// 【修复问题1】参数 null/空白校验：防止空任务传递给人工
+		// 参数 null/空白校验：防止空任务传递给人工
 		if (hitlTaskReason == null || hitlTaskReason.trim().isEmpty()) {
-			logger.warn("hitlTaskTool called with null or empty hitlTaskReason, rejecting request");
+			if(logger.isWarnEnabled()) {
+				logger.warn("hitlTaskTool called with null or empty hitlTaskReason, rejecting request");
+			}
 			return Collections.singletonMap("error", "hitlTaskReason must not be null or empty");
 		}
 		
-		// 【修复问题2】chatObject null 检查：防御非对话上下文调用
+		// chatObject null 检查：防御非对话上下文调用
 		ChatObject chatObject = AgentTraceHolder.getChatObject();
- 
 		
-		// 【修复问题3】HitlTaskHelper null 检查 + 【修复问题4】异常捕获
+		if (chatObject == null) {
+			if(logger.isWarnEnabled()) {
+				logger.warn("hitlTaskTool: chatObject is null, cannot create HITL task outside agent context");
+			}
+			return Collections.singletonMap("error", "HITL task requires agent context (chatObject is null)");
+		}
+		
 		try {
 			HitlTaskHelper helper = HitlTaskHelper.getHitlTaskHelper(); 
 			
 			Map<String, Object> hitlTaskResult = helper.createHitlCallTask(hitlTaskReason, chatObject);
 			
-			// 【修复问题5】返回结果 null 保护
+			// 返回结果 null 保护
 			if (hitlTaskResult == null) {
-				logger.warn("hitlTaskTool: createHitlCallTask returned null for reason: " + hitlTaskReason);
-				return Collections.singletonMap("message", "HITL task created successfully, but result is null, ignore operation and continue!");
+				if(logger.isDebugEnabled()) {
+					logger.debug("hitlTaskTool: createHitlCallTask returned null for reason: {}", 
+							hitlTaskReason.length() > 100 ? hitlTaskReason.substring(0, 100) + "..." : hitlTaskReason);
+				}
+				return Collections.singletonMap("message", "HITL task completed with null result, please ignore and continue.");
 			}
 			
 			return hitlTaskResult;
 		} catch (Exception e) {
-			logger.error( "hitlTaskTool: failed to create HITL task for reason: " + hitlTaskReason, e);
-			return Collections.singletonMap("error", "Failed to execute HITL task ,ignore operation and continue: " + SimpleStringUtil.exceptionToString(e) );
+			if(logger.isErrorEnabled()) {
+				logger.error("hitlTaskTool: failed to create HITL task for reason: {}", hitlTaskReason.length() > 100 ? hitlTaskReason.substring(0, 100) + "..." : hitlTaskReason, e);
+			}
+			return Collections.singletonMap("error", "Exception：failed to execute HITL task ,ignore operation and continue。" );
 		}
 	}
 }
