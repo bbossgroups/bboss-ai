@@ -46,7 +46,7 @@ public class HitlTaskcallTool {
 											   String hitlTaskReason){
 
 		// 参数 null/空白校验：防止空任务传递给人工
-		if (hitlTaskReason == null || hitlTaskReason.trim().isEmpty()) {
+		if (hitlTaskReason == null || hitlTaskReason.equals("")) {
 			if(logger.isWarnEnabled()) {
 				logger.warn("hitlTaskTool called with null or empty hitlTaskReason, rejecting request");
 			}
@@ -82,7 +82,7 @@ public class HitlTaskcallTool {
 			if(logger.isErrorEnabled()) {
 				logger.error("hitlTaskTool: failed to create HITL task for reason: {}", hitlTaskReason.length() > 100 ? hitlTaskReason.substring(0, 100) + "..." : hitlTaskReason, e);
 			}
-			return Collections.singletonMap("error", "Exception：failed to execute HITL task ,ignore operation and continue。" );
+			return Collections.singletonMap("error", "Exception: failed to execute HITL task, ignore operation and continue." );
 		}
 	}
 }
