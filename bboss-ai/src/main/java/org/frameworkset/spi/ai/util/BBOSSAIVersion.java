@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 public class BBOSSAIVersion {
 	public static final String description="6.5.6";
     public static final short version=656;
-    public static final String releaseDate = "20260722";
+    public static final String releaseDate = "20260723";
     private static Logger logger = LoggerFactory.getLogger(BBOSSVersion.class);
     static {
         logger.info(getVersionDescription());

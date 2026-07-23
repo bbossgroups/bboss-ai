@@ -278,7 +278,7 @@ public class HitlTaskHelper {
 		hitlCallObject.setHitlCallTask(hitlCallTask);
 		hitlCallObject.setTimeout(chatObject.getAgent().getHitlTaskTimeout());
 		hitlCallObject.setResponseType(Map.class);
-	
+		FluxSink<ServerEvent> sink = chatObject.getAgentFluxSink();
 		try {
 			
 			persistentHitlCallTask( hitlCallTask);
@@ -292,7 +292,7 @@ public class HitlTaskHelper {
 						.put("role", SessionMessage.MESSAGE_TYPE_HITL_MESSAGE_NAME);
 				AgentTraceHolder.trace(traceMessage);
 			}
-			FluxSink<ServerEvent> sink = chatObject.getAgentFluxSink();
+		
 			if(sink != null) {
 				//推送人工消息到客户端
 				ServerEvent serverEvent = new ServerEvent();//向客户端推送人工介入消息
@@ -308,10 +308,10 @@ public class HitlTaskHelper {
 			
 			if(!hitlCallObject.isFromHumanCountDown()){
 				if(!hitlCallObject.isFromDestoryCountDown()) {
-					agentSessionService.timeoutHitlCallTask("任务处理超时", hitlTaskId);
+					agentSessionService.timeoutHitlCallTask("任务处理超时,等待超时时间:"+hitlCallObject.getTimeout()+"毫秒", hitlTaskId);
 					if(result == null){
 						result = new LinkedHashMap<>();
-						result.put("error", "人工任务处理超时,如任务涉及处理操作，则忽略或者取消相关操作！");
+						result.put("error", "人工任务处理超时,等待超时时间:"+hitlCallObject.getTimeout()+"毫秒,如任务涉及处理操作，则忽略或者取消相关操作！");
 					}
 				}
 				else {
@@ -366,6 +366,10 @@ public class HitlTaskHelper {
 			throw new HitlCallException(e);
 		}
 		finally {
+			ServerEvent stepServerEvent = new ServerEvent();//向客户端推送人工介入消息
+			stepServerEvent.setType(ServerEvent.TYPE_STEP);
+			ServerEventUtil.buildServerEventAgentInfo(stepServerEvent, chatObject.getAgent());
+			sink.next(stepServerEvent);
 			this.removeHitlCallObject(hitlTaskId);
 		}
 		

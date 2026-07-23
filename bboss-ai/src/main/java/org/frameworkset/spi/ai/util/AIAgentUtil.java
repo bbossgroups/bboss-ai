@@ -902,24 +902,7 @@ public class AIAgentUtil {
 					return Flux.empty();
 				});
 	}
-
-    private static <T> Flux<T> buildFlux(ServerEvent serverEvent) {
-        return Flux.<T>create(sink -> {
-                     sink.next((T)serverEvent);
-                }, FluxSink.OverflowStrategy.BUFFER)
-                .subscribeOn(Schedulers.boundedElastic()) // 在弹性线程池中执行阻塞IO
-//                .timeout(Duration.ofSeconds(60)) // 设置超时
-                .onErrorResume(throwable -> {
-//                    String error = SimpleStringUtil.exceptionToString(throwable);
-//                    System.err.println("流式处理错误: " + throwable.getMessage());
-//                    String error = SimpleStringUtil.exceptionToString(throwable);
-                    if(logger.isDebugEnabled()) {
-                        logger.debug(throwable.getMessage(), throwable);
-                    }
-                    // 修改此处，将错误信息作为Flux输出
-                    return Flux.empty();
-                });
-    }
+ 
     
     /**
      * 同步调用模型服务，返回问答内容
