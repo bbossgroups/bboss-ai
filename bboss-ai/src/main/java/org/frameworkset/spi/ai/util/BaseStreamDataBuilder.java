@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -214,6 +215,13 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
                 serverEvent.setType(ServerEvent.TYPE_AGENT);             
              
                 sink.next(serverEvent);
+				
+				TraceMessage traceMessage = new TraceMessage();
+				Map<String,Object> messages = new LinkedHashMap<>();
+				messages.put("text",data);
+				messages.put("role", SessionMessage.MESSAGE_TYPE_TRACE_MESSAGE_NAME);
+				traceMessage.setMessage(messages);
+				agent.recordTraceMessage(traceMessage);
             }
             else{
                 

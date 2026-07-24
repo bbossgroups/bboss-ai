@@ -146,7 +146,7 @@ public class AIAgentUtil {
             }
             else{
 //                final String _data = (String)data;
-                imageEvent = RetryUtil.retry(retry, message.getRetryInterval(), (RetryCallback<ImageEvent>) () -> {
+                imageEvent = RetryUtil.executeWithRetry("multimodalImageGeneration",retry, message.getRetryInterval(), (RetryCallback<ImageEvent>) () -> {
                     Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(config,message),Map.class);
                     return agentAdapter.buildGenImageResponse(config,message,storeChatObject, data);
                 });
@@ -226,7 +226,7 @@ public class AIAgentUtil {
                     audioEvent.setAudioUrl(audioUrl);
                 }
                 else{
-                    audioEvent = RetryUtil.retry(retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
+                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
                         String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
                         AudioEvent audioEvent_ = new AudioEvent();
                         audioEvent_.setAudioUrl(audioUrl);
@@ -241,7 +241,7 @@ public class AIAgentUtil {
                     audioEvent = agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
                 }
                 else{
-                    audioEvent = RetryUtil.retry(retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
+                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
                         Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), Map.class);
                         return agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
                     });
@@ -354,7 +354,7 @@ public class AIAgentUtil {
                 }
                 else{
                     final String _data = (String)data;
-                    RetryUtil.retry(retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
+                    RetryUtil.executeWithRetry("executeTools",retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
                         HttpRequestProxy.sendJsonBody(clientConfiguration, _data, chatObject.getCompletionsUrl(), header, responseHandler);
                         return null;
                     });
@@ -654,7 +654,7 @@ public class AIAgentUtil {
                 }
                 else{
                     final String _data = (String)data;
-                    RetryUtil.retry(retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
+                    RetryUtil.executeWithRetry("executeSink",retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
                          HttpRequestProxy.sendJsonBody(clientConfiguration,  _data, chatObject.getCompletionsUrl(), header, responseHandler);
                          return null;
                     });
@@ -1208,7 +1208,7 @@ public class AIAgentUtil {
             embedding = agentAdapter.embedding(  config,embeddingMessage,agent,params);
         }
         else{
-            embedding = RetryUtil.retry(retry, embeddingMessage.getRetryInterval(), () -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
+            embedding = RetryUtil.executeWithRetry("embedding",retry, embeddingMessage.getRetryInterval(), () -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
 
         }
         traceLLMOutput(embedding, agent,SessionMessage.MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE_NAME);
@@ -1232,7 +1232,7 @@ public class AIAgentUtil {
             rerankedDocuments = agentAdapter.rerank(config, rerankMessage, agent, params);
         }
         else{
-            rerankedDocuments = RetryUtil.retry(retry, rerankMessage.getRetryInterval(), () -> agentAdapter.rerank(config, rerankMessage, agent, params));
+            rerankedDocuments = RetryUtil.executeWithRetry("rerank",retry, rerankMessage.getRetryInterval(), () -> agentAdapter.rerank(config, rerankMessage, agent, params));
             
         }
          

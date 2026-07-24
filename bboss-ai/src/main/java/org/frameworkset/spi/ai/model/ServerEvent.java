@@ -186,7 +186,10 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      * 步骤消息：父智能体名称
      */
     private String parentAgentName;
-    
+	
+
+	
+	private String agentNodeType;
     
 
 
@@ -494,5 +497,12 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 	
 	public boolean isHitl() {
 		return this.type == TYPE_HITL;
+	}
+	public String getAgentNodeType() {
+		return agentNodeType;
+	}
+	
+	public void setAgentNodeType(String agentNodeType) {
+		this.agentNodeType = agentNodeType;
 	}
 }

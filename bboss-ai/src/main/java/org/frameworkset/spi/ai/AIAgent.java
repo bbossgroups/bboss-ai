@@ -67,7 +67,7 @@ public class AIAgent<T extends AIAgent> {
     protected String prompt;
     protected String systemPrompt;
     /**
-     * 整体类型
+     * 智能体节点类型
      */
     protected String agentNodeType = AGENT_NODE_TYPE_SINGLE;
     protected int sessionSize;

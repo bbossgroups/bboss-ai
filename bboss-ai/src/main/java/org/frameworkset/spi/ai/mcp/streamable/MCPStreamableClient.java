@@ -19,6 +19,7 @@ import org.frameworkset.spi.ai.mcp.MCPBaseClient;
 import org.frameworkset.spi.ai.mcp.model.*;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import org.frameworkset.util.RetryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,9 +91,14 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     @Override
     protected String executeNotificationsInitialized(McpToolRequest notificationsInitialized) {
         Map headers = buildHeaders();
-        String data = HttpRequestProxy.sendJsonBody(getMcpServer(),
-                notificationsInitialized,headers,streamablePath,
-                String.class);
+		
+		String data = RetryUtil.executeWithRetry("executeInitialization",3, 100, () -> {
+			String data1 = HttpRequestProxy.sendJsonBody(getMcpServer(),
+					notificationsInitialized,headers,streamablePath,
+					String.class);
+			return data1;
+		});
+       
         if(logger.isDebugEnabled()) {
             logger.debug("{} notificationsInitialized:{}",mcpServer, data);
         }
@@ -105,10 +111,14 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     @Override
     protected MCPInitializedToolResponse executeInitialization(McpInitializedToolRequest mcpInitializedToolRequest) {
         Map headers = buildHeaders();
-        MCPInitializedToolResponse mcpInitializedToolResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
-                mcpInitializedToolRequest,headers,streamablePath,
-                MCPInitializedToolResponse.class);
+		MCPInitializedToolResponse mcpInitializedToolResponse = RetryUtil.executeWithRetry("executeInitialization",3, 100, () -> {
+			MCPInitializedToolResponse mcpInitializedToolResponse1 = HttpRequestProxy.sendJsonBody(getMcpServer(),
+					mcpInitializedToolRequest,headers,streamablePath,
+					MCPInitializedToolResponse.class);
 //        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
+			return mcpInitializedToolResponse1;
+		});
+        
         return mcpInitializedToolResponse;
     }
  
