@@ -383,23 +383,33 @@ public class AIResponseUtil {
             Map map = JsonUtil.json2Object(data,Map.class);
             String model = (String) map.get("model");
             Map usage = (Map) map.get("usage");
-            TokenMetrics tokenMetrics = null;
-            if(usage != null)
-            {
-                tokenMetrics = streamDataBuilder.buildTokenMetrics(usage);
-                tokenMetrics.setModel(model);
-                tokenMetrics.setMaas(streamDataBuilder.getMaas());
-                tokenMetrics.setStartTime(streamDataBuilder.getStartTime());
-            }
-            
             Object choices_ = map.get("choices");
-     
+			
+			TokenMetrics tokenMetrics = null;
+			if(usage != null)
+			{
+				tokenMetrics = streamDataBuilder.buildTokenMetrics(usage);
+				tokenMetrics.setModel(model);
+				tokenMetrics.setMaas(streamDataBuilder.getMaas());
+				tokenMetrics.setStartTime(streamDataBuilder.getStartTime());
+			}
             if (choices_ != null ) {
                 if (choices_ instanceof List) {
                     List<Map> choices = (List<Map>) choices_;
                     if (choices.size() > 0) {
                         Map choice = choices.get(0);
+						if(usage == null){
+							usage = (Map) choice.get("usage");
+							if(usage != null)
+							{
+								tokenMetrics = streamDataBuilder.buildTokenMetrics(usage);
+								tokenMetrics.setModel(model);
+								tokenMetrics.setMaas(streamDataBuilder.getMaas());
+								tokenMetrics.setStartTime(streamDataBuilder.getStartTime());
+							}
+						}
                         String finishReason = (String) choice.get("finish_reason");
+						
                        if(!streamDataBuilder.isToolCall(finishReason)) {
                            Map delta = (Map) choice.get("delta");
                            if (delta != null) {
