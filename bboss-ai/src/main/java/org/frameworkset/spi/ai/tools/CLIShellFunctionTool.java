@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.tools;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ import java.util.concurrent.TimeoutException;
  * @author biaoping.yin
  * @Date 2026/6/23
  */
-public class CLIShellFunctionTool {
+public class CLIShellFunctionTool extends BaseAuditorTool<CLIShellFunctionTool>{
     private static final Logger logger = LoggerFactory.getLogger(CLIShellFunctionTool.class);
 
     /** 独立线程池，避免长时间 shell 命令阻塞 ForkJoinPool.commonPool */
@@ -62,6 +63,16 @@ public class CLIShellFunctionTool {
     public CLIShellFunctionTool(long timeout) {
         this.timeout = timeout;
     }
+	
+	public CLIShellFunctionTool(Auditor auditor) {
+		super(auditor);
+	}
+	
+	public CLIShellFunctionTool(long timeout,Auditor auditor) {
+		super(auditor);
+		this.timeout = timeout;
+		
+	}
 
     public CLIShellFunctionTool setTimeout(long timeout) {
         this.timeout = timeout;
@@ -76,7 +87,9 @@ public class CLIShellFunctionTool {
             result.put("executeResult", "没有输入命令，忽略执行!");
             return result;
         }
-
+		Map<String,Object> auditResult = audit( "executeBash", command);
+		if(auditResult != null)
+			return auditResult;
         CompletableFuture<ProcessOutcome> future = CompletableFuture.supplyAsync(() -> doExecute(command), SHELL_EXECUTOR);
 
         ProcessOutcome outcome;

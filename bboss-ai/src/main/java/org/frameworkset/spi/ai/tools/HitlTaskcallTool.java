@@ -15,6 +15,9 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.audit.AuditContext;
+import org.frameworkset.spi.ai.audit.AuditResult;
+import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.annotation.Tool;
@@ -30,8 +33,16 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/7/16
  */
-public class HitlTaskcallTool {
+public class HitlTaskcallTool extends BaseAuditorTool<HitlTaskcallTool>{
 	private static final Logger logger = org.slf4j.LoggerFactory.getLogger(HitlTaskcallTool.class);
+	
+	public HitlTaskcallTool(Auditor auditor) {
+		super(auditor);
+	}
+	
+	public HitlTaskcallTool(){
+		
+	}
 	
 	/**
 	 * Human-in-the-Loop，人工介入工具
@@ -44,7 +55,6 @@ public class HitlTaskcallTool {
 	public Map<String,Object> hitlTaskTool(@ToolParam(name = "hitlTaskReason",required = true,
 														description = "人工介入原因，需包含：1.任务背景与已执行步骤 2.当前卡住的具体原因（技术障碍/权限限制/信息缺失等）3.建议人类关注的关键点或待决策事项 4.期望人类提供的具体帮助；格式清晰，精简聚焦，便于人类快速理解。") 
 											   String hitlTaskReason){
-
 		// 参数 null/空白校验：防止空任务传递给人工
 		if (hitlTaskReason == null || hitlTaskReason.equals("")) {
 			if(logger.isWarnEnabled()) {
@@ -52,6 +62,11 @@ public class HitlTaskcallTool {
 			}
 			return Collections.singletonMap("error", "hitlTaskReason must not be null or empty");
 		}
+		Map<String,Object> result = audit( "hitlTaskTool", hitlTaskReason);
+		if(result != null)
+			return result;
+
+		
 		
 		// chatObject null 检查：防御非对话上下文调用
 		ChatObject chatObject = AgentTraceHolder.getChatObject();
@@ -72,7 +87,7 @@ public class HitlTaskcallTool {
 			if (hitlTaskResult == null) {
 				if(logger.isDebugEnabled()) {
 					logger.debug("hitlTaskTool: createHitlCallTask returned null for reason: {}", 
-							hitlTaskReason.length() > 100 ? hitlTaskReason.substring(0, 100) + "..." : hitlTaskReason);
+							hitlTaskReason.length() > 500 ? hitlTaskReason.substring(0, 500) + "..." : hitlTaskReason);
 				}
 				return Collections.singletonMap("message", "HITL task completed with null result, please ignore and continue.");
 			}
@@ -80,7 +95,7 @@ public class HitlTaskcallTool {
 			return hitlTaskResult;
 		} catch (Exception e) {
 			if(logger.isErrorEnabled()) {
-				logger.error("hitlTaskTool: failed to create HITL task for reason: {}", hitlTaskReason.length() > 100 ? hitlTaskReason.substring(0, 100) + "..." : hitlTaskReason, e);
+				logger.error("hitlTaskTool: failed to create HITL task for reason: {}", hitlTaskReason.length() > 500 ? hitlTaskReason.substring(0, 500) + "..." : hitlTaskReason, e);
 			}
 			return Collections.singletonMap("error", "Exception: failed to execute HITL task, ignore operation and continue." );
 		}

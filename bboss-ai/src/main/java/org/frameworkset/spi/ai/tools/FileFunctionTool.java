@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.tools;
 
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.slf4j.Logger;
@@ -43,7 +44,7 @@ import java.util.*;
  * @author biaoping.yin
  * @Date 2026/7/2
  */
-public class FileFunctionTool {
+public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     private static Logger logger = LoggerFactory.getLogger(FileFunctionTool.class);
 
     private static final String DEFAULT_CHARSET = java.nio.charset.StandardCharsets.UTF_8.name();
@@ -53,7 +54,15 @@ public class FileFunctionTool {
 
     public FileFunctionTool() {
     }
-
+	public FileFunctionTool(Auditor auditor) {
+		super(auditor);
+	}
+	
+	public FileFunctionTool(Auditor auditor,String baseDirectory) {
+		super(auditor);
+		baseDirectories = new ArrayList<>();
+        baseDirectories.add(baseDirectory);
+	}
     public FileFunctionTool(String baseDirectory) {
 		baseDirectories = new ArrayList<>();
         baseDirectories.add(baseDirectory);
@@ -90,6 +99,15 @@ public class FileFunctionTool {
                 result.put("message", "源路径不存在: " + source);
                 return result;
             }
+			if(auditor != null) {
+				Map toolInfo = new LinkedHashMap();
+				toolInfo.put("source", source);
+				toolInfo.put("target", target);
+				toolInfo.put("overwrite", overwrite);
+				Map<String, Object> auditResult = audit("copyFile", toolInfo);
+				if (auditResult != null)
+					return auditResult;
+			}
             boolean isOverwrite = overwrite != null && overwrite;
             if (srcFile.isFile()) {
                 java.io.File destFile = tgtFile.isDirectory() ? new java.io.File(tgtFile, srcFile.getName()) : tgtFile;
@@ -136,6 +154,11 @@ public class FileFunctionTool {
         Map result = new HashMap();
         try {
             java.io.File file = validateAndGetFile(path);
+			if(auditor != null) {				 
+				Map<String, Object> auditResult = audit("fileExists", path);
+				if (auditResult != null)
+					return auditResult;
+			}
             boolean exists = file.exists();
             result.put("success", true);
             result.put("exists", exists);
@@ -161,6 +184,11 @@ public class FileFunctionTool {
                 result.put("message", "文件不存在或不是普通文件");
                 return result;
             }
+			if(auditor != null) {
+				Map<String, Object> auditResult = audit("detectFileEncoding", path);
+				if (auditResult != null)
+					return auditResult;
+			}
             String encoding = doDetectEncoding(file);
             result.put("success", true);
             result.put("encoding", encoding);
@@ -188,6 +216,11 @@ public class FileFunctionTool {
                 result.put("message", "文件不存在或不是普通文件");
                 return result;
             }
+			if(auditor != null) {
+				Map<String, Object> auditResult = audit("readFile", path);
+				if (auditResult != null)
+					return auditResult;
+			}
             if (SimpleStringUtil.isEmpty(charset)) {
                 charset = doDetectEncoding(file);
             }
@@ -227,6 +260,15 @@ public class FileFunctionTool {
                 result.put("message", "目录不存在或不是有效目录");
                 return result;
             }
+			if(auditor != null) {
+				Map toolInfo = new LinkedHashMap();
+				toolInfo.put("path", path);
+				toolInfo.put("recursive", recursive);
+				toolInfo.put("charset", charset);
+				Map<String, Object> auditResult = audit("readDirectoryFiles", toolInfo);
+				if (auditResult != null)
+					return auditResult;
+			}
             boolean isRecursive = recursive != null && recursive;
             collectFileContents(dir, isRecursive, charset, fileContents);
             result.put("success", true);
@@ -252,6 +294,15 @@ public class FileFunctionTool {
         Map result = new HashMap();
         try {
             java.io.File file = validateAndGetFile(path);
+			if(auditor != null) {
+				Map toolInfo = new LinkedHashMap();
+				toolInfo.put("path", path);
+				toolInfo.put("content", content);
+				toolInfo.put("append", append);
+				Map<String, Object> auditResult = audit("writeFile", toolInfo);
+				if (auditResult != null)
+					return auditResult;
+			}
             if (content == null) {
                 content = "";
             }
@@ -290,6 +341,14 @@ public class FileFunctionTool {
         Map result = new HashMap();
         try {
             java.io.File file = validateAndGetFile(path);
+			if(auditor != null) {
+				Map toolInfo = new LinkedHashMap();
+				toolInfo.put("path", path);
+				toolInfo.put("isDirectory", isDirectory);
+				Map<String, Object> auditResult = audit("createFile", toolInfo);
+				if (auditResult != null)
+					return auditResult;
+			}
             boolean dirFlag = isDirectory != null && isDirectory;
             boolean created;
             if (dirFlag) {
@@ -326,6 +385,14 @@ public class FileFunctionTool {
                 result.put("message", "文件或目录不存在");
                 return result;
             }
+			if(auditor != null) {
+				Map toolInfo = new LinkedHashMap();
+				toolInfo.put("path", path);
+				toolInfo.put("recursive", recursive);
+				Map<String, Object> auditResult = audit("deleteFile", toolInfo);
+				if (auditResult != null)
+					return auditResult;
+			}
             boolean isRecursive = recursive != null && recursive;
             boolean deleted;
             if (file.isDirectory() && isRecursive) {
@@ -356,6 +423,12 @@ public class FileFunctionTool {
                 result.put("message", "文件或目录不存在");
                 return result;
             }
+			if(auditor != null) {
+			 
+				Map<String, Object> auditResult = audit("getFileAttributes", path);
+				if (auditResult != null)
+					return auditResult;
+			}
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             result.put("success", true);
             result.put("path", file.getAbsolutePath());

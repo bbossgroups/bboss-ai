@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.slf4j.Logger;
 
@@ -33,10 +34,19 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/6/23
  */
-public class GetOSFunctionTool {
+public class GetOSFunctionTool   extends BaseAuditorTool<GetOSFunctionTool>{
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(GetOSFunctionTool.class);
 	/** Default timeout in seconds*/
 	private long timeout = 60;
+	public GetOSFunctionTool(Auditor auditor){
+		super(auditor);
+	}
+	public GetOSFunctionTool(long timeout,Auditor auditor){
+		super(auditor);
+		this.timeout = timeout;
+	}
+	
+ 
 	public GetOSFunctionTool(){
 		
 	}
@@ -48,8 +58,12 @@ public class GetOSFunctionTool {
 		this.timeout = timeout;
 		return this;
 	}
+	
     @Tool(name="getOS2ndCpu",description = "获取OS、OS版本、OS架构以及CPU信息")
     public Map getOS2ndCpu(){
+		Map<String,Object> auditResult = audit( "getOS2ndCpu");
+		if(auditResult != null)
+			return auditResult;
         String os = System.getProperty("os.name");
         String osVersion = System.getProperty("os.version");
         String osArch = System.getProperty("os.arch");
@@ -66,6 +80,9 @@ public class GetOSFunctionTool {
 	
 	@Tool(name="getSystemTime",description = "获取服务器时间")
 	public Map getSystemTime(){
+		Map<String,Object> auditResult = audit( "getSystemTime");
+		if(auditResult != null)
+			return auditResult;
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Map result = new java.util.HashMap();
 		result.put("dateTime", dateFormat.format(new Date()));		 

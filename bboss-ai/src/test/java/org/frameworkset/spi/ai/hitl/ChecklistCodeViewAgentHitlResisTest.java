@@ -20,8 +20,10 @@ import org.frameworkset.nosql.redis.RedisConfig;
 import org.frameworkset.nosql.redis.RedisDB;
 import org.frameworkset.nosql.redis.RedisFactory;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.audit.AuditContext;
+import org.frameworkset.spi.ai.audit.AuditResult;
+import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
-import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallNotifier;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.skill.SkillsToolRegist;
@@ -54,12 +56,10 @@ public class ChecklistCodeViewAgentHitlResisTest {
 			initRedis();
 			AgentSessionService agentSessionService = new AgentSessionServiceImpl();
 			agentSessionService.setDatasource("visualops");
-			agentSessionService.setHitlDatasource("visualops");
 			
 			HitlTaskHelper.getHitlTaskHelper()
 					.setAgentSessionService(agentSessionService)
-					.setHitlTaskCallNotifier(new RedisHitlTaskCallNotifier("test"))
-					.setHitlTaskCallListener(new RedisHitlTaskCallListener("test"))
+					.setRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)					 
 					.init();
 			callMinimaxSimple();
 		} catch (InterruptedException e) {
@@ -75,7 +75,6 @@ public class ChecklistCodeViewAgentHitlResisTest {
 				.setAuth("ecs123456")
 				//集群节点可以通过逗号分隔，也可以通过\n符分隔
 //          .setServers("101.13.4.15:6359\n101.13.4.15:6369\n101.13.4.15:6379\n101.13.4.15:6389")
-				 
 				
 				.setMaxRedirections(5)
 				.setMode(RedisDB.mode_cluster)
@@ -113,16 +112,18 @@ public class ChecklistCodeViewAgentHitlResisTest {
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwentokenplan").setRetry(3);
 		
-		chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
+//		chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
+		
+		chatAgentMessage.setMaas("kimi").setModel("kimi-k3");
 		chatAgentMessage.setRetry(3);
-		String message = "请评审Java文件中的代码并修复问题,java文件路径：C:\\data\\ai\\code\\AIAgent.java";
+		String message = "请评审Java文件中的代码并修复问题,java文件路径：C:\\data\\ai\\code\\HitlTaskcallTool.java";
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个 Java 代码审查助手。 长期规则： - 如果用户提交 Java 代码并要求审查，先调用 Skill 工具加载 code-review-skill。 - 加载技能书后，再按照技能书里的审查顺序审查java代码。 - 优先指出 bug、安全风险、边界条件、异常处理和缺失测试。 - 如果信息不足，要说明缺少哪些上下文，不要编造项目背景。 - 不要输出与代码审查无关的泛泛建议。 输出要求： - 用中文回答。 - 使用 Markdown。 - 先给总体结论，再列主要问题，最后给测试建议和下一步。");
 		
-		chatAgentMessage.setStream(true).setThinking(true).setTemperature(0.7);//.addParameter("max_tokens", 2048);
+		chatAgentMessage.setStream(true).setThinking(false).setTemperature(0.6);//.addParameter("max_tokens", 2048);
 		chatAgentMessage.setStoreContext(new StoreContext()
 				.setUserId("user123").setSessionSize(100).setRequestId("request123")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
-				.setDataSource("visualops").setHitlDatasource("visualops"));
+				.setDataSource("visualops"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		AIAgent agent = new AIAgent();
@@ -132,7 +133,16 @@ public class ChecklistCodeViewAgentHitlResisTest {
 						.addClasspathSkills("skills"))
 				.registBeanTool(new HitlTaskcallTool());//注册人工介入任务调用工具，用于人工介入任务的调用
 		//注册文件操作工具，用于读取文件
-		agent.registBeanTool(new FileFunctionTool("C:\\data\\ai\\code")
+		agent.registBeanTool(new FileFunctionTool("C:\\data\\ai\\code").setAuditor(new Auditor() {
+					@Override
+					public AuditResult audit(AuditContext auditContext) {
+						AuditResult auditResult = new AuditResult();
+						auditResult.setSuccess(false);
+						auditResult.setMessage("文件内容涉及敏感信息");
+						auditResult.setNextAction("取消后续操作！");
+						return auditResult;
+					}
+				})
 				.addBaseDirectory("C:\\workspace\\bbossgroups\\bboss-ai\\bboss-ai\\out\\test\\resources\\skills\\code-review-skill\\"));
 		
 		

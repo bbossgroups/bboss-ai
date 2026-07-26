@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.tools;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.model.ToolExecuteException;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
@@ -68,7 +69,7 @@ import java.util.regex.Pattern;
  * @author biaoping.yin
  * @Date 2026/7/2
  */
-public class CodeExecuteFunctionTool {
+public class CodeExecuteFunctionTool extends BaseAuditorTool<CodeExecuteFunctionTool>{
 	private static final Logger logger = LoggerFactory.getLogger(CodeExecuteFunctionTool.class);
 	
 	/** 提取代码中 public class 类名的正则 */
@@ -118,6 +119,13 @@ public class CodeExecuteFunctionTool {
 		this.timeout = timeout;
 	}
 	
+	public CodeExecuteFunctionTool(Auditor auditor){
+		this.auditor = auditor;
+	}
+	public CodeExecuteFunctionTool(long timeout,Auditor auditor){
+		this.auditor = auditor;
+	}
+	
 	public CodeExecuteFunctionTool setTimeout(long timeout) {
 		this.timeout = timeout;
 		return this;
@@ -150,6 +158,10 @@ public class CodeExecuteFunctionTool {
 			result.put("message", "代码不能为空");
 			return result;
 		}
+		
+		Map<String,Object> auditResult = audit( "executeJava", code);
+		if(auditResult != null)
+			return auditResult;
 		
 		String className = extractPublicClassName(code);
 		String finalCode;
@@ -184,7 +196,9 @@ public class CodeExecuteFunctionTool {
 			result.put("message", "代码不能为空");
 			return result;
 		}
-		
+		Map<String,Object> auditResult = audit( "executePython", code);
+		if(auditResult != null)
+			return auditResult;
 		String baseDir = getBaseTempDir();
 		final String workDir = baseDir + "/python_" + UUID.randomUUID().toString().replace("-", "");
 		CompletableFuture<ExecutionOutcome> future = CompletableFuture.supplyAsync(
@@ -209,7 +223,9 @@ public class CodeExecuteFunctionTool {
 			result.put("message", "代码不能为空");
 			return result;
 		}
-		
+		Map<String,Object> auditResult = audit( "executeJavaScript", code);
+		if(auditResult != null)
+			return auditResult;
 		String baseDir = getBaseTempDir();
 		final String workDir = baseDir + "/js_" + UUID.randomUUID().toString().replace("-", "");
 		CompletableFuture<ExecutionOutcome> future = CompletableFuture.supplyAsync(
