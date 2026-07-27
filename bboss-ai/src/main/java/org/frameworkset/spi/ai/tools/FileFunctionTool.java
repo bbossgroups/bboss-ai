@@ -49,8 +49,14 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 
     private static final String DEFAULT_CHARSET = java.nio.charset.StandardCharsets.UTF_8.name();
 
+    /** 默认最大读取文件大小：2MB，防止读取超大文件导致 OOM */
+    private static final long DEFAULT_MAX_READ_SIZE = 2L * 1024 * 1024;
+
     /** 允许操作的基目录，为空则不限制 */
     private List<String> baseDirectories;
+
+    /** 单次读取文件的最大字节数，超过此限制将截断并提示，默认 2MB */
+    private long maxReadSize = DEFAULT_MAX_READ_SIZE;
 
     public FileFunctionTool() {
     }
@@ -79,6 +85,18 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 				}
 			}
 		}
+        return this;
+    }
+
+    /**
+     * 设置单次读取文件的最大字节数，防止读取超大文件导致 OOM。
+     * @param maxReadSize 最大读取字节数，如 2 * 1024 * 1024 表示 2MB
+     * @return this
+     */
+    public FileFunctionTool setMaxReadSize(long maxReadSize) {
+        if (maxReadSize > 0) {
+            this.maxReadSize = maxReadSize;
+        }
         return this;
     }
 
@@ -203,10 +221,12 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 
     /**
      * 读取文件内容
+     * <p>注意：为防止 OOM，单次最多读取 {@link #maxReadSize} 字节（默认 2MB），
+     * 超出部分将被截断并在返回结果中标注 {@code truncated=true}。</p>
      */
-    @Tool(name = "readFile", description = "读取指定文件的内容，支持指定字符编码，未指定时自动识别编码")
+    @Tool(name = "readFile", description = "读取指定文件的内容，支持指定字符编码，未指定时自动识别编码。为防止内存溢出，单次最多读取2MB内容，超出部分截断")
     public Map readFile(@ToolParam(name = "path", description = "文件路径", required = true) String path,
-                        @ToolParam(name = "charset", description = "字符编码，如UTF-8、GBK等，为空则自动识别", required = false) String charset) {
+                        @ToolParam(name = "charset", description = "字符编码，如UTF-8、GBK等，为空则自动识别" ) String charset) {
         Map result = new HashMap();
         StringBuilder content = new StringBuilder();
         try {
@@ -221,20 +241,42 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 				if (auditResult != null)
 					return auditResult;
 			}
+            // 预检文件大小，超出限制时提前拦截，避免无谓的编码检测与流式读取
+            long fileLength = file.length();
+            boolean truncated = false;
+            if (fileLength > maxReadSize) {
+                truncated = true;
+                logger.warn("文件 {} 大小 {} 字节超过最大读取限制 {} 字节，将截断读取",
+                        path, fileLength, maxReadSize);
+            }
             if (SimpleStringUtil.isEmpty(charset)) {
                 charset = doDetectEncoding(file);
             }
             try (java.io.BufferedReader reader = new java.io.BufferedReader(
                     new java.io.InputStreamReader(new java.io.FileInputStream(file), charset))) {
                 String line;
+                long bytesRead = 0;
                 while ((line = reader.readLine()) != null) {
+                    // 按字符数近似估算字节数（保守按 UTF-8 最大 3 字节/字符计算）
+                    bytesRead += line.length() * 3L + 1;
+                    if (bytesRead > maxReadSize) {
+                        truncated = true;
+                        break;
+                    }
                     content.append(line).append("\n");
                 }
             }
             result.put("success", true);
             result.put("content", content.toString());
             result.put("charset", charset);
-            result.put("message", "文件读取成功");
+            if (truncated) {
+                result.put("truncated", true);
+                result.put("maxReadSize", maxReadSize);
+                result.put("message", "文件读取成功，但内容超出最大读取限制（" + formatFileSize(maxReadSize)
+                        + "），已截断。如需读取完整内容，请分段读取或调大 maxReadSize");
+            } else {
+                result.put("message", "文件读取成功");
+            }
         } catch (Exception e) {
             logger.error("读取文件失败: " + path, e);
             result.put("success", false);
@@ -243,45 +285,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
         return result;
     }
 
-    /**
-     * 遍历目录读取目录下所有文件内容
-     */
-    @Tool(name = "readDirectoryFiles", description = "遍历指定目录，读取目录下所有文件的内容，返回文件路径与内容的集合")
-    public Map readDirectoryFiles(
-            @ToolParam(name = "path", description = "目录路径", required = true) String path,
-            @ToolParam(name = "recursive", description = "是否递归遍历子目录，默认false", required = false) Boolean recursive,
-            @ToolParam(name = "charset", description = "字符编码，为空则逐个自动识别", required = false) String charset) {
-        Map result = new HashMap();
-        List<Map<String, String>> fileContents = new ArrayList<>();
-        try {
-            java.io.File dir = validateAndGetFile(path);
-            if (!dir.exists() || !dir.isDirectory()) {
-                result.put("success", false);
-                result.put("message", "目录不存在或不是有效目录");
-                return result;
-            }
-			if(auditor != null) {
-				Map toolInfo = new LinkedHashMap();
-				toolInfo.put("path", path);
-				toolInfo.put("recursive", recursive);
-				toolInfo.put("charset", charset);
-				Map<String, Object> auditResult = audit("readDirectoryFiles", toolInfo);
-				if (auditResult != null)
-					return auditResult;
-			}
-            boolean isRecursive = recursive != null && recursive;
-            collectFileContents(dir, isRecursive, charset, fileContents);
-            result.put("success", true);
-            result.put("files", fileContents);
-            result.put("count", fileContents.size());
-            result.put("message", "共读取 " + fileContents.size() + " 个文件");
-        } catch (Exception e) {
-            logger.error("遍历读取目录失败: " + path, e);
-            result.put("success", false);
-            result.put("message", e.getMessage());
-        }
-        return result;
-    }
+   
 
     /**
      * 写入内容到文件
@@ -486,7 +490,8 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 				// 统一分隔符并规范化路径，防止路径穿越
 				String normalizedBase = basePath.replace('\\', '/').replaceAll("/+", "/");
 				String normalizedTarget = targetPath.replace('\\', '/').replaceAll("/+", "/");
-				if (normalizedTarget.startsWith(normalizedBase)) {
+				// 应改为
+				if (normalizedTarget.equals(normalizedBase) || normalizedTarget.startsWith(normalizedBase + "/")) {
 					isOk = true;
 				}
 			}
@@ -497,39 +502,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
         return file;
     }
 
-    /**
-     * 递归收集目录下所有文件的内容
-     */
-    private void collectFileContents(java.io.File dir, boolean recursive, String charset, List<Map<String, String>> fileContents) {
-        java.io.File[] files = dir.listFiles();
-        if (files == null) {
-            return;
-        }
-        for (java.io.File file : files) {
-            if (file.isDirectory() && recursive) {
-                collectFileContents(file, true, charset, fileContents);
-            } else if (file.isFile()) {
-                try {
-                    String fileCharset = SimpleStringUtil.isEmpty(charset) ? doDetectEncoding(file) : charset;
-                    StringBuilder content = new StringBuilder();
-                    try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                            new java.io.InputStreamReader(new java.io.FileInputStream(file), fileCharset))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            content.append(line).append("\n");
-                        }
-                    }
-                    Map<String, String> item = new HashMap<>();
-                    item.put("path", file.getAbsolutePath());
-                    item.put("content", content.toString());
-                    item.put("charset", fileCharset);
-                    fileContents.add(item);
-                } catch (Exception e) {
-                    logger.warn("读取文件内容失败，跳过: " + file.getAbsolutePath(), e);
-                }
-            }
-        }
-    }
+   
 
     /**
      * 检测文件字符编码
