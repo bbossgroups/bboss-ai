@@ -35,6 +35,8 @@ import java.util.Map;
  */
 public class HitlTaskcallTool extends BaseAuditorTool<HitlTaskcallTool>{
 	private static final Logger logger = org.slf4j.LoggerFactory.getLogger(HitlTaskcallTool.class);
+	public static final String TIMEOUT_ACTION_CONTINUE = "continue";
+	public static final String TIMEOUT_ACTION_REJECTED = "rejected";
 	
 	public HitlTaskcallTool(Auditor auditor) {
 		super(auditor);
@@ -43,6 +45,22 @@ public class HitlTaskcallTool extends BaseAuditorTool<HitlTaskcallTool>{
 	public HitlTaskcallTool(){
 		
 	}
+	
+	public String getTimeoutAction() {
+		return timeoutAction;
+	}
+	
+	public HitlTaskcallTool setTimeoutAction(String timeoutAction) {
+		this.timeoutAction = timeoutAction;
+		return this;
+	}
+	
+	/**
+	 * 任务超时处理方式，默认为rejected
+	 * continue：继续执行
+	 * rejected：拒绝执行
+	 */
+	private String timeoutAction = TIMEOUT_ACTION_REJECTED;
 	
 	/**
 	 * Human-in-the-Loop，人工介入工具
@@ -81,7 +99,7 @@ public class HitlTaskcallTool extends BaseAuditorTool<HitlTaskcallTool>{
 		try {
 			HitlTaskHelper helper = HitlTaskHelper.getHitlTaskHelper(); 
 			
-			Map<String, Object> hitlTaskResult = helper.createHitlCallTask(hitlTaskReason, chatObject);
+			Map<String, Object> hitlTaskResult = helper.createHitlCallTask(this,hitlTaskReason, chatObject);
 			
 			// 返回结果 null 保护
 			if (hitlTaskResult == null) {

@@ -121,6 +121,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
             
         }
+		//"stream_options": {"include_usage": true}
+		Boolean includeUsage = agentMessage.getIncludeUsage();
+		if(includeUsage != null){
+			Map streamOptions = new HashMap();
+			streamOptions.put("include_usage", includeUsage);
+			requestMap.put("stream_options", streamOptions);
+			
+		}
         buildTools(chatContext,agentMessage,  aiAgent, requestMap);
     }
     protected Object handleImageParserMessages(List<Map<String, Object>> messages){
@@ -504,6 +512,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 requestMap.put("max_tokens", toolAgentMessage.getMaxTokens());
             }
         }
+		//"stream_options": {"include_usage": true}
+		Boolean includeUsage = toolAgentMessage.getIncludeUsage();
+		if(includeUsage != null){
+			Map streamOptions = new HashMap();
+			streamOptions.put("include_usage", includeUsage);
+			requestMap.put("stream_options", streamOptions);
+			
+		}
         buildThinking(  toolAgentMessage, chatObject, requestMap);
         if(agent.getEnableLoopToolCall() != null && agent.getEnableLoopToolCall()) {
             int maxLoopToolCalls = agent.getMaxLoopToolCalls();
@@ -669,6 +685,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 requestMap.put("max_tokens", chatAgentMessage.getMaxTokens());
             }
         }
+		//"stream_options": {"include_usage": true}
+		Boolean includeUsage = chatAgentMessage.getIncludeUsage();
+		if(includeUsage != null){
+			Map streamOptions = new HashMap();
+			streamOptions.put("include_usage", includeUsage);
+			requestMap.put("stream_options", streamOptions);
+			
+		}
         buildThinking(  chatAgentMessage,chatObject, requestMap);
         buildTools(chatContext,chatAgentMessage,aiAgent, requestMap);
         return requestMap;
@@ -743,11 +767,21 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		if(stream == null){
 			stream = audioAgentMessage.getStream();
 		}
+		
         Map params = buildGenAudioRequestMap(audioAgentMessage,aiAgent,   chatContext);
 //        audioAgentMessage.setGenAudioCompletionsUrl(getGenAudioCompletionsUrl(audioAgentMessage));
         if(stream != null){
             params.put("stream", stream);
+			
         }
+		//"stream_options": {"include_usage": true}
+		Boolean includeUsage = audioAgentMessage.getIncludeUsage();
+		if(includeUsage != null){
+			Map streamOptions = new HashMap();
+			streamOptions.put("include_usage", includeUsage);
+			params.put("stream_options", streamOptions);
+			
+		}
         return params;
     }
 
@@ -863,6 +897,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(stream!= null){
             requestMap.put("stream", stream);
         }
+		//"stream_options": {"include_usage": true}
+		Boolean includeUsage = audioSTTAgentMessage.getIncludeUsage();
+		if(includeUsage != null){
+			Map streamOptions = new HashMap();
+			streamOptions.put("include_usage", includeUsage);
+			requestMap.put("stream_options", streamOptions);
+			
+		}
         if(audioSTTAgentMessage.getResultFormat() != null)
             requestMap.put("result_format", audioSTTAgentMessage.getResultFormat());
         return requestMap;

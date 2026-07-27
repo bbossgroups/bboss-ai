@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.model;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.List;
@@ -34,7 +35,10 @@ public class ToolAgentMessage extends ChatAgentMessage{
         this.chatAgentMessage = chatAgentMessage;
         this.functionTools = functionTools;
     }
-
+	
+	public String getMaas() {
+        return chatAgentMessage.getMaas();
+	}
     @Override
     public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter,AIAgent aiAgent, ChatContext chatContext) {
         ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter,aiAgent, chatContext);
@@ -53,7 +57,11 @@ public class ToolAgentMessage extends ChatAgentMessage{
     public ChatAgentMessage getChatAgentMessage() {
         return chatAgentMessage;
     }
-
+	
+	@Override
+	public StoreContext getStoreContext() {
+		return chatAgentMessage.getStoreContext();
+	}
 //    @Override
 //    public FunctionCall getFunctionCall(String toolName) {
 //        return chatAgentMessage.getFunctionCall(toolName);
@@ -69,11 +77,38 @@ public class ToolAgentMessage extends ChatAgentMessage{
     public String getPrompt(){
         return chatAgentMessage.getPrompt();
     }
-    
-
- 
-
-    @Override
+	
+	@Override
+	public String getEffort() {
+        return chatAgentMessage.getEffort();
+    }
+	
+	@Override
+	public String getNegativePrompt() {
+		return chatAgentMessage.getNegativePrompt();
+	}
+	
+	@Override
+	public String getSystemPrompt() {
+		return chatAgentMessage.getSystemPrompt();
+	}
+	
+	@Override
+	public Map getHeaders() {
+		return chatAgentMessage.getHeaders();
+	}
+	
+	@Override
+	public boolean containsHeader(String key) {
+		return chatAgentMessage.containsHeader(key);
+	}
+	
+	@Override
+	public Map<String, Object> getContextData() {
+		return chatAgentMessage.getContextData();
+	}
+	
+	@Override
     public String getModel() {
         return chatAgentMessage.getModel();
     }
@@ -96,6 +131,11 @@ public class ToolAgentMessage extends ChatAgentMessage{
     @Override
     public Boolean getThinking() {
         return chatAgentMessage.getThinking();
+    }
+	
+	@Override
+	public Boolean getIncludeUsage() {
+        return chatAgentMessage.getIncludeUsage();
     }
 
     @Override

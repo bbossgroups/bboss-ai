@@ -25,6 +25,7 @@ import org.frameworkset.spi.ai.model.TraceMessage;
 import org.frameworkset.spi.ai.store.AgentSessionService;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
+import org.frameworkset.spi.ai.tools.HitlTaskcallTool;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.slf4j.Logger;
 import reactor.core.publisher.FluxSink;
@@ -257,14 +258,14 @@ public class HitlTaskHelper {
 		// 2. 发送人工介入任务到客户端
 		agentSessionService.persistentHitlCallTask(hitlCallTask);
 	}
-	public static Map<String,Object> createHitlCallTask(String hitlTaskReason , ChatObject chatObject){
+	public static Map<String,Object> createHitlCallTask(HitlTaskcallTool hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject){
 		
-		return getHitlTaskHelper()._createHitlCallTask(hitlTaskReason, chatObject);
+		return getHitlTaskHelper()._createHitlCallTask(  hitlTaskcallTool,hitlTaskReason, chatObject);
 		
 		
 	}
 	
-	private  Map<String,Object> _createHitlCallTask(String hitlTaskReason , ChatObject chatObject){
+	private  Map<String,Object> _createHitlCallTask(HitlTaskcallTool hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject){
 		
 		HitlCallObject<Map> hitlCallObject = new HitlCallObject<>();
 		HitlCallTask hitlCallTask = new HitlCallTask();
@@ -311,7 +312,12 @@ public class HitlTaskHelper {
 					agentSessionService.timeoutHitlCallTask("任务处理超时,等待超时时间:"+hitlCallObject.getTimeout()+"毫秒", hitlTaskId);
 					if(result == null){
 						result = new LinkedHashMap<>();
-						result.put("error", "人工任务处理超时,等待超时时间:"+hitlCallObject.getTimeout()+"毫秒,如任务涉及处理操作，则忽略或者取消相关操作！");
+						if(!hitlTaskcallTool.getTimeoutAction().equals(HitlTaskcallTool.TIMEOUT_ACTION_CONTINUE)) {
+							result.put("error", "人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，则忽略或者取消相关操作！");
+						}
+						else{
+							result.put("warn", "人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，请继续执行完成！");
+						}
 					}
 				}
 				else {

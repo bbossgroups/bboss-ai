@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -77,7 +78,14 @@ public class SiliconflowAgentAdapter extends QwenAgentAdapter{
                 requestMap.put("max_tokens", agentMessage.getMaxTokens());
             }
         }
-
+		//"stream_options": {"include_usage": true}
+		Boolean includeUsage = agentMessage.getIncludeUsage();
+		if(includeUsage != null){
+			Map streamOptions = new HashMap();
+			streamOptions.put("include_usage", includeUsage);
+			requestMap.put("stream_options", streamOptions);
+			
+		}
         buildTools(chatContext, agentMessage,aiAgent , requestMap);
     }
   

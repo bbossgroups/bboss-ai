@@ -220,7 +220,14 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
         if(stream != null){
             requestMap.put("stream", stream);
         }
-         
+		//"stream_options": {"include_usage": true}
+		Boolean includeUsage = audioSTTAgentMessage.getIncludeUsage();
+		if(includeUsage != null){
+			Map streamOptions = new HashMap();
+			streamOptions.put("include_usage", includeUsage);
+			requestMap.put("stream_options", streamOptions);
+			
+		}  
         return requestMap;
     }
 

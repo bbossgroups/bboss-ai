@@ -45,6 +45,13 @@ public class AgentMessage<T extends AgentMessage> {
      */
     private long retryInterval = 500L;
     private Boolean thinking;
+	
+	/**
+	 *
+	 "stream_options": {"include_usage": true}
+	 */
+	private Boolean includeUsage;
+	
 	/**
 	 * 九天模型
 	 * 控制思考的力度，设置effort后，将忽略enabled的值，effort共有6种取值：
@@ -319,6 +326,15 @@ public class AgentMessage<T extends AgentMessage> {
 	
 	public T setEffort(String effort) {
 		this.effort = effort;
+		return (T)this;
+	}
+	
+	public Boolean getIncludeUsage() {
+		return includeUsage;
+	}
+	
+	public T setIncludeUsage(Boolean includeUsage) {
+		this.includeUsage = includeUsage;
 		return (T)this;
 	}
 }

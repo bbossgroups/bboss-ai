@@ -409,7 +409,9 @@ public class AIResponseUtil {
 							}
 						}
                         String finishReason = (String) choice.get("finish_reason");
-						
+//						if(finishReason != null && finishReason.equals("stop") ){
+//							logger.info("finishReason: {}", finishReason);
+//						}
                        if(!streamDataBuilder.isToolCall(finishReason)) {
                            Map delta = (Map) choice.get("delta");
                            if (delta != null) {
@@ -1049,6 +1051,11 @@ public class AIResponseUtil {
                 if(tokenMetrics != null) {
                     serverEvent.setTokenMetrics(tokenMetrics);
                     tokenMetrics.setEndTime(System.currentTimeMillis());
+                }
+				else if(streamDataBuilder.getFullReasoningStreamData() != null && streamDataBuilder.getFullReasoningStreamData().length() > 0){
+                    tokenMetrics = new TokenMetrics();
+					streamDataBuilder.setTokenMetrics(tokenMetrics);
+					serverEvent.setTokenMetrics(tokenMetrics);
                 }
                 ChatContext chatContext = chatObject.getChatContext();
                 String fullStreamData = null;

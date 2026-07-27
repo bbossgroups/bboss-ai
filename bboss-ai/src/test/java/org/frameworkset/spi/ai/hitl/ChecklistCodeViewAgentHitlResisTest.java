@@ -75,6 +75,7 @@ public class ChecklistCodeViewAgentHitlResisTest {
 				.setAuth("ecs123456")
 				//集群节点可以通过逗号分隔，也可以通过\n符分隔
 //          .setServers("101.13.4.15:6359\n101.13.4.15:6369\n101.13.4.15:6379\n101.13.4.15:6389")
+				.setServers("101.13.6.7:6381,101.13.6.7:6382,101.13.6.7:6383,10.13.6.7:6384,10.13.6.7:6385,10.13.6.7:6386")
 				
 				.setMaxRedirections(5)
 				.setMode(RedisDB.mode_cluster)
@@ -114,12 +115,17 @@ public class ChecklistCodeViewAgentHitlResisTest {
 		
 //		chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
 		
-		chatAgentMessage.setMaas("kimi").setModel("kimi-k3");
+//		chatAgentMessage.setMaas("kimi").setModel("kimi-k2.6");
+		chatAgentMessage.setMaas("hunyuan").setModel("hy3");
+		chatAgentMessage.setIncludeUsage(true);
+		
+//		chatAgentMessage.setMaas("kimi").setModel("kimi-k3");
 		chatAgentMessage.setRetry(3);
 		String message = "请评审Java文件中的代码并修复问题,java文件路径：C:\\data\\ai\\code\\HitlTaskcallTool.java";
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个 Java 代码审查助手。 长期规则： - 如果用户提交 Java 代码并要求审查，先调用 Skill 工具加载 code-review-skill。 - 加载技能书后，再按照技能书里的审查顺序审查java代码。 - 优先指出 bug、安全风险、边界条件、异常处理和缺失测试。 - 如果信息不足，要说明缺少哪些上下文，不要编造项目背景。 - 不要输出与代码审查无关的泛泛建议。 输出要求： - 用中文回答。 - 使用 Markdown。 - 先给总体结论，再列主要问题，最后给测试建议和下一步。");
 		
-		chatAgentMessage.setStream(true).setThinking(false).setTemperature(0.6);//.addParameter("max_tokens", 2048);
+		chatAgentMessage.setStream(true).setThinking(true);
+//				.setTemperature(1.0);//.addParameter("max_tokens", 2048);
 		chatAgentMessage.setStoreContext(new StoreContext()
 				.setUserId("user123").setSessionSize(100).setRequestId("request123")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
