@@ -350,6 +350,12 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         this.toolResolved = toolResolved;
     }
 
+	private void setToolIndex(Map tool_call, FunctionTool functionTool){
+		Integer index = (Integer)tool_call.get("index");
+		if(index != null) {
+			functionTool.setIndex(index);
+		}
+	}
     public StreamData functionTools(List<Map> tool_calls, String finishReason){
 
 		
@@ -368,7 +374,8 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
 						functionTool.setInputType(functionToolDefine.getInputType());
 					}
                     functionTool.setId((String)tool_call.get("id"));
-                    functionTool.setIndex((Integer)tool_call.get("index"));
+		
+					setToolIndex(  tool_call,   functionTool);
                     functionTool.setType((String)tool_call.get("type"));
                    
                     String arguments = (String)function.get("arguments");
@@ -402,7 +409,8 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
 
             FunctionTool functionTool = new FunctionTool();
             functionTool.setId((String)tool_call.get("id"));
-            functionTool.setIndex((Integer)tool_call.get("index"));
+			setToolIndex(  tool_call,   functionTool);
+//            functionTool.setIndex((Integer)tool_call.get("index"));
             functionTool.setType((String)tool_call.get("type"));
             Map function = (Map)tool_call.get("function");
             String arguments = (String)function.get("arguments");

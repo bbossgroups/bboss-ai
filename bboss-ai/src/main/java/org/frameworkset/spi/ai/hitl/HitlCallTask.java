@@ -59,6 +59,10 @@ public class HitlCallTask {
 	 * 步骤消息：智能体id
 	 */
 	private String agentId;
+	
+
+	
+	private String agentNodeType;
 	/**
 	 * 步骤消息：智能体名称
 	 */
@@ -260,5 +264,12 @@ public class HitlCallTask {
 	
 	public void setHitlTaskData(String hitlTaskData) {
 		this.hitlTaskData = hitlTaskData;
+	}
+	public String getAgentNodeType() {
+		return agentNodeType;
+	}
+	
+	public void setAgentNodeType(String agentNodeType) {
+		this.agentNodeType = agentNodeType;
 	}
 }

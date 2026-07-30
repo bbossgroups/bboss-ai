@@ -28,6 +28,7 @@ public class ServerEventUtil {
 	public static void buildServerEventAgentInfo(ServerEvent serverEvent, AIAgent agent) {
 		serverEvent.setAgentId(agent.getAgentId());
 		serverEvent.setAgentName(agent.getAgentName());
+		serverEvent.setAgentNodeType(agent.getAgentNodeType());
 		serverEvent.setParentAgentId(agent.getParentAgentId());
 		serverEvent.setParentAgentName(agent.getParentAgentName());
 		serverEvent.setSessionId(agent.getSessionId());
@@ -37,6 +38,7 @@ public class ServerEventUtil {
 	
 	public static void buildHiltTaskAgentInfo(HitlCallTask hitlCallTask, AIAgent agent) {
 		hitlCallTask.setAgentId(agent.getAgentId());
+		hitlCallTask.setAgentNodeType(agent.getAgentNodeType());
 		hitlCallTask.setAgentName(agent.getAgentName());
 		hitlCallTask.setParentAgentId(agent.getParentAgentId());
 		hitlCallTask.setParentAgentName(agent.getParentAgentName());

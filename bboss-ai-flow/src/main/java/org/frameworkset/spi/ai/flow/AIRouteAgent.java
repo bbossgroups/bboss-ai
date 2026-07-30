@@ -30,12 +30,14 @@ public class AIRouteAgent
     private int retryTimes = 3;
     public AIRouteAgent( String prompt ) {
         super( prompt);
+		this.agentNodeType = AGENT_NODE_TYPE_ROUTE;
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
     }
 
     public AIRouteAgent(  ) {
         super(  );
+		this.agentNodeType = AGENT_NODE_TYPE_ROUTE;
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
     }

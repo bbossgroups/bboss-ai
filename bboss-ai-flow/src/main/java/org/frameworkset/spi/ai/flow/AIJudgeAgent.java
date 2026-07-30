@@ -28,17 +28,20 @@ public class AIJudgeAgent
     public AIJudgeAgent(ToolsRegist mcpToolsRegist,String prompt ) {
         super(   mcpToolsRegist);
         this.setPrompt(prompt);
+		this.agentNodeType = AGENT_NODE_TYPE_JUDGE;
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
         
     }
     public AIJudgeAgent(String prompt  ) {
         super( prompt );
+		this.agentNodeType = AGENT_NODE_TYPE_JUDGE;
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
     }
     public AIJudgeAgent(  ) {
         super(  );
+		this.agentNodeType = AGENT_NODE_TYPE_JUDGE;
         this.disablePush2ParentLastSubMessage = true;
         this.disableReferenceParentLastSubMessage = true;
     }

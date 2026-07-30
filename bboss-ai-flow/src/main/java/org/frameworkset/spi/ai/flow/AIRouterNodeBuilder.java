@@ -113,10 +113,14 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
 					
 				}
 				if (result != null) {
-					if (containerJobFlowNodeExecuteContext != null) {
-						containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
-					} else {
-						jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+					String agentId = result.getAgentId();
+					if(SimpleStringUtil.isNotEmpty(agentId)) {
+						logger.info("路由器即将你的问题交给智能体{}处理。", agentId);
+						if (containerJobFlowNodeExecuteContext != null) {
+							containerJobFlowNodeExecuteContext.addContextData("routeChoice", result.getAgentId());
+						} else {
+							jobFlowExecuteContext.addContextData("routeChoice", result.getAgentId());
+						}
 					}
 //					if (fluxSink != null) {
 //						fluxSink.next(serverEvent);

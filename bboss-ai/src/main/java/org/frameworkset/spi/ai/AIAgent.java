@@ -46,7 +46,10 @@ import java.util.Map;
  */
 public class AIAgent<T extends AIAgent> {
     /**
-     * 工作流中的智能体节点类型：标准化智能体节点、串行容器智能体节点、并行容器智能体节点、条件智能体节点
+     * 工作流中的智能体节点类型：
+	 * 标准化智能体节点、串行容器智能体节点、并行容器智能体节点、条件智能体节点、路由智能体节点
+	 * 裁判智能体节点
+	 * 
      */
     /**标准化智能体节点*/
     public static final String AGENT_NODE_TYPE_SINGLE = "standard";
@@ -61,7 +64,13 @@ public class AIAgent<T extends AIAgent> {
     /**
      * 条件智能体节点
      */
-    public static final String AGENT_NODE_TYPE_CONDITION = "condition";
+    public static final String AGENT_NODE_TYPE_CONDITION = "condition";	
+ 
+	/**路由智能体节点*/
+	public static final String AGENT_NODE_TYPE_ROUTE = "route";
+	
+	/**裁判智能体节点*/
+	public static final String AGENT_NODE_TYPE_JUDGE = "judge";
     
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(AIAgent.class);
     protected String prompt;

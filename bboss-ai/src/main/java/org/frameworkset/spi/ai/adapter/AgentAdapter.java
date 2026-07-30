@@ -68,7 +68,17 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     protected abstract Map buildGenImageRequestMap(ImageAgentMessage imageAgentMessage,AIAgent aiAgent);
 
     
- 
+ 	protected void buildincludeUsage(Boolean stream,AgentMessage agentMessage,Map<String, Object> requestMap){
+		if(stream != null && stream) {
+			Boolean includeUsage = agentMessage.getIncludeUsage();
+			if (includeUsage != null) {
+				Map streamOptions = new HashMap();
+				streamOptions.put("include_usage", includeUsage);
+				requestMap.put("stream_options", streamOptions);
+				
+			}
+		}
+	}
     protected void buildTools(ChatContext chatContext,AgentMessage agentMessage,AIAgent agent,Map<String, Object> requestMap){
         agent.init();
         List<FunctionToolDefine> tools = agent.getToolsByToolSearch(chatContext,agentMessage);
@@ -122,13 +132,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             
         }
 		//"stream_options": {"include_usage": true}
-		Boolean includeUsage = agentMessage.getIncludeUsage();
-		if(includeUsage != null){
-			Map streamOptions = new HashMap();
-			streamOptions.put("include_usage", includeUsage);
-			requestMap.put("stream_options", streamOptions);
-			
-		}
+		buildincludeUsage(  stream,  agentMessage, requestMap);
         buildTools(chatContext,agentMessage,  aiAgent, requestMap);
     }
     protected Object handleImageParserMessages(List<Map<String, Object>> messages){
@@ -513,13 +517,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
         }
 		//"stream_options": {"include_usage": true}
-		Boolean includeUsage = toolAgentMessage.getIncludeUsage();
-		if(includeUsage != null){
-			Map streamOptions = new HashMap();
-			streamOptions.put("include_usage", includeUsage);
-			requestMap.put("stream_options", streamOptions);
-			
-		}
+		buildincludeUsage(  stream,  toolAgentMessage, requestMap);
         buildThinking(  toolAgentMessage, chatObject, requestMap);
         if(agent.getEnableLoopToolCall() != null && agent.getEnableLoopToolCall()) {
             int maxLoopToolCalls = agent.getMaxLoopToolCalls();
@@ -686,13 +684,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
         }
 		//"stream_options": {"include_usage": true}
-		Boolean includeUsage = chatAgentMessage.getIncludeUsage();
-		if(includeUsage != null){
-			Map streamOptions = new HashMap();
-			streamOptions.put("include_usage", includeUsage);
-			requestMap.put("stream_options", streamOptions);
-			
-		}
+		buildincludeUsage(  stream,  chatAgentMessage, requestMap);
         buildThinking(  chatAgentMessage,chatObject, requestMap);
         buildTools(chatContext,chatAgentMessage,aiAgent, requestMap);
         return requestMap;
@@ -775,13 +767,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 			
         }
 		//"stream_options": {"include_usage": true}
-		Boolean includeUsage = audioAgentMessage.getIncludeUsage();
-		if(includeUsage != null){
-			Map streamOptions = new HashMap();
-			streamOptions.put("include_usage", includeUsage);
-			params.put("stream_options", streamOptions);
-			
-		}
+		buildincludeUsage(  stream,  audioAgentMessage, params);
         return params;
     }
 
@@ -898,13 +884,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             requestMap.put("stream", stream);
         }
 		//"stream_options": {"include_usage": true}
-		Boolean includeUsage = audioSTTAgentMessage.getIncludeUsage();
-		if(includeUsage != null){
-			Map streamOptions = new HashMap();
-			streamOptions.put("include_usage", includeUsage);
-			requestMap.put("stream_options", streamOptions);
-			
-		}
+		buildincludeUsage(  stream,  audioSTTAgentMessage, requestMap);
         if(audioSTTAgentMessage.getResultFormat() != null)
             requestMap.put("result_format", audioSTTAgentMessage.getResultFormat());
         return requestMap;

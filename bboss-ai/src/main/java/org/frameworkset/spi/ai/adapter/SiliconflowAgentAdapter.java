@@ -79,13 +79,7 @@ public class SiliconflowAgentAdapter extends QwenAgentAdapter{
             }
         }
 		//"stream_options": {"include_usage": true}
-		Boolean includeUsage = agentMessage.getIncludeUsage();
-		if(includeUsage != null){
-			Map streamOptions = new HashMap();
-			streamOptions.put("include_usage", includeUsage);
-			requestMap.put("stream_options", streamOptions);
-			
-		}
+		buildincludeUsage(  stream,  agentMessage, requestMap);
         buildTools(chatContext, agentMessage,aiAgent , requestMap);
     }
   
