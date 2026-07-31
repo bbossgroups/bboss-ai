@@ -70,7 +70,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         agentMessage = parameters;
         streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
-            public StreamData build(AgentAdapter agentAdapter, String line) {
+            public StreamData build(AgentAdapter agentAdapter, Map line) {
                 return agentAdapter.parseStreamContentFromData(this,line);
             }
             @Override

@@ -44,6 +44,7 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
  */
 public class FunctionToolDefine {
     private String type = "function";
+	@JsonIgnore
 	private Class inputType ;
     private Function function;
     @JsonIgnore

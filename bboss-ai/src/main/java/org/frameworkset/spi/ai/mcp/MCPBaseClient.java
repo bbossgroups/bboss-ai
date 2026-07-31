@@ -33,6 +33,7 @@ import java.util.Map;
  * @Date 2026/2/26
  */
 public abstract class MCPBaseClient<T extends MCPClientInf> implements MCPClientInf {
+	private static final Logger logger = LoggerFactory.getLogger(MCPBaseClient.class);
     protected String mcpServer;
  
     
@@ -62,8 +63,10 @@ public abstract class MCPBaseClient<T extends MCPClientInf> implements MCPClient
 		Map result = mcpToolCallResponse.getResult();
 		Boolean isError = (Boolean) result.get("isError");
 		if(isError != null && isError){
-			
-			throw new FunctionCallException(JsonUtil.object2json(mcpToolCallResponse));
+			if(logger.isDebugEnabled()){
+				logger.debug("MCP call error:{}", JsonUtil.object2json(mcpToolCallResponse));
+			}
+//			throw new FunctionCallException(JsonUtil.object2json(mcpToolCallResponse));
 		}
 	}
 	protected abstract MCPToolCallResponse executeToolsCall(McpToolCallRequest mcpToolCallRequest);

@@ -338,7 +338,7 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
  
 
     @Override
-    public StreamData parseImageParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder, String data){
+    public StreamData parseImageParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder, Map data){
         return AIResponseUtil.parseJiutianImageParserStreamContentFromData(streamDataBuilder,data);
     }
     

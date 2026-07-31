@@ -47,7 +47,7 @@ public class MapAgentMessage extends AgentMessage<MapAgentMessage>{
         Boolean stream = (Boolean)agentMessage.get("stream");
         streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
-            public StreamData build(AgentAdapter agentAdapter, String line) {
+            public StreamData build(AgentAdapter agentAdapter, Map line) {
                 return agentAdapter.parseStreamContentFromData(this,line);
             }
             @Override

@@ -163,10 +163,10 @@ public class AIResponseUtil {
      * @param data
      * @return
      */
-    public static StreamData parseAudioStreamContentFromData(AgentAdapter agentAdapter,StreamDataBuilder streamDataBuilder,String data){
+    public static StreamData parseAudioStreamContentFromData(AgentAdapter agentAdapter,StreamDataBuilder streamDataBuilder,Map data){
         try {
-            Map map = SimpleStringUtil.json2Object(data, Map.class);
-            Map output = (Map) map.get("output");
+//            Map map = SimpleStringUtil.json2Object(data, Map.class);
+            Map output = (Map) data.get("output");
             
             Object choices_ = output.get("choices");
             if (choices_ != null ) {
@@ -276,12 +276,12 @@ public class AIResponseUtil {
      *   "finish_reason":"null"},
      *   "usage":{"characters":53},
      *   "request_id":"66356352-8808-49bd-9c9c-d0283a3e2eb1"}
-     * @param data
+     * @param _data
      * @return
      */
-    public static StreamData parseQianwenAudioGenStreamContentFromData(AgentAdapter agentAdapter,String data){
+    public static StreamData parseQianwenAudioGenStreamContentFromData(AgentAdapter agentAdapter,Map _data){
         try {
-            Map _data = SimpleStringUtil.json2Object(data,Map.class);
+//            Map _data = SimpleStringUtil.json2Object(data,Map.class);
             Map output = (Map)_data.get("output");
             Map audio = (Map)output.get("audio");
             String finishReason = (String)output.get("finish_reason");
@@ -315,12 +315,12 @@ public class AIResponseUtil {
      * 处理音频识别流数据
      * {"id":"2026012618501535d155fd2f884b93","created":1769424615,"model":"glm-tts",
      * "choices":[{"index":0,"delta":{"role":"assistant","content":"","return_sample_rate":24000,"return_format":"pcm"}}]}
-     * @param data
+     * @param _data
      * @return
      */
-    public static StreamData parseZhipuAudioGenStreamContentFromData(String data){
+    public static StreamData parseZhipuAudioGenStreamContentFromData(Map _data){
         try {
-            Map _data = SimpleStringUtil.json2Object(data,Map.class);
+//            Map _data = SimpleStringUtil.json2Object(data,Map.class);
             List<Map> choices = (List<Map>)_data.get("choices");
             if(choices != null && choices.size() > 0){
                 Map choice = choices.get(0);
@@ -332,7 +332,7 @@ public class AIResponseUtil {
                         return new StreamData(ServerEvent.CONTENT, (String)null,(String)null, finishReason, true);
                     }
                     else {
-                        logger.info("delta is null:{}", data);
+                        logger.info("delta is null:{}", JsonUtil.object2json(_data));
 
                         return null;
                     }
@@ -357,10 +357,10 @@ public class AIResponseUtil {
 //                {"error":{"code":"1214","message":"音色id不存在"}}
                 Map error = (Map)_data.get("error");
                 if(error != null) {
-                    throw new ReactorCallException("ParseAudioStreamContentFromData failed:"+data);
+                    throw new ReactorCallException("ParseAudioStreamContentFromData failed:"+JsonUtil.object2json(_data));
                 }
                 else {
-                    logger.info("audio data:", data);
+                    logger.info("audio data:", JsonUtil.object2json(_data));
                 }
             }
 
@@ -378,12 +378,22 @@ public class AIResponseUtil {
      * @param data
      * @return
      */
-    public static StreamData parseStreamContentFromData(AgentAdapter agentAdapter,BaseStreamDataBuilder streamDataBuilder,String data) {
+    public static StreamData parseStreamContentFromData(AgentAdapter agentAdapter,BaseStreamDataBuilder streamDataBuilder,Map data) {
+//		Map map = null;
+//		try {
+//			map = JsonUtil.json2Object(data,Map.class);
+//		}
+//		catch (Exception e){
+//			if(logger.isDebugEnabled()) {
+//				logger.debug("ParseStreamContentFromData failed:", e);
+//			}
+//			return null;
+//		}
         try {
-            Map map = JsonUtil.json2Object(data,Map.class);
-            String model = (String) map.get("model");
-            Map usage = (Map) map.get("usage");
-            Object choices_ = map.get("choices");
+           
+            String model = (String) data.get("model");
+            Map usage = (Map) data.get("usage");
+            Object choices_ = data.get("choices");
 			
 			TokenMetrics tokenMetrics = null;
 			if(usage != null)
@@ -513,7 +523,7 @@ public class AIResponseUtil {
                 if(tokenMetrics != null){
                     tokenMetrics.setEndTime(System.currentTimeMillis());
                 }
-                StreamData streamData = agentAdapter.buildErrorStreamData(map,tokenMetrics);
+                StreamData streamData = agentAdapter.buildErrorStreamData(data,tokenMetrics);
 //                String code =  (String)map.get("code");
 //                String message = (String) map.get("message");
 //                
@@ -534,7 +544,7 @@ public class AIResponseUtil {
                 streamDataBuilder.setTokenMetrics(tokenMetrics);
             }
         } catch (Exception e) {
-            throw new ReactorCallException(data,e);
+            throw new ReactorCallException(JsonUtil.object2json(data),e);
         }
         return null;
     }
@@ -556,11 +566,11 @@ public class AIResponseUtil {
      * @param data
      * @return
      */
-    public static StreamData parseJiutianImageParserStreamContentFromData(StreamDataBuilder streamDataBuilder,String data) {
+    public static StreamData parseJiutianImageParserStreamContentFromData(StreamDataBuilder streamDataBuilder,Map data) {
         try {
-            Map map = SimpleStringUtil.json2Object(data,Map.class);
-            Object choices_ = map.get("parts");
-            String finishReason = (String) map.get("finished");
+//            Map map = SimpleStringUtil.json2Object(data,Map.class);
+            Object choices_ = data.get("parts");
+            String finishReason = (String) data.get("finished");
       
             if (choices_ != null ) {
                 if (choices_ instanceof List) {
@@ -615,9 +625,9 @@ public class AIResponseUtil {
                 }
             }
             else {
-                Object code =  map.get("code");
+                Object code =  data.get("code");
 //                String message = (String) map.get("message");
-                Map result = (Map) map.get("result");
+                Map result = (Map) data.get("result");
                 String message = (String) result.get("text");
                 if(code != null) {
                     
@@ -630,7 +640,7 @@ public class AIResponseUtil {
 
             }
         } catch (Exception e) {
-            throw new ReactorCallException(data,e);
+            throw new ReactorCallException(JsonUtil.object2json(data),e);
         }
         return null;
     }
@@ -937,7 +947,7 @@ public class AIResponseUtil {
                 if(firstEventTag.get()) {
                     firstEventTag.set(false);
                 }
-                StreamData content = streamDataBuilder.buildWrapped(agentAdapter,data);
+                StreamData content = streamDataBuilder.buildWrapped(agentAdapter,JsonUtil.json2Object(data,Map.class));
                 if (content != null && !content.isEmpty()) {
                     sink.next(content.getContent());
                 }
@@ -961,7 +971,7 @@ public class AIResponseUtil {
         }
         ServerEvent serverEvent = null;
         if (SimpleStringUtil.isNotEmpty(line)) {
-            StreamData content = streamDataBuilder.buildWrapped(agentAdapter,line);
+            StreamData content = streamDataBuilder.buildWrapped(agentAdapter,JsonUtil.json2Object(line,Map.class));
             if (content != null) {
 
                 serverEvent = new ServerEvent();
@@ -1013,6 +1023,7 @@ public class AIResponseUtil {
 //            logger.info("line: " + line);
 //        }
         String data = null;
+		boolean isDataBody = true;
         if(stream){
             if (line.startsWith("data: ")||line.startsWith("data:")) {
                 data = line.substring(5).trim();
@@ -1021,6 +1032,8 @@ public class AIResponseUtil {
                 if(logger.isDebugEnabled()) {
                     logger.debug("streamChatCompletion: {}",line);
                 }
+				isDataBody = false;
+				data = line;
             }
         }
         else{
@@ -1086,39 +1099,54 @@ public class AIResponseUtil {
                 sink.next(serverEvent);
                 return true;
             }
-            StreamData content = streamDataBuilder.buildWrapped(agentAdapter,data);
-            if (content != null) {
-                if( !content.isEmpty()) {
-                    buildServerEvent(   firstEventTag,  content,
-                            streamDataBuilder,  agentAdapter,  sink);
-                    if(content.isContent() || content.isReasoning()){
-                        streamDataBuilder.appendToolCallThinkingStreamData(content);
-                    }
-                    return content.isDone();
-                }
-                else if(content.isToolCalls()){
-                   
-                    if(content.isBuildToolCallsFinished()){
-                        //构建完整的toolCalls对象
-                        if(content.getToolCalls() != null || content.getToolCallsChunk() != null){
-                            streamDataBuilder.appendToolCallsStreamData( content);
-                        }
-                        buildServerEvent(   firstEventTag,  streamDataBuilder.getToolCallsStreamData(),
-                                  streamDataBuilder,  agentAdapter,  sink);
-                        return content.isDone();
-                    }
-                    else{
-                        streamDataBuilder.appendToolCallsStreamData( content);
-                    }
-                }
-                
-                else if(content.getFinishReason() != null && content.getFinishReason().length() > 0){
-                    buildServerEvent(   firstEventTag,  content,
-                              streamDataBuilder,  agentAdapter,  sink);
-                    return content.isDone();
-                }
-            }
+			else {
+				Map _data = null;
+				try {
+					_data = JsonUtil.json2Object(data, Map.class);
+				}
+				catch (Exception e){
+					if(!isDataBody){
+						if(logger.isDebugEnabled())
+							logger.debug("streamChatCompletion data isDataBody: {}, data:{}",isDataBody,data);
+						return false;
+					}
+					else {
+						throw new ReactorCallException(data, e);
+					}
+				}
+				
+				
+				StreamData content = streamDataBuilder.buildWrapped(agentAdapter, _data);
+				if (content != null) {
+					if (!content.isEmpty()) {
+						buildServerEvent(firstEventTag, content,
+								streamDataBuilder, agentAdapter, sink);
+						if (content.isContent() || content.isReasoning()) {
+							streamDataBuilder.appendToolCallThinkingStreamData(content);
+						}
+						return content.isDone();
+					} else if (content.isToolCalls()) {
+						
+						if (content.isBuildToolCallsFinished()) {
+							//构建完整的toolCalls对象
+							if (content.getToolCalls() != null || content.getToolCallsChunk() != null) {
+								streamDataBuilder.appendToolCallsStreamData(content);
+							}
+							buildServerEvent(firstEventTag, streamDataBuilder.getToolCallsStreamData(),
+									streamDataBuilder, agentAdapter, sink);
+							return content.isDone();
+						} else {
+							streamDataBuilder.appendToolCallsStreamData(content);
+						}
+					} else if (content.getFinishReason() != null && content.getFinishReason().length() > 0) {
+						buildServerEvent(firstEventTag, content,
+								streamDataBuilder, agentAdapter, sink);
+						return content.isDone();
+					}
+				}
+			}
         }
+		
 
         return false;
     }

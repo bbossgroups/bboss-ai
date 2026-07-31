@@ -251,7 +251,7 @@ public class QwenAgentAdapter extends AgentAdapter{
      * @return
      */
     @Override
-    public StreamData parseAudioGenStreamContentFromData(String data){
+    public StreamData parseAudioGenStreamContentFromData(Map data){
         return AIResponseUtil.parseQianwenAudioGenStreamContentFromData(this,data);
     }
     

@@ -21,6 +21,8 @@ import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.StreamData;
 import org.frameworkset.spi.ai.model.TokenMetrics;
 
+import java.util.Map;
+
 /**
  * @author biaoping.yin
  * @Date 2026/1/12
@@ -34,8 +36,8 @@ public interface StreamDataBuilder {
     Long getEndTime();
     
 
-    StreamData build(AgentAdapter agentAdapter , String line);
-    default StreamData buildWrapped(AgentAdapter agentAdapter , String line){
+    StreamData build(AgentAdapter agentAdapter , Map line);
+    default StreamData buildWrapped(AgentAdapter agentAdapter , Map line){
         return build(agentAdapter,line);
     }
 

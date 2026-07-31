@@ -300,7 +300,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param data
      * @return
      */
-    public StreamData parseAudioGenStreamContentFromData(String data){
+    public StreamData parseAudioGenStreamContentFromData(Map data){
         return AIResponseUtil.parseQianwenAudioGenStreamContentFromData(this,data);
     }
 
@@ -310,7 +310,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param data
      * @return
      */
-    public StreamData parseStreamContentFromData(BaseStreamDataBuilder streamDataBuilder, String data){
+    public StreamData parseStreamContentFromData(BaseStreamDataBuilder streamDataBuilder, Map data){
         return AIResponseUtil.parseStreamContentFromData(this,streamDataBuilder,data);
     }
 
@@ -320,11 +320,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param data
      * @return
      */
-    public StreamData parseImageParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data){
+    public StreamData parseImageParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,Map data){
         return AIResponseUtil.parseStreamContentFromData(this,streamDataBuilder,data);
     }
 
-    public StreamData parseVideoParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,String data){
+    public StreamData parseVideoParserStreamContentFromData(BaseStreamDataBuilder streamDataBuilder,Map data){
         return AIResponseUtil.parseStreamContentFromData(this,streamDataBuilder,data);
     }
 
@@ -333,7 +333,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param data
      * @return
      */
-    public StreamData parseAudioStreamContentFromData(StreamDataBuilder streamDataBuilder,String data){
+    public StreamData parseAudioStreamContentFromData(StreamDataBuilder streamDataBuilder,Map data){
         return AIResponseUtil.parseAudioStreamContentFromData( this, streamDataBuilder,data);
     }
 

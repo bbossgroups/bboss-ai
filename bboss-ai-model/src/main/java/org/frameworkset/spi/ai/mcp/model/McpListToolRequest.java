@@ -15,12 +15,15 @@ package org.frameworkset.spi.ai.mcp.model;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.LinkedHashMap;
 
 /**
  * @author biaoping.yin
  * @Date 2026/2/28
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class McpListToolRequest extends McpToolRequest{
 	public McpListToolRequest( ){
 		super(false);		

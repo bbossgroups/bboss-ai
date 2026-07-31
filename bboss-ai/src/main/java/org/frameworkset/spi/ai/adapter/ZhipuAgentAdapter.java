@@ -120,7 +120,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
      * @return
      */
     @Override
-    public StreamData parseAudioGenStreamContentFromData(String data){
+    public StreamData parseAudioGenStreamContentFromData(Map data){
         return AIResponseUtil.parseZhipuAudioGenStreamContentFromData(data);
     }
 

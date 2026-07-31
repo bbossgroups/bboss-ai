@@ -98,7 +98,7 @@ public class AudioSTTAgentMessage<T> extends SessionAgentMessage<AudioSTTAgentMe
         agentMessage = parameters;
         streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
-            public StreamData build(AgentAdapter agentAdapter, String line) {
+            public StreamData build(AgentAdapter agentAdapter, Map line) {
                 return agentAdapter.parseAudioStreamContentFromData(this,line);
             }
             @Override

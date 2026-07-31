@@ -15,6 +15,8 @@ package org.frameworkset.spi.ai.mcp.model;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -22,6 +24,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/2/28
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class McpToolRequest {
 	private String jsonrpc = "2.0";
 	private Long id;

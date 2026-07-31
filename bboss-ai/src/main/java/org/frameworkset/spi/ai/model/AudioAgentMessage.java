@@ -70,7 +70,7 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
                 return clientConfiguration.getDatasource();
             }
             @Override
-            public StreamData build(AgentAdapter agentAdapter, String line) {
+            public StreamData build(AgentAdapter agentAdapter, Map line) {
                 return agentAdapter.parseAudioGenStreamContentFromData(line);
             }
 

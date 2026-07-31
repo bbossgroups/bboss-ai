@@ -15,6 +15,8 @@ package org.frameworkset.spi.ai.mcp.model;
  * limitations under the License.
  */
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.Map;
 
 /**
@@ -22,6 +24,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/3/1
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class McpToolCallRequest  extends McpToolRequest{
 	public McpToolCallRequest( ){
 		super();

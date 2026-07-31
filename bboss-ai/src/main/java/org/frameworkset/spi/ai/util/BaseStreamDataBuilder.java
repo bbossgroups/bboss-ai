@@ -154,7 +154,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         return tokenMetrics;
     }
 
-    public StreamData buildWrapped(AgentAdapter agentAdapter , String line){
+    public StreamData buildWrapped(AgentAdapter agentAdapter , Map line){
         StreamData streamData = build(agentAdapter,line);
         if(streamData == null){
             return null;

@@ -21,6 +21,7 @@ import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -113,5 +114,31 @@ public class MiniMaxAgentAdapter extends DoubaoAgentAdapter{
         }
         return null;
     }
-    
+	
+	
+	@Override
+	protected void buildThinking(ChatAgentMessage chatAgentMessage, ChatObject chatObject, Map<String, Object> requestMap) {
+		Boolean thinking = chatAgentMessage.getThinking();
+		ChatContext chatContext = chatObject.getChatContext();
+		if(chatContext != null && chatContext.getThinking() != null){
+			thinking = chatContext.getThinking();
+			
+		}
+		
+		//invalid params, invalid thinking.type: "enabled" (allowed: adaptive, disabled)
+		if(thinking != null){
+			if( thinking == false) {
+				Map data = new LinkedHashMap();
+				data.put("type", "disabled");
+				requestMap.put("thinking", data);
+				chatObject.setThinking(false);
+			}
+			else{
+				Map data = new LinkedHashMap();
+				data.put("type", "adaptive");
+				requestMap.put("thinking", data);
+				chatObject.setThinking(true);
+			}
+		}
+	}
 }

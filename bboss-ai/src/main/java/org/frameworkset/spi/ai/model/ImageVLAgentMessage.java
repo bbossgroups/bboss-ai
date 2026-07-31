@@ -58,7 +58,7 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
         agentMessage = parameters;
         streamDataBuilder = new BaseStreamDataBuilder() {
             @Override
-            public StreamData build(AgentAdapter agentAdapter, String line) {
+            public StreamData build(AgentAdapter agentAdapter, Map line) {
                 return agentAdapter.parseImageParserStreamContentFromData(this,line);
             }
 
