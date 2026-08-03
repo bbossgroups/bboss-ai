@@ -32,6 +32,10 @@ public class TraceMessage {
      */
     private String agentId;
     private String parentAgentId;
+	
+	
+	private String groupId;
+	private String parentGroupId;
     /**
      * 智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
      */
@@ -174,4 +178,20 @@ public class TraceMessage {
         this.agentNodeType = agentNodeType;
         return this;
     }
+	
+	public String getGroupId() {
+		return groupId;
+	}
+	
+	public void setGroupId(String groupId) {
+		this.groupId = groupId;
+	}
+	
+	public String getParentGroupId() {
+		return parentGroupId;
+	}
+	
+	public void setParentGroupId(String parentGroupId) {
+		this.parentGroupId = parentGroupId;
+	}
 }

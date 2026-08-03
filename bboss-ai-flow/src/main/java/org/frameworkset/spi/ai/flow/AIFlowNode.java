@@ -15,7 +15,6 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.TraceMessage;
@@ -39,6 +38,21 @@ import java.util.List;
 public abstract   class AIFlowNode<T extends AIFlowNode> implements AppendToParentAgent{
     protected String nodeId;
     protected String nodeName;
+	/**
+	 * 当节点直接隶属于并行节点时，会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息
+	 * 并行分组展示消息所属并行分支id
+	 * 属于同一组的并行任务消息，独立并行展示
+	 * 步骤消息：智能体组id
+	 */
+	private String groupId;
+	
+	/**
+	 * 当节点直接隶属于并行节点时，groupId会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息
+	 * 并行分组展示消息所属父并行分支id
+	 * 属于同一组的并行任务消息，独立并行展示
+	 * 步骤消息：智能体组id
+	 */
+	private String parentGroupId;
     protected AIPlanAgent planAgent;
 
     protected AIAgent parentAgent;
@@ -88,6 +102,8 @@ public abstract   class AIFlowNode<T extends AIFlowNode> implements AppendToPare
         
         traceMessage.setAgentId(this.getNodeId());
         traceMessage.setParentAgentId(this.getParentAgent() != null?this.getParentAgent().getAgentId():planAgent.getAgentId());
+		traceMessage.setGroupId(this.getGroupId());
+		traceMessage.setParentGroupId(this.getParentGroupId());
         this.planAgent.getMainSessionStore().recordTraceMessage(traceMessage);
          
         return (T)this;
@@ -302,4 +318,22 @@ public abstract   class AIFlowNode<T extends AIFlowNode> implements AppendToPare
         parentAgent.addJobFlowNodeBuilder(jobFlowNodeBuilder,triggerScriptAPI);
 
     }
+	
+	public String getGroupId() {
+		return groupId;
+	}
+	
+	public T setGroupId(String groupId) {
+		this.groupId = groupId;
+		return (T)this;
+	}
+	
+	public String getParentGroupId() {
+		return parentGroupId;
+	}
+	
+	public T setParentGroupId(String parentGroupId) {
+		this.parentGroupId = parentGroupId;
+		return (T)this;
+	}
 }

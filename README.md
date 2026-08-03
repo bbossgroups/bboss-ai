@@ -14,7 +14,20 @@ gradle坐标
 ```groovy
 implementation 'com.bbossgroups:bboss-ai:6.5.5'
 ```
+# 版本升级
+6.5.5升级到6.5.6需在会话表中增加字段
+mysql:
+ALTER TABLE agent_session_message ADD groupId varchar(100) NULL COMMENT '消息分组id，隶属于并行分支中时，该字段有值';
+ALTER TABLE agent_session_message ADD parentGroupId varchar(100) NULL COMMENT '消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id';
 
+postgresql:
+ALTER TABLE agent_session_message ADD groupId varchar(100) NULL
+ALTER TABLE agent_session_message ADD parentGroupId varchar(100) NULL
+
+clickhouse:
+ALTER TABLE agent_session_message_local ON CLUSTER vops_3shards_1replicas ADD COLUMN groupId Nullable(String) COMMENT '消息分组id，隶属于并行分支中时，该字段有值'
+
+ALTER TABLE agent_session_message_local ON CLUSTER vops_3shards_1replicas  ADD COLUMN parentGroupId Nullable(String) COMMENT '消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id'
 
 # 版本构建方法
 

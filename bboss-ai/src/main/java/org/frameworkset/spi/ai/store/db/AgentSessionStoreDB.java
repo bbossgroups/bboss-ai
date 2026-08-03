@@ -217,7 +217,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,
-                                                       String agentId, String parentAgentId,String agentNodeType,String subAgentIdBy, String marks, String metadata, String messageType){
+                                                       String agentId, String parentAgentId,
+													   String agentNodeType,String subAgentIdBy, String marks, String metadata, String messageType){
         try { 
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role
@@ -243,7 +244,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
                     msgId,new Date(),this.getSessionId(),
                     parentAgentId, agentId,messageType,integerCount.increament(), JsonUtil.object2json(message),
-                    role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId(),agentNodeType,subAgentIdBy);
+                    role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId(),agentNodeType,
+					subAgentIdBy,persistentMessage.getGroupId(),persistentMessage.getParentGroupId());
 
             if(messageType != null && messageType.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();
@@ -258,6 +260,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                 lastSessionMessage.setElapsed(elapsed);
                 lastSessionMessage.setAgentNodeType(agentNodeType);
                 lastSessionMessage.setSubAgentIdBy(subAgentIdBy);
+				lastSessionMessage.setGroupId(persistentMessage.getGroupId());
+				lastSessionMessage.setParentGroupId(persistentMessage.getParentGroupId());
                 return lastSessionMessage;
             }
             else{

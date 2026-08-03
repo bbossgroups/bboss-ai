@@ -96,6 +96,8 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
                         serverEvent.setAgent(AISequenceAgent.this);
                         serverEvent.setData(data);
 						serverEvent.setAgentNodeType(AIAgent.AGENT_NODE_TYPE_SEQUENCE);
+						serverEvent.setGroupId(jobFlowNodeExecuteContext.getGroupId());
+						serverEvent.setParentGroupId(jobFlowNodeExecuteContext.getParentGroupId());
                         serverEvent.setContent(data);
                         AIFlowUtil.outputResult(AISequenceAgent.this, serverEvent,  jobFlowNodeExecuteContext);
 						//sequence节点执行结果来源于最后一个子节点，因为子节点已经输出了相应的消息，所以无需输出最后一个子节点的消息，

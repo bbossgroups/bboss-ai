@@ -69,6 +69,9 @@ public class AIKeywordsRouterNodeBuilder extends AIBaseNodeBuilder {
 		if(agentMessage == null){
 			throw new AIRuntimeException("agentMessage is null");
 		}
+		routeAgent.setGroupId(jobFlowNodeExecuteContext.getGroupId());
+		routeAgent.setParentGroupId(jobFlowNodeExecuteContext.getParentGroupId());
+		
 		String prompt = routeAgent.evalPrompt(agentMessage);
          
         jobFlowNodeExecuteContext.addContextData("route.ChoiceList", JsonUtil.object2json(routeChoiceList));

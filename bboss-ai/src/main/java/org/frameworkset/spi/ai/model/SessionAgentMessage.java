@@ -191,7 +191,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(agentSessionStore == null){
             return (T)this;
         }
-        agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId(),agentSessionStore.getAiAgent().getAgentNodeType());
+        agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId(),agentSessionStore.getAiAgent().getAgentNodeType(),   aiAgent);
         
         return (T)this;
     }
@@ -211,6 +211,8 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         }
         PersistentMessage persistentMessage = new PersistentMessage();
         persistentMessage.setMessage(message);
+		persistentMessage.setGroupId(aiAgent.getGroupId());
+		persistentMessage.setParentGroupId(aiAgent.getParentGroupId());		
         agentSessionStore.addSessionMessage(persistentMessage);         
         return (T)this;
     }
@@ -242,6 +244,8 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(agentSessionStore == null){
             return null;
         }
+		serverEvent.setGroupId(aiAgent.getGroupId());
+		serverEvent.setParentGroupId(aiAgent.getParentGroupId());
         return agentSessionStore.addAssistantSessionMessage(serverEvent);
     }
 

@@ -23,6 +23,8 @@ import java.util.Map;
  */
 public class LastSessionMessage {
     private Map<String,Object> lastSessionMessage;
+	private String groupId;
+	private String parentGroupId;
     /**会话id*/
     private String sessionId;
     /**消息id*/
@@ -151,4 +153,20 @@ public class LastSessionMessage {
     public void setSubAgentIdBy(String subAgentIdBy) {
         this.subAgentIdBy = subAgentIdBy;
     }
+	
+	public String getGroupId() {
+		return groupId;
+	}
+	
+	public void setGroupId(String groupId) {
+		this.groupId = groupId;
+	}
+	
+	public String getParentGroupId() {
+		return parentGroupId;
+	}
+	
+	public void setParentGroupId(String parentGroupId) {
+		this.parentGroupId = parentGroupId;
+	}
 }

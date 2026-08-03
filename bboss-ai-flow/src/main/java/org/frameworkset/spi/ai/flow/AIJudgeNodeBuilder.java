@@ -54,6 +54,8 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
     @Override
     public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) throws Exception {
 
+		judgeAgent.setGroupId(jobFlowNodeExecuteContext.getGroupId());
+		judgeAgent.setParentGroupId(jobFlowNodeExecuteContext.getParentGroupId());
         String judgePrompt = judgeAgent.getPrompt();
         if(judgePrompt == null){
             judgePrompt = this.judgePrompt;

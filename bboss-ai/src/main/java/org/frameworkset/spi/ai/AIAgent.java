@@ -45,6 +45,21 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AIAgent<T extends AIAgent> {
+	/**
+	 * 当节点直接隶属于并行节点时，会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息
+	 * 并行分组展示消息所属并行分支id
+	 * 属于同一组的并行任务消息，独立并行展示
+	 * 步骤消息：智能体组id
+	 */
+	private String groupId;
+	
+	/**
+	 * 当节点直接隶属于并行节点时，groupId会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息
+	 * 并行分组展示消息所属父并行分支id
+	 * 属于同一组的并行任务消息，独立并行展示
+	 * 步骤消息：智能体组id
+	 */
+	private String parentGroupId;
     /**
      * 工作流中的智能体节点类型：
 	 * 标准化智能体节点、串行容器智能体节点、并行容器智能体节点、条件智能体节点、路由智能体节点
@@ -1295,6 +1310,8 @@ public class AIAgent<T extends AIAgent> {
                 traceMessage.setAgentId(this.getAgentId());
                 traceMessage.setParentAgentId(this.getParentAgentId());
                 traceMessage.setAgentNodeType(this.getAgentNodeType());
+				traceMessage.setGroupId(this.getGroupId());
+				traceMessage.setParentGroupId(this.getParentGroupId());
                 this.mainSessionStore.recordTraceMessage(traceMessage);
             }
            
@@ -1314,6 +1331,8 @@ public class AIAgent<T extends AIAgent> {
                 traceMessage.setAgentId(this.getAgentId());
                 traceMessage.setParentAgentId(this.getParentAgentId());
                 traceMessage.setAgentNodeType(this.getAgentNodeType());
+				traceMessage.setGroupId(this.getGroupId());
+				traceMessage.setParentGroupId(this.getParentGroupId());
                 this.mainSessionStore.recordTraceMessage(traceMessage,tokenMetrics);
             }
         }
@@ -1413,5 +1432,21 @@ public class AIAgent<T extends AIAgent> {
 			return this.mainSessionStore.getUserId();
 		}
 		return null;
+	}
+	
+	public String getGroupId() {
+		return groupId;
+	}
+	
+	public String getParentGroupId() {
+		return parentGroupId;
+	}
+	public T setGroupId(String groupId) {
+		this.groupId = groupId;
+		return (T)this;
+	}
+	public T setParentGroupId(String parentGroupId) {
+		this.parentGroupId = parentGroupId;
+		return (T)this;
 	}
 }

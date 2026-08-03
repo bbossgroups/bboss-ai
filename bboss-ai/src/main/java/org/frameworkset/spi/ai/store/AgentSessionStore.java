@@ -71,7 +71,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 
     LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId);
     void appendSessionMessageFromParent(Map<String,Object> message);
-    void addSessionMessage( Map<String,Object> systemMessage,String prompt,String agentId,String parentAgentId,String agentNodeType);
+    void addSessionMessage( Map<String,Object> systemMessage,String prompt,String agentId,String parentAgentId,String agentNodeType, AIAgent aiAgent);
    
 
     Map<String, Object> addAssistantSessionMessage(ServerEvent serverEvent);

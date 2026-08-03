@@ -58,7 +58,7 @@ public class ParrelStreamClickhouseTest {
 		DBConf tempConf = new DBConf();
 		tempConf.setPoolname("visualops");
 		tempConf.setDriver("com.clickhouse.jdbc.ClickHouseDriver");
-		tempConf.setJdbcurl("jdbc:clickhouse:http://100.13.6.4:28123,100.13.6.7:28123,100.13.4.6:28123/visualops?b.enableBalance=true&b.balance=roundbin");
+		tempConf.setJdbcurl("jdbc:clickhouse:http://10.13.6.4:28123,10.13.6.7:28123,10.13.4.6:28123/visualops?b.enableBalance=true&b.balance=roundbin");
 		tempConf.setUsername("default");
 		tempConf.setPassword("123456");
 		tempConf.setValidationQuery("select 1 ");
@@ -95,7 +95,7 @@ public class ParrelStreamClickhouseTest {
                 .setAgentName("介绍中国省份和直辖市")
                 .setAgentId("introduceProvinces") );
         //构建并行智能体
-        AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("并行智能体");
+        AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("并行智能体").setDisableStream( true);
         //scope=flow|node|container
         aiParrelAgent.addAgent(new AINodeAgent("同时结合中国省份特点：\r\n#[provinces,scope=flow],\r\n用300字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));

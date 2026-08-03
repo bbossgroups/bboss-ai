@@ -292,7 +292,9 @@ public class AgentSessionStoreDBConfig {
             .append( "requestId varchar(100), " )  //请求id
             .append( "traceId varchar(100), " )  //trace id
             .append( "seqNo int,")  //消息序号
-            .append( "message text,")  //消息正文
+			.append( "message text,")  //消息正文
+			.append( "groupId varchar(100),")  //消息分组id，隶属于并行分支中时，该字段有值
+			.append( "parentGroupId varchar(100),")  //消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id
 
             .append( "tokenMetrics text, " )  //token消耗统计
             .append( "elapsed INTEGER,")  //耗时
@@ -315,6 +317,8 @@ public class AgentSessionStoreDBConfig {
             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, " )  //消息正文
+			.append( "groupId varchar(100),")  //消息分组id，隶属于并行分支中时，该字段有值
+			.append( "parentGroupId varchar(100),")  //消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id
             .append( "role varchar(100) NOT NULL, " )
             .append( "tokenMetrics LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci, " )  //token消耗统计
             .append( "elapsed BIGINT,")  //耗时
@@ -333,6 +337,8 @@ public class AgentSessionStoreDBConfig {
             .append( "agentNodeType varchar2(100),")  //智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）
             .append( "subAgentIdBy varchar2(100),")  //创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值
             .append( "messageType varchar2(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+			.append( "groupId varchar2(100),")  //消息分组id，隶属于并行分支中时，该字段有值
+			.append( "parentGroupId varchar2(100),")  //消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
             .append( "tokenMetrics clob , " )  //token消耗统计
@@ -355,6 +361,8 @@ public class AgentSessionStoreDBConfig {
             .append( "messageType varchar2(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL, " )  //消息序号
             .append( "message clob NOT NULL, " )  //消息正文
+			.append( "groupId varchar2(100),")  //消息分组id，隶属于并行分支中时，该字段有值
+			.append( "parentGroupId varchar2(100),")  //消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id
             .append( "tokenMetrics clob , " )  //token消耗统计
             .append( "elapsed NUMBER(19,0),")  //耗时
             .append( "role varchar2(100) NOT NULL, " )
@@ -374,6 +382,8 @@ public class AgentSessionStoreDBConfig {
             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message nvarchar(max) NOT NULL,")  //消息正文
+			.append( "groupId varchar(100),")  //消息分组id，隶属于并行分支中时，该字段有值
+			.append( "parentGroupId varchar(100),")  //消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id
             .append( "tokenMetrics nvarchar(max),")  //token消耗统计
             .append( "elapsed BIGINT,")  //耗时
             .append( "role varchar(100) NOT NULL,")
@@ -393,6 +403,8 @@ public class AgentSessionStoreDBConfig {
             .append( "messageType varchar(50),")  //0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
             .append( "seqNo int NOT NULL,")  //消息序号
             .append( "message text NOT NULL,")  //消息正文
+			.append( "groupId varchar(100),")  //消息分组id，隶属于并行分支中时，该字段有值
+			.append( "parentGroupId varchar(100),")  //消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id
             .append( "tokenMetrics text,")  //token消耗统计
             .append( "elapsed BIGINT,")  //耗时
             .append( "role varchar(100) NOT NULL,")
@@ -414,6 +426,8 @@ public class AgentSessionStoreDBConfig {
 			.append("messageType String COMMENT '0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中',")
 			.append("seqNo Int32 COMMENT '消息序号',")
 			.append("message String COMMENT '消息正文',")
+			.append( "groupId String COMMENT '消息分组id，隶属于并行分支中时，该字段有值',")  //消息分组id，隶属于并行分支中时，该字段有值
+			.append( "parentGroupId String COMMENT '消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id',")  //消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id
 			.append("tokenMetrics String COMMENT 'token消耗统计',")
 			.append("elapsed Int32 COMMENT '耗时',")
 			.append("role String COMMENT '角色',")
@@ -758,8 +772,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
 					.append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,")
 					.append("seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId")
-					.append(",agentNodeType,subAgentIdBy")
-					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+					.append(",agentNodeType,subAgentIdBy,groupId,parentGroupId")
+					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
 			
 			insertSessionMessageRerenceSQL = "INSERT INTO " + sessionMessageReferenceTableName + " (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
 					"VALUES (?, ?, ?, ?, ?)";

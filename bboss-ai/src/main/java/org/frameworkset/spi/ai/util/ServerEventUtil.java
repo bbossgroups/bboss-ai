@@ -32,7 +32,9 @@ public class ServerEventUtil {
 		serverEvent.setParentAgentId(agent.getParentAgentId());
 		serverEvent.setParentAgentName(agent.getParentAgentName());
 		serverEvent.setSessionId(agent.getSessionId());
-		serverEvent.setRequestId(agent.getRequestId());
+		serverEvent.setRequestId(agent.getRequestId());		
+		serverEvent.setGroupId(agent.getGroupId());
+		serverEvent.setParentGroupId(agent.getParentGroupId());
 		serverEvent.setUserId(agent.getUserId());
 	}
 	

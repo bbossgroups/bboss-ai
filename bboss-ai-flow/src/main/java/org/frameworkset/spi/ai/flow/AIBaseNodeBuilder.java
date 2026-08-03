@@ -58,14 +58,17 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
 
     
     @Override
-    public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) throws Exception {      
-      
-        
-        
+    public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) throws Exception {
+		
+		
         AgentMessage agentMessage = agent.getAgentMessage() != null ? agent.getAgentMessage() : planAgent.getAgentMessage();
         if(agentMessage == null){
             throw new AIRuntimeException("agentMessage is null");
         }
+		
+		agent.setGroupId(jobFlowNodeExecuteContext.getGroupId());
+		agent.setParentGroupId(jobFlowNodeExecuteContext.getParentGroupId());
+		
         ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, agent);
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**
@@ -82,6 +85,7 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
 
             @Override
             public void streamDone(ServerEvent serverEvent) {
+				
                 AIFlowUtil.outputResult( agent, serverEvent,  jobFlowNodeExecuteContext);
             }
         });

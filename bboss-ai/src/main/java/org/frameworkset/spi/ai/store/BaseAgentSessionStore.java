@@ -238,6 +238,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     public void recordTraceMessage(TraceMessage traceMessage) {
         PersistentMessage persistentMessage = new PersistentMessage();
 
+		persistentMessage.setGroupId(traceMessage.getGroupId());
+		persistentMessage.setParentGroupId(traceMessage.getParentGroupId());
+		
         Map<String, Object> message = traceMessage.getMessage();
         persistentMessage.setMessage(message);
         TokenMetrics tokenMetrics = new TokenMetrics();
@@ -335,7 +338,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             lastSubAgentSessionMessage = new LastSessionMessage();
             lastSubAgentSessionMessage.setLastSessionMessage(assistantMessage);
             lastSubAgentSessionMessage.setRequestId(this.getRequestId());
-            
+            if(aiAgent != null){
+				lastSubAgentSessionMessage.setGroupId(aiAgent.getGroupId());
+				lastSubAgentSessionMessage.setParentGroupId(aiAgent.getParentGroupId());
+			}
             lastSubAgentSessionMessage.setTokenMetrics(agentResultSessionMessageContext.getTokenMetrics());
             lastSubAgentSessionMessage.setSubAgentIdBy(agentResultSessionMessageContext.getSubAgentIdBy());
             lastSubAgentSessionMessage.setElapsed(elapsed);
@@ -372,6 +378,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             PersistentMessage persistentMessage = new PersistentMessage();
             persistentMessage.setMessage(assistantMessage);
             persistentMessage.setTokenMetrics(agentResultSessionMessageContext.getTokenMetrics());
+			persistentMessage.setGroupId(aiAgent.getGroupId());
+			persistentMessage.setParentGroupId(aiAgent.getParentGroupId());
             lastSubAgentSessionMessage = mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId, 
                     this.getParantAgentId(),this.getAiAgent().getAgentNodeType(),agentResultSessionMessageContext.getSubAgentIdBy(),null,null, MESSAGE_TYPE_AGENT_RESULTMESSAGE);
         }
@@ -389,6 +397,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             lastSubAgentSessionMessage.setTokenMetrics(agentResultSessionMessageContext.getTokenMetrics());
             lastSubAgentSessionMessage.setElapsed(elapsed);
             lastSubAgentSessionMessage.setAgentNodeType(this.getAiAgent().getAgentNodeType());
+			if(aiAgent != null){
+				lastSubAgentSessionMessage.setGroupId(aiAgent.getGroupId());
+				lastSubAgentSessionMessage.setParentGroupId(aiAgent.getParentGroupId());
+			}
             lastSubAgentSessionMessage.setRequestId(this.getRequestId());
         }
 
@@ -436,18 +448,22 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
     @Override
     public void addSessionMessage( Map<String, Object> message//Map<String, Object> systemMessage
-                                    ,String prompt,String agentId,String parentAgentId,String agentNodeType){
+                                    ,String prompt,String agentId,String parentAgentId,String agentNodeType, AIAgent aiAgent){
         String role = (String) message.get("role");
         String messageType = messageType(role);
         if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
             //msgId,createTime,sessionId,seqNo,message,role
             PersistentMessage persistentMessage = new PersistentMessage();
             persistentMessage.setMessage(message);
+			persistentMessage.setGroupId(aiAgent.getGroupId());
+			persistentMessage.setParentGroupId(aiAgent.getParentGroupId());
             mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,parentAgentId,agentNodeType,null,null,null, messageType);
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
             PersistentMessage persistentMessage = new PersistentMessage();
             persistentMessage.setMessage(message);
+			persistentMessage.setGroupId(aiAgent.getGroupId());
+			persistentMessage.setParentGroupId(aiAgent.getParentGroupId());
             persistentSessionMessage(persistentMessage, agentId,parentAgentId,agentNodeType,null,null,null, messageType);//0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息
 
             
@@ -479,6 +495,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         PersistentMessage persistentMessage = new PersistentMessage();
         persistentMessage.setMessage(assistantMessage);
         persistentMessage.setTokenMetrics(serverEvent.getTokenMetrics());
+		persistentMessage.setParentGroupId(serverEvent.getParentGroupId());
+		persistentMessage.setGroupId(serverEvent.getGroupId());
         addSessionMessage(persistentMessage);
         return assistantMessage;
     }
@@ -489,12 +507,15 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         }
 
         Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(  baseStreamDataBuilder);
-
+		AIAgent agent = baseStreamDataBuilder.getChatObject().getAgent();
         StreamData streamData = baseStreamDataBuilder.getToolCallsStreamData();
         PersistentMessage persistentMessage = new PersistentMessage();
         persistentMessage.setMessage(assistantMessage);
         persistentMessage.setTokenMetrics(streamData.getStreamTokenMetrics());
         persistentMessage.setTotalTokenMetrics(streamData.getTotalTokenMetrics());
+		persistentMessage.setGroupId(agent.getGroupId());
+		persistentMessage.setParentGroupId(agent.getParentGroupId());
+		
         addSessionMessage(persistentMessage);
         return assistantMessage;
     }

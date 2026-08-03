@@ -23,6 +23,8 @@ import java.util.Map;
  */
 public class PersistentMessage {
     private String stringMessage;
+	private String groupId;
+	private String parentGroupId;
     private TokenMetrics tokenMetrics;
 
     private TokenMetrics totalTokenMetrics;
@@ -59,4 +61,20 @@ public class PersistentMessage {
     public void setTotalTokenMetrics(TokenMetrics totalTokenMetrics) {
         this.totalTokenMetrics = totalTokenMetrics;
     }
+	
+	public String getGroupId() {
+		return groupId;
+	}
+	
+	public void setGroupId(String groupId) {
+		this.groupId = groupId;
+	}
+	
+	public String getParentGroupId() {
+		return parentGroupId;
+	}
+	
+	public void setParentGroupId(String parentGroupId) {
+		this.parentGroupId = parentGroupId;
+	}
 }

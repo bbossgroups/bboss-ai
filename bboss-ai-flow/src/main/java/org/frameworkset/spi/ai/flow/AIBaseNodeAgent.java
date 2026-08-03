@@ -96,7 +96,8 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
         this.planAgent = aiPlanAgent;
         return (T)this;
     }
-    
+	
+
     protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
         AIAgentNodeBuilder aiAgentNodeBuilder = new AIAgentNodeBuilder(this);
        

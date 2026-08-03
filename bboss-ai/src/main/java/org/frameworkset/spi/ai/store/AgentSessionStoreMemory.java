@@ -227,6 +227,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setTraceId(this.getTraceId());
         sessionMessage.setAgentNodeType(agentNodeType);
         sessionMessage.setSubAgentIdBy(subAgentIdBy);
+		sessionMessage.setGroupId(persistentMessage.getGroupId());
+		sessionMessage.setParentGroupId(persistentMessage.getParentGroupId());
         TokenMetrics tokenMetrics_ = persistentMessage.getTokenMetrics();
         long elapsed = 0l;
 
@@ -256,6 +258,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             lastSessionMessage.setMsgParentAgentId(parentAgentId);
             lastSessionMessage.setAgentNodeType(agentNodeType);
             lastSessionMessage.setSubAgentIdBy(subAgentIdBy);
+			lastSessionMessage.setGroupId(persistentMessage.getGroupId());
+			lastSessionMessage.setParentGroupId(persistentMessage.getParentGroupId());
             return lastSessionMessage;
         }
         else{

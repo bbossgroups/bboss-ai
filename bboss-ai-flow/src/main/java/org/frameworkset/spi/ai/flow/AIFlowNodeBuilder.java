@@ -43,7 +43,9 @@ public class AIFlowNodeBuilder extends CallableJobFlowNodeBuilder<AIFlowNodeBuil
 
     @Override
     public Object call(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) throws Exception {
-        return agent.call(  jobFlowNodeExecuteContext);
+        agent.setGroupId(jobFlowNodeExecuteContext.getGroupId());
+		agent.setParentGroupId(jobFlowNodeExecuteContext.getParentGroupId());
+		return agent.call(  jobFlowNodeExecuteContext);
     }
 
 
