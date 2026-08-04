@@ -25,6 +25,7 @@ public class AIJobFlow extends JobFlow {
     private AIPlanAgent planAgent;
     public AIJobFlow(AIPlanAgent planAgent){
         this.planAgent = planAgent;
+		
     }
 //    @Override
 //    public void execute() {

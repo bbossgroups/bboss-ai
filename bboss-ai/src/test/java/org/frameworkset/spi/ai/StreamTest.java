@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai;
 
 import com.frameworkset.common.poolman.util.SQLUtil;
 import com.frameworkset.util.FileUtil;
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
@@ -85,7 +86,7 @@ public class StreamTest {
         properties.put("tool.http.maxTotal","200");
         properties.put("tool.http.defaultMaxPerRoute","100");
         HttpRequestProxy.startHttpPools(properties);
-        callDeepseekSimple();
+//        callDeepseekSimple();
 //        callChatDeepseekSimple();
 //        testCustom();
 //        callguijiSimple();
@@ -130,10 +131,10 @@ public class StreamTest {
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.7-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.7-plus","查询用户admin的操作日志，并进行分析",true);
-//        streamChatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询用户admin的操作日志，并进行分析",true);
+//        streamChatWithMcpTools("minimax","visualops","MiniMax-M3","查询用户admin的操作日志，并进行分析",true);
 
-//        chatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
-//        streamChatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+//        chatWithMcpTools("minimax","visualops","MiniMax-M3","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
+        streamChatWithMcpTools("minimax","visualops","MiniMax-M3","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.7-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("openai","visualops","gpt-5.4","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
@@ -154,10 +155,10 @@ public class StreamTest {
 //        videovlEvent();
 //        qwenvlCompareStream();
 //        qwenvlCompare("qwen3-vl-plus","qwenvlplus");
-//        qwenvlCompare("MiniMax-M2.7","minimax");
+//        qwenvlCompare("MiniMax-M3","minimax");
 //        callChatDeepseekSimple();
 //          callChatDeepseekSimple("openai","gpt-5.4");
-//        callChatDeepseekSimple("minimax","MiniMax-M2.7");
+//        callChatDeepseekSimple("minimax","MiniMax-M3");
 //        callMinimaxSimple();
 //        qwenvJiutian();
 //        chatByJiutian();
@@ -165,12 +166,12 @@ public class StreamTest {
     }
 
     public static void callMinimaxSimple() throws InterruptedException {
-        //MiniMax-M2.7
+        //MiniMax-M3
         //定义问题变量
         String message = "介绍一下bboss jobflow";
         //设置模型调用参数，
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-        chatAgentMessage.setModel("MiniMax-M2.7");
+        chatAgentMessage.setModel("MiniMax-M3");
         chatAgentMessage.setPrompt(message);
 
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
@@ -323,7 +324,7 @@ public class StreamTest {
                                 return true;
                             }
                             if (!data.isEmpty()) {
-                                StreamData content = AIResponseUtil.parseStreamContentFromData(agentAdapter,(BaseStreamDataBuilder) getStreamDataBuilder(), data);
+                                StreamData content = AIResponseUtil.parseStreamContentFromData(agentAdapter,(BaseStreamDataBuilder) getStreamDataBuilder(), JsonUtil.json2Object(data,Map.class));
                                 if (content != null && !content.isEmpty()) {
                                     if (firstEventTag.get()) {
                                         firstEventTag.set(false);

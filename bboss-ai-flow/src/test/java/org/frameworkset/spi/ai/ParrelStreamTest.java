@@ -16,15 +16,14 @@ package org.frameworkset.spi.ai;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
-import org.frameworkset.spi.ai.flow.AINodeAgent;
-import org.frameworkset.spi.ai.flow.AIParrelAgent;
-import org.frameworkset.spi.ai.flow.AIPlanAgent;
-import org.frameworkset.spi.ai.flow.UserNodeAgent;
+import org.frameworkset.spi.ai.flow.*;
+import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
+import org.frameworkset.spi.ai.tool.KeywordToolSearcher;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,10 +84,17 @@ public class ParrelStreamTest {
                 .setAgentName("介绍中国省份和直辖市")
                 .setAgentId("introduceProvinces") );
         //构建并行智能体
-        AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("并行智能体").setDisableStream(true);
+        AIParrelAgent aiParrelAgent = new AIParrelAgent(aiPlanAgent).setAgentId("aiParrelAgent").setAgentName("并行智能体").setDisableStream(false);
         //scope=flow|node|container
-        aiParrelAgent.addAgent(new AINodeAgent("同时结合中国省份特点：\r\n#[provinces,scope=flow],\r\n用300字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
-        aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
+//        aiParrelAgent.addAgent(new AINodeAgent("同时结合中国省份特点：\r\n#[provinces,scope=flow],\r\n用300字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"));
+		AISequenceAgent hunanSequenceAgent = new AISequenceAgent(aiPlanAgent).setAgentId("hunanSequenceAgent").setAgentName("湖南介绍及报告串行任务");
+		hunanSequenceAgent.addAgent(new UserNodeAgent("用500字介绍湖南").setAgentId("jieshaohunan").setAgentName("用50字介绍湖南"))
+				.addAgent(new AINodeAgent( "根据湖南介绍，创建一份详细的飞书报告。请用清晰的中文输出。" )
+						.setAgentName("创建湖南介绍报告")
+						.setAgentId("createHunanFeishuDoc")
+						.setToolsRegist(new FeishuMcpRegist("feishumcp")).setToolSearcher(new KeywordToolSearcher("创建飞书云文档")));
+		aiParrelAgent.addAgent(hunanSequenceAgent);
+		aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍湖北").setAgentId("jieshaohubei").setAgentName("用50字介绍湖北"));
         aiParrelAgent.addAgent(new UserNodeAgent("用50字介绍江西").setAgentId("jieshaojiangxi").setAgentName("用50字介绍江西"));   
         aiPlanAgent.addAgent(aiParrelAgent);
 

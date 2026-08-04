@@ -30,6 +30,9 @@ public class AIJobFlowBuilder extends JobFlowBuilder {
     }
     @Override
     protected JobFlow buildJobFlow(){
-        return new AIJobFlow(planAgent);
+		AIJobFlow jobflow = new AIJobFlow(planAgent);
+		jobflow.setJobFlowId(planAgent.getAgentId());
+		jobflow.setJobFlowName(planAgent.getAgentName());
+		return jobflow;
     }
 }

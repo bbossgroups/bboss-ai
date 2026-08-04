@@ -263,7 +263,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     @Override
     public void recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics){
         PersistentMessage persistentMessage = new PersistentMessage();
-
+		persistentMessage.setGroupId(traceMessage.getGroupId());
+		persistentMessage.setParentGroupId(traceMessage.getParentGroupId());
         Map<String, Object> message = traceMessage.getMessage();
         persistentMessage.setMessage(message);
         
