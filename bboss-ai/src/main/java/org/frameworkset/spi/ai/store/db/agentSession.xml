@@ -160,8 +160,13 @@
 		]]>
     </property>
 
+    <property name="deleteHitlCallTaskBySessionId">
+        <![CDATA[
+			delete from agent_hitl_calltask where sessionId=? 
 
-
+		]]>
+    </property>
+    
     <property name="deleteCompleteHitlCallTaskSQLWithCompleteTime">
         <![CDATA[
 			delete from agent_hitl_calltask where hitlTaskStatus=5 and hitlTaskCompleteTime<?
