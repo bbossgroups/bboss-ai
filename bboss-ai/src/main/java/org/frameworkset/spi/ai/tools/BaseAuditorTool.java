@@ -54,6 +54,7 @@ public abstract class BaseAuditorTool<T extends BaseAuditorTool> {
 	
 	/**
 	 * 工具审核方法:对工具方法进行稽核，如果稽核不通过，需要通过nextAction指定下一步智能体和大模型操作
+	 * 返回null，代表稽核通过，返回非null，代表稽核未通过
 	 * @param toolName
 	 * @param content
 	 * @return

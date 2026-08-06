@@ -25,7 +25,7 @@ import org.frameworkset.spi.ai.model.TraceMessage;
 import org.frameworkset.spi.ai.store.AgentSessionService;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
-import org.frameworkset.spi.ai.tools.HitlTaskcallTool;
+import org.frameworkset.spi.ai.tools.HitlAssistant;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.slf4j.Logger;
 import reactor.core.publisher.FluxSink;
@@ -188,7 +188,7 @@ public class HitlTaskHelper {
 		}
 		catch (Exception e){
 			
-			throw new HitlCallException(e);
+			throw new HitlCallException(true,e);
 		}
 		finally {
 			hitlCallObject.countDown();
@@ -238,7 +238,7 @@ public class HitlTaskHelper {
 			}
 			catch (Exception e){
 				
-				throw new HitlCallException(e);
+				throw new HitlCallException(true,e);
 			}
 			finally {
 				hitlCallObject.countDown();
@@ -258,14 +258,14 @@ public class HitlTaskHelper {
 		// 2. 发送人工介入任务到客户端
 		agentSessionService.persistentHitlCallTask(hitlCallTask);
 	}
-	public static Map<String,Object> createHitlCallTask(HitlTaskcallTool hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject){
+	public static Map<String,Object> createHitlCallTask(HitlTaskToolInf hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject){
 		
 		return getHitlTaskHelper()._createHitlCallTask(  hitlTaskcallTool,hitlTaskReason, chatObject);
 		
 		
 	}
 	
-	private  Map<String,Object> _createHitlCallTask(HitlTaskcallTool hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject){
+	private  Map<String,Object> _createHitlCallTask(HitlTaskToolInf hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject){
 		
 		HitlCallObject<Map> hitlCallObject = new HitlCallObject<>();
 		HitlCallTask hitlCallTask = new HitlCallTask();
@@ -280,6 +280,7 @@ public class HitlTaskHelper {
 		hitlCallObject.setTimeout(chatObject.getAgent().getHitlTaskTimeout());
 		hitlCallObject.setResponseType(Map.class);
 		FluxSink<ServerEvent> sink = chatObject.getAgentFluxSink();
+		HitlAssistant hitlAssistant = hitlTaskcallTool.getHitlAssistant();
 		try {
 			
 			persistentHitlCallTask( hitlCallTask);
@@ -290,7 +291,11 @@ public class HitlTaskHelper {
 				traceMessage.setStartTime(startTime)
 						.put("hitlTaskReason", hitlTaskReason)
 						.put("hitlTaskId", hitlTaskId)
+						
 						.put("role", SessionMessage.MESSAGE_TYPE_HITL_MESSAGE_NAME);
+				if(hitlAssistant != null && hitlAssistant.getHumanAssistantDatas() != null){
+					traceMessage.put("hitlAssistant", hitlAssistant.getHumanAssistantDatas());
+				}
 				AgentTraceHolder.trace(traceMessage);
 			}
 		
@@ -300,6 +305,9 @@ public class HitlTaskHelper {
 				serverEvent.setData(hitlTaskReason);
 				serverEvent.setHitlTaskId(hitlTaskId);
 				serverEvent.setType(ServerEvent.TYPE_HITL);
+				if(hitlAssistant != null && hitlAssistant.getHumanAssistantDatas() != null) {
+					serverEvent.setHitlAssistant( hitlAssistant.getHumanAssistantDatas());
+				}
 				ServerEventUtil.buildServerEventAgentInfo(serverEvent, chatObject.getAgent());
 				sink.next(serverEvent);			 
 				
@@ -312,7 +320,7 @@ public class HitlTaskHelper {
 					agentSessionService.timeoutHitlCallTask("任务处理超时,等待超时时间:"+hitlCallObject.getTimeout()+"毫秒", hitlTaskId);
 					if(result == null){
 						result = new LinkedHashMap<>();
-						if(!hitlTaskcallTool.getTimeoutAction().equals(HitlTaskcallTool.TIMEOUT_ACTION_CONTINUE)) {
+						if(!hitlTaskcallTool.getTimeoutAction().equals(HitlTaskToolInf.TIMEOUT_ACTION_CONTINUE)) {
 							result.put("error", "人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，则忽略或者取消相关操作！");
 						}
 						else{
@@ -332,6 +340,9 @@ public class HitlTaskHelper {
 			}
 			else{
 				agentSessionService.completeHitlCallTask("任务完成",hitlTaskId);
+				if(hitlAssistant != null){
+					hitlAssistant.handleHumanSubbmitDatas(result);
+				}
 			}
 			Throwable hitlCallException = hitlCallObject.getHitlCallException();
 			
@@ -351,7 +362,7 @@ public class HitlTaskHelper {
 					throw (HitlCallException) hitlCallException;
 				}
 				else
-					throw new HitlCallException(hitlCallException);
+					throw new HitlCallException(true,hitlCallException);
 			}
 			else{
 				if(AgentTraceHolder.isToolTrace()) {
@@ -369,7 +380,7 @@ public class HitlTaskHelper {
 		}
 		catch (Exception e){
 			
-			throw new HitlCallException(e);
+			throw new HitlCallException(true,e);
 		}
 		finally {
 			ServerEvent stepServerEvent = new ServerEvent();//向客户端推送人工介入消息

@@ -105,6 +105,12 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
      * 扩展数据
      */
     private Map<String,Object> extendDatas ;
+	
+
+	/**
+	 * 人工任务辅助信息，作为人工处理任务的输入参数
+	 */
+	private Map<String,Object> hitlAssistant;
     
     private List<FunctionTool> functionTools;
 
@@ -537,4 +543,12 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 	public void setParentGroupId(String parentGroupId) {
 		this.parentGroupId = parentGroupId;
 	}
+	public Map<String, Object> getHitlAssistant() {
+		return hitlAssistant;
+	}
+	
+	public void setHitlAssistant(Map<String, Object> hitlAssistant) {
+		this.hitlAssistant = hitlAssistant;
+	}
+	
 }

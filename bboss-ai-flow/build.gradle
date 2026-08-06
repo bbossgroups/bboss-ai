@@ -48,7 +48,7 @@ dependencies {
 //        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 //        exclude group: 'org.slf4j', module: 'slf4j-api'
 //    }
-    api group: 'com.bbossgroups.plugins', name: 'bboss-datatran-jdbc', version: bboss_es_version
+   
     api group: 'com.bbossgroups', name: 'bboss-feishu', version: BBOSS_HTTP5_VERSION
     testCompileOnly  (
 //				[group: 'mysql', name: 'mysql-connector-java', version: "${mysqlconnectorversion}", transitive: true]

@@ -21,6 +21,7 @@ package org.frameworkset.spi.ai.hitl;
  * @Date 2026/7/16
  */
 public class HitlCallException extends RuntimeException {
+	private boolean wrapException;
 	public HitlCallException(String message) {
 		super(message);
 	}
@@ -42,8 +43,9 @@ public class HitlCallException extends RuntimeException {
 	 *              unknown.)
 	 * @since 1.4
 	 */
-	public HitlCallException(Throwable cause) {
+	public HitlCallException(boolean wrapException,Throwable cause) {
 		super(cause);
+		this.wrapException = true;
 	}
 	
 	/**

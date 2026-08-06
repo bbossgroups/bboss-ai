@@ -25,6 +25,7 @@ import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.JobFlowNode;
 import org.frameworkset.tran.jobflow.NodeTrigger;
+import org.frameworkset.tran.jobflow.builder.DynamicNodeBuilder;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.frameworkset.tran.jobflow.listener.JobFlowNodeListener;
@@ -42,6 +43,7 @@ import java.util.List;
  */
 public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AIContainerAgent<AIParrelAgent>{
     private static Logger logger = LoggerFactory.getLogger(AIParrelAgent.class);
+	protected DynamicNodeBuilder dynamicNodeBuilder;
     private AIParrelJobFlowNodeBuilder parrelJobFlowNodeBuilder;
     public AIParrelAgent( AIPlanAgent planAgent) {
         
@@ -82,10 +84,16 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
         String data = builder.toString();
         return data;
     }
-    
+	public  AIParrelAgent setDynamicNodeBuilder(   DynamicNodeBuilder dynamicNodeBuilder){
+		this.dynamicNodeBuilder = dynamicNodeBuilder;
+		return this;
+	}
     private void initAIParrelJobFlowNodeBuilder(){
         if(parrelJobFlowNodeBuilder == null){
             parrelJobFlowNodeBuilder = new AIParrelJobFlowNodeBuilder(this);
+			if(dynamicNodeBuilder != null) {
+				parrelJobFlowNodeBuilder.setDynamicNodeBuilder(dynamicNodeBuilder);
+			}
             logger.info("聚合、保存和激发并行智能体任务节点[{},{}]中子智能体节点消息",this.getAgentId(),this.getAgentName());
             //聚合和保存并行智能体任务节点中子智能体节点消息
             parrelJobFlowNodeBuilder.addJobFlowNodeListener(new JobFlowNodeListener() {
@@ -143,6 +151,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
     }
 
 
+	
  	
  
     public AIParrelAgent addAgent(AppendToParentAgent aiAgent, TriggerScriptAPI triggerScriptAPI) {
@@ -190,6 +199,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
      * 添加并行智能体节点，并设置条件触发器
      */
     public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI){
+		this.initAIParrelJobFlowNodeBuilder();
         if(this.getAgentId() == null){
             this.agentId = parentAgent.genSubAgentId();
             this.agentName = parentAgent.genSubAgentName(agentId);

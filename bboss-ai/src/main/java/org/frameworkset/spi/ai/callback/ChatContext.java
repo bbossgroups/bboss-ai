@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.callback;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import reactor.core.publisher.FluxSink;
 
 import java.util.List;
@@ -96,6 +97,8 @@ public class ChatContext {
 	
 	private ClientConfiguration clientConfiguration;
     private Map<String,Object> contextData;
+	
+	private JobFlowNodeExecuteContext jobFlowNodeExecuteContext;
 
 
     /**
@@ -273,5 +276,13 @@ public class ChatContext {
 	
 	public void setClientConfiguration(ClientConfiguration clientConfiguration) {
 		this.clientConfiguration = clientConfiguration;
+	}
+	
+	public JobFlowNodeExecuteContext getJobFlowNodeExecuteContext() {
+		return jobFlowNodeExecuteContext;
+	}
+	
+	public void setJobFlowNodeExecuteContext(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) {
+		this.jobFlowNodeExecuteContext = jobFlowNodeExecuteContext;
 	}
 }

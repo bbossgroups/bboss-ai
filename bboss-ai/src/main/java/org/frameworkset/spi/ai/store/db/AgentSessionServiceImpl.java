@@ -232,7 +232,12 @@ public class AgentSessionServiceImpl implements AgentSessionService {
             executor.deleteWithDBName(datasource, "deleteByKey", sessionid);
             executor.deleteWithDBName(datasource, "deleteAgentSessionMessageByKey", sessionid);
             executor.deleteWithDBName(datasource, "deleteAgentSessionMessageRefByKey", sessionid);
-			executor.deleteWithDBName(this.hitlDatasource, "deleteHitlCallTaskBySessionId", sessionid);
+			if(hitlDatasource != null) {
+				executor.deleteWithDBName(this.hitlDatasource, "deleteHitlCallTaskBySessionId", sessionid);
+			}
+			else{
+				executor.deleteWithDBName(this.datasource, "deleteHitlCallTaskBySessionId", sessionid);
+			}
             tm.commit();
             
             
@@ -263,7 +268,12 @@ public class AgentSessionServiceImpl implements AgentSessionService {
             executor.deleteByKeysWithDBName(datasource, "deleteByKey", sessionids);
             executor.deleteByKeysWithDBName(datasource, "deleteAgentSessionMessageByKey", sessionids);
             executor.deleteByKeysWithDBName(datasource, "deleteAgentSessionMessageRefByKey", sessionids);
-			executor.deleteByKeysWithDBName(this.hitlDatasource, "deleteHitlCallTaskBySessionId", sessionids);
+			if(hitlDatasource != null) {
+				executor.deleteByKeysWithDBName(this.hitlDatasource, "deleteHitlCallTaskBySessionId", sessionids);
+			}
+			else{
+				executor.deleteByKeysWithDBName(this.datasource, "deleteHitlCallTaskBySessionId", sessionids);
+			}
             tm.commit();
             if (log.isInfoEnabled()) {
                 log.info("deleteBatchAgentSession success::sessionids count={}", sessionids != null ? sessionids.length : 0);
