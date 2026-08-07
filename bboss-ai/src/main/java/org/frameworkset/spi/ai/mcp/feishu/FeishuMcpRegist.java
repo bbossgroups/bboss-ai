@@ -66,7 +66,9 @@ public class FeishuMcpRegist extends MCPToolsRegist {
 
     @Override
     protected MCPClient buildMCPClient(){
-        return new FeishuMCPClient(mcpServer,baseFeishuConfig);
+		MCPClient mcpClient = new FeishuMCPClient(mcpServer,baseFeishuConfig);
+		
+		return mcpClient;
     }
 	
     @Override

@@ -29,14 +29,22 @@ import org.frameworkset.spi.remote.http.ClientConfiguration;
 public class MCPClient {
     protected MCPClientInf mcpClientInf;
     protected String mcpServer;
+	
+	protected Integer toolCallRetry;
     public MCPClient(String mcpServer){
         this.mcpServer = mcpServer;
        
     }
-    
 	
+	public void setToolCallRetry(Integer toolCallRetry) {
+		this.toolCallRetry = toolCallRetry;
+	}
 	
-    public void init(){
+	public Integer getToolCallRetry() {
+		return toolCallRetry;
+	}
+	
+	public void init(){
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
         String ssePath = clientConfiguration.getExtendConfig("sseendpoint");
         if(ssePath != null){
@@ -45,6 +53,8 @@ public class MCPClient {
         else{
             mcpClientInf = new MCPStreamableClient(mcpServer);
         }
+		
+		mcpClientInf.setToolCallRetry(this.getToolCallRetry());
         mcpClientInf.init();
     }
     public void destroy(){

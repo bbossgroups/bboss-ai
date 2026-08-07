@@ -35,8 +35,9 @@ import java.util.Map;
 public abstract class MCPBaseClient<T extends MCPClientInf> implements MCPClientInf {
 	private static final Logger logger = LoggerFactory.getLogger(MCPBaseClient.class);
     protected String mcpServer;
- 
-    
+	
+	
+	protected Integer toolCallRetry;
     /**
      * Mcp-Session-Id
      */
@@ -55,10 +56,15 @@ public abstract class MCPBaseClient<T extends MCPClientInf> implements MCPClient
     }
 	
 	
- 
-         
+	public void setToolCallRetry(Integer toolCallRetry) {
+		this.toolCallRetry = toolCallRetry;
+	}
 	
-    protected RequestId requestId = new RequestId();
+	public Integer getToolCallRetry() {
+		return toolCallRetry;
+	}
+	
+	protected RequestId requestId = new RequestId();
 	protected void validateResponse(MCPToolCallResponse mcpToolCallResponse) throws FunctionCallException {
 		Map result = mcpToolCallResponse.getResult();
 		Boolean isError = (Boolean) result.get("isError");

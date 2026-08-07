@@ -15,6 +15,8 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.tool.ToolCallContext;
+
 import java.util.Map;
 
 /**
@@ -23,8 +25,8 @@ import java.util.Map;
  * @Date 2026/8/5
  */
 public interface HitlAssistant {
-	Map<String,Object> getHumanAssistantDatas();
-	void handleHumanSubbmitDatas(Map<String, Object> humanSubbmitDatas); 
+	Map<String,Object> getHumanAssistantDatas(ToolCallContext toolCallContext);
+	void handleHumanSubbmitDatas(Map<String, Object> humanSubbmitDatas,ToolCallContext toolCallContext); 
 	
 	
 }

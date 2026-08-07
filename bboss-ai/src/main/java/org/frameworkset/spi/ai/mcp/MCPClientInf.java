@@ -32,4 +32,12 @@ public interface MCPClientInf {
 	MCPInitializedToolResponse initialization();
     String getMcpServer();
     void destroy();
+	
+	default void setToolCallRetry(Integer toolCallRetry) {
+		 
+	}
+	
+	default Integer getToolCallRetry() {
+		return null;
+	}
 }

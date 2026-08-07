@@ -53,14 +53,29 @@ public class BeanToolHandle {
         else if(typeStr.equals("java.lang.String")){
             return "string";
         }
+		
+		else if(long.class.isAssignableFrom(type) || Long.class.isAssignableFrom(type)){
+			return "number";
+		}
+		
+		else if(double.class.isAssignableFrom(type) || Double.class.isAssignableFrom(type)){
+			return "number";
+		}
+		
+		
+		else if(float.class.isAssignableFrom(type) || Float.class.isAssignableFrom(type)){
+			return "number";
+		}
+		
+		
+		else if(int.class.isAssignableFrom(type) || Integer.class.isAssignableFrom(type)){
+			return "integer";
+		}
+		else if(boolean.class.isAssignableFrom(type) || Boolean.class.isAssignableFrom(type)){
+			return "boolean";
+		}
         else if(Number.class.isAssignableFrom(type)){
             return "number";
-        }
-        else if(Integer.class.isAssignableFrom(type)){
-            return "integer";
-        }
-        else if(Boolean.class.isAssignableFrom(type)){
-            return "boolean";
         }
         else if(List.class.isAssignableFrom(type)){
             return "array";

@@ -20,6 +20,9 @@ import org.frameworkset.spi.ai.mcp.model.MCPListToolResponse;
 import org.frameworkset.spi.ai.model.FunctionCall;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -29,14 +32,36 @@ import java.util.List;
  * @Date 2026/3/2
  */
 public class MCPToolsRegist implements ToolsRegist {
+	private static final Logger logger = LoggerFactory.getLogger(MCPToolsRegist.class);
 	protected String mcpServer;
     protected MCPClient mcpClient;
 	protected Object lock = new Object();
 	protected boolean initialized ;
+	protected Integer toolCallRetry;
 	public MCPToolsRegist(String mcpServer){
 		this.mcpServer = mcpServer;
+		ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
+		String toolCallRetry_ = clientConfiguration.getExtendConfig("toolCallRetry");
+		if(toolCallRetry_ != null){
+			try {
+				toolCallRetry = Integer.parseInt(toolCallRetry_);
+			} catch (Exception e) {
+				logger.warn("toolCallRetry config error:toolCallRetry="+toolCallRetry_,e);
+			}
+			
+		}
+		
 	}
-    protected MCPClient buildMCPClient(){
+	
+	public Integer getToolCallRetry() {
+		return toolCallRetry;
+	}
+	
+	public void setToolCallRetry(Integer toolCallRetry) {
+		this.toolCallRetry = toolCallRetry;
+	}
+	
+	protected MCPClient buildMCPClient(){
 		return new MCPClient(mcpServer);
 	}
 	public void init(){
@@ -48,6 +73,7 @@ public class MCPToolsRegist implements ToolsRegist {
 				return;
 			}
 			mcpClient = buildMCPClient();
+			mcpClient.setToolCallRetry(this.getToolCallRetry());
 			mcpClient.init();
 		}
 	}

@@ -27,7 +27,14 @@ import java.util.List;
  * @Date 2026/2/22
  */
 public interface ToolsRegist {
-    List<FunctionToolDefine> registTools();
+	default Integer getToolCallRetry(){
+		return null;
+	}
+	
+	default void setToolCallRetry(Integer toolCallRetry){
+		
+	}
+	List<FunctionToolDefine> registTools();
     FunctionCall getFunctionCall(String functionName);
 
     default FunctionToolDefine getFunctionToolDefine(String functionName){

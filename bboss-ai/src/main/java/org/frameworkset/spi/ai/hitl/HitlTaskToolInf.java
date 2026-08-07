@@ -16,7 +16,6 @@ package org.frameworkset.spi.ai.hitl;
  */
 
 import org.frameworkset.spi.ai.tools.HitlAssistant;
-import org.frameworkset.spi.ai.tools.HitlTaskcallTool;
 
 /**
  *
@@ -24,11 +23,12 @@ import org.frameworkset.spi.ai.tools.HitlTaskcallTool;
  * @Date 2026/8/5
  */
 public interface HitlTaskToolInf<T extends HitlTaskToolInf> {
-	public static final String TIMEOUT_ACTION_CONTINUE = "continue";
-	public static final String TIMEOUT_ACTION_REJECTED = "rejected";
+	 String TIMEOUT_ACTION_CONTINUE = "continue";
+	 String TIMEOUT_ACTION_REJECTED = "rejected";
 	
 	String getTimeoutAction() ;
-	
+	long getHitlTaskTimeout();
+	T setHitlTaskTimeout(long hitlTaskTimeout);
 	T setTimeoutAction(String timeoutAction);
 	HitlAssistant getHitlAssistant() ;
 	

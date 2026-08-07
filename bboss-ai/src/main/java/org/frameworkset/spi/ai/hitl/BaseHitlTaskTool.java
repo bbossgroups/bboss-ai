@@ -17,8 +17,8 @@ package org.frameworkset.spi.ai.hitl;
 
 import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.model.ChatObject;
-import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
+import org.frameworkset.spi.ai.tool.ToolCallContext;
 import org.frameworkset.spi.ai.tools.BaseAuditorTool;
 import org.frameworkset.spi.ai.tools.HitlAssistant;
 import org.slf4j.Logger;
@@ -36,6 +36,7 @@ public class BaseHitlTaskTool<T extends BaseHitlTaskTool> extends BaseAuditorToo
 	private static final Logger logger = LoggerFactory.getLogger(BaseHitlTaskTool.class);
 	
 	protected HitlAssistant hitlAssistant;
+	protected long hitlTaskTimeout;
 	/**
 	 * 任务超时处理方式，默认为rejected
 	 * continue：继续执行
@@ -65,7 +66,7 @@ public class BaseHitlTaskTool<T extends BaseHitlTaskTool> extends BaseAuditorToo
 		return (T)this;
 	}
 	
-	protected Map<String,Object> innerHitlTaskTool(String hitlTaskReason){
+	protected Map<String,Object> innerHitlTaskTool(String hitlTaskReason, ToolCallContext toolCallContext){
 		// 参数 null/空白校验：防止空任务传递给人工
 		if (hitlTaskReason == null || hitlTaskReason.equals("")) {
 			if(logger.isWarnEnabled()) {
@@ -92,7 +93,7 @@ public class BaseHitlTaskTool<T extends BaseHitlTaskTool> extends BaseAuditorToo
 		try {
 			HitlTaskHelper helper = HitlTaskHelper.getHitlTaskHelper();
 			
-			Map<String, Object> hitlTaskResult = helper.createHitlCallTask(this,hitlTaskReason, chatObject);
+			Map<String, Object> hitlTaskResult = helper.createHitlCallTask(this,hitlTaskReason, chatObject,toolCallContext);
 			
 			// 返回结果 null 保护
 			if (hitlTaskResult == null) {
@@ -116,5 +117,15 @@ public class BaseHitlTaskTool<T extends BaseHitlTaskTool> extends BaseAuditorToo
 			return Collections.singletonMap("error",  errorMessage + ", ignore operation and continue.");
 		}
 	}
-
+	
+	@Override
+	public T setHitlTaskTimeout(long hitlTaskTimeout) {
+		this.hitlTaskTimeout = hitlTaskTimeout;
+		return (T)this;
+	}
+	
+	@Override
+	public long getHitlTaskTimeout() {
+		return hitlTaskTimeout;
+	}
 }

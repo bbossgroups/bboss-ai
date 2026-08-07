@@ -35,6 +35,7 @@ public class FeishuMCPClient extends MCPClient {
     public void init() {      
         this.feishuHelper = baseFeishuConfig.getFeishuHelper();
         mcpClientInf = new FeishuMCPStreamableClient(mcpServer,baseFeishuConfig);
-        mcpClientInf.init();
+		mcpClientInf.setToolCallRetry(this.getToolCallRetry());
+		mcpClientInf.init();
     }
 }

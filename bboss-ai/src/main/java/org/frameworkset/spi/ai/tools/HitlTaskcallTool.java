@@ -19,6 +19,7 @@ import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.hitl.BaseHitlTaskTool;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
+import org.frameworkset.spi.ai.tool.ToolCallContext;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -54,7 +55,8 @@ public class HitlTaskcallTool extends BaseHitlTaskTool<HitlTaskcallTool> {
 	public Map<String,Object> hitlTaskTool(@ToolParam(name = "hitlTaskReason",required = true,
 														description = "人工介入原因，需包含：1.任务背景与已执行步骤 2.当前卡住的具体原因（技术障碍/权限限制/信息缺失等）3.建议人类关注的关键点或待决策事项或者缺失信息说明 4.期望人类提供的具体帮助；格式清晰，精简聚焦，便于人类快速理解。") 
 											   String hitlTaskReason){
-		
-		return innerHitlTaskTool(hitlTaskReason);
+		ToolCallContext toolCallContext = new ToolCallContext();
+		toolCallContext.addParam("hitlTaskReason", hitlTaskReason);
+		return innerHitlTaskTool(hitlTaskReason,toolCallContext);
 	}
 }

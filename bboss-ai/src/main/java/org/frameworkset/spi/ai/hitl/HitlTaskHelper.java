@@ -25,6 +25,7 @@ import org.frameworkset.spi.ai.model.TraceMessage;
 import org.frameworkset.spi.ai.store.AgentSessionService;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
+import org.frameworkset.spi.ai.tool.ToolCallContext;
 import org.frameworkset.spi.ai.tools.HitlAssistant;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.slf4j.Logger;
@@ -258,14 +259,14 @@ public class HitlTaskHelper {
 		// 2. 发送人工介入任务到客户端
 		agentSessionService.persistentHitlCallTask(hitlCallTask);
 	}
-	public static Map<String,Object> createHitlCallTask(HitlTaskToolInf hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject){
+	public static Map<String,Object> createHitlCallTask(HitlTaskToolInf hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject, ToolCallContext toolCallContext){
 		
-		return getHitlTaskHelper()._createHitlCallTask(  hitlTaskcallTool,hitlTaskReason, chatObject);
+		return getHitlTaskHelper()._createHitlCallTask(  hitlTaskcallTool,hitlTaskReason, chatObject,   toolCallContext);
 		
 		
 	}
 	
-	private  Map<String,Object> _createHitlCallTask(HitlTaskToolInf hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject){
+	private  Map<String,Object> _createHitlCallTask(HitlTaskToolInf hitlTaskcallTool, String hitlTaskReason , ChatObject chatObject, ToolCallContext toolCallContext){
 		
 		HitlCallObject<Map> hitlCallObject = new HitlCallObject<>();
 		HitlCallTask hitlCallTask = new HitlCallTask();
@@ -277,7 +278,11 @@ public class HitlTaskHelper {
 		ServerEventUtil.buildHiltTaskAgentInfo(hitlCallTask, chatObject.getAgent());
 		
 		hitlCallObject.setHitlCallTask(hitlCallTask);
-		hitlCallObject.setTimeout(chatObject.getAgent().getHitlTaskTimeout());
+		long timeout = hitlTaskcallTool.getHitlTaskTimeout();
+		if(timeout <= 0l ){
+			timeout = chatObject.getAgent().getHitlTaskTimeout();
+		}
+		hitlCallObject.setTimeout(timeout);
 		hitlCallObject.setResponseType(Map.class);
 		FluxSink<ServerEvent> sink = chatObject.getAgentFluxSink();
 		HitlAssistant hitlAssistant = hitlTaskcallTool.getHitlAssistant();
@@ -293,8 +298,8 @@ public class HitlTaskHelper {
 						.put("hitlTaskId", hitlTaskId)
 						
 						.put("role", SessionMessage.MESSAGE_TYPE_HITL_MESSAGE_NAME);
-				if(hitlAssistant != null && hitlAssistant.getHumanAssistantDatas() != null){
-					traceMessage.put("hitlAssistant", hitlAssistant.getHumanAssistantDatas());
+				if(hitlAssistant != null && hitlAssistant.getHumanAssistantDatas(toolCallContext) != null){
+					traceMessage.put("hitlAssistant", hitlAssistant.getHumanAssistantDatas(toolCallContext));
 				}
 				AgentTraceHolder.trace(traceMessage);
 			}
@@ -305,8 +310,8 @@ public class HitlTaskHelper {
 				serverEvent.setData(hitlTaskReason);
 				serverEvent.setHitlTaskId(hitlTaskId);
 				serverEvent.setType(ServerEvent.TYPE_HITL);
-				if(hitlAssistant != null && hitlAssistant.getHumanAssistantDatas() != null) {
-					serverEvent.setHitlAssistant( hitlAssistant.getHumanAssistantDatas());
+				if(hitlAssistant != null && hitlAssistant.getHumanAssistantDatas(toolCallContext) != null) {
+					serverEvent.setHitlAssistant( hitlAssistant.getHumanAssistantDatas(toolCallContext));
 				}
 				ServerEventUtil.buildServerEventAgentInfo(serverEvent, chatObject.getAgent());
 				sink.next(serverEvent);			 
@@ -341,7 +346,7 @@ public class HitlTaskHelper {
 			else{
 				agentSessionService.completeHitlCallTask("任务完成",hitlTaskId);
 				if(hitlAssistant != null){
-					hitlAssistant.handleHumanSubbmitDatas(result);
+					hitlAssistant.handleHumanSubbmitDatas(result,toolCallContext);
 				}
 			}
 			Throwable hitlCallException = hitlCallObject.getHitlCallException();

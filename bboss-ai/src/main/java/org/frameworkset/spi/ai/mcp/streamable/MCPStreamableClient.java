@@ -44,11 +44,21 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     @Override
     protected MCPToolCallResponse executeToolsCall(McpToolCallRequest mcpToolCallRequest) {
         Map headers = buildHeaders();
-        
-
-		MCPToolCallResponse mcpToolCallResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
-				mcpToolCallRequest, headers, streamablePath,
-				MCPToolCallResponse.class);
+		MCPToolCallResponse mcpToolCallResponse = null;
+		Integer toolCallRetry = this.getToolCallRetry();
+		if(toolCallRetry == null) {
+			mcpToolCallResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
+					mcpToolCallRequest, headers, streamablePath,
+					MCPToolCallResponse.class);
+		}
+		else{
+			mcpToolCallResponse = RetryUtil.executeWithRetry("executeToolsCall",toolCallRetry, 100, () -> {
+				MCPToolCallResponse mcpToolCallResponse1 = HttpRequestProxy.sendJsonBody(getMcpServer(),
+						mcpToolCallRequest, headers, streamablePath,
+						MCPToolCallResponse.class);
+				return mcpToolCallResponse1;
+			});
+		}
 		
 		return mcpToolCallResponse;
         
@@ -80,9 +90,22 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     @Override
     protected MCPListToolResponse executeListTools(McpListToolRequest mcpToolRequest) {
         Map headers = buildHeaders();
-        MCPListToolResponse mcpListToolResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
-                mcpToolRequest,headers,streamablePath,
-                MCPListToolResponse.class);
+		MCPListToolResponse mcpListToolResponse = null;
+		Integer toolCallRetry = this.getToolCallRetry();
+		if(toolCallRetry == null) {
+			mcpListToolResponse = HttpRequestProxy.sendJsonBody(getMcpServer(),
+					mcpToolRequest,headers,streamablePath,
+					MCPListToolResponse.class);
+		}
+		else{
+			mcpListToolResponse = RetryUtil.executeWithRetry("executeListTools",toolCallRetry, 100, () -> {
+				MCPListToolResponse mcpListToolResponse1 = HttpRequestProxy.sendJsonBody(getMcpServer(),
+						mcpToolRequest,headers,streamablePath,
+						MCPListToolResponse.class);
+				return mcpListToolResponse1;
+			});
+		}
+        
 //        MCPToolCallResponse mcpToolCallResponse = this.sseMcpCallHelper.toolsCall(this, mcpToolCallRequest);
         return mcpListToolResponse;
     }
