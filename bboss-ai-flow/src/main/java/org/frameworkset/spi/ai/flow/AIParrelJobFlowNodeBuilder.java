@@ -29,6 +29,7 @@ public class AIParrelJobFlowNodeBuilder extends ParrelJobFlowNodeBuilder{
     protected AIPlanAgent planAgent;
     protected AIParrelAgent parrelAgent;
     public AIParrelJobFlowNodeBuilder(AIParrelAgent parrelAgent){
+		super(parrelAgent.getAgentId(),parrelAgent.getAgentName());
         this.parrelAgent = parrelAgent;
         this.planAgent = parrelAgent.getPlanAgent();
     }

@@ -29,6 +29,7 @@ public class AISequenceJobFlowNodeBuilder extends SequenceJobFlowNodeBuilder {
     protected AIPlanAgent planAgent;
     protected AISequenceAgent sequenceAgent;
     public AISequenceJobFlowNodeBuilder(AISequenceAgent sequenceAgent){
+		super(sequenceAgent.getAgentId(),sequenceAgent.getAgentName());
         this.sequenceAgent = sequenceAgent;
         this.planAgent = sequenceAgent.getPlanAgent();
     }
