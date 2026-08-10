@@ -47,6 +47,7 @@ public class MCPClient {
 	public void init(){
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(mcpServer);
         String ssePath = clientConfiguration.getExtendConfig("sseendpoint");
+		MCPClientInf mcpClientInf;
         if(ssePath != null){
             mcpClientInf = new MCPSSEClient(mcpServer);
         }
@@ -56,6 +57,7 @@ public class MCPClient {
 		
 		mcpClientInf.setToolCallRetry(this.getToolCallRetry());
         mcpClientInf.init();
+		this.mcpClientInf = mcpClientInf;
     }
     public void destroy(){
         mcpClientInf.destroy();

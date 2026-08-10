@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.mcp.feishu;
  */
 
 import org.frameworkset.spi.ai.mcp.MCPClient;
+import org.frameworkset.spi.ai.mcp.MCPClientInf;
 import org.frameworkset.spi.feishu.BaseFeishuConfig;
 import org.frameworkset.spi.feishu.FeishuHelper;
 
@@ -34,8 +35,9 @@ public class FeishuMCPClient extends MCPClient {
     @Override
     public void init() {      
         this.feishuHelper = baseFeishuConfig.getFeishuHelper();
-        mcpClientInf = new FeishuMCPStreamableClient(mcpServer,baseFeishuConfig);
+		MCPClientInf mcpClientInf = new FeishuMCPStreamableClient(mcpServer,baseFeishuConfig);
 		mcpClientInf.setToolCallRetry(this.getToolCallRetry());
 		mcpClientInf.init();
+		this.mcpClientInf = mcpClientInf;
     }
 }

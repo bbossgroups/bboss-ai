@@ -72,9 +72,11 @@ public class MCPToolsRegist implements ToolsRegist {
 			if (initialized) {
 				return;
 			}
-			mcpClient = buildMCPClient();
+			MCPClient mcpClient = buildMCPClient();
 			mcpClient.setToolCallRetry(this.getToolCallRetry());
 			mcpClient.init();
+			this.mcpClient = mcpClient;
+			this.initialized = true;
 		}
 	}
 	public void destroy(){
