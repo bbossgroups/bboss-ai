@@ -81,7 +81,7 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
             @Override
             public String evalPrompt(String prompt) {
                 FlowPromptEval flowPromptEval = new FlowPromptEval();
-                return flowPromptEval.eval(prompt, jobFlowNodeExecuteContext);
+                return flowPromptEval.eval(prompt, jobFlowNodeExecuteContext,chatContext);
             }
 
             @Override

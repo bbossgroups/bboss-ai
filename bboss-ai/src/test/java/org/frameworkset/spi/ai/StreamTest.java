@@ -578,7 +578,7 @@ public class StreamTest {
 
 	public static void streamChatWithMcpTools(String maas, String mcpServer,String model, String prompt,boolean thinking) throws InterruptedException {
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
-				.setPrompt(prompt)
+				.setPrompt(prompt,true)
                 .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))
 //                .setModel("deepseek-chat")
 				.setModel(model)

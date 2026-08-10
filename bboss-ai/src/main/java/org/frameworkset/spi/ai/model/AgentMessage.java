@@ -130,7 +130,13 @@ public class AgentMessage<T extends AgentMessage> {
         this.systemPrompt = systemPrompt;
         return (T)this;
     }
-
+	public T setSystemPrompt(String systemPrompt,boolean setInputSystemVariable) {
+		this.systemPrompt = systemPrompt;
+		if(setInputSystemVariable){
+			addContextData("input.system", systemPrompt);
+		}
+		return (T)this;
+	}
     public T addHeader(String key,String value){
         if(headers == null){
             headers = new LinkedHashMap<>();
@@ -162,6 +168,14 @@ public class AgentMessage<T extends AgentMessage> {
         this.prompt = prompt;
         return (T)this;
     }
+	
+	public T setPrompt(String prompt,boolean setInputQueryVariable) {
+		this.prompt = prompt;
+		if(setInputQueryVariable){
+			addContextData("input.query", prompt);
+		}
+		return (T)this;
+	}
 
     public String getModel() {
         return model;
@@ -314,11 +328,24 @@ public class AgentMessage<T extends AgentMessage> {
     public Map<String, Object> getContextData() {
         return contextData;
     }
-
-    public T setContextData(Map<String, Object> contextData) {
+	
+	public Object getContextData(String name) {
+		return contextData == null ? null : contextData.get(name);
+	}
+	
+	
+	public T setContextData(Map<String, Object> contextData) {
         this.contextData = contextData;
         return (T)this;
     }
+	
+	public T addContextData(String name,Object value) {
+		if(contextData == null){
+			contextData = new LinkedHashMap();
+		}
+		contextData.put(name, value);
+		return (T)this;
+	}
 	
 	public String getEffort() {
 		return effort;

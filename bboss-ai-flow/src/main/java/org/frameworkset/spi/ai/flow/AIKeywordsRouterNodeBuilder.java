@@ -16,12 +16,14 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import com.frameworkset.util.JsonUtil;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.TraceMessage;
 import org.frameworkset.spi.ai.prompt.FlowPromptEval;
 import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.context.JobFlowExecuteContext;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -77,7 +79,8 @@ public class AIKeywordsRouterNodeBuilder extends AIBaseNodeBuilder {
         jobFlowNodeExecuteContext.addContextData("route.ChoiceList", JsonUtil.object2json(routeChoiceList));
         
         FlowPromptEval flowPromptEval = new FlowPromptEval();
-        prompt = flowPromptEval.eval(prompt, jobFlowNodeExecuteContext);
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, agent);
+        prompt = flowPromptEval.eval(prompt, jobFlowNodeExecuteContext,chatContext);
         RouteChoice result = null;
         for(RouteChoice routeChoice: routeChoiceList) {
 			String keywords[] = routeChoice.getKeywords();

@@ -61,7 +61,7 @@ public class CliToolLoopPortClickhouseTest {
 		tempConf.setMaximumSize(20);
 		tempConf.setUsepool(true);
 	 
-		tempConf.setShowsql(true);
+		tempConf.setShowsql(false);
 		SQLManager. startPool(tempConf);
     }
 	public static void callMinimaxSimple( ) throws InterruptedException {
@@ -76,8 +76,9 @@ public class CliToolLoopPortClickhouseTest {
         
         chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
         chatAgentMessage.setRetry(3);
-        String message = "#[loopprompt.txt,type=resource]";
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专家，可以根据用户要求获取系统信息，生成符合要求的、完整的、可执行的shell脚本" +
+        
+		String question = "查找和管理端口808";
+		chatAgentMessage.setPrompt(question,true).setSystemPrompt("你是一个专家，可以根据用户要求获取系统信息，生成符合要求的、完整的、可执行的shell脚本" +
                 "，并将生成的脚本交由工具执行，输出执行结果。注意事项：通过Java Process调用cmd或者sh来执行脚本，确保脚本在目标操作系统上能够正常运行。");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
@@ -87,7 +88,8 @@ public class CliToolLoopPortClickhouseTest {
                 .setDataSource("visualops").setClickhouseCluster("vops_3shards_1replicas"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
-		AIAgent agent = new AIAgent();
+		String message = "#[loopprompt.txt,type=resource]";
+		AIAgent agent = new AIAgent(message);
         agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
         agent.setMaxLoopToolCalls(80);
         //注册获取当前操作系统OS信息工具：框架内置工具
@@ -107,9 +109,9 @@ public class CliToolLoopPortClickhouseTest {
 						System.out.print(chunk.getData());
                         
 					}
-//                    if(chunk.isToolCallsType()){
-//                        System.out.println();
-//                    }
+                    if(chunk.isStepType()){
+                        System.out.println();
+                    }
 //                    if(chunk.isDone()){
 //                        System.out.println();
 //                    }

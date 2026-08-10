@@ -498,15 +498,17 @@ public class AIAgent<T extends AIAgent> {
         }
         if(mainSessionStore != null) {
              
-
-            String title  = this.evalPrompt(agentMessage);
+			
+            String title  = this.evalTitle(agentMessage);
             AIAgent parentAgent = this.getParentAgent();
-            if(parentAgent != null){
-                String tmp = parentAgent.getFirstSubAgentPrompt();
-                if(tmp != null){
-                    title = tmp;
-                }
-            }
+			if(title == null) {
+				if (parentAgent != null) {
+					String tmp = parentAgent.getFirstSubAgentPrompt();
+					if (tmp != null) {
+						title = tmp;
+					}
+				}
+			}
 
             mainSessionStore.loadSessionMemory(title, agentId);
             if(parentSessionStore == null && this.parentAgent != null){
@@ -1177,6 +1179,28 @@ public class AIAgent<T extends AIAgent> {
         }
         return prompt;
     }
+	
+	public  String evalTitle(AgentMessage agentMessage){
+		String inputQuery = (String)agentMessage.getContextData("input.query");
+		if(inputQuery != null){
+			return inputQuery;
+		}
+		String prompt = this.getPrompt();
+		if(prompt == null){
+			
+			prompt = agentMessage.getPrompt();
+			
+		}
+		if(prompt != null ){
+			if(this.getParentAgent() != null) {
+				this.getParentAgent().setFirstSubAgentPrompt(prompt);
+			}
+			else{
+				this.setFirstSubAgentPrompt(prompt);
+			}
+		}
+		return prompt;
+	}
 
     private String firstSubAgentPrompt;
     

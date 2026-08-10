@@ -16,12 +16,7 @@ package org.frameworkset.spi.ai.hitl;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
-import org.frameworkset.nosql.redis.RedisConfig;
-import org.frameworkset.nosql.redis.RedisDB;
-import org.frameworkset.nosql.redis.RedisFactory;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
-import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallNotifier;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.skill.SkillsToolRegist;
@@ -89,7 +84,7 @@ public class ChecklistCodeViewAgentHitlTest {
 		
 		chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
 		chatAgentMessage.setRetry(3);
-		String message = "请评审Java文件中的代码并修复问题,java文件路径：C:\\data\\ai\\code\\AIAgent.java";
+		String message = "请评审Java文件中的代码并修复问题,java文件路径：C:\\data\\ai\\code\\HitlTaskcallTool.java";
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个 Java 代码审查助手。 长期规则： - 如果用户提交 Java 代码并要求审查，先调用 Skill 工具加载 code-review-skill。 - 加载技能书后，再按照技能书里的审查顺序审查java代码。 - 优先指出 bug、安全风险、边界条件、异常处理和缺失测试。 - 如果信息不足，要说明缺少哪些上下文，不要编造项目背景。 - 不要输出与代码审查无关的泛泛建议。 输出要求： - 用中文回答。 - 使用 Markdown。 - 先给总体结论，再列主要问题，最后给测试建议和下一步。");
 		
 		chatAgentMessage.setStream(true).setThinking(true).setTemperature(0.7);//.addParameter("max_tokens", 2048);
@@ -102,6 +97,7 @@ public class ChecklistCodeViewAgentHitlTest {
 		AIAgent agent = new AIAgent();
 		agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
 		agent.setMaxLoopToolCalls(80);
+		agent.setHitlTaskTimeout(60000L);//设置人工介入任务超时时间，单位毫秒，默认-1毫秒,一直不超时
 		agent.registTools(new SkillsToolRegist()
 						.addClasspathSkills("skills"))
 				.registBeanTool(new HitlTaskcallTool());//注册人工介入任务调用工具，用于人工介入任务的调用

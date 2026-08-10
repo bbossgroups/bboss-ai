@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.prompt;
 
 import com.frameworkset.util.SimpleStringUtil;
 import com.frameworkset.util.VariableHandler;
+import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -41,7 +42,7 @@ public class FlowPromptEval extends PromptEval{
      * @param jobFlowNodeExecuteContext
      * @return
      */
-    private String evalResource(Map<String,Object> evaledResources, String prompt, JobFlowNodeExecuteContext jobFlowNodeExecuteContext){
+    private String evalResource(Map<String,Object> evaledResources, String prompt, JobFlowNodeExecuteContext jobFlowNodeExecuteContext, ChatContext chatContext){
         VariableHandler.URLStruction a = VariableHandler.parserStruction(prompt,new PromptStructionBuiler());
         StringBuilder newPrompt = new StringBuilder();
         if(a != null){
@@ -68,6 +69,9 @@ public class FlowPromptEval extends PromptEval{
                         } else if (scope == AIFlowConst.AIFLOW_VAR_SCOPE_NODE) {
                             value = jobFlowNodeExecuteContext.getContextData(varName);
                         }
+						if(value == null){
+							value = chatContext.getContextData(varName);
+						}
                         if(value == null && defaultValue != null){
                             value = defaultValue;
                         }
@@ -79,7 +83,7 @@ public class FlowPromptEval extends PromptEval{
                         String value_ = PromptResourceCache.getInstance().cacheFileContent(varName, variable.getCharset());
                         evaledResources.put(varName, DUMP);
                         if(SimpleStringUtil.isNotEmpty(value_)) {
-                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext);
+                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext,chatContext);
                         }
                         value = value_;
 
@@ -91,7 +95,7 @@ public class FlowPromptEval extends PromptEval{
                         String value_ = PromptResourceCache.getInstance().cacheClasspathResource(varName, variable.getCharset());
                         evaledResources.put(varName, DUMP);
                         if(SimpleStringUtil.isNotEmpty(value_)) {
-                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext);
+                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext,chatContext);
                         }
                         value = value_;
 
@@ -101,10 +105,10 @@ public class FlowPromptEval extends PromptEval{
                         if(evaledResources.containsKey(varName)){
                             throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部url资源！");
                         }
-                        String value_ = PromptResourceCache.getInstance().cacheUrlResource(varName, variable.getCharset());
+                        String value_ = PromptResourceCache.getInstance().getUrlResource(variable);
                         evaledResources.put(varName, DUMP);
                         if(SimpleStringUtil.isNotEmpty(value_)) {
-                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext);
+                            value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext,chatContext);
                         }
                         value = value_;
 
@@ -133,9 +137,9 @@ public class FlowPromptEval extends PromptEval{
         return prompt;
     }
   
-    public String eval(String prompt, JobFlowNodeExecuteContext jobFlowNodeExecuteContext){
+    public String eval(String prompt, JobFlowNodeExecuteContext jobFlowNodeExecuteContext, ChatContext chatContext){
         
-         return evalResource(new HashMap<>(),prompt,jobFlowNodeExecuteContext);
+        return evalResource(new HashMap<>(),prompt,jobFlowNodeExecuteContext,chatContext);
        
     }
 }

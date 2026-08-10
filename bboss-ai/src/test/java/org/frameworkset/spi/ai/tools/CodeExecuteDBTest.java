@@ -63,8 +63,9 @@ public class CodeExecuteDBTest {
         
         chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
         chatAgentMessage.setRetry(3);
-        String message = "#[codeexecute-prompt.txt,type=resource]";
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专业的多语言代码生成和执行工具，可以根据用户要求生成符合要求的、完整的、可执行的代码，并且执行生成的代码" +
+		String question = "将前面生成的代码和执行结果以Markdown格式写入文件：C:\\data\\ai\\aigenfiles\\tools\\code-gen-execute.md";
+        
+		chatAgentMessage.setPrompt(question,true).setSystemPrompt("你是一个专业的多语言代码生成和执行工具，可以根据用户要求生成符合要求的、完整的、可执行的代码，并且执行生成的代码" +
                 "，能够将生成的代码和执行结果以Markdown格式写入文件。");
 		
 		chatAgentMessage.setStream( true).setThinking(true).setTemperature(0.7);//.addParameter("max_tokens", 2048);
@@ -74,7 +75,8 @@ public class CodeExecuteDBTest {
                 .setDataSource("visualops"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
-		AIAgent agent = new AIAgent();
+		String message = "#[codeexecute-prompt.txt,type=resource]";
+		AIAgent agent = new AIAgent(message);
         agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
         agent.setMaxLoopToolCalls(80);
         //注册获取当前操作系统OS信息工具：框架内置工具

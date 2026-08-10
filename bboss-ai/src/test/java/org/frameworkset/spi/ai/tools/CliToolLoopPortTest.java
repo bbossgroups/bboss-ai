@@ -52,14 +52,16 @@ public class CliToolLoopPortTest {
         chatAgentMessage.setModel("deepseek-v4-pro");
         chatAgentMessage.setMaas("deepseek");
         chatAgentMessage.setRetry(3);
-        String message = "#[loopprompt.txt,type=resource]";
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专家，可以根据用户要求生成符合要求的、完整的、可执行的shell脚本" +
+       
+		String question = "查找和管理端口808";
+		chatAgentMessage.setPrompt(question,true).setSystemPrompt("你是一个专家，可以根据用户要求生成符合要求的、完整的、可执行的shell脚本" +
                 "，并将生成的脚本交由工具执行，输出执行结果。注意事项：通过Java Process调用cmd或者sh来执行脚本，确保脚本在目标操作系统上能够正常运行。");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
-		AIAgent agent = new AIAgent();
+		String message = "#[loopprompt.txt,type=resource]";
+		AIAgent agent = new AIAgent(message);
         agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
         agent.setMaxLoopToolCalls(80);
         //注册获取当前操作系统OS信息工具：框架内置工具

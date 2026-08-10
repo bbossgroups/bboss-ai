@@ -32,105 +32,8 @@ import java.util.Map;
  */
 public class PromptEval {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(PromptEval.class);
-    private static String pretoken = "#\\[";
-    private static String endtoken = "\\]";
     
-    static class PromptVariable extends VariableHandler.TypeDefaultValueVariable {
-
-        private int scope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
-        private String type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
-        private Object cacheValue = null;
-        private Object lock = new Object();
-        /**
-         * 变量值字符集，当type为file、url、resource时起作用
-         */
-        private String charset = "UTF-8"; // Default character set
-
-        public int getScope() {
-            return scope;
-        }
-
-        public String getCharset() {
-            return charset;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public Object getLock() {
-            return lock;
-        }
-
-        public void setCacheValue(Object cacheValue) {
-            this.cacheValue = cacheValue;
-        }
-
-        public Object getCacheValue() {
-            return cacheValue;
-        }
-
-        @Override
-        /**
-         * 变量属性解析完毕后，对变量属性信息进行额外处理
-         */
-        public void afterSetAttribute(){
-            if(this.attributes != null) {
-//				int pos = this.attributes.indexOf(",");
-                String[] ts = attributes.split(",");
-
-                for (int i = 0; i < ts.length; i ++) {
-                    String t = ts[i];
-                    if (t.startsWith("scope=")) {
-                        String q = t.substring("scope=".length()).trim();
-                        if(q.equals("node"))
-                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_NODE;
-                        else if(q.equals("flow"))
-                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
-                        else if(q.equals("container"))
-                            scope = AIFlowConst.AIFLOW_VAR_SCOPE_CONTAINER;
-                        else{
-                            throw new AIRuntimeException("scope must be node,flow or container:"+q+" in variable:"+this.getVariableName());
-                        }
-                    }
-                    else if (t.startsWith("type=")) {
-                        String q = t.substring("type=".length()).trim();
-                        if(q.equals("text"))
-                            type = AIFlowConst.AIFLOW_VAR_TYPE_TEXT;
-                        else if(q.equals("file")){
-                            type = AIFlowConst.AIFLOW_VAR_TYPE_FILE;
-                           
-                        } else if(q.equals("url")){
-                            type = AIFlowConst.AIFLOW_VAR_TYPE_URL;
-                        } else if(q.equals("resource")){
-                            type = AIFlowConst.AIFLOW_VAR_TYPE_RESOURCE;
-                        }
-                        else{
-                            throw new AIRuntimeException("type must be text,file or url:"+q+" in variable:"+this.getVariableName());
-                        }
-                    
-                    }
-                    else if (t.startsWith("charset=")) {
-                        this.charset = t.substring("charset=".length()).trim();
-                    }
-                    else{
-                        parserTypeAndDefaultObjectValue(t);
-                    }
-                    
-
-                }
  
-
-            }
-        }
-    }
-    static class PromptStructionBuiler extends VariableHandler.URLStructionBuiler {
-        @Override
-        public VariableHandler.Variable buildVariable() {
-            return new PromptVariable();
-        }
-
-    }
 
     /**
      * 递归解析提示词中引用的外部资源包含提示词变量
@@ -151,6 +54,7 @@ public class PromptEval {
                 newPrompt.append(tokens.get(k));
                 if(variables != null && k < variables.size()){
                     PromptVariable variable = (PromptVariable) variables.get(k);
+					boolean cache = variable.isCache();
                     String type = variable.getType();
                    
                     Object value = null;
@@ -168,7 +72,8 @@ public class PromptEval {
                         if(evaledResources.containsKey(varName)){
                             throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部文件资源！");
                         }
-                        String value_ = PromptResourceCache.getInstance().cacheFileContent(varName, variable.getCharset());
+                        String value_ = cache?PromptResourceCache.getInstance().cacheFileContent(varName, variable.getCharset()):
+								PromptResourceCache.getInstance().getFileContent(varName, variable.getCharset());
                         evaledResources.put(varName, DUMP);
                         if(SimpleStringUtil.isNotEmpty(value_)) {
                             value_ = this.evalResource(evaledResources, value_, chatContext);
@@ -180,7 +85,8 @@ public class PromptEval {
                         if(evaledResources.containsKey(varName)){
                             throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部classpath文件资源！");
                         }
-                        String value_ = PromptResourceCache.getInstance().cacheClasspathResource(varName, variable.getCharset());
+                        String value_ = cache?PromptResourceCache.getInstance().cacheClasspathResource(varName, variable.getCharset()):
+								PromptResourceCache.getInstance().getClasspathResource(varName, variable.getCharset());
                         evaledResources.put(varName, DUMP);
                         if(SimpleStringUtil.isNotEmpty(value_)) {
                             value_ = this.evalResource(evaledResources, value_, chatContext);
@@ -193,7 +99,8 @@ public class PromptEval {
                         if(evaledResources.containsKey(varName)){
                             throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部url资源！");
                         }
-                        String value_ = PromptResourceCache.getInstance().cacheUrlResource(varName, variable.getCharset());
+						String value_ =  PromptResourceCache.getInstance().getUrlResource(variable) ;
+						
                         evaledResources.put(varName, DUMP);
                         if(SimpleStringUtil.isNotEmpty(value_)) {
                             value_ = this.evalResource(evaledResources, value_, chatContext);
@@ -201,6 +108,19 @@ public class PromptEval {
                         value = value_;
 
                     }
+					
+					else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_SERVICE)) {
+						if(evaledResources.containsKey(varName)){
+							throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部url资源！");
+						}
+						String value_ = PromptResourceCache.getInstance().getServiceResource(variable);
+						evaledResources.put(varName, DUMP);
+						if(SimpleStringUtil.isNotEmpty(value_)) {
+							value_ = this.evalResource(evaledResources, value_, chatContext);
+						}
+						value = value_;
+						
+					}
                     if(value != null){
                         newPrompt.append(value);
                     }

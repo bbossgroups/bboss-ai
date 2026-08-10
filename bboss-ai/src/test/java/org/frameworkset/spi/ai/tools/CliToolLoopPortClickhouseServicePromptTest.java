@@ -15,23 +15,29 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import com.frameworkset.common.poolman.util.SQLUtil;
+import com.frameworkset.common.poolman.util.DBConf;
+import com.frameworkset.common.poolman.util.SQLManager;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.prompt.AgentResouceService;
+import org.frameworkset.spi.ai.prompt.PromptEval;
+import org.frameworkset.spi.ai.prompt.PromptResourceCache;
+import org.frameworkset.spi.ai.prompt.PromptVariable;
 import org.frameworkset.spi.ai.store.StoreContext;
-import org.frameworkset.spi.ai.tool.KeywordToolSearcher;
+import org.frameworkset.spi.ai.util.ClasspathResourceReader;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import reactor.core.publisher.Flux;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 /**
  * @author biaoping.yin
  * @Date 2026/6/24
  */
-public class CliToolLoopPortDBTest {
-	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CliToolLoopPortDBTest.class);
+public class CliToolLoopPortClickhouseServicePromptTest {
+	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CliToolLoopPortClickhouseServicePromptTest.class);
 	
 	public static void main(String[] args) {
 		try {
@@ -39,18 +45,39 @@ public class CliToolLoopPortDBTest {
 //            String message = "当前OS为windows，生成一段shell脚本，首先查找占用端口808的进程，如果存在对应进程，则关闭进程，输出端口进程信息和关闭核对结果";
 //            message = "请依次执行以下命令：\n1.获取OS版本信息\n2.获取CPU信息\n3.打印OS和CPU信息\n4.查找端口808的进程\n5.如果存在对应进程，则关闭进程\n6.输出端口进程信息和关闭核对结果";
             initDB();
+			PromptResourceCache.getInstance().setAgentResouceService(new AgentResouceService() {
+				@Override
+				public String getResourceContent(PromptVariable variable) throws Exception {
+					String resource = variable.getVariableName();
+					String charset = variable.getCharset();
+					String content = ClasspathResourceReader.readClasspathResource(resource, charset);
+					return content;
+				}
+			});
 			callMinimaxSimple( );
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
     public static void initDB(){
-        SQLUtil.startPool("visualops",//数据源名称
-                "com.mysql.cj.jdbc.Driver",//mysql驱动
-                "jdbc:mysql://192.168.137.1:3306/bboss?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true",//mysql链接串
-                "root","123456",//数据库账号和口令
-                "select 1 " //数据库连接校验sql
-        );
+ 
+		
+		DBConf tempConf = new DBConf();
+		tempConf.setPoolname("visualops");
+		tempConf.setDriver("com.clickhouse.jdbc.ClickHouseDriver");
+		tempConf.setJdbcurl("jdbc:clickhouse:http://101.13.6.4:28123,10.131.6.7:28123,10.13.41.6:28123/visualops?b.enableBalance=true&b.balance=roundbin");
+		tempConf.setUsername("default");
+		tempConf.setPassword("123456");
+		tempConf.setValidationQuery("select 1 ");
+		//tempConf.setTxIsolationLevel("READ_COMMITTED");
+		tempConf.setJndiName("jndi-visualops" );
+		tempConf.setInitialConnections(10);
+		tempConf.setMinimumSize(10);
+		tempConf.setMaximumSize(20);
+		tempConf.setUsepool(true);
+	 
+		tempConf.setShowsql(false);
+		SQLManager. startPool(tempConf);
     }
 	public static void callMinimaxSimple( ) throws InterruptedException {
 		//MiniMax-M2.7
@@ -64,20 +91,18 @@ public class CliToolLoopPortDBTest {
         
         chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
         chatAgentMessage.setRetry(3);
-		String question = "查找和管理端口808";
+        String question = "查找和管理端口808";
 		chatAgentMessage.setPrompt(question,true).setSystemPrompt("你是一个专家，可以根据用户要求获取系统信息，生成符合要求的、完整的、可执行的shell脚本" +
-                "，并将生成的脚本交由工具执行，输出执行结果。注意事项：通过Java Process调用cmd或者sh来执行脚本，确保脚本在目标操作系统上能够正常运行。");
+                "，并将生成的脚本交由工具执行，输出执行结果。注意事项：通过Java Process调用cmd或者sh来执行脚本，确保脚本在目标操作系统上能够正常运行。",true);
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
         chatAgentMessage.setStoreContext(new StoreContext()
                 .setUserId("user123").setSessionSize(100).setRequestId("request123")
                 .setStoreType(StoreContext.STORE_TYPE_DB)
-                .setDataSource("visualops"));
+                .setDataSource("visualops").setClickhouseCluster("vops_3shards_1replicas"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
-		
-		String message = "#[loopprompt.txt,type=resource]";
-		AIAgent agent = new AIAgent(message);
+		AIAgent agent = new AIAgent("#[loopprompt.txt,type=service]");
         agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
         agent.setMaxLoopToolCalls(80);
         //注册获取当前操作系统OS信息工具：框架内置工具
@@ -87,7 +112,7 @@ public class CliToolLoopPortDBTest {
 		agent.registBeanTool(new FileFunctionTool("C:\\data\\ai\\aigenfiles\\tools\\"))
 				.setKeywordToolSearcher("获取OS、OS版本、OS架构以及CPU信息","将内容写入到指定文件","执行shell脚本","获取服务器时间");
 		 
-		//通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
+		//通过智能体响应式异步交互接口，请求Deepseek模型服务，提交问题
 		Flux<ServerEvent> flux = agent.streamChat(chatAgentMessage);
 		
 		flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
@@ -97,9 +122,9 @@ public class CliToolLoopPortDBTest {
 						System.out.print(chunk.getData());
                         
 					}
-//                    if(chunk.isToolCallsType()){
-//                        System.out.println();
-//                    }
+                    if(chunk.isStepType()){
+                        System.out.println();
+                    }
 //                    if(chunk.isDone()){
 //                        System.out.println();
 //                    }

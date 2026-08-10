@@ -69,7 +69,7 @@ public class SkillAgentTest {
 		chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
 		chatAgentMessage.setRetry(3);
 		String message = "执行技能roll-dice:掷出一个骰子，结果为90-100之间的整数";
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个技能专家，可以按照用户要求执行技能。如果需要执行脚本，用shell工具执行");
+		chatAgentMessage.setPrompt(message,true).setSystemPrompt("你是一个技能专家，可以按照用户要求执行技能。如果需要执行脚本，用shell工具执行");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
 		chatAgentMessage.setStoreContext(new StoreContext()

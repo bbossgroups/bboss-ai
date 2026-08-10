@@ -42,7 +42,14 @@ public class AIFlowConst {
 
     /**
      * 变量类型：URL类型，变量名称代表一个URL地址，解析变量值时，会读URL对应的资源内容
+	 * 如果指定了httpproxy属性，则使用httpproxy代表服务资源组，属性值作为参数值，调用代理地址访问URL获取资源内容
      */
     public static final String AIFLOW_VAR_TYPE_URL = "url";
+	
+	/**
+	 * 变量类型：服务类型，变量名称代表从后台服务获取一个资源内容，解析变量值时，会调用服务获取结果
+	 * 可以指定beanservice名称，亦可以不指定
+	 */
+	public static final String AIFLOW_VAR_TYPE_SERVICE = "service";
 
 }

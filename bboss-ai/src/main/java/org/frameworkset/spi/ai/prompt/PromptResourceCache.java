@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.prompt;
 import com.frameworkset.util.FileUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.util.ClasspathResourceReader;
+import org.frameworkset.spi.remote.http.HttpRequestProxy;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -33,6 +34,10 @@ public class PromptResourceCache {
 
     private Map<String, String> resourceCache  = new HashMap<String, String>();
     private Map<String, String> urlCache  = new HashMap<String, String>();
+	
+	
+	private Map<String, String> serviceCache  = new HashMap<String, String>();
+    private AgentResouceService agentResouceService;  
     
     public static PromptResourceCache getInstance() {
         return instance;
@@ -57,6 +62,21 @@ public class PromptResourceCache {
         }
        
     }
+	
+	public String getFileContent(String file,String charset){
+		String value = null;
+		try {
+			 
+			value = FileUtil.getFileContent(file,charset);
+					 
+		 
+			return value;
+			
+		} catch (IOException e) {
+			throw new AIRuntimeException(" file:" + file + " charset:" + charset   , e);
+		}
+		
+	}
 
 
     public String cacheClasspathResource(String resource,String charset){
@@ -79,25 +99,108 @@ public class PromptResourceCache {
         }
 
     }
-
-    public String cacheUrlResource(String url,String charset){
+	
+	public String getClasspathResource(String resource,String charset){
+		String value = null;
+		try {
+			 
+			value = ClasspathResourceReader.readClasspathResource(resource, charset);
+					 
+			return value;
+			
+		} catch (IOException e) {
+			throw new AIRuntimeException(" resource:" + resource + " charset:" + charset   , e);
+		}
+		
+	}
+	
+    public String getServiceResource(PromptVariable variable){
+		String resource = variable.getVariableName()  ;
+		boolean cache = variable.isCache();
+		
         String value = null;
-        try {
-            value = urlCache.get(url);
-            if(value == null){
-                synchronized (urlCache){
-                    value = urlCache.get(url);
-                    if(value == null){
-                        value = ClasspathResourceReader.readURL(url, charset);
-                        urlCache.put(url, value);
-                    }
-                }
-            }
-            return value;
-
-        } catch (IOException e) {
-            throw new AIRuntimeException(" url:" + url + " charset:" + charset   , e);
-        }
+		if(cache) {
+			try {
+				value = serviceCache.get(resource);
+				if (value == null) {
+					synchronized (serviceCache) {
+						value = serviceCache.get(resource);
+						if (value == null) {
+							 
+							value = agentResouceService.getResourceContent(variable);
+							
+							serviceCache.put(resource, value);
+						}
+					}
+				}
+				return value;
+				
+			} catch (Exception e) {
+				throw new AIRuntimeException(" resource:" + resource  , e);
+			}
+		}
+		else{
+			try {
+				
+				value = agentResouceService.getResourceContent(variable);
+				
+				return value;
+				
+			} catch (Exception e) {
+				throw new AIRuntimeException(" resource:" + resource   , e);
+			}
+		}
 
     }
+	
+	public String getUrlResource(PromptVariable variable){
+		String url = variable.getVariableName(), charset = variable.getCharset(),httpproxy = variable.getHttpproxy();
+		boolean cache = variable.isCache();
+		
+		String value = null;
+		if(cache) {
+			try {
+				value = urlCache.get(url);
+				if (value == null) {
+					synchronized (urlCache) {
+						value = urlCache.get(url);
+						if (value == null) {
+							if(httpproxy == null) {
+								value = ClasspathResourceReader.readURL(url, charset);
+							}
+							else{
+								value = HttpRequestProxy.httpPostforString(httpproxy,url);
+							}
+							urlCache.put(url, value);
+						}
+					}
+				}
+				return value;
+				
+			} catch (IOException e) {
+				throw new AIRuntimeException(" url:" + url + " charset:" + charset, e);
+			}
+		}
+		else{
+			try {
+				
+				if(httpproxy == null) {
+					value = ClasspathResourceReader.readURL(url, charset);
+				}
+				else{
+					value = HttpRequestProxy.httpPostforString(httpproxy,url);
+				}
+				
+				return value;
+				
+			} catch (IOException e) {
+				throw new AIRuntimeException(" url:" + url + " charset:" + charset   , e);
+			}
+		}
+		
+	}
+	
+	public void setAgentResouceService(AgentResouceService agentResouceService) {
+		this.agentResouceService = agentResouceService;
+	}
 }

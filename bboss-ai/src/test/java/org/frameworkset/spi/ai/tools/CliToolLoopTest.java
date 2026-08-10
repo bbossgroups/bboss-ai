@@ -35,12 +35,12 @@ public class CliToolLoopTest {
 			HttpRequestProxy.startHttpPools("application-stream.properties");
             String message = "当前OS为windows，生成一段shell脚本，首先查找占用端口808的进程，如果存在对应进程，则关闭进程，输出端口进程信息和关闭核对结果";
             message = "获取OS版本信息，然后获取CPU信息，最后打印OS和CPU信息";
-			callMinimaxSimple(message);
+			callMinimaxSimple( );
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
-	public static void callMinimaxSimple(String message) throws InterruptedException {
+	public static void callMinimaxSimple() throws InterruptedException {
 		//MiniMax-M2.7
 		//定义问题变量
 		
@@ -50,12 +50,14 @@ public class CliToolLoopTest {
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
         chatAgentMessage.setModel("deepseek-v4-pro");
         chatAgentMessage.setMaas("deepseek");
-		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本中可以包含完成用户要求的多条指令代码，并将生成的脚本交由工具执行，输出执行结果。注意事项：脚本将通过java Process调用cmd或者sh来执行，确保脚本在目标操作系统上运行。");
+		String question = "查找和管理端口808";
+		chatAgentMessage.setPrompt(question,true).setSystemPrompt("你是一个专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，脚本中可以包含完成用户要求的多条指令代码，并将生成的脚本交由工具执行，输出执行结果。注意事项：脚本将通过java Process调用cmd或者sh来执行，确保脚本在目标操作系统上运行。");
 		
 		chatAgentMessage.setStream( true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
-		AIAgent aiAgent = new AIAgent();
+		String message = "#[loopprompt.txt,type=resource]";
+		AIAgent aiAgent = new AIAgent(message);
         aiAgent.setEnableLoopToolCall(true);
         aiAgent.registBeanTool(new GetOSFunctionTool(60));
         aiAgent.registBeanTool(new CLIShellFunctionTool(60));
