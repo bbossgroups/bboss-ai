@@ -165,8 +165,7 @@ public class AgentMessage<T extends AgentMessage> {
         return null;
     }
     public T setPrompt(String prompt) {
-        this.prompt = prompt;
-        return (T)this;
+        return setPrompt(prompt, true);
     }
 	
 	public T setPrompt(String prompt,boolean setInputQueryVariable) {
