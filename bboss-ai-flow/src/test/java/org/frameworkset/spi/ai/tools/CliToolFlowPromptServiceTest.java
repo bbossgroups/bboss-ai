@@ -16,14 +16,16 @@ package org.frameworkset.spi.ai.tools;
  */
 
 import com.frameworkset.common.poolman.util.SQLUtil;
-import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.flow.AIJudgeAgent;
 import org.frameworkset.spi.ai.flow.AINodeAgent;
 import org.frameworkset.spi.ai.flow.AIPlanAgent;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.prompt.AgentResouceService;
+import org.frameworkset.spi.ai.prompt.PromptResourceCache;
+import org.frameworkset.spi.ai.prompt.PromptVariable;
 import org.frameworkset.spi.ai.store.StoreContext;
-import org.frameworkset.spi.ai.tool.BeanToolsRegist;
+import org.frameworkset.spi.ai.util.ClasspathResourceReader;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.util.concurrent.IntegerCount;
 import reactor.core.publisher.Flux;
@@ -34,13 +36,22 @@ import java.util.concurrent.CountDownLatch;
  * @author biaoping.yin
  * @Date 2026/6/24
  */
-public class CliToolFlowTest {
-	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CliToolFlowTest.class);
+public class CliToolFlowPromptServiceTest {
+	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CliToolFlowPromptServiceTest.class);
 	
 	public static void main(String[] args) {
 		try {
 			HttpRequestProxy.startHttpPools("application-stream.properties");
             initDB();
+			PromptResourceCache.getInstance().setAgentResouceService(new AgentResouceService() {
+				@Override
+				public String getResourceContent(PromptVariable variable) throws Exception {
+					String resource = variable.getVariableName();
+					String charset = variable.getCharset();
+					String content = ClasspathResourceReader.readClasspathResource(resource, charset);
+					return content;
+				}
+			});
 			callMinimaxSimple();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -68,11 +79,11 @@ public class CliToolFlowTest {
         //采用qwen3.7-plus模型时，需要阻止模型反复调用工具
 //        String message = "当前OS为windows，帮忙查找占用端口808的进程，如果存在对应进程，则关闭进程，如果不存在相关进程，则无需处理。\n# 工具调用要求：只执行一次工具，执行后只分析结果，不要再返回工具调用信息和工具参数\n# 结果输出要求：直接返回脚本及脚本执行结果";
        
-		String question = "查找占用端口808的进程";
 //        String message = "#[prompt.txt,type=resource]";
 //        String message = "#[http://localhost:85/prompt.txt,type=url,charset=UTF-8]";
 //        String message = "#[C:\\workspace\\bbossgroups\\bboss-ai\\bboss-ai-flow\\src\\test\\resources\\prompt.txt,type=file,charset=UTF-8]";
 //        chatAgentMessage.setModel("deepseek-v4-pro").setMaas("deepseek").setRetry(3);
+		String question = "查找占用端口808的进程";
 		chatAgentMessage.setPrompt(question,true).setSystemPrompt("你是一个命令执行专家，可以根据用户要求生成符合要求的、完整的、可执行shell脚本，" +
                 "脚本必须符合用户要求的指令代码，将指令脚本交由工具执行，并输出执行结果。" +
                 "注意事项：脚本将通过java Process调用cmd或者sh来执行，确保脚本在目标操作系统上运行。");
@@ -89,7 +100,7 @@ public class CliToolFlowTest {
                 .setDataSource("visualops"))
                 .setAgentMessage(chatAgentMessage)
                 .setAgentName("命令执行工作流").setAgentId("commandExecutionWorkflowAgent");
-		String message = "#[prompt.txt,type=resource,charset=UTF-8]";
+		String message = "#[prompt.txt,type=service]";
 		AINodeAgent scan2ndClosePortProcessAgent = new AINodeAgent(message)
 				.setAgentId("scan2ndClosePortProcessAgent").setAgentName("扫描并关闭端口进程");
 		scan2ndClosePortProcessAgent.registBeanTool(new CLIShellFunctionTool(60));

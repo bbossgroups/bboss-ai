@@ -24,11 +24,11 @@ import java.io.IOException;
  * @Date 2026/6/27
  */
 public class ClasspathResourceReaderTest {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
     
         String content = PromptResourceCache.getInstance().cacheClasspathResource("application-stream.properties", "UTF-8");
         System.out.println(content);
-        content = PromptResourceCache.getInstance().cacheUrlResource("https://esdoc.bbossgroups.com/#/quickstart", "UTF-8");
+        content = ClasspathResourceReader.readURL("https://esdoc.bbossgroups.com/#/quickstart", "UTF-8");
         System.out.println(content);
         content = PromptResourceCache.getInstance().cacheFileContent("C:\\workspace\\bbossgroups\\bboss-ai\\bboss-ai-flow\\src\\test\\java\\org\\frameworkset\\spi\\ai\\tools\\CliToolFlowTest.java", "UTF-8");
         System.out.println(content);

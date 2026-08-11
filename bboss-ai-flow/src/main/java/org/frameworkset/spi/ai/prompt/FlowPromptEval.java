@@ -54,6 +54,7 @@ public class FlowPromptEval extends PromptEval{
                 newPrompt.append(tokens.get(k));
                 if(variables != null && k < variables.size()){
                     PromptVariable variable = (PromptVariable) variables.get(k);
+					boolean cache = variable.isCache();
                     String type = variable.getType();
                    
                     Object value = null;
@@ -80,7 +81,8 @@ public class FlowPromptEval extends PromptEval{
                         if(evaledResources.containsKey(varName)){
                             throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部文件资源！");
                         }
-                        String value_ = PromptResourceCache.getInstance().cacheFileContent(varName, variable.getCharset());
+                        String value_ = cache?PromptResourceCache.getInstance().cacheFileContent(varName, variable.getCharset()):
+								PromptResourceCache.getInstance().getFileContent(varName, variable.getCharset());
                         evaledResources.put(varName, DUMP);
                         if(SimpleStringUtil.isNotEmpty(value_)) {
                             value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext,chatContext);
@@ -92,7 +94,8 @@ public class FlowPromptEval extends PromptEval{
                         if(evaledResources.containsKey(varName)){
                             throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部classpath文件资源！");
                         }
-                        String value_ = PromptResourceCache.getInstance().cacheClasspathResource(varName, variable.getCharset());
+                        String value_ = cache?PromptResourceCache.getInstance().cacheClasspathResource(varName, variable.getCharset()):
+								PromptResourceCache.getInstance().getClasspathResource(varName, variable.getCharset());
                         evaledResources.put(varName, DUMP);
                         if(SimpleStringUtil.isNotEmpty(value_)) {
                             value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext,chatContext);
@@ -113,6 +116,19 @@ public class FlowPromptEval extends PromptEval{
                         value = value_;
 
                     }
+					
+					else if (type.equals(AIFlowConst.AIFLOW_VAR_TYPE_SERVICE)) {
+						if(evaledResources.containsKey(varName)){
+							throw new AIRuntimeException("外部资源[" + varName + "]存在嵌套引用：不允许嵌套引用外部url资源！");
+						}
+						String value_ = PromptResourceCache.getInstance().getServiceResource(variable);
+						evaledResources.put(varName, DUMP);
+						if(SimpleStringUtil.isNotEmpty(value_)) {
+							value_ = this.evalResource(evaledResources, value_, jobFlowNodeExecuteContext,chatContext);
+						}
+						value = value_;
+						
+					}
                     if(value != null){
                         newPrompt.append(value);
                     }
