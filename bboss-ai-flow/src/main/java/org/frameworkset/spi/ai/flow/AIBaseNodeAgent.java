@@ -113,7 +113,9 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
     }
     
     
-
+	protected void initAgentNode(){
+		
+	}
     /**
      * 添加并行智能体节点，并设置条件触发器
      *
@@ -122,7 +124,8 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
      */
     @Override
     public void appendToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
-        if(this.getAgentId() == null){
+		initAgentNode();
+		if(this.getAgentId() == null){
             this.agentId = parentAgent.genSubAgentId();
             this.agentName = parentAgent.genSubAgentName(agentId);
         }
@@ -148,7 +151,8 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, boolean defaultNode) {
-        if(this.getAgentId() == null){
+		initAgentNode();
+		if(this.getAgentId() == null){
             this.agentId = parentAgent.genSubAgentId();
             this.agentName = parentAgent.genSubAgentName(agentId);
         }
@@ -175,7 +179,8 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI) {
-        if(this.getAgentId() == null){
+		initAgentNode();
+		if(this.getAgentId() == null){
             this.agentId = parentAgent.genSubAgentId();
             this.agentName = parentAgent.genSubAgentName(agentId);
         }
@@ -204,7 +209,8 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
     @Override
     public String appendConditionJobFlowNodeToParentAgent(boolean allCondtionNodeMathfailedContinue,AIContainerAgent parentAgent, TriggerScriptAPI triggerScriptAPI,boolean defautlConditionNode){
-        if(this.getAgentId() == null){
+		initAgentNode();
+		if(this.getAgentId() == null){
             this.agentId = parentAgent.genSubAgentId();
             this.agentName = parentAgent.genSubAgentName(agentId);
         }
@@ -236,7 +242,7 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
      * @return 条件复合节点唯一ID
      */
     @Override
-    public String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent){
+    public String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent){		
         return addAnotherConditionJobFlowNodeAgent(parentAgent,false);
     }
 
@@ -262,7 +268,8 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
      */
     @Override
     public String addAnotherConditionJobFlowNodeAgent(AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
-        if(this.getAgentId() == null){
+		initAgentNode();
+		if(this.getAgentId() == null){
             this.agentId = parentAgent.genSubAgentId();
             this.agentName = parentAgent.genSubAgentName(agentId);
         }
@@ -281,7 +288,8 @@ public abstract class AIBaseNodeAgent<T extends AIBaseNodeAgent>
 
     @Override
     public String addAnotherConditionJobFlowNodeAgent(boolean allCondtionNodeMatchfailedContinue,AIContainerAgent parentAgent, NodeTrigger conditionNodeTrigger,boolean defaultConditionNode){
-        if(this.getAgentId() == null){
+		initAgentNode();
+		if(this.getAgentId() == null){
             this.agentId = parentAgent.genSubAgentId();
             this.agentName = parentAgent.genSubAgentName(agentId);
         }

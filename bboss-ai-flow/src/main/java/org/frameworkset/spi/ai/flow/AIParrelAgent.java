@@ -94,7 +94,7 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
 			if(dynamicNodeBuilder != null) {
 				parrelJobFlowNodeBuilder.setDynamicNodeBuilder(dynamicNodeBuilder);
 			}
-            logger.info("聚合、保存和激发并行智能体任务节点[{},{}]中子智能体节点消息",this.getAgentId(),this.getAgentName());
+            logger.info("初始化并行智能体任务节点[{},{}]中子智能体节点",this.getAgentId(),this.getAgentName());
             //聚合和保存并行智能体任务节点中子智能体节点消息
             parrelJobFlowNodeBuilder.addJobFlowNodeListener(new JobFlowNodeListener() {
                 @Override
@@ -268,5 +268,8 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
 
 
     ////////////////////////////原生工作流节点添加方法：结束/////////////////////////
-    
+	@Override
+	protected void initAgentNode(){
+		this.initAIParrelJobFlowNodeBuilder();
+	}
 }

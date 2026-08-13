@@ -24,6 +24,7 @@ import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.JobFlowNode;
 import org.frameworkset.tran.jobflow.NodeTrigger;
+import org.frameworkset.tran.jobflow.builder.DynamicNodeBuilder;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.frameworkset.tran.jobflow.listener.JobFlowNodeListener;
@@ -41,6 +42,7 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     private static Logger logger = LoggerFactory.getLogger(AISequenceAgent.class);
     private AISequenceJobFlowNodeBuilder sequenceJobFlowNodeBuilder;
     private AIAgent headerAgent;
+	protected DynamicNodeBuilder dynamicNodeBuilder;
     public AISequenceAgent(AIPlanAgent planAgent) {
 
         agentNodeType = AGENT_NODE_TYPE_SEQUENCE;
@@ -60,13 +62,19 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore,int sessionSize){
         return new SequenceAgentSessionStoreMemory(parentSessionStore,sessionSize);
     }
-
+	public  AISequenceAgent setDynamicNodeBuilder(   DynamicNodeBuilder dynamicNodeBuilder){
+		this.dynamicNodeBuilder = dynamicNodeBuilder;
+		return this;
+	}
 
     private void initAISequenceJobFlowNodeBuilder( ){
         if(sequenceJobFlowNodeBuilder == null){
             
             sequenceJobFlowNodeBuilder = new AISequenceJobFlowNodeBuilder(this);
-            logger.info("保存和激发（流处理）串行智能体任务节点[{},{}]中子智能体节点消息",this.getAgentId(),this.getAgentName());
+			if(dynamicNodeBuilder != null) {
+				sequenceJobFlowNodeBuilder.setDynamicNodeBuilder(dynamicNodeBuilder);
+			}
+            logger.info("初始化串行智能体任务节点[{},{}]中子智能体节点",this.getAgentId(),this.getAgentName());
             //聚合和保存并行智能体任务节点中子智能体节点消息
             sequenceJobFlowNodeBuilder.addJobFlowNodeListener(new JobFlowNodeListener() {
                 @Override
@@ -759,8 +767,14 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
 //    }
 
     ////////////////////////////原生工作流节点添加方法：结束/////////////////////////
-    protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
+	@Override
+	protected JobFlowNodeBuilder builderJobFlowNodeBuilder(){
         return this.getSequenceJobFlowNodeBuilder();
     }
-    
+	
+	
+	@Override
+	protected void initAgentNode(){
+		this.initAISequenceJobFlowNodeBuilder();
+	}
 }
