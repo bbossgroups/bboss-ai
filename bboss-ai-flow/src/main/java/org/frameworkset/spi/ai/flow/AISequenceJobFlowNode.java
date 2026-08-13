@@ -31,6 +31,7 @@ public class AISequenceJobFlowNode extends SequenceJobFlowNode {
     private static Logger logger = LoggerFactory.getLogger(AISequenceJobFlowNode.class);
     private AISequenceAgent sequenceAgent;
     public AISequenceJobFlowNode(AISequenceAgent sequenceAgent){
+		super();
         this.sequenceAgent = sequenceAgent;
         setNodeId(sequenceAgent.getAgentId());
         setNodeName(sequenceAgent.getAgentName());

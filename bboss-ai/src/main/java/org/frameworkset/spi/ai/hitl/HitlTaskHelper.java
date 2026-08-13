@@ -388,10 +388,11 @@ public class HitlTaskHelper {
 			throw new HitlCallException(true,e);
 		}
 		finally {
-			ServerEvent stepServerEvent = new ServerEvent();//向客户端推送人工介入消息
-			stepServerEvent.setType(ServerEvent.TYPE_STEP);
-			ServerEventUtil.buildServerEventAgentInfo(stepServerEvent, chatObject.getAgent());
-			sink.next(stepServerEvent);
+//			ServerEvent stepServerEvent = new ServerEvent();//向客户端推送人工介入完成的步骤信号
+//			stepServerEvent.setType(ServerEvent.TYPE_STEP);
+//			ServerEventUtil.buildServerEventAgentInfo(stepServerEvent, chatObject.getAgent());
+//			sink.next(stepServerEvent);
+			ServerEventUtil.emitterStepEvent(chatObject);
 			this.removeHitlCallObject(hitlTaskId);
 		}
 		

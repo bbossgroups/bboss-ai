@@ -15,11 +15,12 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.model.AgentInfoInf;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.TraceMessage;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
+import org.frameworkset.tran.jobflow.JobFlowNodeType;
 import org.frameworkset.tran.jobflow.NodeTrigger;
 import org.frameworkset.tran.jobflow.builder.JobFlowNodeBuilder;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
@@ -36,7 +37,7 @@ import java.util.List;
  * @author biaoping.yin
  * @Date 2026/4/14
  */
-public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements AppendToParentAgent{
+public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements AppendToParentAgent, AgentInfoInf {
     protected String nodeId;
     protected String nodeName;
 	/**
@@ -336,5 +337,33 @@ public abstract   class AIFlowNodeVoid<T extends AIFlowNodeVoid> implements Appe
 	public T setParentGroupId(String parentGroupId) {
 		this.parentGroupId = parentGroupId;
 		return (T)this;
+	}
+ 
+	public String getAgentName(){
+		return this.getNodeName();
+	}
+	public String getAgentNodeType() {
+		return AIAgent.AGENT_NODE_TYPE_FLOWNODE;
+	}
+	public String getParentAgentId() {
+		if(this.parentAgent != null){
+			return this.parentAgent.getAgentId();
+		}
+		return this.planAgent.getAgentId();
+	}
+	public String getParentAgentName() {
+		if(this.parentAgent != null){
+			return this.parentAgent.getParentAgentName();
+		}
+		return this.planAgent.getParentAgentName();
+	}
+	public String getSessionId() {
+		return planAgent.getSessionId();
+	}
+	public String getRequestId() {
+		return planAgent.getRequestId();
+	}
+	public String getUserId() {
+		return planAgent.getUserId();
 	}
 }

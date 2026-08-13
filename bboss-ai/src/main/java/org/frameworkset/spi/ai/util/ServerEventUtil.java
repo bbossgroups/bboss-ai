@@ -17,7 +17,10 @@ package org.frameworkset.spi.ai.util;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.hitl.HitlCallTask;
+import org.frameworkset.spi.ai.model.AgentInfoInf;
+import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import reactor.core.publisher.FluxSink;
 
 /**
  *
@@ -25,7 +28,7 @@ import org.frameworkset.spi.ai.model.ServerEvent;
  * @Date 2026/7/16
  */
 public class ServerEventUtil {
-	public static void buildServerEventAgentInfo(ServerEvent serverEvent, AIAgent agent) {
+	public static void buildServerEventAgentInfo(ServerEvent serverEvent, AgentInfoInf agent) {
 		serverEvent.setAgentId(agent.getAgentId());
 		serverEvent.setAgentName(agent.getAgentName());
 		serverEvent.setAgentNodeType(agent.getAgentNodeType());
@@ -37,8 +40,19 @@ public class ServerEventUtil {
 		serverEvent.setParentGroupId(agent.getParentGroupId());
 		serverEvent.setUserId(agent.getUserId());
 	}
-	
-	public static void buildHiltTaskAgentInfo(HitlCallTask hitlCallTask, AIAgent agent) {
+	public static void buildServerEventFlowNodeInfo(ServerEvent serverEvent, AgentInfoInf agentInfoInf) {
+		serverEvent.setAgentId(agentInfoInf.getAgentId());
+		serverEvent.setAgentName(agentInfoInf.getAgentName());
+		serverEvent.setAgentNodeType(agentInfoInf.getAgentNodeType());
+		serverEvent.setParentAgentId(agentInfoInf.getParentAgentId());
+		serverEvent.setParentAgentName(agentInfoInf.getParentAgentName());
+		serverEvent.setSessionId(agentInfoInf.getSessionId());
+		serverEvent.setRequestId(agentInfoInf.getRequestId());
+		serverEvent.setGroupId(agentInfoInf.getGroupId());
+		serverEvent.setParentGroupId(agentInfoInf.getParentGroupId());
+		serverEvent.setUserId(agentInfoInf.getUserId());
+	}
+	public static void buildHiltTaskAgentInfo(HitlCallTask hitlCallTask, AgentInfoInf agent) {
 		hitlCallTask.setAgentId(agent.getAgentId());
 		hitlCallTask.setAgentNodeType(agent.getAgentNodeType());
 		hitlCallTask.setAgentName(agent.getAgentName());
@@ -47,6 +61,26 @@ public class ServerEventUtil {
 		hitlCallTask.setSessionId(agent.getSessionId());
 		hitlCallTask.setRequestId(agent.getRequestId());
 		hitlCallTask.setUserId(agent.getUserId());
+	}
+	
+	/**
+	 * 向客户端推送步骤信号
+	 * @param chatObject
+	 */
+	public static void emitterStepEvent(ChatObject chatObject){
+		ServerEvent stepServerEvent = new ServerEvent(); 
+		stepServerEvent.setType(ServerEvent.TYPE_STEP);
+		ServerEventUtil.buildServerEventAgentInfo(stepServerEvent, chatObject.getAgent());
+		FluxSink<ServerEvent> sink = chatObject.getAgentFluxSink();
+		sink.next(stepServerEvent);
+	}
+	
+	public static void emitterStepEvent(AgentInfoInf agentInfoInf){
+		ServerEvent stepServerEvent = new ServerEvent();
+		stepServerEvent.setType(ServerEvent.TYPE_STEP);
+		ServerEventUtil.buildServerEventAgentInfo(stepServerEvent, agentInfoInf);
+		FluxSink<ServerEvent> sink = agentInfoInf.getAgentFluxSink();
+		sink.next(stepServerEvent);
 	}
 	
 }

@@ -31,6 +31,7 @@ public class AIParrelJobFlowNode extends ParrelJobFlowNode {
     private static Logger logger = LoggerFactory.getLogger(AIParrelJobFlowNode.class);
     private AIParrelAgent parrelAgent;
     public AIParrelJobFlowNode(AIParrelAgent parrelAgent){
+		super();
         this.parrelAgent = parrelAgent;
         setNodeId(parrelAgent.getAgentId());
         setNodeName(parrelAgent.getAgentName());

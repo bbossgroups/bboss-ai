@@ -44,7 +44,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public class AIAgent<T extends AIAgent> {
+public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 	/**
 	 * 当节点直接隶属于并行节点时，会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息
 	 * 并行分组展示消息所属并行分支id
@@ -94,6 +94,9 @@ public class AIAgent<T extends AIAgent> {
      * 智能体节点类型
      */
     protected String agentNodeType = AGENT_NODE_TYPE_SINGLE;
+	
+	/**通用流程节点*/
+	public static final String AGENT_NODE_TYPE_FLOWNODE = "flownode";
     protected int sessionSize;
 	
 	/**
