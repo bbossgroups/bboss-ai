@@ -25,7 +25,17 @@ import java.util.Map;
  * @Date 2026/8/5
  */
 public interface HitlAssistant {
+	/**
+	 * 人工干预时，智能体通过方法getHumanAssistantDatas给前端提供辅助干预帮助信息
+	 * @param toolCallContext
+	 * @return
+	 */
 	Map<String,Object> getHumanAssistantDatas(ToolCallContext toolCallContext);
+	/**
+	 * 人工干预时，前端提交的干预数据通过handleHumanSubbmitDatas方法返回给智能体，智能体拿到人工提交的数据进行相应处理后，将数据返回给大模型
+	 * @param humanSubbmitDatas
+	 * @param toolCallContext
+	 */
 	void handleHumanSubbmitDatas(Map<String, Object> humanSubbmitDatas,ToolCallContext toolCallContext); 
 	
 	
