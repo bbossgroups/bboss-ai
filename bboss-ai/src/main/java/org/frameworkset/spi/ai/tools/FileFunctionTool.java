@@ -21,10 +21,11 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
+import org.frameworkset.spi.ai.util.FileToolUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -110,8 +111,8 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
                         @ToolParam(name = "overwrite", description = "目标已存在时是否覆盖，默认false", required = false) Boolean overwrite) {
         Map result = new HashMap();
         try {
-            java.io.File srcFile = validateAndGetFile(source);
-            java.io.File tgtFile = validateAndGetFile(target);
+            File srcFile = FileToolUtil.validateAndGetFile(this.baseDirectories,source, true);
+            File tgtFile = FileToolUtil.validateAndGetFile(this.baseDirectories,target, true);
             if (!srcFile.exists()) {
                 result.put("success", false);
                 result.put("message", "源路径不存在: " + source);
@@ -128,13 +129,13 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 			}
             boolean isOverwrite = overwrite != null && overwrite;
             if (srcFile.isFile()) {
-                java.io.File destFile = tgtFile.isDirectory() ? new java.io.File(tgtFile, srcFile.getName()) : tgtFile;
+                File destFile = tgtFile.isDirectory() ? new File(tgtFile, srcFile.getName()) : tgtFile;
                 if (destFile.exists() && !isOverwrite) {
                     result.put("success", false);
                     result.put("message", "目标文件已存在且未启用覆盖: " + destFile.getAbsolutePath());
                     return result;
                 }
-                java.io.File parentDir = destFile.getParentFile();
+                File parentDir = destFile.getParentFile();
                 if (parentDir != null && !parentDir.exists()) {
                     parentDir.mkdirs();
                 }
@@ -144,7 +145,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
                 result.put("target", destFile.getAbsolutePath());
                 result.put("message", "文件拷贝成功");
             } else if (srcFile.isDirectory()) {
-                java.io.File destDir = tgtFile;
+                File destDir = tgtFile;
                 if (destDir.exists() && !isOverwrite) {
                     result.put("success", false);
                     result.put("message", "目标目录已存在且未启用覆盖: " + destDir.getAbsolutePath());
@@ -171,7 +172,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     public Map fileExists(@ToolParam(name = "path", description = "文件或目录路径", required = true) String path) {
         Map result = new HashMap();
         try {
-            java.io.File file = validateAndGetFile(path);
+            File file = FileToolUtil.validateAndGetFile(this.baseDirectories,path, true);
 			if(auditor != null) {				 
 				Map<String, Object> auditResult = audit("fileExists", path);
 				if (auditResult != null)
@@ -196,7 +197,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     public Map detectFileEncoding(@ToolParam(name = "path", description = "文件路径", required = true) String path) {
         Map result = new HashMap();
         try {
-            java.io.File file = validateAndGetFile(path);
+            File file = FileToolUtil.validateAndGetFile(this.baseDirectories,path, true);
             if (!file.exists() || !file.isFile()) {
                 result.put("success", false);
                 result.put("message", "文件不存在或不是普通文件");
@@ -230,7 +231,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
         Map result = new HashMap();
         StringBuilder content = new StringBuilder();
         try {
-            java.io.File file = validateAndGetFile(path);
+            File file = FileToolUtil.validateAndGetFile(this.baseDirectories,path, true);
             if (!file.exists() || !file.isFile()) {
                 result.put("success", false);
                 result.put("message", "文件不存在或不是普通文件");
@@ -252,8 +253,8 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
             if (SimpleStringUtil.isEmpty(charset)) {
                 charset = doDetectEncoding(file);
             }
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(new java.io.FileInputStream(file), charset))) {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(file), charset))) {
                 String line;
                 long bytesRead = 0;
                 while ((line = reader.readLine()) != null) {
@@ -297,7 +298,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
                          @ToolParam(name = "append", description = "是否追加写入，默认false覆盖写入", required = false) Boolean append) {
         Map result = new HashMap();
         try {
-            java.io.File file = validateAndGetFile(path);
+            File file = FileToolUtil.validateAndGetFile(this.baseDirectories,path, true);
 			if(auditor != null) {
 				Map toolInfo = new LinkedHashMap();
 				toolInfo.put("path", path);
@@ -314,15 +315,15 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
                 charset = DEFAULT_CHARSET;
             }
             boolean isAppend = append != null && append;
-            java.io.File parentDir = file.getParentFile();
+            File parentDir = file.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
             }
 			if(!file.exists()){
 				file.createNewFile();
 			}
-            try (java.io.BufferedWriter writer = new java.io.BufferedWriter(
-                    new java.io.OutputStreamWriter(new java.io.FileOutputStream(file, isAppend), charset))) {
+            try (BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(new FileOutputStream(file, isAppend), charset))) {
                 writer.write(content);
             }
             result.put("success", true);
@@ -344,7 +345,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
                           @ToolParam(name = "isDirectory", description = "是否创建目录，true创建目录，false创建文件，默认false", required = false) Boolean isDirectory) {
         Map result = new HashMap();
         try {
-            java.io.File file = validateAndGetFile(path);
+            File file = FileToolUtil.validateAndGetFile(this.baseDirectories,path, true);
 			if(auditor != null) {
 				Map toolInfo = new LinkedHashMap();
 				toolInfo.put("path", path);
@@ -358,7 +359,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
             if (dirFlag) {
                 created = file.mkdirs();
             } else {
-                java.io.File parent = file.getParentFile();
+                File parent = file.getParentFile();
                 if (parent != null && !parent.exists()) {
                     parent.mkdirs();
                 }
@@ -383,7 +384,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
                           @ToolParam(name = "recursive", description = "删除目录时是否递归删除子文件，默认false", required = false) Boolean recursive) {
         Map result = new HashMap();
         try {
-            java.io.File file = validateAndGetFile(path);
+            File file = FileToolUtil.validateAndGetFile(this.baseDirectories,path, true);
             if (!file.exists()) {
                 result.put("success", false);
                 result.put("message", "文件或目录不存在");
@@ -421,7 +422,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     public Map getFileAttributes(@ToolParam(name = "path", description = "文件或目录路径", required = true) String path) {
         Map result = new HashMap();
         try {
-            java.io.File file = validateAndGetFile(path);
+            File file = FileToolUtil.validateAndGetFile(this.baseDirectories,path, true);
             if (!file.exists()) {
                 result.put("success", false);
                 result.put("message", "文件或目录不存在");
@@ -472,45 +473,16 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 
     // ==================== 私有辅助方法 ====================
 
-    /**
-     * 校验路径是否在允许的基目录范围内，并返回 File 对象
-     */
-    private java.io.File validateAndGetFile(String path) {
-        if (SimpleStringUtil.isEmpty(path)) {
-            throw new IllegalArgumentException("路径不能为空");
-        }
-        java.io.File file = new java.io.File(path);
-		
-        if (baseDirectories != null && baseDirectories.size() > 0) {
-			boolean isOk = false;
-			for(String baseDirectory:baseDirectories) {
-				java.io.File base = new java.io.File(baseDirectory);
-				String basePath = base.getAbsolutePath();
-				String targetPath = file.getAbsolutePath();
-				// 统一分隔符并规范化路径，防止路径穿越
-				String normalizedBase = basePath.replace('\\', '/').replaceAll("/+", "/");
-				String normalizedTarget = targetPath.replace('\\', '/').replaceAll("/+", "/");
-				// 应改为
-				if (normalizedTarget.equals(normalizedBase) || normalizedTarget.startsWith(normalizedBase + "/")) {
-					isOk = true;
-				}
-			}
-			if (!isOk) {
-				throw new IllegalArgumentException("路径"+path+"超出允许的操作范围，只允许操作以下目录: " + JsonUtil.object2json(baseDirectories));
-			}
-        }
-        return file;
-    }
-
+     
    
 
     /**
      * 检测文件字符编码
      */
-    private String doDetectEncoding(java.io.File file) throws IOException {
+    private String doDetectEncoding(File file) throws IOException {
         byte[] buffer = new byte[4096];
         int len;
-        try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+        try (FileInputStream fis = new FileInputStream(file)) {
             len = fis.read(buffer);
         }
         if (len < 0) {
@@ -580,10 +552,10 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     /**
      * 递归删除目录
      */
-    private boolean deleteDirectory(java.io.File directory) {
-        java.io.File[] files = directory.listFiles();
+    private boolean deleteDirectory(File directory) {
+        File[] files = directory.listFiles();
         if (files != null) {
-            for (java.io.File f : files) {
+            for (File f : files) {
                 if (f.isDirectory()) {
                     deleteDirectory(f);
                 } else {
@@ -612,9 +584,9 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
         /**
      * 拷贝单个文件内容
      */
-    private void copyFileContent(java.io.File src, java.io.File dest) throws IOException {
-        try (java.io.InputStream in = new java.io.FileInputStream(src);
-             java.io.OutputStream out = new java.io.FileOutputStream(dest)) {
+    private void copyFileContent(File src, File dest) throws IOException {
+        try (InputStream in = new FileInputStream(src);
+             OutputStream out = new FileOutputStream(dest)) {
             byte[] buf = new byte[8192];
             int n;
             while ((n = in.read(buf)) > 0) {
@@ -626,16 +598,16 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     /**
      * 递归拷贝目录
      */
-    private void copyDirectory(java.io.File srcDir, java.io.File destDir) throws IOException {
+    private void copyDirectory(File srcDir, File destDir) throws IOException {
         if (!destDir.exists()) {
             destDir.mkdirs();
         }
-        java.io.File[] files = srcDir.listFiles();
+        File[] files = srcDir.listFiles();
         if (files == null) {
             return;
         }
-        for (java.io.File f : files) {
-            java.io.File target = new java.io.File(destDir, f.getName());
+        for (File f : files) {
+            File target = new File(destDir, f.getName());
             if (f.isDirectory()) {
                 copyDirectory(f, target);
             } else {
