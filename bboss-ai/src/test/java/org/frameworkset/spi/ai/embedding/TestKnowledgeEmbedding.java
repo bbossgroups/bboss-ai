@@ -40,7 +40,7 @@ public class TestKnowledgeEmbedding {
     public void testEmbedding(){
         //Elasticsearch KNN search参考文档：https://www.elastic.co/docs/solutions/search/vector/knn#knn-search-filter-example
 		KnowledgeEmbeddingService knowledgeEmbedding = new KnowledgeEmbeddingService();
-        
+        knowledgeEmbedding.createKnowledgeChunksIndex();
 //        knowledgeEmbedding.searchVectorAndRerank("React Compiler的增量采用是什么意思？");
         
         knowledgeEmbedding.searchVectorAndRerank("为什么 React 中的代码重复可能会带来维护问题？");

@@ -28,8 +28,8 @@ import java.util.concurrent.CountDownLatch;
  * @author biaoping.yin
  * @Date 2026/8/17
  */
-public class GrepToolTest {
-	static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(GrepToolTest.class);
+public class GrepCountToolTest {
+	static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(GrepCountToolTest.class);
 	public static void main(String[] args) {
 		HttpRequestProxy.startHttpPools("application-stream.properties");
 		//设置模型调用参数，
@@ -38,13 +38,13 @@ public class GrepToolTest {
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
 		chatAgentMessage.setModel("deepseek-v4-pro");
 		chatAgentMessage.setMaas("deepseek");
-		String question = "检索包含关键字多轮会话的文件";
-		chatAgentMessage.setPrompt(question).setSystemPrompt("你是一个文件检索专家，可以根据用户要求从文件中检索包含用户要求关键字的文件内容");
+		String question = "统计包含关键字多轮会话的文本行数";
+		chatAgentMessage.setPrompt(question).setSystemPrompt("你是一个文件检索统计专家，可以根据用户要求从文件中统计包含用户要求关键字的文本行数");
 		
 		chatAgentMessage.setStream( true).setThinking(false);//.addParameter("max_tokens", 2048);
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
-		String message = "根据用户问题：#[input.query]，调用文件检索工具grep，检索包含用户问题的文件内容。如果用户问题中没有指定文件目录，则将目录设置为空";
+		String message = "根据用户问题：#[input.query]，调用工具grepCount，统计包含用户问题的文本行数。如果用户问题中没有指定文件目录，则将目录设置为空";
 		AIAgent aiAgent = new AIAgent(message);
 		aiAgent.registBeanTool(new GrepFunctionTool(60).addBaseDirectory("C:\\workspace\\bbossgroups\\bboss-elasticsearch\\docs"));
 		

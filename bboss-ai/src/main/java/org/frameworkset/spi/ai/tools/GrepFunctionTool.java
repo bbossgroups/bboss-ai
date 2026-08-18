@@ -190,8 +190,8 @@ public class GrepFunctionTool extends BaseAuditorTool<GrepFunctionTool> {
 		List<String> command = buildCommand(pattern, target.getAbsolutePath(), isRecursive, isCaseSensitive,
 				fileExtensions, maxPerFile, showLines);
 		
-		if (logger.isInfoEnabled()) {
-			logger.info("grep command: {}", JsonUtil.object2json(command));
+		if (logger.isDebugEnabled()) {
+			logger.debug("grep command: {}", JsonUtil.object2json(command));
 		}
 		
 		// 异步执行命令
@@ -253,7 +253,9 @@ public class GrepFunctionTool extends BaseAuditorTool<GrepFunctionTool> {
 		} else {
 			result.put("message", "搜索完成，找到 " + matches.size() + " 处匹配");
 		}
-		
+		if(logger.isDebugEnabled()) {
+			logger.debug("grep command completed: {}", JsonUtil.object2json(result));
+		}
 		return result;
 	}
 	
@@ -278,11 +280,7 @@ public class GrepFunctionTool extends BaseAuditorTool<GrepFunctionTool> {
 			return result;
 		}
 		
-		if (SimpleStringUtil.isEmpty(path)) {
-			result.put("success", false);
-			result.put("message", "搜索路径不能为空");
-			return result;
-		}
+
 		
 		if (auditor != null) {
 			Map<String, Object> toolInfo = new LinkedHashMap<String, Object>();
@@ -861,7 +859,11 @@ public class GrepFunctionTool extends BaseAuditorTool<GrepFunctionTool> {
 				}
 			}
 			int exitCode = proc.waitFor();
-			return new ProcessOutcome(output.toString(), exitCode);
+			String outputStr = output.toString();
+			if(logger.isDebugEnabled()) {
+				logger.debug("命令输出: {}, 命令退出码: {}", outputStr, exitCode);
+			}
+			return new ProcessOutcome(outputStr, exitCode);
 		} catch (Exception e) {
 			throw new RuntimeException("搜索命令执行失败: " + effectiveCommand, e);
 		} finally {

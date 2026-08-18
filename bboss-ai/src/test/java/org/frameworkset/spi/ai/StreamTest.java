@@ -100,7 +100,7 @@ public class StreamTest {
 
 
 //        chatWithTools("qwenvlplus","qwen3.7-plus");
-//        chatWithTools("zhipu","glm-5.2");
+        chatWithTools("zhipu","glm-5.3");
 
 
 
@@ -134,7 +134,7 @@ public class StreamTest {
 //        streamChatWithMcpTools("minimax","visualops","MiniMax-M3","查询用户admin的操作日志，并进行分析",true);
 
 //        chatWithMcpTools("minimax","visualops","MiniMax-M3","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
-        streamChatWithMcpTools("minimax","visualops","MiniMax-M3","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+//        streamChatWithMcpTools("minimax","visualops","MiniMax-M3","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.7-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("openai","visualops","gpt-5.4","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
@@ -148,9 +148,9 @@ public class StreamTest {
 //        streamDBStoreChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
         
 //        streamChatWithMcpTools("openai","feishumcp","gpt-5.4","列出知识库飞书定制开发和应用中的文档",true);
-//        streamChatWithMcpTools("qwenvlplus","12306","qwen3.7-plus","帮我查一下明天北京到上海的高铁",true);
+        streamChatWithMcpTools("qwenvlplus","12306","qwen3.8-max","帮我查一下明天北京到上海的高铁",true);
 		//多智能体协同
-//		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
+//		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁");
 
 //        videovlEvent();
 //        qwenvlCompareStream();
