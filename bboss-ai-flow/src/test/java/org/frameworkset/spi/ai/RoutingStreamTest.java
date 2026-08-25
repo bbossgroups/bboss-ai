@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai;
 
 import com.frameworkset.common.poolman.util.SQLUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
 import org.frameworkset.spi.ai.flow.*;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
@@ -80,7 +81,9 @@ public class RoutingStreamTest {
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()                            
                 .setModel(model)
                 .setMaas(maas).setPrompt(prompt).setThinking(true);
-
+		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
+		agentRuntimeContext.setDebugSSEData(true);
+		chatAgentMessage.setAgentRuntimeContext(agentRuntimeContext);
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
         AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()

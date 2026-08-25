@@ -33,6 +33,7 @@ import java.util.Map;
 public class SkillsToolRegist  implements ToolsRegist {
 	private List<Skill> skills = new ArrayList<>();
 	private Map<String,Skill> skillMap = new LinkedHashMap<>();
+	private SkillFilter skillFilter;
 	
 	private String toolDescriptionTemplate = SkillUtils.getToolDescriptionTemplate();
 	private List<FunctionToolDefine> functionToolDefines = new ArrayList<>();
@@ -56,15 +57,20 @@ public class SkillsToolRegist  implements ToolsRegist {
 			StringBuilder skillsXml = new StringBuilder();
 			
 			for (Skill skill : skills) {
+				if(skillFilter != null && !skillFilter.isAllowed(skill.getName())){
+					continue;
+				}
 				skillsXml.append(skill.toXml()).append("\n");
 				skillMap.put(skill.getName(), skill);
 			}
-			functionToolDefine.funtionName2ndDescription("Skill", this.toolDescriptionTemplate.replace("#{skills}", skillsXml.toString()))
-					.requiredParameters("skillName")
-					.addParameter("skillName", "string", "The skill name (no arguments). E.g., \"pdf\" or \"xlsx\"")
-					.setFunctionCall(new SkillFunctionCall(skillMap));
-			functionToolDefine.setToolsRegist(this);
-			functionToolDefines.add(functionToolDefine);
+			if(skillsXml.length() > 0) {
+				functionToolDefine.funtionName2ndDescription("Skill", this.toolDescriptionTemplate.replace("#{skills}", skillsXml.toString()))
+						.requiredParameters("skillName")
+						.addParameter("skillName", "string", "The skill name (no arguments). E.g., \"pdf\" or \"xlsx\"")
+						.setFunctionCall(new SkillFunctionCall(skillMap));
+				functionToolDefine.setToolsRegist(this);
+				functionToolDefines.add(functionToolDefine);
+			}
 			initialized = true;
 		}
 		

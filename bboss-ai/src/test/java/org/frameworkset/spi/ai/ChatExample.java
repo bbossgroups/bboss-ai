@@ -2,6 +2,7 @@ package org.frameworkset.spi.ai;
 
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
@@ -29,10 +30,14 @@ public class ChatExample {
 		StoreContext memoryContext = new StoreContext()
 				.setSessionSize(50)
 				.setStoreType(StoreContext.STORE_TYPE_MEMORY);
+		
 		chatAgentMessage.setStoreContext(memoryContext);
+		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
+		agentRuntimeContext.setDebugSSEData(true);
+		
 		
         // 创建 AIAgent 并调用
-        AIAgent aiAgent = new AIAgent();
+        AIAgent aiAgent = new AIAgent().setAgentRuntimeContext(agentRuntimeContext);
         ServerEvent response = aiAgent.chat("deepseek", chatAgentMessage);
 
         // 输出结果

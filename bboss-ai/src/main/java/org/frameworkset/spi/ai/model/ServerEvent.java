@@ -75,14 +75,20 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 	public static final int TYPE_HITL = 8;
 
     /**
-     * contentType：数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，默认值为0
+     * contentType：数据类型，0表示答案内容，1表示思维链内容, 2 表示工具调用，3 表示mcp服务调用，5 表示监控对象，6 表示混合推理内容，默认值为0
      */
     public static final int CONTENT = 0;
     public static final int REASONING_CONTENT = 1;
     public static final int TOOL_CALLS = 2;
 
+
     public static final int TOKEN_METRICS = 5;
     public static final int MCP_TOOL_CALLS = 3;
+	
+	public static final int MIXED_REASONING_2ND_CONTENT = 6;
+	/**
+	 * contentType定义结束
+	 */
 	private String sessionId;
 	private String requestId;
 	private String userId;

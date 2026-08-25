@@ -21,6 +21,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.callback.AgentOutput;
+import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
 import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
@@ -49,6 +50,9 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AIAgent<T extends AIAgent> implements AgentInfoInf{
+
+	
+	private AgentRuntimeContext agentRuntimeContext;
 	/**
 	 * 当节点直接隶属于并行节点时，会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息
 	 * 并行分组展示消息所属并行分支id
@@ -334,6 +338,10 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 
     public T setAgentMessage(AgentMessage agentMessage) {
         this.agentMessage = agentMessage;
+		if(agentMessage != null && agentMessage.getAgentRuntimeContext() != null && this.agentRuntimeContext == null){
+			this.agentRuntimeContext = agentMessage.getAgentRuntimeContext();
+			
+		}
         return (T)this;
     }
 
@@ -761,6 +769,9 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 
 
     public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage ){
+		if(this.agentRuntimeContext == null){
+			this.agentRuntimeContext = chatAgentMessage.getAgentRuntimeContext();
+		}
         ChatContext chatContext = AIAgentUtil.getChatContext(  chatAgentMessage, this);
         return chat(  maasName,   chatAgentMessage,chatContext);
     }
@@ -1495,5 +1506,21 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 	
 	public static String listModelsString(String maas ){
 		return AIAgentUtil.listModelsString(maas ,null);
+	}
+	
+	public AgentRuntimeContext getAgentRuntimeContext() {
+		if(this.agentRuntimeContext != null) {
+			return agentRuntimeContext;
+		}
+		else if(parentAgent != null && parentAgent != this){
+			
+			return this.parentAgent.getAgentRuntimeContext();
+		}
+		return null;
+	}
+	
+	public T setAgentRuntimeContext(AgentRuntimeContext agentRuntimeContext) {
+		this.agentRuntimeContext = agentRuntimeContext;
+		return (T)this;
 	}
 }

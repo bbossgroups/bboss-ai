@@ -28,6 +28,10 @@ public class StreamData {
     private TokenMetrics totalTokenMetrics;
 
     private int type = ServerEvent.CONTENT;
+	/**
+	 * 标记是否混合数据：既包含答案内容，又包含推理内容
+	 */
+    private boolean mixedData;
 //    private String data;
     /**
      * 解析后工具调用数据：工具调用列表
@@ -94,6 +98,15 @@ public class StreamData {
         this.finishReason = finishReason;
      
     }
+	
+	public StreamData(boolean mixedData , String content,String reasoningContent, String finishReason){
+		this.mixedData = mixedData; 		
+		this.type = ServerEvent.MIXED_REASONING_2ND_CONTENT;
+		this.content = content;
+		this.reasoningContent = reasoningContent;
+		this.finishReason = finishReason;
+		
+	}
 
     public StreamData(List<FunctionTool> functionTools, List<Map> toolCalls, String finishReason){
         this.type = ServerEvent.TOOL_CALLS;
@@ -230,6 +243,10 @@ public class StreamData {
 
     public boolean isReasoning() {
         return type == ServerEvent.REASONING_CONTENT;
+    }
+	
+	public boolean isMixedData() {
+        return mixedData || type == ServerEvent.MIXED_REASONING_2ND_CONTENT;
     }
 
     public boolean isContent() {

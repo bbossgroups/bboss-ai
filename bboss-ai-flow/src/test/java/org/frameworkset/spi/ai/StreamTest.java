@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai;
 
 import com.frameworkset.common.poolman.util.SQLUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
@@ -46,7 +47,7 @@ public class StreamTest {
 //        multiagent("qwenvlplus","qwen3.6-plus");
 //        multiagent("zhipu","glm-5.2");
 //        multiagentWeathor("zhipu","glm-5.2",null);
-        multiagentWeathor("zhipu","glm-5.2","6021bcca95fe4393bd4726f7b667a75a");
+        multiagentWeathor("zhipu","glm-5.2","7021bcca95fe4393bd4726f7b667a75a");
 //        multiuserAgentWeathor("zhipu","glm-5.2","3021bcca95fe4393bd4726f7b667a75a");
         
     }
@@ -107,8 +108,12 @@ public class StreamTest {
                 .setMaxTokens(65536L);
         chatAgentMessage.setThinking(false);
         chatAgentMessage.setMaas(maas);
-
-        
+		
+		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
+		agentRuntimeContext.setDebugSSEData(true);
+		chatAgentMessage.setAgentRuntimeContext(agentRuntimeContext);
+		
+		
 
         AIAgent weatherAgent = new AIAgent("查询杭州市天气，并给出穿衣出行建议",new MCPToolsRegist("visualops"),50)
                 ; 

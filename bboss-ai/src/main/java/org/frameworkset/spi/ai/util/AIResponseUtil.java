@@ -437,7 +437,13 @@ public class AIResponseUtil {
                                }
                                 
                                else if (SimpleStringUtil.isNotEmpty(reasoning_content)) {
-                                   return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
+								   if(content == null) {
+									   return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
+								   }
+								   else{
+									   //既有内容又有推理
+									   return new StreamData(true, content, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
+								   }
                                } else {
                                    return new StreamData(ServerEvent.CONTENT, content, finishReason).setStreamTokenMetrics(tokenMetrics);
                                }
@@ -451,7 +457,15 @@ public class AIResponseUtil {
                                        tokenMetrics.setEndTime(System.currentTimeMillis());
                                    }
                                    if (SimpleStringUtil.isNotEmpty(reasoning_content)) {
-                                       return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
+									   if(content == null) {
+										   return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
+									   }
+									   else{
+										   //既有内容又有推理
+										   return new StreamData(true, content, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
+//										   return new StreamData(ServerEvent.REASONING_CONTENT, reasoning_content, finishReason).setStreamTokenMetrics(tokenMetrics);
+									   }
+                                       
                                    } else {
                                        return new StreamData(ServerEvent.CONTENT, content, finishReason).setStreamTokenMetrics(tokenMetrics);
                                    }
@@ -933,9 +947,13 @@ public class AIResponseUtil {
      * @return
      */
     public static   boolean handleStringData(AgentAdapter agentAdapter ,String line,FluxSink<String> sink, BooleanWrapperInf firstEventTag, StreamDataBuilder streamDataBuilder){
-        if(logger.isDebugEnabled()){
-            logger.debug("line: " + line);
-        }
+		ChatObject chatObject = streamDataBuilder.getChatObject();
+		ChatContext chatContext = chatObject.getChatContext();
+		if(chatContext.isDebugSSEData()) {
+			if (logger.isInfoEnabled()) {
+				logger.info( line);
+			}
+		}
         if (line.startsWith("data: ") || line.startsWith("data:")) {
             String data = line.substring(5).trim();
 
@@ -966,9 +984,13 @@ public class AIResponseUtil {
      * @return
      */
     public static   ServerEvent handleServerEventData(AgentAdapter agentAdapter ,String line, StreamDataBuilder streamDataBuilder){
-        if(logger.isDebugEnabled()){
-            logger.debug("line: " + line);
-        }
+		ChatObject chatObject = streamDataBuilder.getChatObject();
+		ChatContext chatContext = chatObject.getChatContext();
+		if(chatContext.isDebugSSEData()) {
+			if (logger.isInfoEnabled()) {
+				logger.info("data: " + line);
+			}
+		}
         ServerEvent serverEvent = null;
         if (SimpleStringUtil.isNotEmpty(line)) {
             StreamData content = streamDataBuilder.buildWrapped(agentAdapter,JsonUtil.json2Object(line,Map.class));
@@ -976,7 +998,7 @@ public class AIResponseUtil {
 
                 serverEvent = new ServerEvent();
 
-                ChatObject chatObject = streamDataBuilder.getChatObject();
+              
 				ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
                 serverEvent.setAgent(chatObject.getAgent());
                 serverEvent.setData(content.getContent());
@@ -1013,6 +1035,13 @@ public class AIResponseUtil {
                                                 boolean stream, String line, FluxSink<ServerEvent> sink, 
                                                 BooleanWrapperInf firstEventTag,
                                                 BaseStreamDataBuilder streamDataBuilder, FluxSinkStatus fluxSinkStatus){
+		ChatObject chatObject = streamDataBuilder.getChatObject();
+		ChatContext chatContext = chatObject.getChatContext();
+		if(chatContext.isDebugSSEData()){
+			if(logger.isInfoEnabled()){
+				logger.info( line);
+			}
+		}
 //        if(logger.isDebugEnabled()){
 //            logger.debug("line: " + line);
 //        }
@@ -1050,7 +1079,7 @@ public class AIResponseUtil {
 
                 ServerEvent serverEvent = new ServerEvent();
 
-                ChatObject chatObject = streamDataBuilder.getChatObject();
+                
 				ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
                 serverEvent.setAgent(chatObject.getAgent());
                 if(firstEventTag.get()) {
@@ -1070,7 +1099,6 @@ public class AIResponseUtil {
 					streamDataBuilder.setTokenMetrics(tokenMetrics);
 					serverEvent.setTokenMetrics(tokenMetrics);
                 }
-                ChatContext chatContext = chatObject.getChatContext();
                 String fullStreamData = null;
                 if(chatContext.isChatWithToolcall() ) {
 //                    if(chatContext.getToolCallStage() == ChatContext.TOOL_CALL_STAGE_SEARCH_TOOL) {
@@ -1121,7 +1149,7 @@ public class AIResponseUtil {
 					if (!content.isEmpty()) {
 						buildServerEvent(firstEventTag, content,
 								streamDataBuilder, agentAdapter, sink);
-						if (content.isContent() || content.isReasoning()) {
+						if (content.isContent() || content.isReasoning() || content.isMixedData()) {
 							streamDataBuilder.appendToolCallThinkingStreamData(content);
 						}
 						return content.isDone();
@@ -1252,10 +1280,35 @@ public class AIResponseUtil {
         if(streamDataBuilder.isToolResolved()){
             return;
         }
-        ServerEvent serverEvent = new ServerEvent();
+		ServerEvent serverEvent = null;
+		ChatObject chatObject = streamDataBuilder.getChatObject();
+		//混合类型：既有答案，又有推理内容
+		if(content.isMixedData()){
+			serverEvent = new ServerEvent();
+			
+			 
+		
+			ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
+			serverEvent.setAgent(chatObject.getAgent());
+			if (firstEventTag.get()) {
+				firstEventTag.set(false);
+				serverEvent.setFirst(true);
+			}
+			 
+			serverEvent.setToolCallResponse(chatObject.isToolCall());
+			serverEvent.setData(content.getReasoningContent());
+			serverEvent.setType(ServerEvent.TYPE_DATA);
+			serverEvent.setContentType(ServerEvent.REASONING_CONTENT);		 
+			
+			serverEvent.setRole(content.getRole());
+			serverEvent.setContent(content.getReasoningContent());
+			serverEvent.setReasoningContent(content.getReasoningContent());
+			streamDataBuilder.handleServerEvent(agentAdapter,serverEvent);
+			sink.next(serverEvent);
+		}
+        serverEvent = new ServerEvent();
 
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
-        ChatObject chatObject = streamDataBuilder.getChatObject();
 		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
         serverEvent.setAgent(chatObject.getAgent());
         if (firstEventTag.get()) {
@@ -1275,12 +1328,11 @@ public class AIResponseUtil {
         serverEvent.setGenUrl(content.getUrl());
         serverEvent.setFinishReason(content.getFinishReason());
         serverEvent.setType(ServerEvent.TYPE_DATA);
-        serverEvent.setContentType(content.getType());
+        serverEvent.setContentType(ServerEvent.CONTENT);
         serverEvent.setDone(content.isDone());
 
         serverEvent.setRole(content.getRole());
         serverEvent.setContent(content.getContent());
-        serverEvent.setReasoningContent(content.getReasoningContent());
         streamDataBuilder.handleServerEvent(agentAdapter,serverEvent);
         sink.next(serverEvent);
         

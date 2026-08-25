@@ -36,17 +36,15 @@ public class ChatContext {
 	
 
 	
+	private AgentRuntimeContext agentRuntimeContext;
+
+	
 	/**
 	 * 会话摘要
 	 */
 	private String summary;
 	
-	private PlanModeContextState planModeContextState;
-	private TaskContextState taskContextState;
-	/**
-	 * 是否启用计划模式
-	 */
-	private boolean enablePlanMode;
+
     /**
      * 大模型检索匹配工具阶段、识别和提取工具参数
      */
@@ -304,20 +302,15 @@ public class ChatContext {
 	}
 	
 	public boolean isEnablePlanMode() {
-		return enablePlanMode;
+		return agentRuntimeContext.isEnablePlanMode();
 	}
-	
-	public void setEnablePlanMode(boolean enablePlanMode) {
-		this.enablePlanMode = enablePlanMode;
-	}
+	 
 	
 	public PlanModeContextState getPlanModeContextState() {
-		return planModeContextState;
+		return agentRuntimeContext.getPlanModeContextState();
 	}
 	
-	public void setPlanModeContextState(PlanModeContextState planModeContextState) {
-		this.planModeContextState = planModeContextState;
-	}
+	 
 	public String getSummary() {
 		return summary;
 	}
@@ -327,10 +320,23 @@ public class ChatContext {
 	}
 	
 	public TaskContextState getTaskContextState() {
-		return taskContextState;
+		return agentRuntimeContext.getTaskContextState();
+	}
+ 
+	public boolean isDebugSSEData() {
+		if(agentRuntimeContext != null) {
+			return agentRuntimeContext.isDebugSSEData();
+		}
+		return false;
+	}
+	 
+	
+	public AgentRuntimeContext getAgentRuntimeContext() {
+		return agentRuntimeContext;
 	}
 	
-	public void setTaskContextState(TaskContextState taskContextState) {
-		this.taskContextState = taskContextState;
+	public void setAgentRuntimeContext(AgentRuntimeContext agentRuntimeContext) {
+		this.agentRuntimeContext = agentRuntimeContext;
 	}
+	
 }

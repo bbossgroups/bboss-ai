@@ -81,12 +81,18 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
     }
 
     public void appendFullReasoningStreamData(StreamData streamData){
-        
-        if(streamData.getContent() != null) {
+        String reasoningContent = null;
+		if(streamData.isMixedData()){
+			reasoningContent = streamData.getReasoningContent();
+		}
+		else {
+			reasoningContent = streamData.getContent();
+		}
+        if(reasoningContent != null) {
             if (fullReasoningStreamData == null) {
                 fullReasoningStreamData = new StringBuilder();
             }
-            fullReasoningStreamData.append(streamData.getContent());
+            fullReasoningStreamData.append(reasoningContent);
         }
     }
     
@@ -165,6 +171,10 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
         else if(streamData.isReasoning()){
             appendFullReasoningStreamData(streamData);
         }
+		else if(streamData.isMixedData()){
+			appendFullStreamData(streamData);
+			appendFullReasoningStreamData(streamData);
+		}
         computeTokens(streamData);
         streamData.setMaas(this.getMaas());
         return streamData;
@@ -289,7 +299,11 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
     public void appendToolCallThinkingStreamData(StreamData streamData){
        String thinkContent = null;
         String content = null;
-        if(streamData.isReasoning()){
+		if(streamData.isMixedData()){
+			thinkContent = streamData.getReasoningContent();
+			content = streamData.getContent();
+		}
+        else if(streamData.isReasoning()){
             
             if(streamData.getContent() != null){
                 thinkContent = streamData.getContent();

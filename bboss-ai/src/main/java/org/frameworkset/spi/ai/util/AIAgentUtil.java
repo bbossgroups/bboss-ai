@@ -415,6 +415,12 @@ public class AIAgentUtil {
 	public static ChatContext getChatContextOnly(AgentMessage chatMessage, AIAgent agent) {
 		
 		ChatContext chatContext = new ChatContext();
+		if(agent.getAgentRuntimeContext() != null){
+			chatContext.setAgentRuntimeContext(agent.getAgentRuntimeContext());
+		}
+		else{
+			chatContext.setAgentRuntimeContext(chatMessage.getAgentRuntimeContext());
+		}
 		if (chatMessage instanceof AgentMessage) {
 			Map<String, Object> contextData = chatMessage.getContextData();
 			if (contextData != null)
@@ -429,6 +435,12 @@ public class AIAgentUtil {
     public static ChatContext getChatContext(AgentMessage chatMessage, AIAgent agent){
         
         ChatContext   chatContext = new ChatContext();
+		if(agent.getAgentRuntimeContext() != null){
+			chatContext.setAgentRuntimeContext(agent.getAgentRuntimeContext());
+		}
+		else{
+			chatContext.setAgentRuntimeContext(chatMessage.getAgentRuntimeContext());
+		}
         if(chatMessage instanceof AgentMessage){
             Map<String,Object> contextData = chatMessage.getContextData();
             if(contextData != null)
