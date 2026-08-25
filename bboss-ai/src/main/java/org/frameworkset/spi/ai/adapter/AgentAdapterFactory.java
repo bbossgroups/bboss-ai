@@ -116,6 +116,15 @@ public class AgentAdapterFactory {
 
         return AgentAdapterFactory.getAgentAdapter(modelType);
     }
-    
+	
+	
+	public static AgentAdapter getAgentAdapter(ClientConfiguration clientConfiguration) {
+		String modelType = clientConfiguration.getModelType();
+		if(modelType == null || modelType.equals("")){
+			modelType = clientConfiguration.getHosts();
+		}
+		
+		return AgentAdapterFactory.getAgentAdapter(modelType);
+	}
 
 }

@@ -18,6 +18,8 @@ package org.frameworkset.spi.ai.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -92,6 +94,10 @@ public class Property {
      * }
      */
     private Property items;
+	
+
+	
+	private List<String> required;
  
 
     public Property() {
@@ -120,14 +126,14 @@ public class Property {
 
     public Property addParameter(String name, String type, String desc) {
         if (properties == null)
-            properties = new java.util.LinkedHashMap<>();
+            properties = new LinkedHashMap<>();
         properties.put(name, new Property(type, desc));
         return this;
     }
 
     public Property addParameter(String name, Property property) {
         if (properties == null)
-            properties = new java.util.LinkedHashMap<>();
+            properties = new LinkedHashMap<>();
         properties.put(name, property);
         return this;
     }
@@ -226,4 +232,18 @@ public class Property {
     public void setItems(Property items) {
         this.items = items;
     }
+	public List<String> getRequired() {
+		return required;
+	}
+	
+	public void setRequired(List<String> required) {
+		this.required = required;
+	}
+	
+	public Property addRequired(String name) {
+		if (required == null)
+			required = new java.util.ArrayList<String>();
+		required.add(name);
+		return this;
+	}
 }

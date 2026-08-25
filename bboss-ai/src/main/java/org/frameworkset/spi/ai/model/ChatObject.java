@@ -27,6 +27,7 @@ import java.io.File;
 import java.util.Map;
 
 /**
+ * 单次智能体对话对象，在一个请求会话过程中会调用多次智能体和工具，每次调用都会创建一个ChatObject对象
  * @author biaoping.yin
  * @Date 2026/1/4
  */

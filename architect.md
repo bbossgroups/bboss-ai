@@ -8,28 +8,29 @@
 
 > **ClickHouse 生产级会话存储**：bboss-ai 支持基于 ClickHouse 分布式集群的生产级会话持久化能力。使用时需要指定 ClickHouse 集群名称，并为每个集群节点定义名为 `shard` 和 `replica` 的两个宏变量。ClickHouse 模式下会话续问续答时不会更新最后访问时间（受限于 ClickHouse 不支持高频 UPDATE）。详细使用方式参见 [3.2.6 会话管理](#326-会话管理session-store) 章节。
 
-### 核心功能
+**核心功能**
 - 智能问答（Chat Completion）
 - 图片识别与生成（Vision/Image Generation）
 - 语音识别与合成（Speech-to-Text/Text-to-Speech）
 - 视频识别与生成（Video Understanding/Generation）
 - 向量嵌入（Embedding）
 - 重排序（Rerank）
-- 工具调用（Function Calling）
-- MCP（Model Context Protocol）服务发现和调用，支持 SSE 和 Streamable HTTP 两种传输模式
-- 可快速发布供LLM调用的工具服务和MCP服务
-- 智能体工作流编排，支持串行、并行、条件分支、路由、判断等节点类型
-- Skills 技能模块，支持沙箱隔离和动态加载
-- 工具搜索（Tool Searcher），支持基于关键词和语义的工具过滤
+- 工具调用（Function Calling），支持 `@Tool`/`@ToolParam` 注解快速发布工具服务和 MCP 服务
+- MCP（Model Context Protocol）服务发现和调用，支持 SSE 和 Streamable HTTP 两种传输模式，同时支持客户端和服务端，支持飞书 MCP 集成和 Spring AI MCP 兼容
+- 智能体工作流编排，支持串行、并行、条件分支、路由、判断、关键词路由等节点类型
+- Skills 技能模块，通过 `SKILL.md` + Front Matter 定义，由 `SkillUtils` 加载
+- 工具搜索（Tool Searcher），支持基于关键词的工具过滤，减少上下文占用
 - 会话管理，支持内存存储和数据库持久化（MySQL、Oracle、达梦 DM、SQL Server、PostgreSQL、SQLite、ClickHouse）
 - 多轮工具调用（Loop Tool Call），支持智能体自主决策多步骤任务执行
 - 智能体全链路 Trace 可观测性，覆盖 LLM 调用、工具执行、工作流编排
-- 脚本执行工具（Shell/CLI）和代码执行工具（Python/NodeJS）
+- 内置工具体系：Shell 执行、代码执行（Java/Python/JavaScript）、文件操作、系统信息查询、文本搜索（Grep）、人工介入
+- 工具审计系统（Auditor），支持工具调用前审计拦截，适用于敏感操作审批
 - 支持人工介入Hitl（Human-in-the-Loop）功能，即在智能体执行过程中，用户可以介入并参与到任务执行中，人工反馈数据和智能体之间数据交互机制：
   - 智能体采用单节点单进程模式部署时，用户和智能体检通过内存共享数据，进行智能体中断和唤醒处理；
   - 智能体采用集群模式部署时，用户和智能体之间数据交互通过redis发布/订阅模式实现数据共享，进行智能体中断和唤醒处理
   - 如果接收人工提交数据的节点就是中断智能体所在的节点时，无需通过redis发布/订阅模式进行数据交互，直接通过内存共享数据即可
-  - 采用内置人工介入工具HitlTaskcallTool，实现Hitl功能，亦可以自定义人工介入工具，实现自定义Hitl功能
+  - 采用内置人工介入工具HitlTaskcallTool，实现Hitl功能，亦可以自定义人工介入工具（继承 BaseHitlTaskTool），实现自定义Hitl功能
+  - 支持 HitlAssistant 接口，提供人工干预辅助信息和处理人工提交数据
 - 定时调度执行能力
 
 ### 支持的平台
@@ -54,9 +55,8 @@
 bboss-ai/
 ├── bboss-ai-model/          # 模型定义模块（基础模型和接口）
 │   └── src/main/java/org/frameworkset/spi/ai/
-│       ├── model/           # 核心模型定义
+│       ├── model/           # 核心模型定义（含 annotation/ 注解包）
 │       ├── mcp/model/       # MCP 协议模型
-│       ├── skill/           # Skill 技能接口
 │       └── tools/           # 工具注册接口
 │
 ├── bboss-ai/                # 核心实现模块
@@ -65,19 +65,23 @@ bboss-ai/
 │       │   ├── AIAgent.java           # 智能体主入口类
 │       │   ├── UserAgent.java         # 用户代理类
 │       │   ├── adapter/               # 平台适配器
-│       │   ├── callback/              # 回调接口（ChatContext、AgentOutput）
+│       │   ├── audit/                 # 工具审计系统（Auditor、AuditContext、AuditResult）
+│       │   ├── callback/              # 回调接口（ChatContext、ChatCallback、AgentOutput）
+│       │   ├── hitl/                  # 人工介入功能（BaseHitlTaskTool、HitlTaskHelper、cluster/）
 │       │   ├── material/              # 素材处理（文件下载等）
-│       │   ├── mcp/                   # MCP 客户端实现
+│       │   ├── mcp/                   # MCP 客户端/服务端（sse/、streamable/、feishu/、intercepter/）
 │       │   ├── model/                 # 消息模型
+│       │   ├── skill/                 # 技能加载与管理（SkillUtils、SkillsToolRegist、Skill）
 │       │   ├── store/                 # 会话存储（内存 + DB）
-│       │   ├── tool/                  # 工具注册与搜索
+│       │   ├── tool/                  # 工具注册与搜索（含 permission/）
+│       │   ├── tools/                 # 内置工具实现
 │       │   └── util/                  # 工具类
 │       └── reactor/                   # Reactor 流式处理组件
 │
 ├── bboss-ai-flow/           # 智能体工作流编排模块
 │   └── src/main/java/org/frameworkset/spi/ai/
-│       ├── flow/            # 工作流节点定义
-│       ├── prompt/          # Prompt 资源管理
+│       ├── flow/            # 工作流节点定义（串行/并行/路由/判断/关键词路由/规划等）
+│       ├── prompt/          # Prompt 资源管理与变量解析
 │       └── util/            # 流程工具类
 │
 ├── build.gradle             # 根项目构建配置
@@ -115,15 +119,7 @@ bboss-ai/
 | `McpCapabilities` | MCP 能力描述 |
 | `RequestId` | 请求 ID 生成器 |
 
-#### Skill 技能模块
-
-| 类名 | 作用 |
-|------|------|
-| `Skill` | Skill 运行时接口，代表一个可执行的能力包 |
-| `SkillDefine` | Skill 定义元数据 |
-| `SkillRegist` | Skill 注册接口 |
-| `SandboxContext` | 沙箱上下文，隔离 Skill 运行环境 |
-| `SandboxPolicy` | 沙箱安全策略 |
+> **说明**：Skill 技能模块的实现位于 `bboss-ai` 模块的 `skill` 包中，不在 `bboss-ai-model` 模块。详见 [3.2.x 技能系统](#技能skill系统) 章节。
 
 #### 注解
 
@@ -214,7 +210,8 @@ AgentAdapter (抽象基类)
 - 会话生命周期管理（initialize、notifications/initialized）
 - 工具列表获取（tools/list）
 - 工具调用（tools/call）
-- 飞书 MCP 集成（`FeishuMCPClient`、`FeishuMCPStreamableClient`）
+- 飞书 MCP 集成（`FeishuMCPClient`、`FeishuMCPStreamableClient`、`FeishuMcpRegist`）
+- Spring AI MCP 兼容请求拦截器（`SpringAIMcpRequestIntercepter`），配置方式：`{poolName}.http.httpRequestInterceptors=org.frameworkset.spi.ai.mcp.intercepter.SpringAIMcpRequestIntercepter`
 
 **工作流程：**
 1. 通过 SSE 端点或 Streamable HTTP 端点建立连接
@@ -599,6 +596,7 @@ Flux<ServerEvent> flux = agent.streamChat(message);
 |------|------|
 | `ToolSearcher` | 工具搜索接口，根据 query 筛选相关工具 |
 | `KeywordToolSearcher` | 基于关键词的工具搜索实现 |
+| `ToolCallContext` | 工具调用上下文，封装工具参数传递给其他流程使用 |
 | `BeanToolsRegist` | Bean 工具注册（本地智能体调用） |
 | `BeanToolFunctionCall` | Bean 工具函数调用（本地，带 Trace 记录） |
 | `MCPBeanToolsRegist` | MCP 服务端 Bean 工具注册（对外暴露） |
@@ -607,6 +605,7 @@ Flux<ServerEvent> flux = agent.streamChat(message);
 | `BaseBeanToolFunctionCall` | Bean 工具调用抽象基类，封装参数解析和反射调用 |
 | `BeanToolHandle` | Bean 工具解析处理，扫描 `@Tool`/`@ToolParam` 注解构建 `FunctionToolDefine` |
 | `BeanToolFunctionCallBuilder` | Bean 工具函数调用构建器接口 |
+| `PermissionType` | 工具权限类型枚举（ASK/ALLOW/DENY），位于 `tool.permission` 包 |
 
 ##### 基于注解快速发布工具服务
 
@@ -842,7 +841,7 @@ public class MCPServerController {
 
 #### 3.2.12 内置工具体系
 
-bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools` 包下，共暴露 14 个 `@Tool` 方法，覆盖 Shell 执行、多语言代码执行、文件系统操作、操作系统信息查询四大场景。
+bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools` 包下，覆盖 Shell 执行、多语言代码执行、文件系统操作、操作系统信息查询、文本搜索、人工介入六大场景。所有内置工具均继承 `BaseAuditorTool`，支持通过 `Auditor` 接口实现工具调用前审计拦截。
 
 ##### 工具总览
 
@@ -852,7 +851,8 @@ bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools`
 | `CodeExecuteFunctionTool` | 代码执行 | 3 | 动态编译运行 Java，调用 Python/Node 执行 Python/JavaScript |
 | `FileFunctionTool` | 文件系统 | 9 | 文件读写、拷贝、删除、属性查询、编码识别、目录遍历 |
 | `GetOSFunctionTool` | 系统信息 | 1 | 获取 OS 名称/版本/架构及 CPU 核数/型号 |
-| `HitlTaskcallTool` | 人工介入 | 1 | HITL（Human-in-the-Loop）人工介入工具，当 AI 无法独立完成任务时调用 |
+| `GrepFunctionTool` | 文本搜索 | 1 | 跨平台文本搜索（Linux/Mac 用 grep，Windows 用 findstr），支持正则、递归目录、文件扩展名过滤、超时控制 |
+| `HitlTaskcallTool` | 人工介入 | 1 | HITL（Human-in-the-Loop）人工介入工具，继承 `BaseHitlTaskTool`，当 AI 无法独立完成任务时调用 |
 
 ##### 通用配置约定
 
@@ -901,7 +901,7 @@ bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools`
 
 ##### GetOSFunctionTool —— 操作系统信息查询工具
 
-**功能说明**：获取当前运行环境的操作系统及 CPU 信息，无入参。
+**功能说明**：获取当前运行环境的操作系统及 CPU 信息，无入参。继承 `BaseAuditorTool`，支持审计拦截。
 
 **工具方法**：`getOS2ndCpu()` —— 返回 `os`、`osVersion`、`osArch`、`cpuCores`、`cpuName`
 
@@ -914,9 +914,46 @@ bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools`
 | Mac / Unix | `uname -p` |
 | 失败回退 | `os.arch` |
 
+##### GrepFunctionTool —— 跨平台文本搜索工具
+
+**功能说明**：跨平台文本搜索工具，通过调用操作系统原生命令实现文本搜索：Linux/Mac 使用 `grep`，Windows 使用 `findstr`。继承 `BaseAuditorTool`，支持审计拦截。
+
+**支持特性**：
+- 正则表达式搜索
+- 递归目录搜索
+- 大小写控制
+- 文件扩展名过滤
+- 行号显示
+- 超时控制（默认 60 秒）
+- 基目录限制（防止路径穿越攻击）
+
+**独立线程池**：使用独立的守护线程池（`grep-executor`），避免长时间搜索阻塞 `ForkJoinPool.commonPool`。
+
 ##### HitlTaskcallTool —— 人工介入工具（HITL）
 
-**功能说明**：HITL（Human-in-the-Loop）人工介入工具，当 AI 无法独立完成任务、遇到关键决策点、需要人工审批或验证时调用。
+**功能说明**：HITL（Human-in-the-Loop）人工介入工具，继承 `BaseHitlTaskTool`（进而继承 `BaseAuditorTool`），当 AI 无法独立完成任务、遇到关键决策点、需要人工审批或验证时调用。
+
+**类继承关系**：
+```
+BaseAuditorTool  →  BaseHitlTaskTool  →  HitlTaskcallTool
+```
+
+**核心接口与类**：
+
+| 类名/接口 | 作用 |
+|------------|------|
+| `BaseHitlTaskTool` | Hitl 工具抽象基类，继承 `BaseAuditorTool`，实现 `HitlTaskToolInf` 接口 |
+| `HitlTaskToolInf` | Hitl 工具接口，定义超时动作常量（`continue`/`rejected`）、超时时间、HitlAssistant 管理 |
+| `HitlAssistant` | 人工干预辅助接口，提供 `getHumanAssistantDatas()` 向前端提供辅助信息、`handleHumanSubbmitDatas()` 处理人工提交数据 |
+| `HitlTaskHelper` | Hitl 任务辅助类，管理人工介入任务的创建、中断、唤醒 |
+| `HitlTaskCallListener` | 任务调用监听器（单节点内存模式） |
+| `HitlTaskCallNotifier` | 任务调用通知器（单节点内存模式） |
+| `RedisHitlTaskCallListener` | Redis 集群任务调用监听器 |
+| `RedisHitlTaskCallNotifier` | Redis 集群任务调用通知器 |
+
+**超时处理**：
+- `hitlTaskTimeout`：任务超时时间（毫秒），默认 -1（不超时）
+- `timeoutAction`：超时处理方式，默认 `rejected`（拒绝执行），可设为 `continue`（继续执行）
 
 **适用场景**：
 1. 复杂问题需要人类专业判断
@@ -971,8 +1008,33 @@ agent.registBeanTool(new GetOSFunctionTool(60));          // 60 秒超时
 agent.registBeanTool(new CLIShellFunctionTool(60));
 agent.registBeanTool(new CodeExecuteFunctionTool(60));
 agent.registBeanTool(new FileFunctionTool("/data/safe"));  // 限制文件操作基目录
+agent.registBeanTool(new GrepFunctionTool(60));             // 文本搜索工具
 agent.registBeanTool(new HitlTaskcallTool());              // 人工介入工具
 ```
+
+##### 工具审计系统（Auditor）
+
+bboss-ai 内置了工具审计系统，位于 `org.frameworkset.spi.ai.audit` 包下，所有内置工具均继承 `BaseAuditorTool`，支持在工具调用前进行审计拦截。
+
+**核心类**：
+
+| 类名 | 作用 |
+|------|------|
+| `Auditor` | 审计接口，定义 `audit(AuditContext)` 方法，返回 `AuditResult` |
+| `AuditContext` | 审计上下文，封装工具名称、参数等 |
+| `AuditResult` | 审计结果，返回非 null 时阻止工具执行，结果直接返回给模型 |
+| `BaseAuditorTool` | 审计工具抽象基类，所有内置工具继承此类 |
+
+**工作机制**：
+1. 工具调用前，`BaseAuditorTool` 调用 `auditor.audit(auditContext)` 进行审计
+2. 如果 `AuditResult` 非 null，工具执行被阻止，审计结果直接返回给模型
+3. 如果 `AuditResult` 为 null，工具正常执行
+4. 如果未设置 `Auditor`（`auditor` 为 null），工具正常执行
+
+**适用场景**：
+- 敏感操作的审批拦截（如删除文件、执行脚本）
+- 权限控制和访问管理
+- 工具调用的合规审计记录
 
 ##### 安全风险与注意事项
 
@@ -1151,11 +1213,20 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 | `AISequenceAgent` | 串行智能体编排，子智能体按顺序依次执行 |
 | `AIParrelAgent` | 并行智能体编排，子智能体同时执行，结果聚合后输出 |
 | `AIRouteAgent` | 路由智能体，根据用户问题 AI 自主决策后续路由节点 |
-| `AIJudgeAgent` | 判断节点，调取智能体执行记忆判断输出结果是否满足条件 |
 | `AIKeywordsRouteAgent` | 关键词路由，基于关键词匹配进行路由选择 |
+| `AIJudgeAgent` | 判断节点，调取智能体执行记忆判断输出结果是否满足条件 |
 | `AIBaseNodeAgent` | 工作流节点智能体基类 |
-| `AIFlowNode` | 普通流程节点（非智能体节点） |
+| `AIFlowNode` / `AIFlowNodeVoid` | 普通流程节点（非智能体节点），支持手动 Trace 记录 |
 | `AIContainerAgent` | 容器智能体接口，定义节点添加和条件分支管理方法 |
+| `AINodeAgent` | 节点智能体接口 |
+| `StandaloneAgent` | 独立智能体，封装单个 AIAgent 的独立执行 |
+| `UserNodeAgent` | 用户节点，处理用户输入交互 |
+| `AppendToParentAgent` | 追加到父智能体的节点 |
+| `RouteChoice` | 路由选择项，封装路由分支的智能体 ID 和描述 |
+| `MarkdownJsonExtractor` | Markdown JSON 提取器，从 Markdown 响应中提取 JSON 结构化数据 |
+| `DynamicParrelAgentBuilder` | 动态并行智能体构建器 |
+| `ParrelAgentSessionStoreMemory` | 并行智能体内存会话存储 |
+| `SequenceAgentSessionStoreMemory` | 串行智能体内存会话存储 |
 
 #### 3.3.2 工作流构建器
 
@@ -1167,8 +1238,10 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 | `AISequenceJobFlowNodeBuilder` | 串行节点构建器 |
 | `AIParrelJobFlowNodeBuilder` | 并行节点构建器 |
 | `AIRouterNodeBuilder` | 路由节点构建器 |
+| `AIKeywordsRouterNodeBuilder` | 关键词路由节点构建器 |
 | `AIJudgeNodeBuilder` | 判断节点构建器 |
-| `AIFlowNodeBuilder` | 普通流程节点构建器 |
+| `AIFlowNodeBuilder` / `AIFlowNodeVoidBuilder` | 普通流程节点构建器 |
+| `AIBaseNodeBuilder` | 工作流节点基础构建器 |
 
 #### 3.3.3 提示词工程与外部资源加载
 
@@ -1420,9 +1493,10 @@ AgentSessionStore（主存储）
 - 支持作为 MCP 服务端对外提供工具
 
 **Skill 技能模块：**
-- 通过 `Skill` 接口封装一组相关工具
-- `SandboxContext` 和 `SandboxPolicy` 提供沙箱隔离
-- 支持动态加载和卸载
+- 通过 `SKILL.md` 文件 + Front Matter 定义技能
+- `SkillUtils` 加载技能文件，`SkillsToolRegist` 聚合为单个工具暴露给模型
+- `SkillFilter` 支持技能过滤
+- 所有技能内容通过提示词传递给模型，由模型自主决策执行步骤
 
 ### 4.8 可观测性机制
 
@@ -1482,13 +1556,15 @@ BaseAgentSessionStore → PersistentMessage
 | Apache HttpClient5 | 5.x | HTTP 客户端 |
 | Apache HttpCore5 | 5.x | HTTP 核心 |
 | Project Reactor | 3.x | 响应式编程 |
-| Jackson | 2.x | JSON 处理 |
-| bboss-http5 | 6.5.x | 负载均衡 HTTP 组件 |
-| bboss-core-entity | 6.5.x | 基础实体类 |
-| bboss-datatran-jdbc | 6.5.x | 工作流引擎（JobFlow） |
-| bboss-feishu | 6.5.x | 飞书集成 |
-| bboss-persistent | 6.5.x | 数据库持久化 |
-| flexmark | 0.64.x | Markdown 处理 |
+| Jackson | 2.22.1 | JSON 处理 |
+| bboss-http5 | 6.5.5 | 负载均衡 HTTP 组件 |
+| bboss-core-entity | 6.3.5 | 基础实体类 |
+| bboss-datatran-jdbc | 7.5.7 | 工作流引擎（JobFlow） |
+| bboss-feishu | 6.5.5 | 飞书集成 |
+| bboss-persistent | 6.3.5 | 数据库持久化 |
+| bboss-data | 6.3.8 | 数据处理 |
+| flexmark | 0.64.8 | Markdown 处理 |
+| Groovy（可选） | 4.0.28 | 脚本支持 |
 | Gradle | 构建工具 | 项目构建 |
 
 ---
@@ -1599,23 +1675,38 @@ ServerEvent result = agent.chat("maasName", message);
 
 ### 6.8 Skill 使用
 
+bboss-ai 的技能（Skill）通过 `SKILL.md` 文件 + Front Matter 定义，由 `SkillUtils` 加载，`SkillsToolRegist` 聚合为单个 `Skill` 工具暴露给模型。`Skill` 类包含 `name`、`description`、`basePath`、`frontMatter`（扩展属性）、`content`（技能内容）等属性。
+
+**SKILL.md 文件示例**：
+
+```markdown
+---
+name: code-review
+description: 代码审查技能，分析代码质量问题
+---
+
+## 步骤
+1. 读取待审查的代码文件
+2. 分析代码结构和逻辑
+3. 识别潜在问题
+4. 生成审查报告
+```
+
+**注册 Skill 工具**：
+
 ```java
-public class CalculatorSkill implements Skill {
-    @Override
-    public SkillDefine getSkillDefine() {
-        return new SkillDefine("calculator", "计算器", "提供数学计算能力");
-    }
+AIAgent agent = new AIAgent();
 
-    @Override
-    public List<FunctionToolDefine> getToolDefines() {
-        // 返回工具定义列表
-    }
+// 加载技能目录下的所有 SKILL.md 文件
+SkillsToolRegist skillToolsRegist = new SkillsToolRegist();
+skillToolsRegist.setBasePath("/path/to/skills");  // 技能目录路径
+agent.setToolsRegist(skillToolsRegist);
 
-    @Override
-    public FunctionCall getFunctionCall(String toolName) {
-        // 返回对应工具的调用实现
-    }
-}
+ChatAgentMessage message = new ChatAgentMessage();
+message.setPrompt("请审查这段代码的质量");
+message.setModel("deepseek-chat");
+
+Flux<ServerEvent> flux = agent.streamChat("maasName", message);
 ```
 
 ### 6.9 多次调用工具完成复杂任务
@@ -1797,18 +1888,21 @@ sessionService.deleteAgentSession(sessionId);
 
 ## 七、总结
 
-bboss-ai 是一个功能完善的 Java AI 客户端框架，具有以下特点：
+bboss-ai 是一个功能完善的 Java AI 智能体开发框架，具有以下特点：
 
 1. **多平台支持**：统一适配国内主流大模型平台及 OpenAI 兼容接口
 2. **多模态能力**：支持文本、图片、音频、视频、Embedding、Rerank 的全方位处理
 3. **流式响应**：基于 Reactor 实现真正的流式调用
 4. **企业级特性**：内置负载均衡、故障转移、服务发现、会话持久化
-5. **工作流编排**：支持串行、并行、条件分支、路由、判断等丰富的节点类型
-6. **工具扩展**：支持 Function Calling、MCP 协议（SSE/Streamable HTTP）、Skill 技能模块
-7. **工具搜索**：支持基于关键词和语义的工具过滤，减少上下文占用
+5. **工作流编排**：支持串行、并行、条件分支、路由、判断、关键词路由等丰富的节点类型
+6. **工具扩展**：支持 Function Calling、MCP 协议（SSE/Streamable HTTP）、Skill 技能模块，支持 `@Tool`/`@ToolParam` 注解快速发布工具服务和 MCP 服务
+7. **工具搜索**：支持基于关键词的工具过滤，减少上下文占用
 8. **多轮工具调用**：支持智能体自主决策多步骤任务执行，默认最大 80 轮
-9. **生产级会话存储**：支持 ClickHouse 分布式集群，提供高吞吐会话持久化能力
-10. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路
-11. **轻量级设计**：模块化结构，依赖精简
+9. **人工介入（HitL）**：支持单节点内存共享和集群 Redis 发布/订阅两种模式，内置 `HitlTaskcallTool` 和自定义 Hitl 工具扩展
+10. **工具审计**：内置 `Auditor` 审计系统，支持工具调用前审计拦截，适用于敏感操作审批
+11. **生产级会话存储**：支持 ClickHouse 分布式集群，提供高吞吐会话持久化能力
+12. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路
+13. **内置工具体系**：Shell 执行、代码执行（Java/Python/JavaScript）、文件操作、系统信息查询、文本搜索（Grep）、人工介入
+14. **轻量级设计**：模块化结构，依赖精简
 
 该框架适合需要集成多种 AI 能力的 Java 企业级应用使用。

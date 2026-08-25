@@ -18,6 +18,8 @@ package org.frameworkset.spi.ai;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.collections.CollectionUtils;
+import org.frameworkset.spi.ai.adapter.AgentAdapter;
+import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.callback.AgentOutput;
 import org.frameworkset.spi.ai.callback.ChatContext;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
@@ -28,6 +30,8 @@ import org.frameworkset.spi.ai.tool.ToolSearcher;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -1475,5 +1479,21 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 	public T setParentGroupId(String parentGroupId) {
 		this.parentGroupId = parentGroupId;
 		return (T)this;
+	}
+	
+	public Map listModels(String maas,Map params){
+		return AIAgentUtil.listModels(maas,params);
+	}
+	
+	public Map listModels(String maas ){
+		return AIAgentUtil.listModels(maas );
+	}
+	
+	public static String listModelsString(String maas,Map params){
+		return AIAgentUtil.listModelsString(maas,params);
+	}
+	
+	public static String listModelsString(String maas ){
+		return AIAgentUtil.listModelsString(maas ,null);
 	}
 }

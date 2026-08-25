@@ -953,8 +953,22 @@ public class AIAgentUtil {
         ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
         return chatCompletionEvent(  poolName,   chatMessage ,   aiAgent,chatContext);
     }
-    
-
+	public static Map listModels(String maas ){
+		return listModels(  maas, (Map) null);
+	}
+	public static Map listModels(String maas,Map params){
+		ClientConfiguration config = ClientConfiguration.getClientConfiguration(maas);
+		AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config);
+		Map models = HttpRequestProxy.httpGetforObject(maas,agentAdapter.getListModelsUrl(config,params),Map.class);
+		return models;
+	}
+	
+	public static String listModelsString(String maas,Map params){
+		ClientConfiguration config = ClientConfiguration.getClientConfiguration(maas);
+		AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config);
+		String models = HttpRequestProxy.httpGetforString(maas,agentAdapter.getListModelsUrl(config,params));
+		return models;
+	}
     public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent,ChatContext chatContext) {
         long startTime = System.currentTimeMillis();
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);

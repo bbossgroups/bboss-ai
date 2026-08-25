@@ -19,7 +19,7 @@ import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.tools.FileToolException;
 
-import java.io.File;
+import java.io.*;
 import java.util.List;
 
 /**
@@ -28,6 +28,19 @@ import java.util.List;
  * @Date 2026/8/17
  */
 public class FileToolUtil {
+	
+	public static String readFile(File file, String charset) throws IOException {
+		StringBuilder content = new StringBuilder();
+		try (BufferedReader reader = new BufferedReader(
+				new InputStreamReader(new FileInputStream(file), charset))) {
+			String line;
+			while ((line = reader.readLine()) != null) {				 
+				 
+				content.append(line).append("\n");
+			}
+		}
+		return content.toString();
+	}
 	/**
 	 * 校验路径是否在允许的基目录范围内，并返回 File 对象
 	 */

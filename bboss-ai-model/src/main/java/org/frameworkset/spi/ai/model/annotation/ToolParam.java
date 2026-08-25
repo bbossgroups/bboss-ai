@@ -22,18 +22,25 @@ import java.lang.annotation.*;
  * @author biaoping.yin
  * @Date 2026/5/20
  */
-@Target({ElementType.PARAMETER})
+@Target({ElementType.PARAMETER,ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface ToolParam {
     String type() default "object";
     String name();
+	
+	/**
+	 * 数组元素类型
+	 * @return
+	 */
+    String elementType() default "";
+	/**
+	 * 数组元素描述
+	 * @return
+	 */
+	String elementDescription() default "";
     String description();
-    /**
-     * 如果参数是一个bean，需要递归解析bean中的参数作为参数的子参数集
-     * @return
-     */
-    boolean bean() default false;
+ 
 
     /**
      * {

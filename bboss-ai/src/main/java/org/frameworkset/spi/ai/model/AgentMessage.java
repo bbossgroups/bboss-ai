@@ -96,9 +96,15 @@ public class AgentMessage<T extends AgentMessage> {
     private String negativePrompt ;
     private String model ;
     private Map parameters;
-
-
-
+	
+	
+	/**
+	 * 上下文窗口大小
+	 */
+	private Long contextSize;
+	/**
+	 * 最大生成令牌数
+	 */	
     private Long maxTokens; 
     private Boolean stream;
     private Double temperature;

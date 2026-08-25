@@ -414,7 +414,9 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
             functionTool.setType((String)tool_call.get("type"));
             Map function = (Map)tool_call.get("function");
             String arguments = (String)function.get("arguments");
-            argumentsBuilder.append( arguments);
+			if(arguments != null){
+            	argumentsBuilder.append( arguments);
+			}
             functionTool.setFunctionName((String)function.get("name"));
 			FunctionToolDefine functionToolDefine = getFunctionToolDefine(agentTools, functionTool.getFunctionName());
 			if(functionToolDefine != null){

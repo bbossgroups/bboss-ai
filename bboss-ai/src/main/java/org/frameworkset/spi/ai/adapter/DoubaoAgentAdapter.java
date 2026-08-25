@@ -34,7 +34,20 @@ public class DoubaoAgentAdapter  extends QwenAgentAdapter{
     public String getSubmitVideoTaskUrl(ClientConfiguration clientConfiguration,VideoAgentMessage videoAgentMessage) {
         return "/api/v3/contents/generations/tasks";
     }
-
+	@Override
+	public String getListModelsUrl(ClientConfiguration config,Map params) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("/?Action=ListModelActivations&Version=2024-01-01");
+		if(params != null && params.size() > 0){
+			 
+			for (Object key : params.keySet()) {
+				 sb.append("&");
+				sb.append(key).append("=").append(params.get(key));
+				 
+			}
+		}
+		return sb.toString();
+	}
     @Override
     public String getVideoTaskResultUrl(ClientConfiguration clientConfiguration,VideoStoreAgentMessage videoStoreAgentMessage) {
         return "/api/v3/contents/generations/tasks/"+videoStoreAgentMessage.getTaskId();

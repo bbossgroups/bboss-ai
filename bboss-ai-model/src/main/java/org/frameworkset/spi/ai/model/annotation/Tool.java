@@ -30,4 +30,23 @@ public @interface Tool {
     String type() default "function";
     boolean strict() default true;
     boolean additionalProperties() default false;
+	/**
+	 * Whether the tool only reads data without observable side effects.
+	 *
+	 * <p>Read-only tools are auto-allowed under {@code PermissionMode.EXPLORE} and
+	 * {@code ACCEPT_EDITS}, mirroring the {@code ToolBase.isReadOnly()} contract.
+	 *
+	 * @return true if this tool performs no mutation
+	 */
+	boolean readOnly() default false;
+	
+	/**
+	 * Whether the tool is safe to invoke concurrently with itself.
+	 *
+	 * <p>When false, the framework serialises invocations of this tool inside a parallel batch.
+	 * Defaults to {@code true} to match the typical pure-function shape of {@code @Tool} methods.
+	 *
+	 * @return true if multiple invocations may run in parallel without coordination
+	 */
+	boolean concurrencySafe() default true;
 }

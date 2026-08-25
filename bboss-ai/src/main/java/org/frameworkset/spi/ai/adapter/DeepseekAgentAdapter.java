@@ -18,6 +18,8 @@ package org.frameworkset.spi.ai.adapter;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
+import java.util.Map;
+
 /**
  * Deepseek模型智能体适配器
  * @author biaoping.yin
@@ -28,4 +30,22 @@ public class DeepseekAgentAdapter extends QwenAgentAdapter{
     public String getChatCompletionsUrl(ClientConfiguration clientConfiguration, ChatAgentMessage chatAgentMessage) {
         return "/chat/completions";
     }
+	
+ 
+	
+	@Override
+	public String getListModelsUrl(ClientConfiguration config, Map params) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("/models");
+		if(params != null && params.size() > 0){
+			sb.append("?");
+			int i = 0;
+			for (Object key : params.keySet()) {
+				if(i > 0) sb.append("&");
+				sb.append(key).append("=").append(params.get(key));
+				i ++;
+			}
+		}
+		return sb.toString();
+	}
 }

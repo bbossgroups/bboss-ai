@@ -46,6 +46,7 @@ public class GrepToolTest {
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		String message = "根据用户问题：#[input.query]，调用文件检索工具grep，检索包含用户问题的文件内容。如果用户问题中没有指定文件目录，则将目录设置为空";
 		AIAgent aiAgent = new AIAgent(message);
+		aiAgent.registBeanTool(new TodoTools());
 		aiAgent.registBeanTool(new GrepFunctionTool(60).addBaseDirectory("C:\\workspace\\bbossgroups\\bboss-elasticsearch\\docs"));
 		
 		//通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题

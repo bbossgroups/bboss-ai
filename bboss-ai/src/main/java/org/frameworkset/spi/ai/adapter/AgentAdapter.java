@@ -59,8 +59,28 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     public GenFileDownload getGenFileDownload() {
         return genFileDownload;
     }
-
-    /**
+	
+	public String getListModelsUrl(ClientConfiguration config) {
+        return getListModelsUrl(  config,null);
+    }
+	
+	public String getListModelsUrl(ClientConfiguration config,Map params) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("/api/v1/models");
+		if(params != null && params.size() > 0){
+			sb.append("?");
+			int i = 0;
+			for (Object key : params.keySet()) {
+				if(i > 0) sb.append("&");
+				sb.append(key).append("=").append(params.get(key));
+				i ++;
+			}
+		}
+		return sb.toString();
+	}
+	
+	
+	/**
      * 构建生成图片请求参数
      * @param imageAgentMessage
      * @return

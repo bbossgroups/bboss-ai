@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.tool;
 import org.frameworkset.spi.ai.model.FunctionCall;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
+import org.slf4j.Logger;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -29,6 +30,7 @@ import java.util.Map;
  * @Date 2026/5/20
  */
 public abstract class BaseBeanToolFunctionCall<T> implements FunctionCall<T> {
+	private static final Logger logger = org.slf4j.LoggerFactory.getLogger(BaseBeanToolFunctionCall.class);
     protected Method toolMethod;
     protected Object toolBean;
     protected FunctionToolDefine functionToolDefine;
@@ -54,18 +56,52 @@ public abstract class BaseBeanToolFunctionCall<T> implements FunctionCall<T> {
             return null;
         }
         Map<String, Object> arguments = functionTool.getArguments();
+		if(arguments == null) {
+			logger.warn("functionTool name {} arguments:null", functionTool.getFunctionName());
+		}
         Object[] args = new Object[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
             Parameter parameter = parameters[i];
             String name = parameter.getName();
-            if(arguments.containsKey(name)) {
+            if(arguments != null && arguments.containsKey(name)) {
                 args[i] = arguments.get(name);
             }
             else{
-                args[i] = null;
+                args[i] = getDefaultValue(  parameter);
             }
         }
         return args;
     }
+	
+	private Object getDefaultValue(Parameter parameter){
+		Class type = parameter.getType();
+		if(type.isPrimitive()){
+			if(type.equals(boolean.class)){
+				return false;
+			}
+			else if(type.equals(int.class)){
+				return 0;
+			}
+			else if(type.equals(long.class)){
+				return 0L;
+			}
+			else if(type.equals(float.class)){
+				return 0.0f;
+			}
+			else if(type.equals(double.class)){
+				return 0.0;
+			}
+			else if(type.equals(short.class)){
+				return (short) 0;
+			}
+			else if(type.equals(byte.class)){
+				return (byte) 0;
+			}
+			else if(type.equals(char.class)){
+				return (char) 0;
+			}
+		}
+		return null;
+	}
     
 }

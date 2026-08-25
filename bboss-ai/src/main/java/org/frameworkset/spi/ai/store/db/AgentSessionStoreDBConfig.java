@@ -18,7 +18,6 @@ package org.frameworkset.spi.ai.store.db;
 import com.frameworkset.common.poolman.DBUtil;
 import com.frameworkset.common.poolman.SQLExecutor;
 import com.frameworkset.orm.adapter.DB;
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -407,9 +406,9 @@ public class AgentSessionStoreDBConfig {
 			.append( "parentGroupId varchar(100),")  //消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id
             .append( "tokenMetrics text,")  //token消耗统计
             .append( "elapsed BIGINT,")  //耗时
-            .append( "role varchar(100) NOT NULL,")
-            .append( "marks varchar(500),")
-            .append( "metadata text,")
+            .append( "role varchar(100) NOT NULL,")//消息角色名称
+            .append( "marks varchar(500),") //消息标记，冗余备用字段，暂未使用
+            .append( "metadata text,") //消息元数据
             .append( "primary key(msgId))").toString();
 	
 	public static final String clickhouse_createLocalSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageTableName}_local  ON CLUSTER $clickhouseCluster ")

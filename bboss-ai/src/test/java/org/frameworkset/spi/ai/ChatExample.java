@@ -1,5 +1,6 @@
 package org.frameworkset.spi.ai;
 
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
@@ -7,11 +8,13 @@ import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import reactor.core.publisher.Flux;
 
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class ChatExample {
 	
     public static void main(String[] args) {
+		Map d = JsonUtil.json2Object("null{}", Map.class);
         // 初始化配置
         HttpRequestProxy.startHttpPools("application-stream.properties");
 

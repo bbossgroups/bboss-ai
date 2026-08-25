@@ -1192,7 +1192,6 @@ public class AIResponseUtil {
                     Map lastFunction = (Map)lastToolCall.get("function");
                     lastFunction.put("arguments", arguments);
 					if(SimpleStringUtil.isNotEmpty(arguments)) {
-						
 						if (functionTool.getInputType() == null) {
 							functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
 						} else {
@@ -1223,8 +1222,7 @@ public class AIResponseUtil {
             String arguments = argumentsBuilder.toString();
             Map function = (Map) lastToolCall.get("function");
             function.put("arguments", arguments);
-			if(SimpleStringUtil.isNotEmpty(arguments)) {
-				
+			if(SimpleStringUtil.isNotEmpty(arguments)) {				 
 				if (functionTool.getInputType() == null) {
 					functionTool.setArguments(JsonUtil.json2Object(arguments, Map.class));
 				} else {

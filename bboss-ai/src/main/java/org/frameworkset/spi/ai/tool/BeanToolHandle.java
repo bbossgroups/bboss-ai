@@ -22,8 +22,7 @@ import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.frameworkset.util.ClassUtil;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,8 +34,7 @@ import java.util.Set;
  * @Date 2026/5/20
  */
 public class BeanToolHandle {
-    private static String getParamType(Parameter parameter){
-        Class type = parameter.getType();
+    private static String getParamType(Class type){
         String typeStr = type.getName();
         //根据参数类型type名称，将其转换为以下值：
         //object
@@ -84,8 +82,11 @@ public class BeanToolHandle {
         else if(Set.class.isAssignableFrom(type)){
             return "array";
         }
+		else if(type.isArray()){
+            return "array";
+        }
         else if(Map.class.isAssignableFrom(type)){
-            return "object";
+            return "map";
         }
         else{
             return "object";
@@ -131,7 +132,8 @@ public class BeanToolHandle {
                             if(toolParam.required()){
                                 requirements.add(paramName);
                             }
-                            String paramType = getParamType(  parameter);
+							Class paramTypeClass = parameter.getType();
+                            String paramType = getParamType( paramTypeClass);
                             String paramDesc = toolParam.description();
                             Property property = new Property(paramType, paramDesc);       
                             String arrayItemDescription = toolParam.arrayItemDescription();
@@ -171,7 +173,31 @@ public class BeanToolHandle {
                             String format = toolParam.format();
                             if(SimpleStringUtil.isNotEmpty(format))
                                 property.setFormat(format);
-
+							if("array".equals(paramType)){
+								if(paramTypeClass.isArray()){
+									Property arrayPropertyItems = new Property();
+									arrayPropertyItems.setType(toolParam.elementType());
+									arrayPropertyItems.setDescription(toolParam.elementDescription());
+									property.setItems(arrayPropertyItems);
+								}
+								else{
+									 
+									// 获取方法参数的泛型
+									Type[] parameterTypes = method.getGenericParameterTypes();
+									if (parameterTypes[0] instanceof ParameterizedType) {
+										ParameterizedType pt = (ParameterizedType) parameterTypes[i];
+										Type[] actualTypeArguments = pt.getActualTypeArguments();
+										Class<?> elementType = (Class<?>) actualTypeArguments[0];
+										Property arrayPropertyItems_ = parserToolArrayParams(elementType);
+										property.setItems(arrayPropertyItems_);
+									}
+									
+									
+								}
+							}
+							else if("object".equals(paramType)){
+								parserToolObjectParams(property,paramTypeClass);
+							}
                             functionToolDefine.addParameter(paramName, property);
                             
                         }
@@ -192,5 +218,184 @@ public class BeanToolHandle {
         }
         return functionToolDefines;
     }
+	
+	private static Property parserToolArrayParams(Class<?> elementType) {
+		Property arrayPropertyItems = new Property();
+		arrayPropertyItems.setType("object");
+		List<String> requirements = new ArrayList<>();
+		ClassUtil.ClassInfo classInfo = ClassUtil.getClassInfo(elementType);
+		List<ClassUtil.PropertieDescription> propertyDescriptors = classInfo.getPropertyDescriptors();
+		for(ClassUtil.PropertieDescription propertyDescriptor : propertyDescriptors) {
+			Field field = propertyDescriptor.getField();
+			ToolParam toolParam = propertyDescriptor.getField().getAnnotation(ToolParam.class);
+			if(toolParam != null){
+				String paramName =  toolParam.name();
+				if(SimpleStringUtil.isEmpty(paramName)){
+					paramName = propertyDescriptor.getName();
+				}
+				if(toolParam.required()){
+					requirements.add(paramName);
+				}
+				Class paramTypeClass = propertyDescriptor.getPropertyType();
+				String paramType = getParamType( paramTypeClass);
+				String paramDesc = toolParam.description();
+				Property property = new Property(paramType, paramDesc);
+				String arrayItemDescription = toolParam.arrayItemDescription();
+				String arrayItemType = toolParam.arrayItemType();
+				if(SimpleStringUtil.isNotEmpty(arrayItemType)){
+					Property items = new Property(arrayItemType, arrayItemDescription);
+					property.setItems(items);
+				}
+				String[] enumValues = toolParam.enumValues();
+				if(enumValues != null && enumValues.length > 0)
+					property.setEnumValue(enumValues);
+				String constValue = toolParam.constValue();
+				if(SimpleStringUtil.isNotEmpty(constValue))
+					property.setConstValue(Integer.parseInt(constValue));
+				String defaultValue = toolParam.defaultValue();
+				if(SimpleStringUtil.isNotEmpty(defaultValue))
+					property.setDefaultValue(Integer.parseInt(defaultValue));
+				String minimum = toolParam.minimum();
+				if(SimpleStringUtil.isNotEmpty(minimum))
+					property.setMinimum(Integer.parseInt(minimum));
+				String maximum = toolParam.maximum();
+				if(SimpleStringUtil.isNotEmpty(maximum))
+					property.setMaximum(Integer.parseInt(maximum));
+				String exclusiveMinimum = toolParam.exclusiveMinimum();
+				if(SimpleStringUtil.isNotEmpty(exclusiveMinimum))
+					property.setExclusiveMinimum(Integer.parseInt(exclusiveMinimum));
+				String exclusiveMaximum = toolParam.exclusiveMaximum();
+				if(SimpleStringUtil.isNotEmpty(exclusiveMaximum))
+					property.setExclusiveMaximum(Integer.parseInt(exclusiveMaximum));
+				String multipleOf = toolParam.multipleOf();
+				if(SimpleStringUtil.isNotEmpty(multipleOf))
+					property.setMultipleOf(Integer.parseInt(multipleOf));
+				
+				String pattern = toolParam.pattern();
+				if(SimpleStringUtil.isNotEmpty(pattern))
+					property.setPattern(pattern);
+				String format = toolParam.format();
+				if(SimpleStringUtil.isNotEmpty(format))
+					property.setFormat(format);
+				if("array".equals(paramType)){
+					if(paramTypeClass.isArray()){
+						Property arrayPropertyItems_ = new Property();
+						arrayPropertyItems_.setType(toolParam.elementType());
+						arrayPropertyItems_.setDescription(toolParam.elementDescription());
+						property.setItems(arrayPropertyItems_);
+					}
+					else{
+						// 获取方法参数的泛型
+						Type genericType = propertyDescriptor.getField().getGenericType();
+						if (genericType instanceof ParameterizedType) {
+							ParameterizedType pt = (ParameterizedType) genericType;
+							Type[] actualTypeArguments = pt.getActualTypeArguments();
+							Class<?> fieldElementType = (Class<?>) actualTypeArguments[0];
+							Property arrayPropertyItems_ = parserToolArrayParams(fieldElementType);
+							property.setItems(arrayPropertyItems_);
+						}
+						 
+					}
+				}
+				else if("object".equals(paramType)){
+					parserToolObjectParams(property,paramTypeClass);
+				}
+				arrayPropertyItems.addParameter(paramName, property);
+				
+			}
+			
+		}
+		if(requirements != null && requirements.size() > 0)
+			arrayPropertyItems.setRequired(requirements);
+		return arrayPropertyItems;
+    }
+	
+	
+	private static void parserToolObjectParams(Property parent,Class<?> elementType) {
+	  
+		List<String> requirements = new ArrayList<>();
+		ClassUtil.ClassInfo classInfo = ClassUtil.getClassInfo(elementType);
+		List<ClassUtil.PropertieDescription> propertyDescriptors = classInfo.getPropertyDescriptors();
+		for(ClassUtil.PropertieDescription propertyDescriptor : propertyDescriptors) {
+			Field field = propertyDescriptor.getField();
+			ToolParam toolParam = propertyDescriptor.getField().getAnnotation(ToolParam.class);
+			if(toolParam != null){
+				String paramName =  toolParam.name();
+				if(SimpleStringUtil.isEmpty(paramName)){
+					paramName = propertyDescriptor.getName();
+				}
+				if(toolParam.required()){
+					requirements.add(paramName);
+				}
+				Class paramTypeClass = propertyDescriptor.getPropertyType();
+				String paramType = getParamType( paramTypeClass);
+				String paramDesc = toolParam.description();
+				Property property = new Property(paramType, paramDesc);
+				String arrayItemDescription = toolParam.arrayItemDescription();
+				String arrayItemType = toolParam.arrayItemType();
+				if(SimpleStringUtil.isNotEmpty(arrayItemType)){
+					Property items = new Property(arrayItemType, arrayItemDescription);
+					property.setItems(items);
+				}
+				String[] enumValues = toolParam.enumValues();
+				if(enumValues != null && enumValues.length > 0)
+					property.setEnumValue(enumValues);
+				String constValue = toolParam.constValue();
+				if(SimpleStringUtil.isNotEmpty(constValue))
+					property.setConstValue(Integer.parseInt(constValue));
+				String defaultValue = toolParam.defaultValue();
+				if(SimpleStringUtil.isNotEmpty(defaultValue))
+					property.setDefaultValue(Integer.parseInt(defaultValue));
+				String minimum = toolParam.minimum();
+				if(SimpleStringUtil.isNotEmpty(minimum))
+					property.setMinimum(Integer.parseInt(minimum));
+				String maximum = toolParam.maximum();
+				if(SimpleStringUtil.isNotEmpty(maximum))
+					property.setMaximum(Integer.parseInt(maximum));
+				String exclusiveMinimum = toolParam.exclusiveMinimum();
+				if(SimpleStringUtil.isNotEmpty(exclusiveMinimum))
+					property.setExclusiveMinimum(Integer.parseInt(exclusiveMinimum));
+				String exclusiveMaximum = toolParam.exclusiveMaximum();
+				if(SimpleStringUtil.isNotEmpty(exclusiveMaximum))
+					property.setExclusiveMaximum(Integer.parseInt(exclusiveMaximum));
+				String multipleOf = toolParam.multipleOf();
+				if(SimpleStringUtil.isNotEmpty(multipleOf))
+					property.setMultipleOf(Integer.parseInt(multipleOf));
+				
+				String pattern = toolParam.pattern();
+				if(SimpleStringUtil.isNotEmpty(pattern))
+					property.setPattern(pattern);
+				String format = toolParam.format();
+				if(SimpleStringUtil.isNotEmpty(format))
+					property.setFormat(format);
+				if("array".equals(paramType)){
+					if(paramTypeClass.isArray()){
+						Property arrayPropertyItems_ = new Property();
+						arrayPropertyItems_.setType(toolParam.elementType());
+						arrayPropertyItems_.setDescription(toolParam.elementDescription());
+						property.setItems(arrayPropertyItems_);
+					}
+					else{
+						// 获取方法参数的泛型
+						Type genericType = propertyDescriptor.getField().getGenericType();
+						if (genericType instanceof ParameterizedType) {
+							ParameterizedType pt = (ParameterizedType) genericType;
+							Type[] actualTypeArguments = pt.getActualTypeArguments();
+							Class<?> fieldElementType = (Class<?>) actualTypeArguments[0];
+							Property arrayPropertyItems_ = parserToolArrayParams(fieldElementType);
+							property.setItems(arrayPropertyItems_);
+						}
+						
+					}
+				}
+				else if("object".equals(paramType)){
+					parserToolObjectParams(property,paramTypeClass);
+				}
+				parent.addParameter(paramName, property);
+				
+			}
+			
+		}
+	}
 
 }

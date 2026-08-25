@@ -17,6 +17,8 @@ package org.frameworkset.spi.ai.callback;
 
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.state.PlanModeContextState;
+import org.frameworkset.spi.ai.state.TaskContextState;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import reactor.core.publisher.FluxSink;
@@ -26,10 +28,25 @@ import java.util.Map;
 
 /**
  * 智能体chat或者streamchat时，会创建一个ChatContext对象，用于保存会话级别的信息
+ * 一次请求会话级别创建一个ChatContext
  * @author biaoping.yin
  * @Date 2026/5/12
  */
 public class ChatContext {
+	
+
+	
+	/**
+	 * 会话摘要
+	 */
+	private String summary;
+	
+	private PlanModeContextState planModeContextState;
+	private TaskContextState taskContextState;
+	/**
+	 * 是否启用计划模式
+	 */
+	private boolean enablePlanMode;
     /**
      * 大模型检索匹配工具阶段、识别和提取工具参数
      */
@@ -284,5 +301,36 @@ public class ChatContext {
 	
 	public void setJobFlowNodeExecuteContext(JobFlowNodeExecuteContext jobFlowNodeExecuteContext) {
 		this.jobFlowNodeExecuteContext = jobFlowNodeExecuteContext;
+	}
+	
+	public boolean isEnablePlanMode() {
+		return enablePlanMode;
+	}
+	
+	public void setEnablePlanMode(boolean enablePlanMode) {
+		this.enablePlanMode = enablePlanMode;
+	}
+	
+	public PlanModeContextState getPlanModeContextState() {
+		return planModeContextState;
+	}
+	
+	public void setPlanModeContextState(PlanModeContextState planModeContextState) {
+		this.planModeContextState = planModeContextState;
+	}
+	public String getSummary() {
+		return summary;
+	}
+	
+	public void setSummary(String summary) {
+		this.summary = summary;
+	}
+	
+	public TaskContextState getTaskContextState() {
+		return taskContextState;
+	}
+	
+	public void setTaskContextState(TaskContextState taskContextState) {
+		this.taskContextState = taskContextState;
 	}
 }

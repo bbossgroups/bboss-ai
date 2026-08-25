@@ -139,8 +139,14 @@ public class SessionMessage {
 	 * 智能体人工介入处理消息：人工介入处理完成后，返回给大模型的消息和数据内容
 	 */
 	public static final String MESSAGE_TYPE_HITL_HANDLE_MESSAGE = "21";
-
-    /**
+	
+	/**
+	 * 智能体Plan消息：包含规划内容
+	 */
+	public static final String MESSAGE_TYPE_PLAN_MESSAGE = "22";
+	
+	
+	/**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
      */
     public static final String MESSAGE_TYPE_USER_INPUTMESSAGE_NAME = "userinput";
@@ -246,6 +252,11 @@ public class SessionMessage {
 	 * 智能体人工介入处理消息
 	 */
 	public static final String MESSAGE_TYPE_HITL_HANDLE_MESSAGE_NAME = "hitlhandle";
+	
+	/**
+	 * 智能体人工介入处理消息
+	 */
+	public static final String MESSAGE_TYPE_PLAN_MESSAGE_NAME = "plan";
 	
 	/**
 	 * 当节点直接隶属于并行节点时，会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息

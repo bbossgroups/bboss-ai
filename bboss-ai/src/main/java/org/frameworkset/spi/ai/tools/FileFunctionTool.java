@@ -16,11 +16,17 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.audit.Auditor;
+import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.filesystem.AbstractFilesystem;
+import org.frameworkset.spi.ai.filesystem.local.LocalFilesystem;
+import org.frameworkset.spi.ai.filesystem.model.*;
+import org.frameworkset.spi.ai.filesystem.WorkspacePathNormalizer;
+import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
+import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.ai.util.FileToolUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +39,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 文件系统操作工具类。
@@ -47,6 +54,8 @@ import java.util.*;
  */
 public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     private static Logger logger = LoggerFactory.getLogger(FileFunctionTool.class);
+	private AbstractFilesystem abstractFilesystem;
+	private WorkspacePathNormalizer pathNormalizer;
 
     private static final String DEFAULT_CHARSET = java.nio.charset.StandardCharsets.UTF_8.name();
 
@@ -60,6 +69,8 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     private long maxReadSize = DEFAULT_MAX_READ_SIZE;
 
     public FileFunctionTool() {
+		abstractFilesystem = new LocalFilesystem(".");
+		pathNormalizer =   WorkspacePathNormalizer.of(".");
     }
 	public FileFunctionTool(Auditor auditor) {
 		super(auditor);
@@ -69,10 +80,14 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 		super(auditor);
 		baseDirectories = new ArrayList<>();
         baseDirectories.add(baseDirectory);
+		abstractFilesystem = new LocalFilesystem(baseDirectory);
+		pathNormalizer =  WorkspacePathNormalizer.of(baseDirectory);
 	}
     public FileFunctionTool(String baseDirectory) {
 		baseDirectories = new ArrayList<>();
         baseDirectories.add(baseDirectory);
+		abstractFilesystem = new LocalFilesystem(baseDirectory);
+		pathNormalizer =  WorkspacePathNormalizer.of(baseDirectory);
     }
 
     public FileFunctionTool addBaseDirectory(String... baseDirectory) {
@@ -83,6 +98,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 			for (String baseDirectoryItem : baseDirectory) {
 				if (!SimpleStringUtil.isEmpty(baseDirectoryItem)) {
 					baseDirectories.add(baseDirectoryItem);
+					
 				}
 			}
 		}
@@ -100,8 +116,87 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
         }
         return this;
     }
+	private String norm(String path) {
+		return pathNormalizer != null ? pathNormalizer.normalize(path) : path;
+	}
 
     // ==================== 公开工具方法 ====================
+	
+	@Tool(name = "glob_files",  description = "Find files matching a glob pattern.")
+	public String globFiles(			 
+			@ToolParam(name = "pattern", description = "Glob pattern (e.g., **/*.java)")
+			String pattern,
+			@ToolParam(
+					name = "path",
+					description = "Base directory to search from",
+					required = false)
+			String path) {
+//		File srcFile = FileToolUtil.validateAndGetFile(this.baseDirectories,path, true);
+		ChatObject chatObject = AgentTraceHolder.getChatObject();
+		GlobResult r = abstractFilesystem.glob(chatObject.getChatContext(), pattern, norm(path));
+		if (!r.isSuccess()) {
+			return "Error: " + r.getError();
+		}
+		List<FileInfo> files = r.getMatches();
+		if (files == null || files.isEmpty()) {
+			return "No matching files found";
+		}
+		return files.stream()
+				.map(f -> f.getPath() + (f.isDirectory() ? "/" : " (" + f.getSize() + " bytes)"))
+				.collect(Collectors.joining("\n"));
+	}
+	
+	@Tool(
+			name = "list_files",
+			readOnly = true,
+			description = "List files and directories at the given path.")
+	public String listFiles(
+			ChatContext runtimeContext,
+			@ToolParam(name = "path", description = "Directory path to list") String path) {
+		LsResult r = abstractFilesystem.ls(runtimeContext, norm(path));
+		if (!r.isSuccess()) {
+			return "Error: " + r.getError();
+		}
+		List<FileInfo> infos = r.getEntries();
+		if (infos == null || infos.isEmpty()) {
+			return "Empty or not a directory: " + path;
+		}
+		return infos.stream()
+				.map(
+						f ->
+								(f.isDirectory() ? "[DIR]  " : "[FILE] ")
+										+ f.getPath()
+										+ (f.isDirectory() ? "" : " (" + f.getSize() + " bytes)"))
+				.collect(Collectors.joining("\n"));
+	}
+	
+	@Tool(
+			name = "grep_files",
+			readOnly = true,
+			description = "Search file contents for a literal text pattern.")
+	public String grepFiles(
+			ChatContext runtimeContext,
+			@ToolParam(name = "pattern", description = "Literal text pattern to search for")
+			String pattern,
+			@ToolParam(name = "path", description = "Directory or file to search", required = false)
+			String path,
+			@ToolParam(
+					name = "glob",
+					description = "Optional file glob filter (e.g., *.java)",
+					required = false)
+			String glob) {
+		GrepResult r = abstractFilesystem.grep(runtimeContext, pattern, norm(path), glob);
+		if (!r.isSuccess()) {
+			return "Error: " + r.getError();
+		}
+		List<GrepMatch> matches = r.getMatches();
+		if (matches == null || matches.isEmpty()) {
+			return "No matches found";
+		}
+		return matches.stream()
+				.map(m -> m.getPath() + ":" + m.getLine() + ":" + m.getText())
+				.collect(Collectors.joining("\n"));
+	}
     /**
      * 拷贝文件或目录
      */
