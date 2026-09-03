@@ -28,6 +28,7 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AgentAdapterFactory {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AgentAdapterFactory.class);
     private static Map<String,AgentAdapter> agentAdapters = new LinkedHashMap<>();
     static{
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_DOUBAO,new DoubaoAgentAdapter().initAgentAdapter());
@@ -55,8 +56,13 @@ public class AgentAdapterFactory {
      * @param agentAdapter
      */
     public static void registerAgentAdapter(String modelType, AgentAdapter agentAdapter){
-        if(agentAdapters.containsKey(modelType))
-            throw new AIRuntimeException("modelType:["+modelType+"] has been registered.");
+		if(agentAdapters.containsKey(modelType)) {
+//			throw new AIRuntimeException("modelType:[" + modelType + "] has been registered.");
+			if(log.isWarnEnabled()) {
+				log.warn("modelType:[" + modelType + "] has been registered.");
+			}
+			return;
+		}
         agentAdapters.put(modelType,agentAdapter.initAgentAdapter());
     }
 
