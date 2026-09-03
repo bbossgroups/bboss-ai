@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+**
+ *  Copyright 2008-2010 biaoping.yin
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ *
+ * Title: agentSession.xml
+ * Description: 会话管理sql配置文件
+ 
+ * Company:bboss
+ * Copyright (c) 2015
+ * @Date 2026-06-12 14:16:51
+ * @author yinbp
+ * @version v1.0 
+ **
+ -->
+<properties>
+	
+	<property name="addAgentSession">
+		<![CDATA[
+			insert into agent_session (sessionId,agentId,createTime,domain,title,useId) values(#[sessionid],#[agentid],#[createtime],#[domain],#[title],#[useid])
+		]]>
+	</property>
+	<property name="deleteByKey">
+		<![CDATA[
+			delete from agent_session where sessionId=?
+		]]>
+	</property>
+
+    <property name="deleteAgentSessionMessageByKey">
+        <![CDATA[
+			delete from agent_session_message where sessionId=?
+		]]>
+    </property>
+    <property name="deleteAgentSessionMessageRefByKey">
+        <![CDATA[
+			delete from agent_session_message_ref where sessionId=?
+		]]>
+    </property>
+    
+
+    
+	<property name="updateAgentSession">
+		<![CDATA[
+			update agent_session set sessionId=#[sessionid],agentId=#[agentid],createTime=#[createtime],domain=#[domain],title=#[title],useId=#[useid] where sessionId=#[sessionid]
+		]]>
+	</property>
+	<property name="selectById">
+		<![CDATA[
+			select * from agent_session where sessionId=?
+		]]>
+	</property>
+    <property name="existAgentSession">
+        <![CDATA[
+			select count(1) as sessionCount from agent_session where sessionId=?
+		]]>
+    </property>
+    
+	<property name="queryListAgentSession">
+		<![CDATA[
+			select * from agent_session where 1=1
+			#if($agentid && !$agentid.equals(""))
+				and agentId =#[agentid]		
+			#end
+			#if($userId && !$userId.equals(""))
+				and userId =#[userId]		
+			#end
+			#if($domain && !$domain.equals(""))
+				and domain =#[domain]		
+			#end		
+			#if($domains)
+				and domain in  ( 
+                  #foreach($d in $domains) 
+                        #if($foreach.index > 0),#end #[domains[$foreach.index]] 
+                  #end
+              ) 	
+			#end
+			#if($title && !$title.equals(""))
+				and title like #[title]	
+			#end	  
+			#if($timeStart )
+                and $timeConditionField >= #[timeStart]
+            #end
+            #if($timeEnd )
+                and $timeConditionField <= #[timeEnd]
+            #end
+            #if($sortKey && !$sortKey.equals(""))
+                order by $sortKey #if($sortDesc)desc#else asc#end
+            #end
+
+		]]>
+	</property>
+
+    <property name="queryListSessionMessages">
+        <![CDATA[
+			select *  from agent_session_message where sessionId=? order by createTime,seqNo asc
+
+		]]>
+    </property>
+
+    <property name="queryListAgentSessionMessages">
+        <![CDATA[
+			select *  from agent_session_message where sessionId=? and agentid=? order by createTime,seqNo asc
+
+		]]>
+    </property>
+
+
+    <!--
+    hitlTaskStatus 0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束
+    -->
+    <property name="handledHitlCallTask">
+        <![CDATA[
+			update agent_hitl_calltask
+                  set hitlTaskStatus=1,hitlTaskData=?,exception=?,hitlTaskHandleTime=?  where hitlTaskId=?
+
+		]]>
+    </property>
+
+    <property name="refusedHitlCallTask">
+        <![CDATA[
+			update agent_hitl_calltask
+                  set hitlTaskStatus=2,hitlTaskData=?,exception=?,hitlTaskHandleTime=?  where hitlTaskId=?
+
+		]]>
+    </property>
+
+    <property name="completeHitlCallTask">
+        <![CDATA[
+			update agent_hitl_calltask
+                  set hitlTaskStatus=5,hitlTaskHandleResult=?,hitlTaskCompleteTime=?  where hitlTaskId=?
+
+		]]>
+    </property>
+
+    <property name="timeoutHitlCallTask">
+        <![CDATA[
+			update agent_hitl_calltask
+                  set hitlTaskStatus=3,hitlTaskHandleResult=?,hitlTaskCompleteTime=?  where hitlTaskId=?
+
+		]]>
+    </property>
+     <property name="destroyHitlCallTask">
+        <![CDATA[
+			update agent_hitl_calltask
+                  set hitlTaskStatus=4,hitlTaskHandleResult=?,hitlTaskCompleteTime=?  where hitlTaskId=?
+
+		]]>
+    </property>
+
+    <property name="deleteHitlCallTaskBySessionId">
+        <![CDATA[
+			delete from agent_hitl_calltask where sessionId=? 
+
+		]]>
+    </property>
+    
+    <property name="deleteCompleteHitlCallTaskSQLWithCompleteTime">
+        <![CDATA[
+			delete from agent_hitl_calltask where hitlTaskStatus=5 and hitlTaskCompleteTime<?
+
+		]]>
+    </property>
+
+    <property name="insertHitlCallTask">
+        <![CDATA[
+			insert into agent_hitl_calltask (hitlTaskId,traceId,agentId,agentName,parentAgentId,parentAgentName, 
+			sessionId,requestId,userId,hitlTaskReason,hitlTaskStatus,hitlTaskHandleResult, 
+			hitlTaskCreateTime,hitlTaskHandleTime,hitlTaskCompleteTime ) values(#[hitlTaskId],#[traceId],#[agentId],#[agentName],#[parentAgentId],#[parentAgentName], 
+			#[sessionId],#[requestId],#[userId],#[hitlTaskReason],#[hitlTaskStatus],#[hitlTaskHandleResult], 
+			#[hitlTaskCreateTime],#[hitlTaskHandleTime],#[hitlTaskCompleteTime])
+
+		]]>
+    </property>
+
+    
+    <property name="getHitlCallTask">
+        <![CDATA[
+			select * from agent_hitl_calltask where hitlTaskId=?
+
+		]]>
+    </property>
+
+</properties>
