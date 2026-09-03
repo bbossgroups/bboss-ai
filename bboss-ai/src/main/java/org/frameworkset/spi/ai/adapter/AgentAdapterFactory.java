@@ -28,6 +28,7 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AgentAdapterFactory {
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AgentAdapterFactory.class);
     private static Map<String,AgentAdapter> agentAdapters = new LinkedHashMap<>();
     static{
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_DOUBAO,new DoubaoAgentAdapter().initAgentAdapter());
@@ -54,9 +55,14 @@ public class AgentAdapterFactory {
      * @param modelType
      * @param agentAdapter
      */
-    public static void registerAgentAdapter(String modelType, AgentAdapter agentAdapter){
-        if(agentAdapters.containsKey(modelType))
-            throw new AIRuntimeException("modelType:["+modelType+"] has been registered.");
+    public static void registerAgentAdapter(ClientConfiguration clientConfiguration,String modelType, AgentAdapter agentAdapter){
+		if(agentAdapters.containsKey(modelType)) {
+//			throw new AIRuntimeException("modelType:[" + modelType + "] has been registered.");
+			if(log.isInfoEnabled()) {
+				log.info("modelType:[{}] agentAdapter[{}]  used in [{}] has been registered.",modelType,agentAdapter.getClass().getName(),clientConfiguration.getBeanName());
+			}
+			return;
+		}
         agentAdapters.put(modelType,agentAdapter.initAgentAdapter());
     }
 
@@ -65,11 +71,11 @@ public class AgentAdapterFactory {
      * @param modelType
      * @param agentAdapterClass
      */
-    public static void registerAgentAdapter(String modelType, Class<? extends AgentAdapter> agentAdapterClass){
+    public static void registerAgentAdapter(ClientConfiguration clientConfiguration,String modelType, Class<? extends AgentAdapter> agentAdapterClass){
         AgentAdapter agentAdapter = null;
         try {
             agentAdapter = agentAdapterClass.newInstance();
-            registerAgentAdapter(  modelType,   agentAdapter);
+            registerAgentAdapter(   clientConfiguration, modelType,   agentAdapter);
         } catch (Exception e) {
             throw new AIRuntimeException(e);
         }  
@@ -81,11 +87,11 @@ public class AgentAdapterFactory {
      * @param modelType
      * @param agentAdapterClass
      */
-    public static void registerAgentAdapter(String modelType, String agentAdapterClass){
+    public static void registerAgentAdapter(ClientConfiguration clientConfiguration,String modelType, String agentAdapterClass){
         AgentAdapter agentAdapter = null;
         try {
             Class<? extends AgentAdapter> agentAdapterClass_ = (Class<? extends AgentAdapter>) Class.forName(agentAdapterClass);
-            registerAgentAdapter(  modelType,   agentAdapterClass_);
+            registerAgentAdapter(  clientConfiguration,  modelType,   agentAdapterClass_);
         } catch (AIRuntimeException e) {
             throw e;
         }catch (Exception e) {
