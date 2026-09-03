@@ -19,6 +19,7 @@ import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.db.AgentMemoryStoreDB;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.Logger;
@@ -84,8 +85,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
     protected AgentSessionStore mainAgentSessionStore;
     /** 短期记忆：使用静态变量存储会话记忆（实际项目中建议使用缓存或数据库）*/
-    protected List<Map<String, Object>> sessionMemory;
-    public BaseAgentSessionStore(List<Map<String, Object>> sessionMemory){
+    protected List<LinkedMessageMap<String, Object>> sessionMemory;
+    public BaseAgentSessionStore(List<LinkedMessageMap<String, Object>> sessionMemory){
         this.sessionMemory = sessionMemory;
 
     }
@@ -112,12 +113,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
  
 
-    public T setSessionMemory(List<Map<String, Object>> sessionMemory) {
+    public T setSessionMemory(List<LinkedMessageMap<String, Object>> sessionMemory) {
         this.sessionMemory = sessionMemory;
         return (T) this;
     }
 
-    public BaseAgentSessionStore(List<Map<String, Object>> sessionMemory, int sessionSize){
+    public BaseAgentSessionStore(List<LinkedMessageMap<String, Object>> sessionMemory, int sessionSize){
         this.sessionMemory = sessionMemory;
         this.sessionSize = sessionSize;
 
@@ -146,6 +147,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     }
 
     public BaseAgentSessionStore(StoreContext storeContext,AIAgent agent){
+		this.agentMemoryStore = new AgentMemoryStoreDB(storeContext);
+		 
         this.persistentSessionMemory = true;
         this.storeContext = storeContext;
         this.sessionId = storeContext.getSessionId();   
@@ -177,6 +180,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
      * 子任务会话记忆
      */
     private Map<String,AgentSessionStore> subTaskSessionMemorys;
+	private AgentMemoryStore agentMemoryStore;
 
     public BaseAgentSessionStore(String sessionId, String userId, String agentId ) {
         this.sessionId = sessionId;
@@ -185,13 +189,13 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     }
 
 
-    public List<Map<String, Object>> getSessionMemory() {
+    public List<LinkedMessageMap<String, Object>> getSessionMemory() {
         return sessionMemory;
     }
     @Override
     public void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSessionMemory) {
         if(subTaskSessionMemorys == null){
-            subTaskSessionMemorys = new LinkedHashMap<>();
+            subTaskSessionMemorys = new LinkedMessageMap<>();
         }
         this.subTaskSessionMemorys.put(agentId, subTaskSessionMemory);
     }
@@ -218,11 +222,11 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
    
  
     @Override
-    public void appendSessionMessageFromParent(Map<String,Object> message){
+    public void appendSessionMessageFromParent(LinkedMessageMap<String,Object> message){
         appendSessionMessage( message);
         
     }
-    protected void appendSessionMessage(Map<String,Object> persistentMessage){
+    protected void appendSessionMessage(LinkedMessageMap<String,Object> persistentMessage){
         if(sessionMemory == null){
             return ;
         }
@@ -241,7 +245,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 		persistentMessage.setGroupId(traceMessage.getGroupId());
 		persistentMessage.setParentGroupId(traceMessage.getParentGroupId());
 		
-        Map<String, Object> message = traceMessage.getMessage();
+		LinkedMessageMap<String, Object> message = traceMessage.getMessage();
         persistentMessage.setMessage(message);
         TokenMetrics tokenMetrics = new TokenMetrics();
         tokenMetrics.setStartTime(traceMessage.getStartTime());
@@ -265,7 +269,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         PersistentMessage persistentMessage = new PersistentMessage();
 		persistentMessage.setGroupId(traceMessage.getGroupId());
 		persistentMessage.setParentGroupId(traceMessage.getParentGroupId());
-        Map<String, Object> message = traceMessage.getMessage();
+		LinkedMessageMap<String, Object> message = traceMessage.getMessage();
         persistentMessage.setMessage(message);
         
         tokenMetrics.setStartTime(traceMessage.getStartTime());
@@ -299,7 +303,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(sessionMemory == null){
             return ;
         }
-        Map<String,Object> message = persistentMessage.getMessage();
+		LinkedMessageMap<String,Object> message = persistentMessage.getMessage();
         appendSessionMessage(message);
        
         String role = (String) message.get("role");
@@ -315,7 +319,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
     @Override
     public LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent){
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent.getData());
+		LinkedMessageMap<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent.getData());
         
         AgentResultSessionMessageContext agentResultSessionMessageContext = new AgentResultSessionMessageContext();
         agentResultSessionMessageContext.setTokenMetrics(serverEvent.getTokenMetrics());
@@ -323,7 +327,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     }
 
      
-    private LastSessionMessage addAgentResultSessionMessage(Map<String, Object> assistantMessage, AgentResultSessionMessageContext agentResultSessionMessageContext){
+    private LastSessionMessage addAgentResultSessionMessage(LinkedMessageMap<String, Object> assistantMessage, AgentResultSessionMessageContext agentResultSessionMessageContext){
 //        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent.getData());
         LastSessionMessage lastSubAgentSessionMessage = null;
        
@@ -411,7 +415,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     }
     @Override
     public LastSessionMessage addAgentResultSessionMessage(AgentResultSessionMessageContext agentResultSessionMessageContext,String message){
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
+		LinkedMessageMap<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(message);
          
         return   addAgentResultSessionMessage(assistantMessage, agentResultSessionMessageContext);
     }
@@ -422,7 +426,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
      * @param parentAgentId
      */
     @Override
-    public LastSessionMessage addAgentResultSessionMessage(Map<String, Object> persistentMessage//Map<String, Object> message
+    public LastSessionMessage addAgentResultSessionMessage(LinkedMessageMap<String, Object> persistentMessage//Map<String, Object> message
                                                             ,String agentId,String parentAgentId){
 
         LastSessionMessage lastSessionMessage = null;
@@ -448,7 +452,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     }
 
     @Override
-    public void addSessionMessage( Map<String, Object> message//Map<String, Object> systemMessage
+    public void addSessionMessage( LinkedMessageMap<String, Object> message//Map<String, Object> systemMessage
                                     ,String prompt,String agentId,String parentAgentId,String agentNodeType, AIAgent aiAgent){
         String role = (String) message.get("role");
         String messageType = messageType(role);
@@ -488,11 +492,11 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 //        return assistantMessage;
 //    }
     @Override
-    public Map<String, Object> addAssistantSessionMessage(ServerEvent serverEvent){
+    public LinkedMessageMap<String, Object> addAssistantSessionMessage(ServerEvent serverEvent){
         if(sessionMemory == null){
             return null;
         }
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent);
+		LinkedMessageMap<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(serverEvent);
         PersistentMessage persistentMessage = new PersistentMessage();
         persistentMessage.setMessage(assistantMessage);
         persistentMessage.setTokenMetrics(serverEvent.getTokenMetrics());
@@ -502,12 +506,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return assistantMessage;
     }
     @Override
-    public Map<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder){
+    public LinkedMessageMap<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder){
         if(sessionMemory == null){
             return null;
         }
-
-        Map<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(  baseStreamDataBuilder);
+		
+		LinkedMessageMap<String, Object> assistantMessage = MessageBuilder.buildAssistantMessage(  baseStreamDataBuilder);
 		AIAgent agent = baseStreamDataBuilder.getChatObject().getAgent();
         StreamData streamData = baseStreamDataBuilder.getToolCallsStreamData();
         PersistentMessage persistentMessage = new PersistentMessage();
@@ -646,5 +650,15 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.requestId = requestId;
         return (T) this;
     }
-    
+	
+	@Override
+	public AgentMemoryStore getAgentMemoryStore() {
+		if(agentMemoryStore == null && parentAgentSessionStore != null && parentAgentSessionStore != this)
+			return this.parentAgentSessionStore.getAgentMemoryStore();
+		return agentMemoryStore;
+	}
+	
+	public void setAgentMemoryStore(AgentMemoryStore agentMemoryStore) {
+		this.agentMemoryStore = agentMemoryStore;
+	}
 }

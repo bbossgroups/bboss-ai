@@ -22,7 +22,7 @@ import java.util.Map;
  * @Date 2026/4/10
  */
 public class LastSessionMessage {
-    private Map<String,Object> lastSessionMessage;
+    private LinkedMessageMap<String,Object> lastSessionMessage;
 	private String groupId;
 	private String parentGroupId;
     /**会话id*/
@@ -74,12 +74,12 @@ public class LastSessionMessage {
         return null;
     }
 
-    public Map<String, Object> getLastSessionMessage() {
+    public LinkedMessageMap<String, Object> getLastSessionMessage() {
         
         return lastSessionMessage;
     }
 
-    public void setLastSessionMessage(Map<String, Object> lastSessionMessage) {
+    public void setLastSessionMessage(LinkedMessageMap<String, Object> lastSessionMessage) {
         this.lastSessionMessage = lastSessionMessage;
     }
 

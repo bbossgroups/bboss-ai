@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.store;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.frameworkset.orm.annotation.Column;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.TokenMetrics;
 
 import java.time.LocalDateTime;
@@ -258,6 +259,20 @@ public class SessionMessage {
 	 */
 	public static final String MESSAGE_TYPE_PLAN_MESSAGE_NAME = "plan";
 	
+	public String getName() {
+		return name;
+	}
+	
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	/**
+	 * 消息名称：用于显示特定消息的名称，如果是工具入参和工具结果，则代表工具名称
+	 * 
+	 */
+	private String name;
+	
 	/**
 	 * 当节点直接隶属于并行节点时，会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息
 	 * 并行分组展示消息所属并行分支id
@@ -313,16 +328,16 @@ public class SessionMessage {
     private String inputQuery;
     
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.SessionMessageEditor")
-    private Map<String, Object> message;
+    private LinkedMessageMap<String, Object> message;
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.TokenMetricsEditor")
     private TokenMetrics tokenMetrics;
     private String role;
 
-    public Map<String, Object> getMessage() {
+    public LinkedMessageMap<String, Object> getMessage() {
         return message;
     }
 
-    public void setMessage(Map<String, Object> message) {
+    public void setMessage(LinkedMessageMap<String, Object> message) {
         this.message = message;
     }
 

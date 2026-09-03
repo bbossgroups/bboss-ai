@@ -36,26 +36,26 @@ public class MessageBuilder {
     public static final String TYPE_TEXT = "text";
     public static final String TYPE_IMAGE = "image_url";
     public static final String TYPE_VIDEO = "video_url";
-    public static Map<String,Object> buildSystemMessage(String message){
+    public static LinkedMessageMap<String,Object> buildSystemMessage(String message){
 
 
         return buildMessage(ROLE_SYSTEM,  message);
     }
-    public static Map<String,Object> buildAudioSystemMessage(String message){
+    public static LinkedMessageMap<String,Object> buildAudioSystemMessage(String message){
         // 添加当前用户消息
  
         return buildAudioUserMessage(  message,  ROLE_SYSTEM);
     }
 
-    public static Map<String,Object> buildAudioUserMessage(String message){
+    public static LinkedMessageMap<String,Object> buildAudioUserMessage(String message){
         // 添加当前用户消息
  
         return buildAudioUserMessage(  message,  ROLE_USER);
     }
 
-    public static Map<String,Object> buildAudioUserMessage(String message,String role){
+    public static LinkedMessageMap<String,Object> buildAudioUserMessage(String message,String role){
         // 添加当前用户消息
-        Map<String, Object> userMessage = new HashMap<>();
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", role);
         List<Map> contents = new ArrayList<>();
         Map contentData = new LinkedHashMap();
@@ -65,8 +65,8 @@ public class MessageBuilder {
         return userMessage;
     }
 
-    public static Map<String,Object> buildAudioMessage(String audioUrl){
-        LinkedHashMap<String, Object> userMessage = new LinkedHashMap<>();
+    public static LinkedMessageMap<String,Object> buildAudioMessage(String audioUrl){
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", ROLE_USER);
         List contents = new ArrayList<>();
         Map<String,Object> contentData = new LinkedHashMap<>();
@@ -252,7 +252,7 @@ public class MessageBuilder {
         requestMap.put("content", contents);
     }
     public static Map<String,Object> buildGenImageMessage(String message){
-        Map<String, Object> userMessage = new LinkedHashMap<>();
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role",ROLE_USER);
 
         List contents = new ArrayList<>();
@@ -264,8 +264,8 @@ public class MessageBuilder {
         return userMessage;
     }
 
-    public static Map<String,Object> buildGenImageMessage(ImageAgentMessage imageAgentMessage,AIAgent aiAgent){
-        Map<String, Object> userMessage = new LinkedHashMap<>();
+    public static LinkedMessageMap<String,Object> buildGenImageMessage(ImageAgentMessage imageAgentMessage,AIAgent aiAgent){
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role",ROLE_USER);
 
         List contents = new ArrayList<>();
@@ -293,7 +293,7 @@ public class MessageBuilder {
      * @param videoUrls 图片url
      * @return
      */
-    public static Map<String,Object> buildInputVideosMessage( String message,String... videoUrls){
+    public static LinkedMessageMap<String,Object> buildInputVideosMessage( String message,String... videoUrls){
 
         List contents = new ArrayList<>();
         Map contentData = null;
@@ -315,7 +315,7 @@ public class MessageBuilder {
         }
 
   
-        Map<String, Object> userMessage = new HashMap<>();
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", ROLE_USER);
         userMessage.put("content", contents);
         return userMessage;
@@ -327,7 +327,7 @@ public class MessageBuilder {
      * @param imageUrls 图片url
      * @return
      */
-    public static Map<String,Object> buildInputImagesMessage( String message,String... imageUrls){
+    public static LinkedMessageMap<String,Object> buildInputImagesMessage( String message,String... imageUrls){
 
         List contents = new ArrayList<>();
         Map contentData = null;
@@ -350,7 +350,7 @@ public class MessageBuilder {
         }
 
         
-        Map<String, Object> userMessage = new HashMap<>();
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", ROLE_USER);
         userMessage.put("content", contents);
         return userMessage;
@@ -362,7 +362,7 @@ public class MessageBuilder {
      * @param imageUrls 图片url
      * @return
      */
-    public static Map<String,Object> buildJiuTianInputImagesMessage( String message,String... imageUrls){
+    public static LinkedMessageMap<String,Object> buildJiuTianInputImagesMessage( String message,String... imageUrls){
 
         List contents = new ArrayList<>();
         Map contentData = new LinkedHashMap();
@@ -378,16 +378,16 @@ public class MessageBuilder {
                 contents.add(contentData);
             }
         }
-
-        
-        Map<String, Object> userMessage = new HashMap<>();
+		
+		
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", ROLE_USER);
         userMessage.put("content", contents);
         return userMessage;
     }
 
-    public static Map<String,Object> buildAudioMessage(AudioDataBuilder audioDataBuilder){
-        LinkedHashMap<String, Object> userMessage = new LinkedHashMap<>();
+    public static LinkedMessageMap<String,Object> buildAudioMessage(AudioDataBuilder audioDataBuilder){
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", ROLE_USER);
         List contents = new ArrayList<>();
         Map<String,Object> contentData = new LinkedHashMap<>();
@@ -397,25 +397,25 @@ public class MessageBuilder {
         userMessage.put("content", contents);
         return userMessage;
     }
-    public static Map<String,Object> buildUserMessage(String message){
+    public static LinkedMessageMap<String,Object> buildUserMessage(String message){
 
 
         return buildMessage(ROLE_USER,  message);
     }
 
-    public static Map<String,Object> buildAssistantMessage(String message){
+    public static LinkedMessageMap<String,Object> buildAssistantMessage(String message){
 
 
         return buildMessage(ROLE_ASSISTANT,  message);
     }
 
-    public static Map<String,Object> buildAssistantMessage(ServerEvent serverEvent){
+    public static LinkedMessageMap<String,Object> buildAssistantMessage(ServerEvent serverEvent){
 
 
         return buildMessage(ROLE_ASSISTANT,    serverEvent);
     }
 
-    public static Map<String,Object> buildAssistantMessage(BaseStreamDataBuilder baseStreamDataBuilder){
+    public static LinkedMessageMap<String,Object> buildAssistantMessage(BaseStreamDataBuilder baseStreamDataBuilder){
 
 
         return buildMessage(ROLE_ASSISTANT,      baseStreamDataBuilder);
@@ -423,18 +423,18 @@ public class MessageBuilder {
 
     
 
-    public static Map<String,Object> buildMessage(String role,String message){
-
-        Map<String, Object> userMessage = new HashMap<>();
+    public static LinkedMessageMap<String,Object> buildMessage(String role,String message){
+		
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", role);
         userMessage.put("content", message);
 
         return userMessage;
     }
 
-    public static Map<String,Object> buildMessage(String role,ServerEvent serverEvent){
-
-        Map<String, Object> userMessage = new HashMap<>();
+    public static LinkedMessageMap<String,Object> buildMessage(String role,ServerEvent serverEvent){
+		
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", role);
         if(serverEvent.getData() != null) {
             userMessage.put("content", serverEvent.getData());
@@ -447,9 +447,9 @@ public class MessageBuilder {
         return userMessage;
     }
 
-    public static Map<String,Object> buildMessage(String role,BaseStreamDataBuilder baseStreamDataBuilder){
+    public static LinkedMessageMap<String,Object> buildMessage(String role,BaseStreamDataBuilder baseStreamDataBuilder){
         StreamData streamData = baseStreamDataBuilder.getToolCallsStreamData();
-        Map<String, Object> userMessage = new HashMap<>();
+		LinkedMessageMap<String, Object> userMessage = new LinkedMessageMap<>();
         userMessage.put("role", role);
         if(streamData.getContent() != null) {
             userMessage.put("content", streamData.getContent());
@@ -463,8 +463,10 @@ public class MessageBuilder {
 //        else if(baseStreamDataBuilder.getToolCallThinkingStreamData() != null){
 //            userMessage.put("reasoning_content", baseStreamDataBuilder.getToolCallThinkingStreamData());
 //        }
-        if(streamData.getToolCalls() != null)
-            userMessage.put("tool_calls",streamData.getToolCalls());
+        if(streamData.getToolCalls() != null) {
+			
+			userMessage.put("tool_calls", streamData.getToolCalls());
+		}
         return userMessage;
     }
 
@@ -472,9 +474,16 @@ public class MessageBuilder {
 
     
 
-    public static Map<String,Object> buildToolMessage(String message,String toolId){
-
-        Map<String, Object> toolMessage = new HashMap<>();
+    /**
+     * 构建工具调用结果消息，传入工具返回消息和工具调用id，构建模型请求参数报文
+     * @param message
+     * @param toolId
+     * @return
+     */
+    public static LinkedMessageMap<String,Object> buildToolMessage(String message,String toolId,FunctionTool tool){
+		
+		LinkedMessageMap<String, Object> toolMessage = new LinkedMessageMap<>();
+		toolMessage.setName(tool.getFunctionName());
         toolMessage.put("role", ROLE_TOOL);
         toolMessage.put("content", message);
         toolMessage.put("tool_call_id", toolId);

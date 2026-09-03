@@ -28,6 +28,7 @@ import java.util.Map;
  */
 public interface AgentSessionStore<T extends AgentSessionStore> {
     void init();
+	AgentMemoryStore getAgentMemoryStore();
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     StoreContext getStoreContext();
     String getAgentId();
@@ -69,18 +70,18 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     LastSessionMessage addAgentResultSessionMessage(AgentResultSessionMessageContext agentResultSessionMessageContext,String persistentMessage);
     LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent);
 
-    LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId);
-    void appendSessionMessageFromParent(Map<String,Object> message);
-    void addSessionMessage( Map<String,Object> systemMessage,String prompt,String agentId,String parentAgentId,String agentNodeType, AIAgent aiAgent);
-   
+    LastSessionMessage addAgentResultSessionMessage(LinkedMessageMap<String, Object> message,String agentId,String parentAgentId);
+    void appendSessionMessageFromParent(LinkedMessageMap<String,Object> message);
+    void addSessionMessage( LinkedMessageMap<String,Object> systemMessage,String prompt,String agentId,String parentAgentId,String agentNodeType, AIAgent aiAgent);
+	
+	
+	LinkedMessageMap<String, Object> addAssistantSessionMessage(ServerEvent serverEvent);
+	LinkedMessageMap<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder);
 
-    Map<String, Object> addAssistantSessionMessage(ServerEvent serverEvent);
-    Map<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder);
 
+    List<LinkedMessageMap<String, Object>> getSessionMemory();
 
-    List<Map<String, Object>> getSessionMemory();
-
-    List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize);
+    List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize);
 
     void recordTraceMessage(TraceMessage traceMessage);
     void recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics);

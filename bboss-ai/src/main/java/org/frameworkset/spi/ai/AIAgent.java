@@ -18,21 +18,17 @@ package org.frameworkset.spi.ai;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.callback.AgentOutput;
 import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
 import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.tool.*;
-import org.frameworkset.spi.ai.tool.ToolSearcher;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
-import org.frameworkset.spi.remote.http.ClientConfiguration;
-import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -50,6 +46,8 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AIAgent<T extends AIAgent> implements AgentInfoInf{
+	
+	private List<AgentInterceptor> agentInterceptors;
 
 	
 	private AgentRuntimeContext agentRuntimeContext;

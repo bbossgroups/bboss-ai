@@ -30,6 +30,11 @@ import java.util.Map;
  * @Date 2026/8/24
  */
 public class PlanTools extends ToolPermissionManager {
+	/** Tool names that {@code PlanModeMiddleware} always allows, even in plan mode. */
+	public static final String PLAN_ENTER = "plan_enter";
+	
+	public static final String PLAN_WRITE = "plan_write";
+	public static final String PLAN_EXIT = "plan_exit";
 	private String planPath;
 	@Tool(name = "plan_enter",description = "Enter PLAN mode: a read-only phase for investigating the"
 			+ " codebase and designing an approach before making any"

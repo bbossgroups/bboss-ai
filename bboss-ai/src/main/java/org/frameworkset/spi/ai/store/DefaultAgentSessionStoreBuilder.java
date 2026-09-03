@@ -44,7 +44,6 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
         }
         if(agentSessionStore == null)
             throw new AIRuntimeException("Invalid store type: " + storeContext.getStoreType())  ;
-
         agentSessionStore.init();
         storeContext.setMainSessionStore(agentSessionStore);
         return agentSessionStore;

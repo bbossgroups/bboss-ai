@@ -19,10 +19,7 @@ import com.frameworkset.common.poolman.SQLExecutor;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.model.PersistentMessage;
-import org.frameworkset.spi.ai.model.TokenMetrics;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
@@ -55,14 +52,14 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	 * 人工介入任务数据库表数据源
 	 */
 	private String hitlDatasource = "bboss";
-    public AgentSessionStoreDB(List<Map<String, Object>> sessionMemory) {
+    public AgentSessionStoreDB(List<LinkedMessageMap<String, Object>> sessionMemory) {
         super(sessionMemory);
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         persistentSessionMemory = true;
         init();
     }
 
-    public AgentSessionStoreDB(List<Map<String, Object>> sessionMemory, int sessionSize) {
+    public AgentSessionStoreDB(List<LinkedMessageMap<String, Object>> sessionMemory, int sessionSize) {
         super(sessionMemory, sessionSize);
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         persistentSessionMemory = true;
@@ -222,7 +219,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         try { 
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role
-            Map<String, Object> message = persistentMessage.getMessage();
+			LinkedMessageMap<String, Object> message = persistentMessage.getMessage();
             String msgId = SimpleStringUtil.getUUID32();
             String role = (String) message.get("role");
 //            if(agentResultMessage != null && !agentResultMessage.equals("1")){
@@ -245,7 +242,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                     msgId,new Date(),this.getSessionId(),
                     parentAgentId, agentId,messageType,integerCount.increament(), JsonUtil.object2json(message),
                     role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId(),agentNodeType,
-					subAgentIdBy,persistentMessage.getGroupId(),persistentMessage.getParentGroupId());
+					subAgentIdBy,persistentMessage.getGroupId(),persistentMessage.getParentGroupId(),message.getName());
 
             if(messageType != null && messageType.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();
@@ -289,7 +286,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 		}
 	}
     @Override
-    public List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize){
+    public List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize){
         try {
 			List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
             List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,

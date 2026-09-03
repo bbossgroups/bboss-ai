@@ -28,7 +28,7 @@ public class PersistentMessage {
     private TokenMetrics tokenMetrics;
 
     private TokenMetrics totalTokenMetrics;
-    private Map<String, Object> message;
+    private LinkedMessageMap<String, Object> message;
 
     public TokenMetrics getTokenMetrics() {
         return tokenMetrics;
@@ -38,11 +38,11 @@ public class PersistentMessage {
         this.tokenMetrics = tokenMetrics;
     }
 
-    public Map<String, Object> getMessage() {
+    public LinkedMessageMap<String, Object> getMessage() {
         return message;
     }
 
-    public void setMessage(Map<String, Object> message) {
+    public void setMessage(LinkedMessageMap<String, Object> message) {
         this.message = message;
     }
 

@@ -421,12 +421,12 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                     }
                     Map<String, Object> toolMessage = null;
                     if (result instanceof String)
-                        toolMessage = MessageBuilder.buildToolMessage((String) result, toolId);
+                        toolMessage = MessageBuilder.buildToolMessage((String) result, toolId, tool);
                     else if (result instanceof MCPToolCallResponse) {
                         result = ((MCPToolCallResponse) result).getResult();
-                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
+                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId, tool);
                     } else {
-                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
+                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId, tool);
                     }
                     toolMessages.add(toolMessage);
 //                return toolMessage;
@@ -456,13 +456,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
             Map<String,Object> toolMessage = null;
             if(result instanceof String)
-                toolMessage = MessageBuilder.buildToolMessage((String)result,toolId);
+                toolMessage = MessageBuilder.buildToolMessage((String)result,toolId,tool);
             else if (result instanceof MCPToolCallResponse){
                 result = ((MCPToolCallResponse)result).getResult();
-                toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId);
+                toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId,tool);
             }
 			else {
-				toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId);
+				toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId,tool);
 			}
             return toolMessage;
         } catch (Exception e) {

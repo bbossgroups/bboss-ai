@@ -534,6 +534,121 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	
 	public static final String clickhouse_createClusterSessionMessageReferenceTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageReferenceTableName} on cluster $clickhouseCluster AS ${sessionMessageReferenceTableName}_local ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${sessionMessageReferenceTableName}_local, sipHash64(sessionId))").toString();
 	
+	// ============ SQLite ============
+	public static String sqlite_createMemoryTableSQL = new StringBuilder()
+			.append("create table $memoryTableName (")
+			.append("memoryId varchar(100) PRIMARY KEY,")          // 记录id，主键
+			.append("agentId varchar(100) not null,")              // 智能体id
+			.append("parentAgentId varchar(100),")                 // 父智能体id
+			.append("userId varchar(100) not null,")               // 用户id
+			.append("sessionId varchar(100) not null,")            // 会话id
+			.append("content text,")                               // 记忆内容
+			.append("memoryDay varchar(20),")                      // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar(20) default 'day')")      // 记忆类型 day/longterm
+			.toString();
+	
+	
+	// ============ MySQL ============
+	public static final String mysql_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar(100) NOT NULL COMMENT '记录id，主键',")
+			.append("agentId varchar(100) NOT NULL COMMENT '智能体id',")
+			.append("parentAgentId varchar(100) COMMENT '父智能体id',")
+			.append("userId varchar(100) NOT NULL COMMENT '用户id',")
+			.append("sessionId varchar(100) NOT NULL COMMENT '会话id',")
+			.append("content text COMMENT '记忆内容',")
+			.append("memoryDay varchar(20) COMMENT '记忆时间 yyyy-MM-dd',")
+			.append("memoryType varchar(20) DEFAULT 'day' COMMENT '记忆类型 day/longterm',")
+			.append("PRIMARY KEY(memoryId),")
+			.append("KEY idx_agent_user (agentId, userId),")
+			.append("KEY idx_session (sessionId),")
+			.append("KEY idx_memory_day (memoryDay)")
+			.append(") COMMENT='智能体记忆表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+			.toString();
+	
+	
+	// ============ Oracle ============
+	public static final String oracle_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar2(100) NOT NULL,")            // 记录id，主键
+			.append("agentId varchar2(100) NOT NULL,")             // 智能体id
+			.append("parentAgentId varchar2(100),")                // 父智能体id
+			.append("userId varchar2(100) NOT NULL,")              // 用户id
+			.append("sessionId varchar2(100) NOT NULL,")           // 会话id
+			.append("content clob,")                               // 记忆内容
+			.append("memoryDay varchar2(20),")                     // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar2(20) DEFAULT 'day',")      // 记忆类型 day/longterm
+			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
+			.toString();
+	
+	public static final String oracle_addCommentsToMemoryTableSQL = new StringBuilder()
+			.append("COMMENT ON COLUMN $memoryTableName.memoryId IS '记录id，主键';")
+			.append("COMMENT ON COLUMN $memoryTableName.agentId IS '智能体id';")
+			.append("COMMENT ON COLUMN $memoryTableName.parentAgentId IS '父智能体id';")
+			.append("COMMENT ON COLUMN $memoryTableName.userId IS '用户id';")
+			.append("COMMENT ON COLUMN $memoryTableName.sessionId IS '会话id';")
+			.append("COMMENT ON COLUMN $memoryTableName.content IS '记忆内容';")
+			.append("COMMENT ON COLUMN $memoryTableName.memoryDay IS '记忆时间 yyyy-MM-dd';")
+			.append("COMMENT ON COLUMN $memoryTableName.memoryType IS '记忆类型 day/longterm';")
+			.toString();
+	
+	
+	// ============ 达梦数据库 (DM) ============
+	public static final String dm_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar2(100) NOT NULL,")            // 记录id，主键
+			.append("agentId varchar2(100) NOT NULL,")             // 智能体id
+			.append("parentAgentId varchar2(100),")                // 父智能体id
+			.append("userId varchar2(100) NOT NULL,")              // 用户id
+			.append("sessionId varchar2(100) NOT NULL,")           // 会话id
+			.append("content text,")                               // 记忆内容
+			.append("memoryDay varchar2(20),")                     // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar2(20) DEFAULT 'day',")      // 记忆类型 day/longterm
+			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
+			.toString();
+	
+	
+	// ============ SQL Server ============
+	public static final String sqlserver_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar(100) NOT NULL,")             // 记录id，主键
+			.append("agentId varchar(100) NOT NULL,")              // 智能体id
+			.append("parentAgentId varchar(100),")                 // 父智能体id
+			.append("userId varchar(100) NOT NULL,")               // 用户id
+			.append("sessionId varchar(100) NOT NULL,")            // 会话id
+			.append("content nvarchar(max),")                      // 记忆内容
+			.append("memoryDay varchar(20),")                      // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar(20) DEFAULT 'day',")       // 记忆类型 day/longterm
+			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
+			.toString();
+	
+	
+	// ============ PostgreSQL ============
+	public static final String postgresql_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar(100) NOT NULL,")             // 记录id，主键
+			.append("agentId varchar(100) NOT NULL,")              // 智能体id
+			.append("parentAgentId varchar(100),")                 // 父智能体id
+			.append("userId varchar(100) NOT NULL,")               // 用户id
+			.append("sessionId varchar(100) NOT NULL,")            // 会话id
+			.append("content text,")                               // 记忆内容
+			.append("memoryDay varchar(20),")                      // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar(20) DEFAULT 'day',")       // 记忆类型 day/longterm
+			.append("PRIMARY KEY(memoryId))")
+			.toString();
+	
+	public static final String postgresql_addCommentsToMemoryTableSQL = new StringBuilder()
+			.append("COMMENT ON COLUMN $memoryTableName.memoryId IS '记录id，主键';")
+			.append("COMMENT ON COLUMN $memoryTableName.agentId IS '智能体id';")
+			.append("COMMENT ON COLUMN $memoryTableName.parentAgentId IS '父智能体id';")
+			.append("COMMENT ON COLUMN $memoryTableName.userId IS '用户id';")
+			.append("COMMENT ON COLUMN $memoryTableName.sessionId IS '会话id';")
+			.append("COMMENT ON COLUMN $memoryTableName.content IS '记忆内容';")
+			.append("COMMENT ON COLUMN $memoryTableName.memoryDay IS '记忆时间 yyyy-MM-dd';")
+			.append("COMMENT ON COLUMN $memoryTableName.memoryType IS '记忆类型 day/longterm';")
+			.toString();
+	
+	
 	private String insertSessionSQL;
     private String updateSessionLastAccessTimeSQL;
     private String deleteSessionSQL;
@@ -573,6 +688,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     private String existMessageReferenceSQL;
 	
 	private String existHitlCallTaskSQL;
+	
+	private String existMemorySQL;
 
     private String insertHitlCallTaskSQL;
 
@@ -598,6 +715,11 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
      * 会话基本信息存储表名称
      */
     private String sessionTableName = "agent_session";
+	
+	/**
+	 * 智能体记忆存储表名称:记录智能体流水账和记忆摘要
+	 */
+	private String memoryTableName = "agent_memory";
 
     /**
      * 会话消息记录存储表名称
@@ -672,6 +794,26 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 		}
 		
 		try {
+			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMemorySQL());
+		}
+		catch (Exception exception){
+			try {
+				logger.info("Creating memory table {}...", getMemoryTableName());
+				
+				if(!isClickhouse(dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource,evalCreateAgentMemoryTableSQL(dataSource));
+				}
+				else{
+					//暂时不支持Clickhouse保存记忆和流水账数据
+//					SQLExecutor.updateWithDBName(dataSource, evalCreateClickhouseLocalSessionMessageTableSQL(clickhouseCluster));
+//					SQLExecutor.updateWithDBName(dataSource, evalCreateClusterSessionMessageTableSQL(clickhouseCluster));
+				}
+			} catch (SQLException e) {
+				throw new AIRuntimeException("Failed to create session message table", e);
+			}
+		}
+		
+		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMessageReferenceSQL());
 		}
 		catch (Exception exception){
@@ -713,6 +855,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				return;
 			existSQL = new StringBuilder().append("select 1 from ").append(sessionTableName).toString();
 			existMessageSQL = new StringBuilder().append("select 1 from ").append(sessionMessageTableName).toString();
+			existMemorySQL = new StringBuilder().append("select 1 from ").append(memoryTableName).toString();	
 			existMessageReferenceSQL = new StringBuilder().append("select 1 from ").append(sessionMessageReferenceTableName).toString();
 			existHitlCallTaskSQL = new StringBuilder().append("select 1 from ").append(hitlCallTaskTableName).toString();
 			
@@ -908,6 +1051,29 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         return sql.replace("$sessionMessageTableName", sessionMessageTableName);
     }
 	
+	public String evalCreateAgentMemoryTableSQL(String dbName) {
+		DB adaptor  = DBUtil.getDBAdapter(dbName);
+		String type = adaptor.getDBTYPE();
+		String sql = null;
+		if ("mysql".equalsIgnoreCase(type)) {
+			sql = mysql_createMemoryTableSQL;
+		} else if ("oracle".equalsIgnoreCase(type)) {
+			sql = oracle_createMemoryTableSQL;
+		} else if ("dm".equalsIgnoreCase(type)) {
+			sql = dm_createMemoryTableSQL;
+		} else if ("sqlserver".equalsIgnoreCase(type)) {
+			sql = sqlserver_createMemoryTableSQL;
+		} else if ("postgresql".equalsIgnoreCase(type)) {
+			sql = postgresql_createMemoryTableSQL;
+		}
+		else if("sqlite".equalsIgnoreCase(type)) {
+			sql = sqlite_createMemoryTableSQL;
+		}
+		
+		return sql.replace("$sessionMessageTableName", memoryTableName);
+	}
+	
+	
 	public String evalCreateClickhouseLocalSessionMessageTableSQL( String clickhouseCluster) {
 		
 		String sql = this.clickhouse_createLocalSessionMessageTableSQL;
@@ -1072,8 +1238,16 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     public String getExistMessageSQL() {
         return existMessageSQL;
     }
-
-    public void setSessionMessageTableName(String sessionMessageTableName) {
+	
+	public String getExistMemorySQL() {
+		return existMemorySQL;
+	}
+	
+	public String getMemoryTableName() {
+		return memoryTableName;
+	}
+	
+	public void setSessionMessageTableName(String sessionMessageTableName) {
         this.sessionMessageTableName = sessionMessageTableName;
     }
 

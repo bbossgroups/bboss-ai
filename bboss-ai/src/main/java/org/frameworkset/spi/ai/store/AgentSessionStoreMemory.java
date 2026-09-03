@@ -18,10 +18,7 @@ package org.frameworkset.spi.ai.store;
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.model.PersistentMessage;
-import org.frameworkset.spi.ai.model.TokenMetrics;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.time.LocalDateTime;
@@ -44,11 +41,11 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
      */
     protected IntegerCount agentIdCount = new IntegerCount();
 
-    public AgentSessionStoreMemory(List<Map<String, Object>> sessionMemory) {
+    public AgentSessionStoreMemory(List<LinkedMessageMap<String, Object>> sessionMemory) {
         super(sessionMemory);
     }
 
-    public AgentSessionStoreMemory(List<Map<String, Object>> sessionMemory, int sessionSize) {
+    public AgentSessionStoreMemory(List<LinkedMessageMap<String, Object>> sessionMemory, int sessionSize) {
         super(sessionMemory, sessionSize);
     }
 
@@ -203,7 +200,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
                                                        String messageType){
 
 //        loadSessionMemory(message,  agentId);
-        Map<String, Object> message = persistentMessage.getMessage();
+		LinkedMessageMap<String, Object> message = persistentMessage.getMessage();
         SessionMessage sessionMessage = new SessionMessage();
         sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
         sessionMessage.setMessage(message);
@@ -272,7 +269,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
          
     }
     @Override
-    public List<Map<String, Object>> getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage, String agentId, int agentSessionSize) {
+    public List<LinkedMessageMap<String, Object>> getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage, String agentId, int agentSessionSize) {
         try {
             if (this.agentSession == null) {
                 return null;
@@ -303,10 +300,10 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //        }
     }
     
-    protected List<Map<String, Object>> resolve(LastSessionMessage lastSubAgentSessionMessage, String agentId, List<SessionMessage> agentSessionMessages, int agentSessionSize){
+    protected List<LinkedMessageMap<String, Object>> resolve(LastSessionMessage lastSubAgentSessionMessage, String agentId, List<SessionMessage> agentSessionMessages, int agentSessionSize){
         if(agentSessionMessages == null || agentSessionMessages.size() == 0){
             if(lastSubAgentSessionMessage != null){
-                List<Map<String, Object>> _agentSessionMessages = new ArrayList<>();
+                List<LinkedMessageMap<String, Object>> _agentSessionMessages = new ArrayList<>();
                 _agentSessionMessages.add(lastSubAgentSessionMessage.getLastSessionMessage());
                 //构建引用关系
                 saveLastSessionMessage(lastSubAgentSessionMessage, agentId);                
@@ -314,7 +311,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             }
             return null;
         }
-        List<Map<String, Object>> _agentSessionMessages = new ArrayList<>();
+        List<LinkedMessageMap<String, Object>> _agentSessionMessages = new ArrayList<>();
         int dataSize = agentSessionMessages.size();
  
 

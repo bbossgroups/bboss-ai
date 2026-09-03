@@ -15,6 +15,8 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
+
 import java.util.List;
 import java.util.Map;
 
@@ -77,7 +79,7 @@ public class StoreContext {
      * 会话消息记录存储表名称
      */
     private String sessionMessageTableName = "agent_session_message";
-    private List<Map<String,Object>> sessionMemory;
+    private List<LinkedMessageMap<String,Object>> sessionMemory;
     private int sessionSize = 20;
     public int getSessionSize() {
         return sessionSize;
@@ -133,10 +135,10 @@ public class StoreContext {
         return this;
     }
     
-    public List<Map<String,Object>> getSessionMemory() {
+    public List<LinkedMessageMap<String,Object>> getSessionMemory() {
         return sessionMemory;
     }
-    public StoreContext setSessionMemory(List<Map<String,Object>> sessionMemory) {
+    public StoreContext setSessionMemory(List<LinkedMessageMap<String,Object>> sessionMemory) {
         this.sessionMemory = sessionMemory;
         return this;
     }

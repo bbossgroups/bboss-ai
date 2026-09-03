@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.callback;
  */
 
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.state.PlanModeContextState;
 import org.frameworkset.spi.ai.state.TaskContextState;
@@ -34,9 +35,8 @@ import java.util.Map;
  */
 public class ChatContext {
 	
-
-	
 	private AgentRuntimeContext agentRuntimeContext;
+	private List<LinkedMessageMap<String, Object>> messages;
 
 	
 	/**
@@ -339,4 +339,13 @@ public class ChatContext {
 		this.agentRuntimeContext = agentRuntimeContext;
 	}
 	
+	public List<LinkedMessageMap<String, Object>> getMessages() {
+		return messages;
+	}
+	
+	public void setMessages(List<LinkedMessageMap<String, Object>> messages) {
+		this.messages = messages;
+	}
+	
+ 
 }
