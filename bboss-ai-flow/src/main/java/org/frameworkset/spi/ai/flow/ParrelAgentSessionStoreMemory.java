@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.flow;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.StoreContext;
@@ -98,7 +99,7 @@ public class ParrelAgentSessionStoreMemory extends AgentSessionStoreMemory<Parre
      * @param parentAgentId
      */
     @Override
-    public LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId){
+    public LastSessionMessage addAgentResultSessionMessage(LinkedMessageMap<String, Object> message, String agentId, String parentAgentId){
 
         LastSessionMessage lastSessionMessage = null;
 //        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息

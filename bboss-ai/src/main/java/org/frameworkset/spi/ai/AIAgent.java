@@ -465,9 +465,9 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 
             if (empty) {
                 //加载历史消息
-                List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
+                List<LinkedMessageMap<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
                 if (sessionMessages != null && sessionMessages.size() > 0) {
-                    for (Map<String, Object> sessionMessage : sessionMessages) {
+                    for (LinkedMessageMap<String, Object> sessionMessage : sessionMessages) {
                         agentSessionStore.appendSessionMessageFromParent(sessionMessage);
                     }
 
@@ -912,14 +912,14 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         return null;
     }
 
-    public List<Map<String, Object>> getSessionMemory() {
+    public List<LinkedMessageMap<String, Object>> getSessionMemory() {
         if(this.agentSessionStore != null) {
             return this.agentSessionStore.getSessionMemory();
         }
         return getSessionMemory(false);
     }
 
-	public List<Map<String, Object>> getSessionMemory(boolean create) {
+	public List<LinkedMessageMap<String, Object>> getSessionMemory(boolean create) {
 		
 		if(agentSessionStore == null && create){
 			this.agentSessionStore = new AgentSessionStoreMemory(new ArrayList<>());

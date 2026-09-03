@@ -155,7 +155,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		buildincludeUsage(  stream,  agentMessage, requestMap);
         buildTools(chatContext,agentMessage,  aiAgent, requestMap);
     }
-    protected Object handleImageParserMessages(List<Map<String, Object>> messages){
+    protected Object handleImageParserMessages(List<LinkedMessageMap<String, Object>> messages){
         return messages;
     }
 
@@ -168,13 +168,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     public Map buildVideoVLRequestMap(VideoVLAgentMessage videoVLAgentMessage, AIAgent aiAgent,ChatContext chatContext) {
 		// 构建消息历史列表，包含之前的会话记忆
 		
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoVLAgentMessage.getModel());
         List<String > videoUrls = videoVLAgentMessage.getVideoUrls();
-
-        Map<String, Object> userMessage = null;
-        Map<String, Object> systemMessage = null;
+		
+		LinkedMessageMap<String, Object> userMessage = null;
+		LinkedMessageMap<String, Object> systemMessage = null;
         String prompt = getPrompt(  videoVLAgentMessage,   aiAgent);
         if(chatContext != null){
             prompt = chatContext.evalPrompt(prompt);
@@ -187,7 +187,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             userMessage = buildInputVideosMessage(prompt, (String[])null);
         }
       
-        List<Map<String, Object>> messages = null;
+        List<LinkedMessageMap<String, Object>> messages = null;
         if(sessionMemory != null){
             if(sessionMemory.size() == 0){
                 String systemPrompt = getSystemPrompt(videoVLAgentMessage,aiAgent);
@@ -230,13 +230,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		
 		// 构建消息历史列表，包含之前的会话记忆
 		
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",imageAgentMessage.getModel());
         List<String > imageUrls = imageAgentMessage.getImageUrls();
-
-        Map<String, Object> userMessage = null;
-        Map<String, Object> systemMessage = null;
+		
+		LinkedMessageMap<String, Object> userMessage = null;
+		LinkedMessageMap<String, Object> systemMessage = null;
         String prompt = getPrompt(  imageAgentMessage,   aiAgent);
         if(chatContext != null){
             prompt = chatContext.evalPrompt(prompt);
@@ -248,7 +248,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             userMessage = buildInputImagesMessage(prompt, (String[])null);
         }
  
-        List<Map<String, Object>> messages = null;
+        List<LinkedMessageMap<String, Object>> messages = null;
         if(sessionMemory != null){
             if(sessionMemory.size() == 0){
                 String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
@@ -394,17 +394,17 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return AIConstants.AI_CHAT_REQUEST_BODY_JSON;
 
     }
-    protected Map<String, Object> buildInputVideosMessage(String message,String... videoUrls) {
+    protected LinkedMessageMap<String, Object> buildInputVideosMessage(String message,String... videoUrls) {
         return MessageBuilder.buildInputVideosMessage(message,videoUrls);
     }
     
-    protected Map<String, Object> buildInputImagesMessage(String message,String... imageUrls) {
+    protected LinkedMessageMap<String, Object> buildInputImagesMessage(String message,String... imageUrls) {
         return MessageBuilder.buildInputImagesMessage(message,imageUrls);
     }
 
-    protected List<Map<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent aiAgent,ChatObject chatObject) {
+    protected List<LinkedMessageMap<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent aiAgent,ChatObject chatObject) {
         List<FunctionTool> tools = toolAgentMessage.getFunctionTools();
-        List<Map<String, Object>> toolMessages = new ArrayList<>(tools.size());
+        List<LinkedMessageMap<String, Object>> toolMessages = new ArrayList<>(tools.size());
         try {
             AgentTraceHolder.setChatObject(chatObject);
             for (FunctionTool tool : tools) {
@@ -419,7 +419,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                     if (result == null) {
                         throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
                     }
-                    Map<String, Object> toolMessage = null;
+					LinkedMessageMap<String, Object> toolMessage = null;
                     if (result instanceof String)
                         toolMessage = MessageBuilder.buildToolMessage((String) result, toolId, tool);
                     else if (result instanceof MCPToolCallResponse) {
@@ -476,16 +476,16 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      */
     public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent agent,ChatObject chatObject,ChatContext chatContext){
 //        Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
-		List<Map<String, Object>> sessionMemory = agent.getSessionMemory(true);
-        List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,agent,chatObject);
+		List<LinkedMessageMap<String, Object>> sessionMemory = agent.getSessionMemory(true);
+        List<LinkedMessageMap<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,agent,chatObject);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", toolAgentMessage.getModel());
 
-        List<Map<String, Object>> messages = null;
+        List<LinkedMessageMap<String, Object>> messages = null;
    
         if(sessionMemory != null){
             // 构建消息历史列表，包含之前的会话记忆           
-            for(Map<String, Object> userMessage : userMessages) {
+            for(LinkedMessageMap<String, Object> userMessage : userMessages) {
 
                 // 添加当前用户消息
                 toolAgentMessage.addSessionMessage(userMessage, agent);
@@ -496,7 +496,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
         else{
             messages = new ArrayList<>();
-            for(Map<String, Object> userMessage : userMessages) {
+            for(LinkedMessageMap<String, Object> userMessage : userMessages) {
                 messages.add(userMessage);
                 // 添加当前用户消息
 //                toolAgentMessage.addSessionMessage(userMessage, aiAgent);
@@ -620,7 +620,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      */
     public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent aiAgent,ChatObject chatObject, ChatContext chatContext) {
 		
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         String agentId = aiAgent.getAgentId();
         String message = getPrompt(  chatAgentMessage,   aiAgent);
         if(SimpleStringUtil.isEmpty(message)){
@@ -630,12 +630,12 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(chatContext != null){
             message = chatContext.evalPrompt(message);
         }
-        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
-        Map<String,Object> systemMessage = null;
+		LinkedMessageMap<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
+		LinkedMessageMap<String,Object> systemMessage = null;
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", chatAgentMessage.getModel());
 
-        List<Map<String, Object>> messages = null;
+        List<LinkedMessageMap<String, Object>> messages = null;
         if(sessionMemory != null){
             // 构建消息历史列表，包含之前的会话记忆           
 
@@ -830,13 +830,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioSTTAgentMessage.getModel());
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         // 构建消息历史列表，包含之前的会话记忆
-        List<Map<String, Object>> messages = sessionMemory !=  null?
+        List<LinkedMessageMap<String, Object>> messages = sessionMemory !=  null?
                 new ArrayList<>(sessionMemory):new ArrayList<>();
         Object audio = audioSTTAgentMessage.getAudio();
         // 添加当前用户消息
-        Map<String, Object> userMessage = null;
+		LinkedMessageMap<String, Object> userMessage = null;
         String prompt = getPrompt(  audioSTTAgentMessage,   aiAgent);
         if(chatContext != null){
             prompt = chatContext.evalPrompt(prompt);

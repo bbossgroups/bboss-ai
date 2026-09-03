@@ -183,7 +183,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
         
         Object audio = audioSTTAgentMessage.getAudio();
         // 添加当前用户消息
-        Map<String, Object> userMessage = null;
+		LinkedMessageMap<String, Object> userMessage = null;
         if(audio != null) {
             userMessage = MessageBuilder.buildAudioSystemMessage(prompt);
         }

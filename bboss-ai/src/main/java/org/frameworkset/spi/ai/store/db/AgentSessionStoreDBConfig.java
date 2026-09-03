@@ -300,6 +300,7 @@ public class AgentSessionStoreDBConfig {
             .append( "role varchar(100),")
             .append( "marks varchar(500),")
             .append( "metadata text,")
+			.append( "name varchar(200), " )  //消息名称
             .append( "PRIMARY KEY (msgId))").toString();
 	
 
@@ -323,6 +324,7 @@ public class AgentSessionStoreDBConfig {
             .append( "elapsed BIGINT,")  //耗时
             .append( "marks varchar(500),")
             .append( "metadata  LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,")
+			.append( "name varchar(200), " )  //消息名称
             .append( "primary key(msgId)) comment '消息表主键' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").toString();
 
    
@@ -347,6 +349,7 @@ public class AgentSessionStoreDBConfig {
 
             .append( "marks varchar2(500),")
             .append( "metadata clob,")
+			.append( "name varchar2(200), " )  //消息名称
             .append( "constraint $sessionMessageTableName_PK primary key(msgId))").toString();
     public static final String dm_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
             .append(" createTime timestamp NOT NULL,")
@@ -368,6 +371,7 @@ public class AgentSessionStoreDBConfig {
 
             .append( "marks varchar2(500),")
             .append( "metadata clob,")
+			.append( "name varchar2(200), " )  //消息名称
             .append( "constraint $sessionMessageTableName_PK primary key(msgId))").toString();
     public static final String sqlserver_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL," )
             .append( "createTime datetime NOT NULL,")  //创建时间
@@ -389,6 +393,7 @@ public class AgentSessionStoreDBConfig {
 
             .append( "marks varchar(500),")
             .append( "metadata nvarchar(max),")
+			.append( "name nvarchar(200), " )  //消息名称
             .append( "primary key(msgId))").toString();
     public static final String postgresql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName (msgId varchar(100) NOT NULL," )
             .append( "createTime timestamp NOT NULL,")  //创建时间
@@ -409,11 +414,12 @@ public class AgentSessionStoreDBConfig {
             .append( "role varchar(100) NOT NULL,")//消息角色名称
             .append( "marks varchar(500),") //消息标记，冗余备用字段，暂未使用
             .append( "metadata text,") //消息元数据
+			.append( "name varchar(200), " )  //消息名称
             .append( "primary key(msgId))").toString();
 	
 	public static final String clickhouse_createLocalSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageTableName}_local  ON CLUSTER $clickhouseCluster ")
 			.append("(")
-			.append("    msgId String  COMMENT '消息id',")
+			.append("msgId String  COMMENT '消息id',")
 			.append("createTime DateTime COMMENT '创建时间',")
 			.append("sessionId String COMMENT '会话id',")
 			.append("requestId Nullable(String) COMMENT '请求id',")
@@ -431,7 +437,8 @@ public class AgentSessionStoreDBConfig {
 			.append("elapsed Int32 COMMENT '耗时',")
 			.append("role Nullable(String) COMMENT '角色',")
 			.append("marks Nullable(String) COMMENT '消息标记',")
-			.append("metadata Nullable(String) COMMENT '消息元数据'")
+			.append("metadata Nullable(String) COMMENT '消息元数据',")
+			.append( "name Nullable(String) COMMENT '消息名称'" )  //消息名称
 			.append(")")
 			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
 			.append("ORDER BY (sessionId, createTime,seqNo)").toString();
@@ -792,7 +799,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create session message table", e);
 			}
 		}
-		
+		//创建记忆表，暂时屏蔽，后续放开
+		/** 
 		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMemorySQL());
 		}
@@ -812,6 +820,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create session message table", e);
 			}
 		}
+		 */
 		
 		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMessageReferenceSQL());
@@ -1070,7 +1079,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			sql = sqlite_createMemoryTableSQL;
 		}
 		
-		return sql.replace("$sessionMessageTableName", memoryTableName);
+		return sql.replace("$memoryTableName", memoryTableName);
 	}
 	
 	

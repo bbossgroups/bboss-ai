@@ -58,6 +58,19 @@ public class TraceMessage {
         return this;
     }
 
+	public TraceMessage setMessage(Map<String, Object> message) {
+		if(message instanceof LinkedMessageMap) {
+			this.message = (LinkedMessageMap<String, Object>) message;
+		}
+		else{
+			LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
+			linkedMessageMap.putAll(message);
+			this.message = linkedMessageMap;
+		}
+
+		return this;
+	}
+
     public Long getStartTime() {
         return startTime;
     }

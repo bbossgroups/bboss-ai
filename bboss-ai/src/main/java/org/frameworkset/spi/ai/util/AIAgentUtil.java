@@ -106,7 +106,7 @@ public class AIAgentUtil {
 
     private static void traceLLMInput(Object message,AIAgent agent,String inputMessageTypeName){
         TraceMessage traceMessage = new TraceMessage();
-        Map  tracemessage = new LinkedHashMap();
+		LinkedMessageMap  tracemessage = new LinkedMessageMap();
         tracemessage.put("input", message);
 //        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
         tracemessage.put("role", inputMessageTypeName);
@@ -116,7 +116,7 @@ public class AIAgentUtil {
 
     private static void traceLLMOutput(Object message,AIAgent agent,String outputMessageType){
         TraceMessage traceMessage = new TraceMessage();
-        Map  tracemessage = new LinkedHashMap();
+		LinkedMessageMap  tracemessage = new LinkedMessageMap();
         tracemessage.put("out", message);
 //        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMOUTPUTMESSAGE_NAME);
         tracemessage.put("role", outputMessageType);
@@ -988,7 +988,7 @@ public class AIAgentUtil {
 			chatContext.setClientConfiguration(config);
         }
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,chatMessage);
-        chatContext.setThinking(false);
+//        chatContext.setThinking(false);
         chatContext.setStreamable(false);
         ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,aiAgent,chatContext);
         chatObject.getStreamDataBuilder().setStartTime(startTime);

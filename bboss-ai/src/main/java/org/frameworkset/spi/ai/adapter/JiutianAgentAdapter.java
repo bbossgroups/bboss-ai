@@ -180,7 +180,7 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
 
     @Override
     public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         
         requestMap.put("model", imageAgentMessage.getModel());
@@ -203,16 +203,16 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
 
      
         if(sessionMemory != null) {
-            
-            Map<String, Object> userMessage = null;
-            Map<String, Object> systemMessage = null;
+			
+			LinkedMessageMap<String, Object> userMessage = null;
+			LinkedMessageMap<String, Object> systemMessage = null;
             if (imageUrls != null && imageUrls.size() > 0) {
                 userMessage = buildInputImagesMessage( prompt, imageUrls.toArray(new String[]{}));
             } else {
                 userMessage = buildInputImagesMessage( prompt, (String[]) null);
             }
 
-            List<Map<String, Object>> messages = null;
+            List<LinkedMessageMap<String, Object>> messages = null;
             if (sessionMemory != null) {
                 if (sessionMemory.size() == 0) {
                     String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
@@ -251,11 +251,11 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
         return requestMap;
     }
     @Override
-    protected Map<String, Object> buildInputImagesMessage(String message,String... imageUrls) {
+    protected LinkedMessageMap<String, Object> buildInputImagesMessage(String message,String... imageUrls) {
         return MessageBuilder.buildJiuTianInputImagesMessage(message,imageUrls);
     }
     @Override
-    protected Object handleImageParserMessages(List<Map<String, Object>> messages){
+    protected Object handleImageParserMessages(List<LinkedMessageMap<String, Object>> messages){
 //        return SimpleStringUtil.object2json(messages);
         return messages;
     }

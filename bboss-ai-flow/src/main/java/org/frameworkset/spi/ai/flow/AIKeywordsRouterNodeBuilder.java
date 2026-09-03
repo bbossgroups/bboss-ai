@@ -17,10 +17,7 @@ package org.frameworkset.spi.ai.flow;
 
 import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.callback.ChatContext;
-import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.AgentMessage;
-import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.model.TraceMessage;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.FlowPromptEval;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
@@ -117,7 +114,7 @@ public class AIKeywordsRouterNodeBuilder extends AIBaseNodeBuilder {
         traceServerEvent.setData(message);
         traceServerEvent.setType(TYPE_TRACE);
         TraceMessage traceMessage = new TraceMessage();
-        Map<String, Object> messageMap = new LinkedHashMap<>();
+		LinkedMessageMap<String, Object> messageMap = new LinkedMessageMap<>();
         messageMap.put("text",message);
 		messageMap.put("role", SessionMessage.MESSAGE_TYPE_TRACE_MESSAGE_NAME);
 

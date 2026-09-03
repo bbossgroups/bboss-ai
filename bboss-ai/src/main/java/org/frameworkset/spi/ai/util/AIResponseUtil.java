@@ -1328,7 +1328,15 @@ public class AIResponseUtil {
         serverEvent.setGenUrl(content.getUrl());
         serverEvent.setFinishReason(content.getFinishReason());
         serverEvent.setType(ServerEvent.TYPE_DATA);
-        serverEvent.setContentType(ServerEvent.CONTENT);
+		if(content.isContent() || content.isMixedData()) {
+			serverEvent.setContentType(ServerEvent.CONTENT);
+		}
+		else if(content.isReasoning()){
+			serverEvent.setContentType(ServerEvent.REASONING_CONTENT);
+		}
+		else{
+			serverEvent.setContentType(ServerEvent.CONTENT);
+		}
         serverEvent.setDone(content.isDone());
 
         serverEvent.setRole(content.getRole());

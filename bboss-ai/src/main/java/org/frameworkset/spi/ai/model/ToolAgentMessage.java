@@ -158,7 +158,7 @@ public class ToolAgentMessage extends ChatAgentMessage{
 //    }
 
     @Override
-    public ChatAgentMessage addSessionMessage(Map<String, Object> message, AIAgent aiAgent) {
+    public ChatAgentMessage addSessionMessage(LinkedMessageMap<String, Object> message, AIAgent aiAgent) {
           chatAgentMessage.addSessionMessage(message,   aiAgent);
           return this;
     }

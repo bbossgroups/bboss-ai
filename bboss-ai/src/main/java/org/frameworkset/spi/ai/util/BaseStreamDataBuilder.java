@@ -227,7 +227,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
                 sink.next(serverEvent);
 				
 				TraceMessage traceMessage = new TraceMessage();
-				Map<String,Object> messages = new LinkedHashMap<>();
+				LinkedMessageMap<String,Object> messages = new LinkedMessageMap<>();
 				messages.put("text",data);
 				messages.put("role", SessionMessage.MESSAGE_TYPE_TRACE_MESSAGE_NAME);
 				traceMessage.setMessage(messages);
@@ -239,7 +239,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
             }
         }
         TraceMessage traceMessage = new TraceMessage();
-        Map<String, Object> assistantMessage = MessageBuilder.buildMessage(SessionMessage.MESSAGE_TYPE_TOOLSEARCH_MESSAGE_NAME,data );
+		LinkedMessageMap<String, Object> assistantMessage = MessageBuilder.buildMessage(SessionMessage.MESSAGE_TYPE_TOOLSEARCH_MESSAGE_NAME,data );
         traceMessage.setMessage(assistantMessage);
         agent.recordTraceMessage(  traceMessage,tokenMetrics);
         return data;

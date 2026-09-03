@@ -44,7 +44,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         return storeContext;
     }
 
-    public T setSessionMemory(List<Map<String,Object>> session) {
+    public T setSessionMemory(List<LinkedMessageMap<String,Object>> session) {
 
         if(mainSessionStore == null) {
             storeContext = new StoreContext();
@@ -68,7 +68,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     }
     
     
-    public T setSessionMemory(List<Map<String,Object>> session,int sessionSize) {
+    public T setSessionMemory(List<LinkedMessageMap<String,Object>> session,int sessionSize) {
         if(mainSessionStore == null) {
             storeContext = new StoreContext();
             storeContext.setSessionSize(sessionSize);
@@ -178,7 +178,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         }
         return agentSessionStore;
     }
-    public T addSessionMessage(Map<String, Object> systemMessage,String prompt, AIAgent aiAgent){
+    public T addSessionMessage(LinkedMessageMap<String, Object> systemMessage,String prompt, AIAgent aiAgent){
         initSessionStore(aiAgent);
         if(mainSessionStore == null){
             return (T)this;
@@ -196,7 +196,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         return (T)this;
     }
     
-    public T addSessionMessage(Map<String, Object> message, AIAgent aiAgent){   
+    public T addSessionMessage(LinkedMessageMap<String, Object> message, AIAgent aiAgent){   
         initSessionStore(aiAgent);
         if(mainSessionStore == null){
             return (T)this;

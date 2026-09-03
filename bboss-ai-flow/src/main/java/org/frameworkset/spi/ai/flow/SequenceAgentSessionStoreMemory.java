@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.flow;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.StoreContext;
@@ -91,7 +92,7 @@ public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<Seq
      * @param parentAgentId
      */
     @Override
-    public LastSessionMessage addAgentResultSessionMessage( Map<String, Object> persistentMessage,
+    public LastSessionMessage addAgentResultSessionMessage( LinkedMessageMap<String, Object> persistentMessage,
                                                            String agentId, String parentAgentId){
 
         LastSessionMessage lastSessionMessage = null;

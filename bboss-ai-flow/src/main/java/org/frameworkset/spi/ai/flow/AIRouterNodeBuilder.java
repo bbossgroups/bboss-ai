@@ -138,7 +138,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
 				traceServerEvent.setData(message);
 				traceServerEvent.setType(TYPE_TRACE);
 				TraceMessage traceMessage = new TraceMessage();
-				Map<String, Object> messageMap = new LinkedHashMap<>();
+				LinkedMessageMap<String, Object> messageMap = new LinkedMessageMap<>();
 				messageMap.put("text", message);
 				messageMap.put("data", data);
 				
