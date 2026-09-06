@@ -30,7 +30,7 @@ import java.util.Map;
  */
 public class AgentAdapterFactory {
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AgentAdapterFactory.class);
-    private static Map<String,AgentAdapter> agentAdapters = new LinkedHashMap<>();
+    private static final Map<String,AgentAdapter> agentAdapters = new LinkedHashMap<>();
     static{
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_DOUBAO,new DoubaoAgentAdapter().initAgentAdapter());
         agentAdapters.put(AIConstants.AI_MODEL_TYPE_QWEN,new QwenAgentAdapter().initAgentAdapter());
@@ -89,13 +89,17 @@ public class AgentAdapterFactory {
      * @param agentAdapterClass
      */
     public static void registerAgentAdapter(ClientConfiguration clientConfiguration,String modelType, String agentAdapterClass){
-        AgentAdapter agentAdapter = null;
         try {
+			log.info("Register modelType:{} agentAdapterClass:{} begin.",modelType,agentAdapterClass);
             Class<? extends AgentAdapter> agentAdapterClass_ = (Class<? extends AgentAdapter>) Class.forName(agentAdapterClass);
+			
             registerAgentAdapter(  clientConfiguration,  modelType,   agentAdapterClass_);
+			log.info("Register modelType:{} agentAdapterClass:{} complete.",modelType,agentAdapterClass);
         } catch (AIRuntimeException e) {
+			log.error("register modelType:{} agentAdapterClass:{} error",modelType,agentAdapterClass,e);
             throw e;
         }catch (Exception e) {
+			log.error("register modelType:{} agentAdapterClass:{} error",modelType,agentAdapterClass,e);
             throw new AIRuntimeException(e);
         }
 
@@ -109,11 +113,11 @@ public class AgentAdapterFactory {
             agentAdapter = agentAdapters.get(AIConstants.AI_MODEL_TYPE_NONE);
         }
 		if(log.isDebugEnabled()){
-			log.debug("all supper model types are:{}",JsonUtil.object2json(agentAdapters.keySet()));
+			log.debug("All supported model types are:{}",JsonUtil.object2json(agentAdapters.keySet()));
 		}
         if(agentAdapter == null){
 			
-            throw new AIRuntimeException("modelType:["+modelType+"] is not supported,all supper model types are:"+ JsonUtil.object2json(agentAdapters.keySet()));
+            throw new AIRuntimeException("modelType:["+modelType+"] is not supported,all supported model types are:"+ JsonUtil.object2json(agentAdapters.keySet()));
         }
         return agentAdapter;
     }
