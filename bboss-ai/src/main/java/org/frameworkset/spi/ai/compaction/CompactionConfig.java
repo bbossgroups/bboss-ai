@@ -80,7 +80,10 @@ public class CompactionConfig {
 
     /** Default summary prompt with structured format. */
     public static final String DEFAULT_SUMMARY_PROMPT = "#[prompts/compaction/DEFAULT_SUMMARY_PROMPT.md,type=resource]";
-//            """
+	
+
+	
+	//            """
 //            <role>
 //            Context Extraction Assistant
 //            </role>
@@ -126,7 +129,7 @@ public class CompactionConfig {
 //            {messages}
 //            </messages>\
 //            """;
-	
+	private int compactionPolicy = COMPACTION_POLICY_SUMMARY;
 	private int triggerMessages = 50;
 	private int triggerTokens = 0;
 	private int reserved = 20_000;
@@ -353,10 +356,17 @@ public class CompactionConfig {
             this.model = model;
             return this;
         }
- 
- 
-   
-
+	
+	
+	
+		public int getCompactionPolicy() {
+			return compactionPolicy;
+		}
+		
+		public CompactionConfig setCompactionPolicy(int compactionPolicy) {
+			this.compactionPolicy = compactionPolicy;
+			return this;
+		}
     // -------------------------------------------------------------------------
     //  TruncateArgsConfig
     // -------------------------------------------------------------------------

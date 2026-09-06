@@ -799,8 +799,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create session message table", e);
 			}
 		}
-		//创建记忆表，暂时屏蔽，后续放开
-		/** 
+		//创建记忆表 
 		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMemorySQL());
 		}
@@ -820,7 +819,6 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create session message table", e);
 			}
 		}
-		 */
 		
 		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMessageReferenceSQL());
@@ -923,8 +921,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
 					.append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,")
 					.append("seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId")
-					.append(",agentNodeType,subAgentIdBy,groupId,parentGroupId")
-					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+					.append(",agentNodeType,subAgentIdBy,groupId,parentGroupId,name")
+					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
 			
 			insertSessionMessageRerenceSQL = "INSERT INTO " + sessionMessageReferenceTableName + " (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
 					"VALUES (?, ?, ?, ?, ?)";

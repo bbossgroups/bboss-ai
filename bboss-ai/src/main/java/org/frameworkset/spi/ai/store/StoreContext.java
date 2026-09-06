@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 
 import java.util.List;
@@ -30,6 +31,10 @@ public class StoreContext {
 	private String clickhouseCluster;
     private AgentSessionStore mainSessionStore;
     private AgentMessageTypeConvertor agentMessageTypeConvertor;
+	
+
+	
+	private CompactionConfig compactionConfig;
     /**
      * 会话id
      */
@@ -210,6 +215,15 @@ public class StoreContext {
 	
 	public StoreContext setClickhouseCluster(String clickhouseCluster) {
 		this.clickhouseCluster = clickhouseCluster;
+		return this;
+	}
+	
+	public CompactionConfig getCompactionConfig() {
+		return compactionConfig;
+	}
+	
+	public StoreContext setCompactionConfig(CompactionConfig compactionConfig) {
+		this.compactionConfig = compactionConfig;
 		return this;
 	}
 }

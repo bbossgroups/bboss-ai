@@ -243,7 +243,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                     parentAgentId, agentId,messageType,integerCount.increament(), JsonUtil.object2json(message),
                     role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId(),agentNodeType,
 					subAgentIdBy,persistentMessage.getGroupId(),persistentMessage.getParentGroupId()
-//					,message.getName()
+					,message.getName()
 			);
 
             if(messageType != null && messageType.equals("1")) {
