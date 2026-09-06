@@ -19,7 +19,7 @@ package org.frameworkset.spi.ai.filesystem.local;
  
  
 import com.frameworkset.util.FileUtil;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.filesystem.AbstractFilesystem;
 import org.frameworkset.spi.ai.filesystem.NamespaceFactory;
 import org.frameworkset.spi.ai.filesystem.PathPolicy;

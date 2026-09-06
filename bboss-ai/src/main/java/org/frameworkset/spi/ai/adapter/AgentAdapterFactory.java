@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.adapter;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.AIConstants;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
@@ -107,8 +108,12 @@ public class AgentAdapterFactory {
         } else {
             agentAdapter = agentAdapters.get(AIConstants.AI_MODEL_TYPE_NONE);
         }
+		if(log.isDebugEnabled()){
+			log.debug("all supper model types are:{}",JsonUtil.object2json(agentAdapters.keySet()));
+		}
         if(agentAdapter == null){
-            throw new AIRuntimeException("modelType:["+modelType+"] is not supported.");
+			
+            throw new AIRuntimeException("modelType:["+modelType+"] is not supported,all supper model types are:"+ JsonUtil.object2json(agentAdapters.keySet()));
         }
         return agentAdapter;
     }

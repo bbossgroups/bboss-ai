@@ -16,10 +16,8 @@ package org.frameworkset.spi.ai.interceptor.impl;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
-import org.frameworkset.spi.ai.model.FunctionTool;
-import org.frameworkset.spi.ai.model.FunctionToolDefine;
 
 /**
  *

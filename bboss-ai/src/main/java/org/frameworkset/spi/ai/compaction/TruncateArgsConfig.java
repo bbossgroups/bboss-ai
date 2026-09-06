@@ -40,28 +40,35 @@ public class TruncateArgsConfig {
 	private int maxArgLength = 2_000;
 	private String truncationText = "...(argument truncated)";
 	
-	public void setTriggerMessages(int triggerMessages) {
+	public TruncateArgsConfig setTriggerMessages(int triggerMessages) {
 		this.triggerMessages = triggerMessages;
+		return this;
 	}
 	
-	public void setTriggerTokens(int triggerTokens) {
+	public TruncateArgsConfig setTriggerTokens(int triggerTokens) {
 		this.triggerTokens = triggerTokens;
+		return this;
 	}
 	
-	public void setKeepMessages(int keepMessages) {
+	public TruncateArgsConfig setKeepMessages(int keepMessages) {
+		
 		this.keepMessages = keepMessages;
+		return this;
 	}
 	
-	public void setKeepTokens(int keepTokens) {
+	public TruncateArgsConfig setKeepTokens(int keepTokens) {
 		this.keepTokens = keepTokens;
+		return this;
 	}
 	
-	public void setMaxArgLength(int maxArgLength) {
+	public TruncateArgsConfig setMaxArgLength(int maxArgLength) {
 		this.maxArgLength = maxArgLength;
+		return this;
 	}
 	
-	public void setTruncationText(String truncationText) {
+	public TruncateArgsConfig setTruncationText(String truncationText) {
 		this.truncationText = truncationText;
+		return this;
 	}
 	
 	public int getTriggerMessages() {

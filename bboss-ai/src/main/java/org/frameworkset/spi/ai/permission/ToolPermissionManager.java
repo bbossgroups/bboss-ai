@@ -15,12 +15,12 @@ package org.frameworkset.spi.ai.permission;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.plan.PlanTools;
 
 /**
- *
+ * 
  * @author biaoping.yin
  * @Date 2026/8/24
  */

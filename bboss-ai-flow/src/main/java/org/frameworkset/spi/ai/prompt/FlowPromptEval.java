@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.prompt;
 
 import com.frameworkset.util.SimpleStringUtil;
 import com.frameworkset.util.VariableHandler;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.AIFlowConst;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;

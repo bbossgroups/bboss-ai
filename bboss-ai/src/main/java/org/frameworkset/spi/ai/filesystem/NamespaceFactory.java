@@ -21,7 +21,7 @@ package org.frameworkset.spi.ai.filesystem;
  * @Date 2026/8/24
  */
 
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ import java.util.List;
  *
  * <p>Unlike a static namespace, a {@code NamespaceFactory} is invoked on <em>every</em> store
  * operation (read, write, ls, etc.), allowing the namespace to vary based on the per-call {@link
- * org.frameworkset.spi.ai.callback.ChatContext} (user id, session id) rather than mutable shared state on the agent instance.
+ * ChatContext} (user id, session id) rather than mutable shared state on the agent instance.
  *
  * <p>Example:
  *

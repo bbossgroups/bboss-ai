@@ -19,7 +19,7 @@ import com.frameworkset.util.SimpleStringUtil;
 //import io.agentscope.harness.agent.memory.compaction.ConversationCompactor;
 //import io.agentscope.harness.agent.memory.session.SessionTranscriptWriter;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.Logger;

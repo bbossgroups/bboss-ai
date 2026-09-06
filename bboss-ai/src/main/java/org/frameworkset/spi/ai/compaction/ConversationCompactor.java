@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.compaction;
 
 import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
@@ -25,7 +25,6 @@ import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;

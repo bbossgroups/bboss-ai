@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.callback;
+package org.frameworkset.spi.ai.context;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.callback;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ServerEvent;

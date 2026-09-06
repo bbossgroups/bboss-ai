@@ -16,7 +16,7 @@
 package org.frameworkset.spi.ai.filesystem;
 
  
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.filesystem.model.*;
 
 import java.util.List;

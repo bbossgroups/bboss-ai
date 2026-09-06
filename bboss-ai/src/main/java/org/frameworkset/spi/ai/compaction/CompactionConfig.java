@@ -61,6 +61,16 @@ import java.util.Set;
  *
  */
 public class CompactionConfig {
+	
+	/**
+	 * Compaction policy: window size, according to message window size for trimming.
+	 */
+	public static final int COMPACTION_POLICY_WINDOWSIZE = 0;
+	
+	/**
+	 * Compaction policy: summary, according to message window size for trimming and appending summary to the front.
+	 */
+	public static final int COMPACTION_POLICY_SUMMARY = 1;
 
     /**
      * Fallback trigger threshold (in tokens) when the model does not report its context window

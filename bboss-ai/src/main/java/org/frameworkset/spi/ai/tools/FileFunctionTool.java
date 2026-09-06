@@ -18,7 +18,7 @@ package org.frameworkset.spi.ai.tools;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.audit.Auditor;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.filesystem.AbstractFilesystem;
 import org.frameworkset.spi.ai.filesystem.local.LocalFilesystem;
 import org.frameworkset.spi.ai.filesystem.model.*;

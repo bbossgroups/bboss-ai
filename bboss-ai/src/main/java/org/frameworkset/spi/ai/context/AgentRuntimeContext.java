@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.callback;
+package org.frameworkset.spi.ai.context;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.callback;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.state.PlanModeContextState;
 import org.frameworkset.spi.ai.state.TaskContextState;
 
@@ -36,6 +37,9 @@ public class AgentRuntimeContext {
 	 */
 	private boolean enablePlanMode;
 	
+
+	private CompactionConfig compactionConfig;
+	
 	/**
 	 * 是否启用任务列表
 	 */
@@ -45,39 +49,55 @@ public class AgentRuntimeContext {
 		return planModeContextState;
 	}
 	
-	public void setPlanModeContextState(PlanModeContextState planModeContextState) {
+	public AgentRuntimeContext setPlanModeContextState(PlanModeContextState planModeContextState) {
 		this.planModeContextState = planModeContextState;
+		return this;
 	}
 	
 	public TaskContextState getTaskContextState() {
 		return taskContextState;
 	}
 	
-	public void setTaskContextState(TaskContextState taskContextState) {
+	public AgentRuntimeContext setTaskContextState(TaskContextState taskContextState) {
 		this.taskContextState = taskContextState;
+		return this;
 	}
 	
 	public boolean isEnablePlanMode() {
 		return enablePlanMode;
 	}
 	
-	public void setEnablePlanMode(boolean enablePlanMode) {
+	public AgentRuntimeContext setEnablePlanMode(boolean enablePlanMode) {
 		this.enablePlanMode = enablePlanMode;
+		return this;
 	}
 	
 	public boolean isTaskListEnabled() {
 		return taskListEnabled;
 	}
 	
-	public void setTaskListEnabled(boolean taskListEnabled) {
+	public AgentRuntimeContext setTaskListEnabled(boolean taskListEnabled) {
 		this.taskListEnabled = taskListEnabled;
+		return this;
 	}
 	
 	public boolean isDebugSSEData() {
 		return debugSSEData;
 	}
 	
-	public void setDebugSSEData(boolean debugSSEData) {
+	public AgentRuntimeContext setDebugSSEData(boolean debugSSEData) {
 		this.debugSSEData = debugSSEData;
+		return this;
 	}
+	
+	
+	public CompactionConfig getCompactionConfig() {
+		return compactionConfig;
+	}
+	
+	public AgentRuntimeContext setCompactionConfig(CompactionConfig compactionConfig) {
+		this.compactionConfig = compactionConfig;
+		return this;
+	}
+	
 }

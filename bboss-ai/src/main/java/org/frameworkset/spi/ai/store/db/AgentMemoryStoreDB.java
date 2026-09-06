@@ -16,7 +16,7 @@ package org.frameworkset.spi.ai.store.db;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.Memory;
 import org.frameworkset.spi.ai.store.AgentMemoryStore;
 import org.frameworkset.spi.ai.store.StoreContext;
