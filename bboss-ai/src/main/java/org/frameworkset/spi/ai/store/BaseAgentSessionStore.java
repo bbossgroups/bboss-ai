@@ -255,13 +255,20 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 	@Override
 	public List<LinkedMessageMap<String, Object>> compact(AIAgent agent,List<LinkedMessageMap<String, Object>> sessionMemory){
 		if(compactionManager != null  ){
-			List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(agent,sessionMemory );
-			if(sessionMemory != compactMessages){
-				sessionMemory.clear();
-				for(int i = 0; i < compactMessages.size() ; i++ ) {
-					sessionMemory.add(compactMessages.get(i));
+			try {
+				List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(agent,sessionMemory );
+				if(sessionMemory != compactMessages){
+					sessionMemory.clear();
+					for(int i = 0; i < compactMessages.size() ; i++ ) {
+						sessionMemory.add(compactMessages.get(i));
+					}
 				}
 			}
+			catch (Exception e){
+				log.warn("Compact agent["+agent.getAgentId()+"] session memory error: ignore compact.", e);
+				
+			}
+			
 		}
 		return sessionMemory;
 	} 
