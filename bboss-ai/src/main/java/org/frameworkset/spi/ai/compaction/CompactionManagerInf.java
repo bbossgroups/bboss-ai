@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.compaction;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 
 import java.util.List;
@@ -33,8 +34,8 @@ public interface CompactionManagerInf {
 	 * @param messages
 	 * @return
 	 */
-	List<LinkedMessageMap<String,Object>> compact(
-			AIAgent agent, List<LinkedMessageMap<String,Object>> messages
+	List<LinkedMessageMap<String,Object>> compact(ChatContext chatContext,
+												  AIAgent agent, List<LinkedMessageMap<String,Object>> messages
 			 
 	);
 }

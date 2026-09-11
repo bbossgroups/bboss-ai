@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.compaction.CompactionManager;
 import org.frameworkset.spi.ai.compaction.CompactionManagerInf;
 import org.frameworkset.spi.ai.compaction.WindowsCompactionManager;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.db.AgentMemoryStoreDB;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
@@ -253,10 +254,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         
     }
 	@Override
-	public List<LinkedMessageMap<String, Object>> compact(AIAgent agent,List<LinkedMessageMap<String, Object>> sessionMemory){
+	public List<LinkedMessageMap<String, Object>> compact(ChatContext chatContext, AIAgent agent, List<LinkedMessageMap<String, Object>> sessionMemory){
 		if(compactionManager != null  ){
 			try {
-				List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(agent,sessionMemory );
+				List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(  chatContext,agent,sessionMemory );
 				if(sessionMemory != compactMessages){
 					sessionMemory.clear();
 					for(int i = 0; i < compactMessages.size() ; i++ ) {

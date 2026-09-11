@@ -74,7 +74,7 @@ public class AIKeywordsRouterNodeBuilder extends AIBaseNodeBuilder {
         jobFlowNodeExecuteContext.addContextData("route.ChoiceList", JsonUtil.object2json(routeChoiceList));
         
         FlowPromptEval flowPromptEval = new FlowPromptEval();
-		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, agent);
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage.getMaas(),agentMessage, agent);
         prompt = flowPromptEval.eval(prompt, jobFlowNodeExecuteContext,chatContext);
         RouteChoice result = null;
         for(RouteChoice routeChoice: routeChoiceList) {

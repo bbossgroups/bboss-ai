@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.store;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
@@ -71,7 +72,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent);
 
     LastSessionMessage addAgentResultSessionMessage(LinkedMessageMap<String, Object> message,String agentId,String parentAgentId, AIAgent aiAgent );
-	List<LinkedMessageMap<String, Object>> compact(AIAgent agent,List<LinkedMessageMap<String, Object>> sessionMemory);
+	List<LinkedMessageMap<String, Object>> compact(ChatContext chatContext,AIAgent agent, List<LinkedMessageMap<String, Object>> sessionMemory);
     void appendSessionMessageFromParent(AIAgent agent,
 										LinkedMessageMap<String,Object> persistentMessage );
     void addSessionMessage( LinkedMessageMap<String,Object> systemMessage,String prompt,

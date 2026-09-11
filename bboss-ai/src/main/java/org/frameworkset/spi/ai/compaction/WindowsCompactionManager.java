@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.compaction;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -56,7 +57,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 	 * @return
 	 */
 	@Override
-	public List<LinkedMessageMap<String, Object>> compact(AIAgent agent, 
+	public List<LinkedMessageMap<String, Object>> compact(ChatContext chatContext, AIAgent agent,
 														  List<LinkedMessageMap<String, Object>> messages) {
 		if(messages == null || messages.size() == 0)
 			return messages;
@@ -84,7 +85,10 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 				LinkedMessageMap<String, Object> message = compactedMessages.get(j);
 				String role = (String) message.get("role");
 				if(role.equals(MessageBuilder.ROLE_TOOL)) { //处理工具调用结果
-					String id = (String) message.get("id");
+					String id = (String) message.get("tool_call_id");
+					if(id == null){
+						logger.warn("工具调用结果id为空");
+					}
 					toolCallIds.put(id, 1);
 				}
 				else{
@@ -136,7 +140,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 				newMessages = new ArrayList<>(compactedMessages.subList(removePosition, compactedMessages.size()));
 				List<LinkedMessageMap<String, Object>> summeryMessage = compactedMessages.subList(0, removePosition);
 				
-				String summery = SummeryUtils.summarizePrefix(summeryMessage, config);
+				String summery = SummeryUtils.summarizePrefix(summeryMessage, config,chatContext);
 				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(summery,null,newMessages.get(0));
 				 
 				agent.saveSummeryMessage(summaryMessage);
@@ -151,7 +155,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 			if(systemMessage != null) {
 				newMessages.add(0, systemMessage);
 			}
-			logger.info("压缩前消息记录size：{},压缩后消息压缩前消息记录size: {}",messages.size(), newMessages.size()); // Log the size of the compacted messages
+			logger.info("压缩前消息记录size：{},压缩后消息压缩前消息记录size: {}，cuttoff position: {}",messages.size(), newMessages.size(), removePosition); // Log the size of the compacted messages
 			return newMessages;
 		}
 		return messages;

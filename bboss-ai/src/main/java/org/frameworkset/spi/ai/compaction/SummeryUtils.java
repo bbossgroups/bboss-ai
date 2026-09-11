@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.compaction;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
@@ -172,7 +173,7 @@ public class SummeryUtils {
 			content = "Here is a summary of the conversation to date:\n\n" + summary;
 		}
 		LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
-		linkedMessageMap.setId(buildSummaryMessageId(content));
+//		linkedMessageMap.setId(buildSummaryMessageId(content));
 		linkedMessageMap.setMessageType(SessionMessage.MESSAGE_TYPE_SUMMARY_MESSAGE);
 		linkedMessageMap.put("role", MessageBuilder.ROLE_USER);
 		linkedMessageMap.setName( ConversationCompactor.SUMMARY_MSG_NAME);
@@ -194,7 +195,7 @@ public class SummeryUtils {
 		UUID stableId = UUID.nameUUIDFromBytes(content.getBytes(StandardCharsets.UTF_8));
 		return ConversationCompactor.SUMMARY_MSG_NAME + ":" + stableId;
 	}
-	public static String summarizePrefix(List<LinkedMessageMap<String, Object>> prefix, CompactionConfig config) {
+	public static String summarizePrefix(List<LinkedMessageMap<String, Object>> prefix, CompactionConfig config, ChatContext chatContext) {
 		if (prefix.isEmpty()) {
 			return "No previous conversation history.";
 		}
@@ -205,6 +206,8 @@ public class SummeryUtils {
 //        List<LinkedMessageMap<String, Object>> summarizationInput = new ArrayList<>();
 //		summarizationInput.add( MessageBuilder.buildUserMessage(prompt) );
 		ModelInfo model = config.getCompactModel();
+		if(model == null)
+			model = chatContext.getModelInfo();
 		AIAgent agent = new AIAgent(config.getSummaryPrompt());
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
 		chatAgentMessage.setModel(model.getModel());

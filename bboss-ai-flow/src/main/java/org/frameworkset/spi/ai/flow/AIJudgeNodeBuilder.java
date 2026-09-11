@@ -110,7 +110,7 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
 		if(agentMessage == null){
 			throw new AIRuntimeException("agentMessage is null");
 		}
-		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, judgeAgent);
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage.getMaas(),agentMessage, judgeAgent);
 		chatContext.setJobFlowNodeExecuteContext(jobFlowNodeExecuteContext);
    
         chatContext.setChatStreamCallback(new ChatStreamCallback() {

@@ -761,7 +761,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage, ChatContext chatContext ){
         reactMessage(  chatAgentMessage);
 //        chatAgentMessage.init();
-
+		
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this,chatContext);
     }
 
@@ -789,7 +789,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 		if(this.agentRuntimeContext == null){
 			this.agentRuntimeContext = chatAgentMessage.getAgentRuntimeContext();
 		}
-        ChatContext chatContext = AIAgentUtil.getChatContext(  chatAgentMessage, this);
+        ChatContext chatContext = AIAgentUtil.getChatContext( maasName, chatAgentMessage, this);
         return chat(  maasName,   chatAgentMessage,chatContext);
     }
 	public ServerEvent chatWithQuestion( String question, ChatAgentMessage chatAgentMessage ){
@@ -1558,9 +1558,9 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 		return (T)this;
 	}
 	
-	public List<LinkedMessageMap<String, Object>> compact(AIAgent agent, List<LinkedMessageMap<String, Object>> messages) {
+	public List<LinkedMessageMap<String, Object>> compact(ChatContext chatContext,AIAgent agent, List<LinkedMessageMap<String, Object>> messages) {
 		if(getMainSessionStore() != null) {
-			return getMainSessionStore().compact(agent, messages);
+			return getMainSessionStore().compact(chatContext,agent, messages);
 		}
 		else{
 			return messages;

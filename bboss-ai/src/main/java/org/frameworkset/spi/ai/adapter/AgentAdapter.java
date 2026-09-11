@@ -490,7 +490,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 // 添加当前用户消息
                 toolAgentMessage.addSessionMessage(userMessage, agent);
             }
-			agent.compact(agent,sessionMemory);
+			agent.compact(chatContext,agent,sessionMemory);
 //			if(compactionManager != null && !persistentMessage.isAgentResultMessage()){
 //				List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(agent,sessionMemory );
 //				if(sessionMemory != compactMessages){
@@ -660,7 +660,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
             // 添加当前用户消息
             chatAgentMessage.addSessionMessage(userMessage,agentId,agent);			
-			agent.compact(agent,sessionMemory);
+			agent.compact(chatContext,agent,sessionMemory);
             messages = new ArrayList<>(sessionMemory);
             
             

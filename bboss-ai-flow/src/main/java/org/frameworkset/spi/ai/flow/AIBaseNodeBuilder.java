@@ -69,7 +69,7 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
 		agent.setGroupId(jobFlowNodeExecuteContext.getGroupId());
 		agent.setParentGroupId(jobFlowNodeExecuteContext.getParentGroupId());
 		
-        ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, agent);
+        ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage.getMaas(),agentMessage, agent);
 		chatContext.setJobFlowNodeExecuteContext(jobFlowNodeExecuteContext);
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**

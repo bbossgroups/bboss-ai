@@ -57,7 +57,7 @@ public class CompactionManager extends BaseCompactionManager {
     }
 
     @Override
-    public List<LinkedMessageMap<String,Object>> compact(
+    public List<LinkedMessageMap<String,Object>> compact(ChatContext chatContext,
             AIAgent agent,List<LinkedMessageMap<String,Object>> messages 
           ) {
          

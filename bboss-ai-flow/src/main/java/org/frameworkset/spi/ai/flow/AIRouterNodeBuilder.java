@@ -173,7 +173,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         }
         jobFlowNodeExecuteContext.addContextData("route.ChoiceList", JsonUtil.object2json(routeChoiceList));
         routeAgent.setPrompt(prompt);
-		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, routeAgent);
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage.getMaas(),agentMessage, routeAgent);
 		chatContext.setJobFlowNodeExecuteContext(jobFlowNodeExecuteContext);
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**

@@ -133,6 +133,10 @@ public class ChatContext {
 	 * 保存计算后的系统提示词，避免重复计算
 	 */
 	private String evaledSystemPrompt;
+	
+
+	
+	private ModelInfo modelInfo;
 
     public void setChatStreamCallback(ChatStreamCallback chatStreamCallback) {
         this.chatStreamCallback = chatStreamCallback;
@@ -340,7 +344,13 @@ public class ChatContext {
 		this.agentRuntimeContext = agentRuntimeContext;
 	}
 	
- 
+	public ModelInfo getModelInfo() {
+		return modelInfo;
+	}
+	
+	public void setModelInfo(ModelInfo modelInfo) {
+		this.modelInfo = modelInfo;
+	}
 	
  
 }
