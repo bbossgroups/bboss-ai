@@ -19,9 +19,6 @@ package org.frameworkset.spi.ai.compaction;
 
 import org.frameworkset.spi.ai.model.ModelInfo;
 
-import java.util.HashSet;
-import java.util.Set;
-
 /**
  * Configuration for conversation compaction (summarization).
  *
@@ -143,7 +140,7 @@ public class CompactionConfig {
 	private boolean offloadBeforeCompact = true;
 	private TruncateArgsConfig truncateArgsConfig = null;
 	private PruneConfig pruneConfig = new PruneConfig();
-	private ModelInfo model = null;
+	private ModelInfo compactModel = null;
 
      
 
@@ -237,8 +234,8 @@ public class CompactionConfig {
      * Optional model override for compaction (summarization). {@code null} means use
      * the agent's primary model.
      */
-    public ModelInfo getModel() {
-        return model;
+    public ModelInfo getCompactModel() {
+        return compactModel;
     }
 
 	
@@ -352,8 +349,8 @@ public class CompactionConfig {
          * Sets a dedicated model for compaction (summarization), allowing a
          * lighter/cheaper model than the agent's primary reasoning model.
          */
-        public CompactionConfig setModel(ModelInfo model) {
-            this.model = model;
+        public CompactionConfig setCompactModel(ModelInfo compactModel) {
+            this.compactModel = compactModel;
             return this;
         }
 	

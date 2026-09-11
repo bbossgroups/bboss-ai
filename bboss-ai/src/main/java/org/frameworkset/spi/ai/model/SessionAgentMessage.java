@@ -43,81 +43,81 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     public StoreContext getStoreContext() {
         return storeContext;
     }
-
-    public T setSessionMemory(List<LinkedMessageMap<String,Object>> session) {
-
-        if(mainSessionStore == null) {
-            storeContext = new StoreContext();
-            storeContext.setSessionMemory(session);
-            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
-            if(storeContext.isResetSession() && storeContext.getSessionId() != null){
-                mainSessionStore.removeSession(storeContext.getSessionId());
-            }
-//            mainSessionStore = sessionStore;
-        }
-        else if(mainSessionStore instanceof AgentSessionStoreMemory){
-            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)mainSessionStore;
-            if(agentSessionStoreMemory.getSessionMemory() != null){
-                throw new AIRuntimeException("Session memory already exists");
-            }
-            agentSessionStoreMemory.setSessionMemory(session);
-//            mainSessionStore = sessionStore;
-            
-        }
-        return (T)this;
-    }
+//
+//    public T setSessionMemory(List<LinkedMessageMap<String,Object>> session) {
+//
+//        if(mainSessionStore == null) {
+//            storeContext = new StoreContext();
+//            storeContext.setSessionMemory(session);
+//            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
+//            if(storeContext.isResetSession() && storeContext.getSessionId() != null){
+//                mainSessionStore.removeSession(storeContext.getSessionId());
+//            }
+////            mainSessionStore = sessionStore;
+//        }
+//        else if(mainSessionStore instanceof AgentSessionStoreMemory){
+//            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)mainSessionStore;
+//            if(agentSessionStoreMemory.getSessionMemory() != null){
+//                throw new AIRuntimeException("Session memory already exists");
+//            }
+//            agentSessionStoreMemory.setSessionMemory(session);
+////            mainSessionStore = sessionStore;
+//            
+//        }
+//        return (T)this;
+//    }
     
-    
-    public T setSessionMemory(List<LinkedMessageMap<String,Object>> session,int sessionSize) {
-        if(mainSessionStore == null) {
-            storeContext = new StoreContext();
-            storeContext.setSessionSize(sessionSize);
-            storeContext.setSessionMemory(session);
-            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
-            if(storeContext.isResetSession() && storeContext.getSessionId() != null){
-                mainSessionStore.removeSession(storeContext.getSessionId());
-            }
-//            mainSessionStore = sessionStore;
-        }
-        else if(mainSessionStore instanceof AgentSessionStoreMemory){
-            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)mainSessionStore;
-            if(agentSessionStoreMemory.getSessionMemory() != null){
-                throw new AIRuntimeException("Session memory already exists");
-            }
-            agentSessionStoreMemory.setSessionMemory(session);
-            agentSessionStoreMemory.setSessionSize(sessionSize);
-//            mainSessionStore = sessionStore;
+//    
+//    public T setSessionMemory(List<LinkedMessageMap<String,Object>> session,int sessionSize) {
+//        if(mainSessionStore == null) {
+//            storeContext = new StoreContext();
+//            storeContext.setSessionSize(sessionSize);
+//            storeContext.setSessionMemory(session);
+//            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
+//            if(storeContext.isResetSession() && storeContext.getSessionId() != null){
+//                mainSessionStore.removeSession(storeContext.getSessionId());
+//            }
+////            mainSessionStore = sessionStore;
+//        }
+//        else if(mainSessionStore instanceof AgentSessionStoreMemory){
+//            AgentSessionStoreMemory agentSessionStoreMemory = (AgentSessionStoreMemory)mainSessionStore;
+//            if(agentSessionStoreMemory.getSessionMemory() != null){
+//                throw new AIRuntimeException("Session memory already exists");
+//            }
+//            agentSessionStoreMemory.setSessionMemory(session);
+//            agentSessionStoreMemory.setSessionSize(sessionSize);
+////            mainSessionStore = sessionStore;
+//
+//        }
+//
+//        return (T)this;
+//    }
 
-        }
-
-        return (T)this;
-    }
-
-    public T setSessionSize(int sessionSize) {
-        
-        if(mainSessionStore == null) {
-            if(storeContext == null){
-                storeContext = new StoreContext();
-            }
-            storeContext.setSessionSize(sessionSize);
-            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
-            if(storeContext.isResetSession() && storeContext.getSessionId() != null){
-                mainSessionStore.removeSession(storeContext.getSessionId());
-            }
-//            mainSessionStore = sessionStore;
-        }
-        else {
-            if(storeContext == null){
-                storeContext = new StoreContext();
-                
-            }
-            storeContext.setSessionSize(sessionSize);
-//            sessionStore.setSessionSize(sessionSize);
-            mainSessionStore.setSessionSize(sessionSize);
-        }
-
-        return (T)this;
-    }
+//    public T setSessionSize(int sessionSize) {
+//        
+//        if(mainSessionStore == null) {
+//            if(storeContext == null){
+//                storeContext = new StoreContext();
+//            }
+//            storeContext.setSessionSize(sessionSize);
+//            mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
+//            if(storeContext.isResetSession() && storeContext.getSessionId() != null){
+//                mainSessionStore.removeSession(storeContext.getSessionId());
+//            }
+////            mainSessionStore = sessionStore;
+//        }
+//        else {
+//            if(storeContext == null){
+//                storeContext = new StoreContext();
+//                
+//            }
+//            storeContext.setSessionSize(sessionSize);
+////            sessionStore.setSessionSize(sessionSize);
+//            mainSessionStore.setSessionSize(sessionSize);
+//        }
+//
+//        return (T)this;
+//    }
 //    public List<Map<String,Object>> getSessionMemory() {
 //        initSessionStore();
 //        if(mainSessionStore == null){
@@ -159,14 +159,14 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         this.mainSessionStore = mainSessionStore;
         return (T)this;
     }
-
-    public int getSessionSize() {
-        initSessionStore(null);
-        if (mainSessionStore != null)
-            return mainSessionStore.getSessionSize();
-        return 0;
-    
-    }
+//
+//    public int getSessionSize() {
+//        initSessionStore(null);
+//        if (mainSessionStore != null)
+//            return mainSessionStore.getSessionSize();
+//        return 0;
+//    
+//    }
 
     private AgentSessionStore getAgentSessionStore(String agentId){
         AgentSessionStore agentSessionStore = null;
@@ -191,7 +191,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
         if(agentSessionStore == null){
             return (T)this;
         }
-        agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId(),agentSessionStore.getAiAgent().getAgentNodeType(),   aiAgent);
+        agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId(),agentSessionStore.getAgent().getAgentNodeType(),   aiAgent);
         
         return (T)this;
     }

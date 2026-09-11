@@ -24,7 +24,6 @@ import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.store.StoreContext;
-import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
@@ -32,7 +31,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -127,12 +125,12 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	}
 	
 	@Override
-    public boolean loadSessionMemory(String prompt,String agentId){
+    public boolean createOrUpdateSession(String prompt, String agentId, AIAgent agent){
         String domain = this.storeContext != null ?this.storeContext.getDomain():null;
-        return loadSessionMemory(  prompt,domain,  agentId);
+        return createOrUpdateSession(  prompt,domain,  agentId,agent);
     }
     @Override
-    public boolean loadSessionMemory(String prompt,String domain,String agentId){
+    public boolean createOrUpdateSession(String prompt, String domain, String agentId, AIAgent agent){
         if(agentSession != null){
             return false;
         }
@@ -144,7 +142,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                         this.sessionMemory = new ArrayList<>();
 
                     }
-                    agentSession = SQLExecutor.queryObjectWithDBName(AgentSession.class, dataSource, agentSessionStoreDBConfig.getSelectSessionBySessionIdSQL(), this.getSessionId());
+                    agentSession = SQLExecutor.queryObjectWithDBName(AgentSession.class, dataSource, 
+							agentSessionStoreDBConfig.getSelectSessionBySessionIdSQL(), this.getSessionId());
                     if (agentSession == null) {//不存在session，则创建一个session
                         agentSession = new AgentSession();
                         agentSession.setSessionId(this.getSessionId());
@@ -174,33 +173,38 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 									getSessionId()
 							);
 						}
-                        //获取主智能体记忆记录
-                        List<SessionMessage> sessionMessages = null;
-                        if (this.getAgentId() == null) {
-                            sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), this.getSessionId());
-                        } else {
-							List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
-                            sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(), this.getAgentId(), this.getAgentId());
-                        }
-
-
-                        if (sessionMessages != null && !sessionMessages.isEmpty()) {
-                            int sessionSize = this.getSessionSize();
-                            int dataSize = sessionMessages.size();
-
-                            if (sessionSize > 0 && dataSize > sessionSize) {
-
-                                sessionMessages = sessionMessages.subList(dataSize - sessionSize, dataSize);
-
-                            }
-                            for (SessionMessage sessionMessage : sessionMessages) {
-                                
-                                appendSessionMessageFromParent(sessionMessage.getMessage());
-                            }
-
-                        }
+						//以下代码无需再主store中加载会话列表--注释开始
+//                        //获取主智能体记忆记录
+//                        List<SessionMessage> sessionMessages = null;
+//                        if (this.getAgentId() == null) {
+//                            sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+//                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), this.getSessionId());
+//                        } else {
+//							List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
+//                            sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+//                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(), this.getAgentId(), this.getAgentId());
+//                        }
+//
+//
+//                        if (sessionMessages != null && !sessionMessages.isEmpty()) {
+//							//消息截断和压缩，交给后续环节统一处理
+//							/**
+//                            int sessionSize = this.getSessionSize();
+//                            int dataSize = sessionMessages.size();
+//
+//                            if (sessionSize > 0 && dataSize > sessionSize) {
+//
+//                                sessionMessages = sessionMessages.subList(dataSize - sessionSize, dataSize);
+//
+//                            }*/
+//							sessionMessages = refactorSessionMessages(sessionMessages);
+//                            for (SessionMessage sessionMessage : sessionMessages) {
+//                                sessionMessage.afterLoad();
+//                                appendSessionMessageFromParent(agent,sessionMessage.getMessage());
+//                            }
+//
+//                        }
+						//以上代码无需再主store中加载会话列表--注释结束
                     }
 
 
@@ -220,8 +224,21 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role
 			LinkedMessageMap<String, Object> message = persistentMessage.getMessage();
-            String msgId = SimpleStringUtil.getUUID32();
+			LocalDateTime createTime = LocalDateTime.now();
+			
+          
             String role = (String) message.get("role");
+			String msgId = message.getId();
+			if(msgId == null) {
+				msgId = SimpleStringUtil.getUUID32();
+				message.setId(msgId);
+			}
+			if(message.getSeqNo() < 0) {
+				message.setSeqNo(integerCount.increament());
+			}
+			if(message.getTimestamp() == null) {
+				message.withTimestamp(createTime);
+			}
 //            if(agentResultMessage != null && !agentResultMessage.equals("1")){
 //                if(role.equals(MessageBuilder.ROLE_USER)){
 //                    agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
@@ -239,8 +256,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
            
             
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
-                    msgId,new Date(),this.getSessionId(),
-                    parentAgentId, agentId,messageType,integerCount.increament(), JsonUtil.object2json(message),
+                    msgId,createTime,this.getSessionId(),
+                    parentAgentId, agentId,messageType,message.getSeqNo(), JsonUtil.object2json(message),
                     role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId(),agentNodeType,
 					subAgentIdBy,persistentMessage.getGroupId(),persistentMessage.getParentGroupId()
 					,message.getName()
@@ -272,7 +289,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
     }
 	
 	/**
-	 * 查询会话中智能体引用的消息记录清空
+	 * 查询会话中智能体引用的消息记录清单
 	 * @param sessionId
 	 * @param agentId
 	 * @return
@@ -288,19 +305,20 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 		}
 	}
     @Override
-    public List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize){
+    public List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId){
         try {
 			List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
             List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
                     agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(),agentId,agentId);
-            return resolve(lastSubAgentSessionMessage,agentId,   agentSessionMessages,   agentSessionSize);
+            
+			return resolve(lastSubAgentSessionMessage,agentId,   agentSessionMessages);
            
         }
 		catch (AIRuntimeException exception){
 			throw exception;
 		}
         catch (Exception exception){
-            throw new AIRuntimeException("getAgentSessionMessage: agentId="+agentId + ",agentSessionSize="+agentSessionSize,exception);
+            throw new AIRuntimeException("getAgentSessionMessage: agentId="+agentId ,exception);
         }
         
     }

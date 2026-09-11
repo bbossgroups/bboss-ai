@@ -490,6 +490,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 // 添加当前用户消息
                 toolAgentMessage.addSessionMessage(userMessage, agent);
             }
+			agent.compact(agent,sessionMemory);
+//			if(compactionManager != null && !persistentMessage.isAgentResultMessage()){
+//				List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(agent,sessionMemory );
+//				if(sessionMemory != compactMessages){
+//					sessionMemory.clear();
+//					sessionMemory.addAll(compactMessages);
+//				}
+//			}
             messages = new ArrayList<>(sessionMemory);
 
 
@@ -503,6 +511,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
             
         }
+		
         requestMap.put("messages", messages);
 		Boolean stream = chatContext.getStreamable();
 		if(stream == null){
@@ -618,11 +627,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param chatAgentMessage
      * @return
      */
-    public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent aiAgent,ChatObject chatObject, ChatContext chatContext) {
+    public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent agent,ChatObject chatObject, ChatContext chatContext) {
 		
-		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
-        String agentId = aiAgent.getAgentId();
-        String message = getPrompt(  chatAgentMessage,   aiAgent);
+		List<LinkedMessageMap<String, Object>> sessionMemory = agent.getSessionMemory(true);
+        String agentId = agent.getAgentId();
+        String message = getPrompt(  chatAgentMessage,   agent);
         if(SimpleStringUtil.isEmpty(message)){
             throw new AIRuntimeException("Prompt message is empty.");
         }
@@ -640,24 +649,25 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             // 构建消息历史列表，包含之前的会话记忆           
 
             if(sessionMemory.size() == 0){
-                String systemPrompt = getSystemPrompt(chatAgentMessage,aiAgent);
+                String systemPrompt = getSystemPrompt(chatAgentMessage,agent);
                 if(systemPrompt != null){
                     if(chatContext != null){
                         systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                     }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
-                    chatAgentMessage.addSessionMessage(systemMessage,message,aiAgent);
+                    chatAgentMessage.addSessionMessage(systemMessage,message,agent);
                 }
             }
             // 添加当前用户消息
-            chatAgentMessage.addSessionMessage(userMessage,agentId,aiAgent);
+            chatAgentMessage.addSessionMessage(userMessage,agentId,agent);			
+			agent.compact(agent,sessionMemory);
             messages = new ArrayList<>(sessionMemory);
             
             
         }
         else{
             messages = new ArrayList<>();
-            String systemPrompt = getSystemPrompt(chatAgentMessage,aiAgent);
+            String systemPrompt = getSystemPrompt(chatAgentMessage,agent);
             if(systemPrompt != null){
                 if(chatContext != null){
                     systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
@@ -706,7 +716,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		//"stream_options": {"include_usage": true}
 		buildincludeUsage(  stream,  chatAgentMessage, requestMap);
         buildThinking(  chatAgentMessage,chatObject, requestMap);
-        buildTools(chatContext,chatAgentMessage,aiAgent, requestMap);
+        buildTools(chatContext,chatAgentMessage,agent, requestMap);
         return requestMap;
     }
     public abstract ImageEvent buildGenImageResponse(ClientConfiguration config, ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject,Map imageData);

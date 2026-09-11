@@ -148,10 +148,10 @@ public class ToolAgentMessage extends ChatAgentMessage{
 //        return chatAgentMessage.getSessionMemory();
 //    }
 
-    @Override
-    public int getSessionSize() {
-        return chatAgentMessage.getSessionSize();
-    }
+//    @Override
+//    public int getSessionSize() {
+//        return chatAgentMessage.getSessionSize();
+//    }
 //    @Override
 //    public String getChatCompletionsUrl() {
 //        return chatAgentMessage.getChatCompletionsUrl();

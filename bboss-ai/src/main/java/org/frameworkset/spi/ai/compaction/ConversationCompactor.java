@@ -80,7 +80,7 @@ public class ConversationCompactor {
      *         message list consisting of {@code [summaryUserMsg] + preservedTail}
      */
     public List<LinkedMessageMap<String, Object>> compactIfNeeded(
-			ChatContext chatContext, AIAgent agent,
+			  AIAgent agent,
             List<LinkedMessageMap<String, Object>> conversationMessages,
 			CompactionConfig config,
 			String agentId,
@@ -124,7 +124,7 @@ public class ConversationCompactor {
         // Step 2: Flush long-term memories only from newly compacted raw messages (best-effort).
 		if(config.isFlushBeforeCompact()) {
 				flushManager
-					.flushMemories(chatContext, agent, flushInput);
+					.flushMemories(  agent, flushInput);
 		}
 //        Mono<Void> flushStep =
 //                config.isFlushBeforeCompact()
@@ -374,14 +374,15 @@ public class ConversationCompactor {
         }
 
         String formatted = formatMessagesForSummary(prefix);
-        String prompt = config.getSummaryPrompt().replace("{messages}", formatted);
+//        String prompt = config.getSummaryPrompt().replace("{messages}", formatted);
 
 //        List<LinkedMessageMap<String, Object>> summarizationInput = new ArrayList<>();
 //		summarizationInput.add( MessageBuilder.buildUserMessage(prompt) );
-		AIAgent agent = new AIAgent(prompt);
+		AIAgent agent = new AIAgent(config.getSummaryPrompt());
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
 		chatAgentMessage.setModel(model.getModel());
 		chatAgentMessage.setMaas(model.getMaas());
+		agent.addParam("messages",formatted);
 		try {
 			ServerEvent serverEvent = agent.chat(chatAgentMessage);			
 			String summary = serverEvent.getData();
@@ -798,7 +799,8 @@ public class ConversationCompactor {
     }
 
     /**
-     * Returns a copy of the message with large {@code ToolUseBlock} argument values shortened.
+     * 工具调用入参处理
+     * 处理工具调用入参，如果入参超过限制，则进行截断
      * If no argument exceeds the limit, the original message reference is returned unchanged.
      */
     private static LinkedMessageMap<String, Object> truncateToolUseArgs(LinkedMessageMap<String, Object> msg, TruncateArgsConfig cfg) {

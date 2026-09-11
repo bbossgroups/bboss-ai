@@ -40,5 +40,5 @@ Carefully read through the entire conversation history below and extract the mos
 important context. Respond ONLY with the extracted context.
 
 <messages>
-{messages}
+#[messages]
 </messages>\

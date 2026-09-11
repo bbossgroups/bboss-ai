@@ -104,6 +104,9 @@ public class AgentMessageTypeConvertor {
 		else if(MESSAGE_TYPE_PLAN_MESSAGE_NAME.equals(role)) {
 			return MESSAGE_TYPE_PLAN_MESSAGE;
 		}
+		else if(MESSAGE_TYPE_SUMMARY_MESSAGE_NAME.equals(role)) {
+			return MESSAGE_TYPE_SUMMARY_MESSAGE;
+		}
 
 
         return MESSAGE_TYPE_OTHER_MESSAGE;

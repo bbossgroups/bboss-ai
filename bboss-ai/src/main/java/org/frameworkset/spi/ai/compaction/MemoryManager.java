@@ -105,17 +105,17 @@ public class MemoryManager {
      * <p>Provides existing MEMORY.md and today's daily file content to the extraction LLM
      * so it can effectively deduplicate and avoid re-extracting known facts.
      */
-    public void flushMemories(ChatContext rc, AIAgent agent, List<LinkedMessageMap<String, Object>> messages) {
+    public void flushMemories(  AIAgent agent, List<LinkedMessageMap<String, Object>> messages) {
         String conversationText = serializeMessages(messages);
         if (conversationText.isEmpty()) {
             return ;
         }
 
-		Memory longTermMemory = readExistingLongTermMemoryContent(rc, agent);
+		Memory longTermMemory = readExistingLongTermMemoryContent( agent);
         String existingMemory = longTermMemory != null ? longTermMemory.getContent() : ""	;
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
 //        String dailyRelPath = WorkspaceConstants.MEMORY_DIR + "/" + today + ".md";
-		Memory dailyMemory = readExistingDayMemoryContent(rc,agent, today);
+		Memory dailyMemory = readExistingDayMemoryContent( agent, today);
         String existingDaily = dailyMemory != null ? dailyMemory.getContent() : ""	;	
 
         StringBuilder userPrompt = new StringBuilder();
@@ -160,7 +160,7 @@ public class MemoryManager {
 			}
 			return ;
 		}
-		writeMemoryFiles(rc, dailyMemory,  extracted,agent);
+		writeMemoryFiles(  dailyMemory,  extracted,agent);
 //        return model.stream(flushInput, null, null)
 //                .reduce(
 //                        new StringBuilder(),
@@ -229,7 +229,7 @@ public class MemoryManager {
      * {link MemoryConsolidator}, which periodically merges the daily ledgers into a
      * curated, size-bounded MEMORY.md.
      */
-    private void writeMemoryFiles(ChatContext rc, Memory	 content,String extracted,AIAgent agent) {
+    private void writeMemoryFiles(  Memory	 content,String extracted,AIAgent agent) {
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         String dailyEntry =
@@ -242,13 +242,13 @@ public class MemoryManager {
 		StringBuilder newContent = new StringBuilder();
 		newContent.append(oldContent).append(dailyEntry);
 		content.setContent(newContent.toString());
-		agent.getMainSessionStore().getAgentMemoryStore().writeDailyMemory(rc, content);	
+		agent.getMainSessionStore().getAgentMemoryStore().writeDailyMemory(  content);	
 //        workspaceManager.appendUtf8WorkspaceRelative(rc, dailyRelPath, dailyEntry);
     }
 
-    private Memory readExistingLongTermMemoryContent(ChatContext rc,AIAgent agent) {
+    private Memory readExistingLongTermMemoryContent( AIAgent agent) {
         try {
-			Memory content = agent.getMainSessionStore().getAgentMemoryStore().readExistingLongTermMemoryContent(  rc,  agent);
+			Memory content = agent.getMainSessionStore().getAgentMemoryStore().readExistingLongTermMemoryContent(    agent);
             return content;
         } catch (Exception e) {
             log.debug("Could not read long-term memory for agent {},{}: {}", agent.getAgentId(), agent.getAgentName(),e.getMessage());
@@ -256,9 +256,9 @@ public class MemoryManager {
         }
     }
 	
-	private Memory readExistingDayMemoryContent(ChatContext rc,AIAgent agent,String day) {
+	private Memory readExistingDayMemoryContent( AIAgent agent,String day) {
 		try {
-			Memory content = agent.getMainSessionStore().getAgentMemoryStore().readExistingDayMemoryContent(rc, agent, day	);
+			Memory content = agent.getMainSessionStore().getAgentMemoryStore().readExistingDayMemoryContent(  agent, day	);
 			return content != null ? content : null;
 		} catch (Exception e) {
 			log.debug("Could not read daily memory for agent {},{},day {}: {}", agent.getAgentId(), agent.getAgentName(), day, e.getMessage());

@@ -34,17 +34,17 @@ public class AgentMemoryStoreDB implements AgentMemoryStore {
 	}
 	
 	@Override
-	public Memory readExistingLongTermMemoryContent(ChatContext rc, AIAgent agent) {
+	public Memory readExistingLongTermMemoryContent( AIAgent agent) {
 		return null;
 	}
 	
 	@Override
-	public Memory readExistingDayMemoryContent(ChatContext rc, AIAgent agent, String day) {
+	public Memory readExistingDayMemoryContent( AIAgent agent, String day) {
 		return null;
 	}
 	
 	@Override
-	public void writeDailyMemory(ChatContext rc, Memory content) {
+	public void writeDailyMemory( Memory content) {
 		
 	}
 	

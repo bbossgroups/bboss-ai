@@ -156,7 +156,10 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
     protected int outputVaribleScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
     
     protected AgentOutput agentOutput;
-
+	
+	/**
+	 * 虚拟主智能体对象，对应的Agent对象，可以是planAgent，可以是不存在的agent
+	 */
     protected volatile AgentSessionStore mainSessionStore;
     protected StoreContext storeContext;
 
@@ -298,7 +301,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
             return parentAgent;
         }
         if(this.parentSessionStore != null){
-            return parentSessionStore.getAiAgent();
+            return parentSessionStore.getAgent();
         }
         return null;
     }
@@ -465,19 +468,20 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 
             if (empty) {
                 //加载历史消息
-                List<LinkedMessageMap<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
+                List<LinkedMessageMap<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId);
                 if (sessionMessages != null && sessionMessages.size() > 0) {
                     for (LinkedMessageMap<String, Object> sessionMessage : sessionMessages) {
-                        agentSessionStore.appendSessionMessageFromParent(sessionMessage);
+                        agentSessionStore.appendSessionMessageFromParent(this,sessionMessage);
                     }
 
 
                 }
             } else if (lastSubAgentSessionMessage != null) {//不为空，直接append主智能体中的最后一条消息
                 //如果父智能体的最后一个子智能体消息就是智能体自己产生消息,无需添加到自己的消息列表中（因为结果生成后，已经添加到消息列表）
+			
                 if(!lastSubAgentSessionMessage.getMsgAgentId().equals(this.getAgentId())) {
                     
-                    agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
+                    agentSessionStore.appendSessionMessageFromParent(this,lastSubAgentSessionMessage.getLastSessionMessage());
                     //记录消息引用关系
                     mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
                 }
@@ -486,7 +490,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         }
     }
     public void reactMessage(AgentMessage agentMessage){
-
+		
         AgentSessionStore mainSessionStore = this.getMainSessionStore();
         SessionAgentMessage sessionAgentMessage = null;
         if( agentMessage instanceof SessionAgentMessage) {
@@ -523,7 +527,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 				}
 			}
 
-            mainSessionStore.loadSessionMemory(title, agentId);
+            mainSessionStore.createOrUpdateSession(title, agentId,this);
             if(parentSessionStore == null && this.parentAgent != null){
                 this.parentSessionStore = parentAgent.getAgentSessionStore();
             }
@@ -727,8 +731,23 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this);
     }
-
-    /**
+	
+	public Flux<ServerEvent> streamChat(String maasName, String prompt,  ChatAgentMessage chatAgentMessage ){
+		if(prompt != null && prompt.length() > 0){
+			chatAgentMessage.setPrompt(prompt);
+		}
+ 
+		
+		return streamChat(  maasName,   chatAgentMessage );
+	}
+	
+	/**
+	 * 实现流式智能问答功能,在指定的数据源上执行
+	 */
+	public Flux<ServerEvent> streamChatWithQuestion(String question, ChatAgentMessage chatAgentMessage){
+		return streamChat(chatAgentMessage.getMaas(),   question,   chatAgentMessage );
+	}
+	/**
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat( ChatAgentMessage chatAgentMessage){
@@ -773,6 +792,16 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         ChatContext chatContext = AIAgentUtil.getChatContext(  chatAgentMessage, this);
         return chat(  maasName,   chatAgentMessage,chatContext);
     }
+	public ServerEvent chatWithQuestion( String question, ChatAgentMessage chatAgentMessage ){
+		return chat(chatAgentMessage.getMaas(),   question,   chatAgentMessage );
+	}
+	public ServerEvent chat(String maasName, String question, ChatAgentMessage chatAgentMessage ){
+		if(question != null && question.length() > 0){
+			chatAgentMessage.setPrompt(question);
+		}
+		 
+		return chat(  maasName,   chatAgentMessage);
+	}
     /**
      * 实现同步智能问答,在指定的数据源上执行
      */
@@ -1323,7 +1352,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
     }
 
     /**
-     * 加载会话历史记录，如果会话历史记录不存在，则根据prompt创建一个会话
+     * 创建或者更新会话
      * @param prompt
      * @return
      */
@@ -1336,10 +1365,17 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         return loadSessionMemory(  prompt,domain );
     }
 
+	/**
+     * 创建或者更新会话
+     * @param prompt
+     * @param domain
+     * @return
+     */
+	
     public boolean loadSessionMemory(String prompt ,String domain){
         this.initSessionStore();
         if(this.mainSessionStore != null)
-            return this.mainSessionStore.loadSessionMemory(prompt,domain,this.agentId);
+            return this.mainSessionStore.createOrUpdateSession(prompt,domain,this.agentId,this);
         return false;
     }
     
@@ -1520,5 +1556,22 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 	public T setAgentRuntimeContext(AgentRuntimeContext agentRuntimeContext) {
 		this.agentRuntimeContext = agentRuntimeContext;
 		return (T)this;
+	}
+	
+	public List<LinkedMessageMap<String, Object>> compact(AIAgent agent, List<LinkedMessageMap<String, Object>> messages) {
+		if(getMainSessionStore() != null) {
+			return getMainSessionStore().compact(agent, messages);
+		}
+		else{
+			return messages;
+		}
+	}
+	
+	public void saveSummeryMessage(LinkedMessageMap<String, Object> summaryMessage) {
+		PersistentMessage persistentMessage = new PersistentMessage();
+		persistentMessage.setMessage(summaryMessage);
+		persistentMessage.setGroupId(getGroupId());
+		persistentMessage.setParentGroupId(getParentGroupId());
+		this.agentSessionStore.saveSummeryMessage(persistentMessage);
 	}
 }

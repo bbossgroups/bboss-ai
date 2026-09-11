@@ -15,8 +15,12 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.store.SessionMessage;
+
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -26,9 +30,17 @@ import java.util.Map;
  * @Date 2026/8/31
  */
 public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
-
 	
+
+	/**
+	 * 消息类型
+	 * @SessionMessage.MESSAGE_TYPE_USER_MESSAGE
+	 */	
+	private String messageType;
 	private String id;
+	
+
+	private int seqNo = -1;
 	/**
 	 * 消息名称：工具调用输入消息和工具调用结果消息时，代表工具名称
 	 */
@@ -38,6 +50,7 @@ public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
 	 * 消息时间戳，如果不存在则使用当前时间戳
 	 */
 	private String timestamp;
+	private LocalDateTime localDateTime;
 	
 	private static final DateTimeFormatter TIMESTAMP_FORMATTER =
 			DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
@@ -53,6 +66,12 @@ public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
 	 */
 	public LinkedMessageMap(int initialCapacity, float loadFactor) {
 		super(initialCapacity, loadFactor);
+	}
+	
+	public boolean isAgentResultMessage(){
+		if(this.messageType == null)
+			return false;
+		return SessionMessage.MESSAGE_TYPE_AGENT_RESULTMESSAGE.equals(this.messageType);
 	}
 	
 	/**
@@ -116,11 +135,39 @@ public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
 	public void setTimestamp(String timestamp) {
 		this.timestamp = timestamp;
 	}
+	public void withTimestamp(LocalDateTime timestamp){
+		this.timestamp = TIMESTAMP_FORMATTER.format(timestamp);
+		this.localDateTime = timestamp;
+	}
 	public String getId() {
 		return id;
 	}
 	
 	public void setId(String id) {
 		this.id = id;
+	}
+	
+	public String getMessageType() {
+		return messageType;
+	}
+	
+	public void setMessageType(String messageType) {
+		this.messageType = messageType;
+	}
+	
+	public int getSeqNo() {
+		return seqNo;
+	}
+	
+	public void setSeqNo(int seqNo) {
+		this.seqNo = seqNo;
+	}
+	
+	public LocalDateTime getLocalDateTime() {
+		return localDateTime;
+	}
+	
+	public void setLocalDateTime(LocalDateTime localDateTime) {
+		this.localDateTime = localDateTime;
 	}
 }

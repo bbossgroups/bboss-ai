@@ -146,6 +146,11 @@ public class SessionMessage {
 	 */
 	public static final String MESSAGE_TYPE_PLAN_MESSAGE = "22";
 	
+	/**
+	 * 智能体摘要消息
+	 */
+	public static final String MESSAGE_TYPE_SUMMARY_MESSAGE = "23";
+	
 	
 	/**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
@@ -258,6 +263,11 @@ public class SessionMessage {
 	 * 智能体人工介入处理消息
 	 */
 	public static final String MESSAGE_TYPE_PLAN_MESSAGE_NAME = "plan";
+	
+	/**
+	 * 智能体摘要消息名称
+	 */
+	public static final String MESSAGE_TYPE_SUMMARY_MESSAGE_NAME = "summary";
 	
 	public String getName() {
 		return name;
@@ -482,5 +492,14 @@ public class SessionMessage {
 	
 	public void setParentGroupId(String parentGroupId) {
 		this.parentGroupId = parentGroupId;
+	}
+	
+	public void afterLoad(){
+		if(this.message != null){
+			message.setMessageType(this.messageType);
+			message.setSeqNo(this.seqNo);
+			message.setName(this.name);
+			message.withTimestamp(this.createTime);
+		}
 	}
 }

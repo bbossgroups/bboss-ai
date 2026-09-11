@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.store;
 
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
+import org.frameworkset.spi.ai.model.ModelInfo;
 
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,20 @@ public class StoreContext {
      */
     private String sessionMessageTableName = "agent_session_message";
     private List<LinkedMessageMap<String,Object>> sessionMemory;
+	/**
+     * 压缩后只保留最近 sessionSize 条原文,其余旧消息被总结成一条 summary 消息
+     */
     private int sessionSize = 20;
+	
+
+	
+	/**
+     * 对话达到 triggerSessionSize 条消息时触发压缩
+     */
+	private int triggerSessionSize = 40;
+	
+	
+	private ModelInfo compactModelInfo;
     public int getSessionSize() {
         return sessionSize;
     }
@@ -224,6 +238,32 @@ public class StoreContext {
 	
 	public StoreContext setCompactionConfig(CompactionConfig compactionConfig) {
 		this.compactionConfig = compactionConfig;
+		return this;
+	}
+	public int getTriggerSessionSize() {
+		return triggerSessionSize;
+	}
+	
+	public StoreContext setTriggerSessionSize(int triggerSessionSize) {
+		this.triggerSessionSize = triggerSessionSize;
+		return this;
+	}
+	
+	
+	public ModelInfo getCompactModelInfo() {
+		return compactModelInfo;
+	}
+	
+	public StoreContext setCompactModelInfo(ModelInfo compactModelInfo) {
+		this.compactModelInfo = compactModelInfo;
+		return this;
+	}
+	
+	public StoreContext setCompactModelInfo(String maas,String model) {
+		ModelInfo compactModelInfo = new ModelInfo();
+		compactModelInfo.setMaas(maas);
+		compactModelInfo.setModel(model);
+		this.compactModelInfo = compactModelInfo;
 		return this;
 	}
 }

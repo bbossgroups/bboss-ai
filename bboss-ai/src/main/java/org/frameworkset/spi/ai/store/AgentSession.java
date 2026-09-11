@@ -116,9 +116,9 @@ public class AgentSession {
             else if (messageAgentId != null && messageAgentId.equals(agentId) ) {
                 if (agentMessages == null)
                     agentMessages = new ArrayList<>();
-                //messageType in ('0',1','2','3','4')
+                //messageType in ('0',1','2','3','4','23')
                 String messageType = assistantMessage.getMessageType();
-                if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
+                if (needSessionMessage(messageType)) {
                     agentMessages.add(assistantMessage);
                 }
             }
@@ -171,6 +171,14 @@ public class AgentSession {
     }
 
 
+	private boolean needSessionMessage(String messageType){
+		return messageType.equals("0") 
+				|| messageType.equals("1") 
+				|| messageType.equals("2") 
+				|| messageType.equals("3") 
+				|| messageType.equals("4") 
+				|| messageType.equals("23");
+	}
     public synchronized List<SessionMessage> getMainAgentMessage(String agentId) {
         if(assistantMessages == null || assistantMessages.size() == 0)
             return null;
@@ -182,9 +190,9 @@ public class AgentSession {
                 if (messageAgentId == null) {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
-                    //messageType in ('0',1','2','3','4')
+                    //messageType in ('0',1','2','3','4','23')
                     String messageType = assistantMessage.getMessageType();
-                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
+                    if (needSessionMessage(messageType)) {
                         mainAgentMessages.add(assistantMessage);
                     }
                    
@@ -204,9 +212,9 @@ public class AgentSession {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
 
-                    //messageType in ('0',1','2','3','4')
+                    //messageType in ('0',1','2','3','4','23')
                     String messageType = assistantMessage.getMessageType();
-                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
+					if (needSessionMessage(messageType)) {
                         mainAgentMessages.add(assistantMessage);
                     }
                    

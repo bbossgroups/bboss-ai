@@ -23,7 +23,6 @@ import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.StoreContext;
 
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -62,7 +61,7 @@ public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<Seq
 
     @Override
     public SequenceAgentSessionStoreMemory setAIAgent(AIAgent aiAgent) {
-        this.aiAgent = aiAgent;
+        this.agent = aiAgent;
         return  this;
     }
     /**
@@ -72,7 +71,7 @@ public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<Seq
     @Override
     public LastSessionMessage getLastSubAgentSessionMessage(){
  
-        if(this.aiAgent.isSequenceHeaderNode()) {
+        if(this.agent.isSequenceHeaderNode()) {
             if (this.parentAgentSessionStore != null) {
                 return this.parentAgentSessionStore.getLastSubAgentSessionMessage();
             } else {
@@ -92,8 +91,8 @@ public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<Seq
      * @param parentAgentId
      */
     @Override
-    public LastSessionMessage addAgentResultSessionMessage( LinkedMessageMap<String, Object> persistentMessage,
-                                                           String agentId, String parentAgentId){
+    public LastSessionMessage addAgentResultSessionMessage(LinkedMessageMap<String, Object> persistentMessage,
+														   String agentId, String parentAgentId, AIAgent aiAgent ){
 
         LastSessionMessage lastSessionMessage = null;
 //        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息

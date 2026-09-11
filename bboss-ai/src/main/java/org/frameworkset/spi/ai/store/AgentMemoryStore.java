@@ -26,9 +26,9 @@ import org.frameworkset.spi.ai.model.Memory;
  */
 public interface AgentMemoryStore {
 	
-	Memory readExistingLongTermMemoryContent(ChatContext rc, AIAgent agent);
+	Memory readExistingLongTermMemoryContent(  AIAgent agent);
 	
-	Memory readExistingDayMemoryContent(ChatContext rc, AIAgent agent, String day);
+	Memory readExistingDayMemoryContent(  AIAgent agent, String day);
 	
-	void writeDailyMemory(ChatContext rc, Memory content);
+	void writeDailyMemory(  Memory content);
 }

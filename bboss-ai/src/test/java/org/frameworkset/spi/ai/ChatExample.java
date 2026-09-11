@@ -2,20 +2,23 @@ package org.frameworkset.spi.ai;
 
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
-import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
+import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class ChatExample {
+    private static final Logger log = LoggerFactory.getLogger(ChatExample.class);
 	
     public static void main(String[] args) {
-		Map d = JsonUtil.json2Object("null{}", Map.class);
+	
         // 初始化配置
         HttpRequestProxy.startHttpPools("application-stream.properties");
 
@@ -28,7 +31,7 @@ public class ChatExample {
         chatAgentMessage.setMaxTokens(8192L);          // 最大输出 Token
 		// 内存存储方式（默认）
 		StoreContext memoryContext = new StoreContext()
-				.setSessionSize(50)
+				.setSessionSize(50).setTriggerSessionSize(70)
 				.setStoreType(StoreContext.STORE_TYPE_MEMORY);
 		
 		chatAgentMessage.setStoreContext(memoryContext);

@@ -57,7 +57,7 @@ public class RoutingStreamTest {
 
 //        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.7-plus",null);
 		
-		multiagentWeathor("qwenvlplus","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","qwen3.7-plus",null);
+		multiagentWeathor("qwenvlplus","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","qwen3.7-plus","f5bc2622a5c84696a4aead5cfe7d4dd8");
 //        multiagentWeathor("kimi","创建一篇关于中国首都介绍的飞书文档","kimi-k2.6",null);
 //        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
 
@@ -82,14 +82,14 @@ public class RoutingStreamTest {
                 .setModel(model)
                 .setMaas(maas).setPrompt(prompt).setThinking(true);
 		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
-		agentRuntimeContext.setDebugSSEData(true);
+		agentRuntimeContext.setDebugSSEData(false);
 		chatAgentMessage.setAgentRuntimeContext(agentRuntimeContext);
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
         AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()
                 .setSessionId(sessionId).setUserId("user123")
                 .setRequestId(SimpleStringUtil.getUUID32())
-                .setSessionSize(100)                 
+                .setSessionSize(3).setTriggerSessionSize(6)              
                 .setStoreType(StoreContext.STORE_TYPE_DB)
                 .setDataSource("visualops"))
                 .setAgentMessage(chatAgentMessage)

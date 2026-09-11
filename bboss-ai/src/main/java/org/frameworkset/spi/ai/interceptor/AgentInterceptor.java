@@ -19,6 +19,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
+import org.frameworkset.spi.ai.model.ModelInfo;
 
 /**
  *
@@ -68,7 +69,7 @@ public interface AgentInterceptor {
 	 */
 	default void onReasoning(
 			AIAgent agent,
-			ChatContext ctx
+			ChatContext ctx, ModelInfo modelInfo
 //			ReasoningInput input,
 //			Function<ReasoningInput, Flux<AgentEvent>> next
 	) {
@@ -88,7 +89,7 @@ public interface AgentInterceptor {
 			AIAgent agent,
 			ChatContext ctx,
 			FunctionTool input,
-			FunctionToolDefine functionToolDefine) {
+			FunctionToolDefine functionToolDefine,ModelInfo modelInfo) {
 		 
 	}
 	
@@ -107,7 +108,7 @@ public interface AgentInterceptor {
 	 */
 	default void onModelCall(
 			AIAgent agent,
-			ChatContext ctx) {
+			ChatContext ctx,ModelInfo modelInfo) {
 //		return next.apply(input);
 	}
 	
@@ -122,7 +123,7 @@ public interface AgentInterceptor {
 	 * @param currentPrompt the current system prompt
 	 * @return the (possibly transformed) system prompt
 	 */
-	default String onSystemPrompt(AIAgent agent, ChatContext  ctx, String currentPrompt) {
+	default String onSystemPrompt(AIAgent agent, ChatContext  ctx, String currentPrompt,ModelInfo modelInfo) {
 		return currentPrompt;
 	}
 	

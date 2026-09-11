@@ -15,6 +15,9 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.ChatContext;
+
 /**
  * @author biaoping.yin
  * @Date 2026/7/3
@@ -22,6 +25,7 @@ package org.frameworkset.spi.ai.model;
 public class AgentResultSessionMessageContext {
     private TokenMetrics tokenMetrics;
     private String subAgentIdBy;
+	private AIAgent agent; 
 
     public TokenMetrics getTokenMetrics() {
         return tokenMetrics;
@@ -38,4 +42,13 @@ public class AgentResultSessionMessageContext {
     public void setSubAgentIdBy(String subAgentIdBy) {
         this.subAgentIdBy = subAgentIdBy;
     }
+	
+	public AIAgent getAgent() {
+		return agent;
+	}
+	
+	public void setAgent(AIAgent agent) {
+		this.agent = agent;
+	}
+	 
 }
