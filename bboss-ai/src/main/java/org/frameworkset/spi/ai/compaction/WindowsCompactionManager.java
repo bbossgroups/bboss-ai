@@ -65,7 +65,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 		String systemRole = (String) systemMessage.get("role");
 		List<LinkedMessageMap<String, Object>> compactedMessages = null;
 		if(systemRole != null && systemRole.equals(MessageBuilder.ROLE_SYSTEM)) {
-			compactedMessages = new ArrayList<>(messages.subList(1, messages.size()));
+			compactedMessages = messages.subList(1, messages.size());
 		}
 		else{
 			compactedMessages = messages;
@@ -86,9 +86,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 				String role = (String) message.get("role");
 				if(role.equals(MessageBuilder.ROLE_TOOL)) { //处理工具调用结果
 					String id = (String) message.get("tool_call_id");
-					if(id == null){
-						logger.warn("工具调用结果id为空");
-					}
+					
 					toolCallIds.put(id, 1);
 				}
 				else{
@@ -112,7 +110,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 					LinkedMessageMap<String, Object> message = compactedMessages.get(k);
 					String role = (String) message.get("role");
 					if(role.equals(MessageBuilder.ROLE_TOOL)) { //在回溯过程中，又碰到了工具调用结果，还需继续进行回溯
-						String id = (String) message.get("id");
+						String id = (String) message.get("tool_call_id");
 						toolCallIds.put(id, 1);
 					}
 					else {
@@ -139,7 +137,9 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 			if(removePosition > 0 && removePosition < compactedMessages.size()) {
 				newMessages = new ArrayList<>(compactedMessages.subList(removePosition, compactedMessages.size()));
 				List<LinkedMessageMap<String, Object>> summeryMessage = compactedMessages.subList(0, removePosition);
-				
+				if(logger.isInfoEnabled()){
+					logger.info("为卸载压缩的消息生成摘要，卸载记录数：{}",summeryMessage.size());
+				}
 				String summery = SummeryUtils.summarizePrefix(summeryMessage, config,chatContext);
 				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(summery,null,newMessages.get(0));
 				 
