@@ -281,6 +281,8 @@ public class AgentSessionStoreDBConfig {
 	public static final String clickhouse_createClusterSessionTableSQL = new StringBuilder().append("CREATE TABLE ${sessionTableName} on cluster $clickhouseCluster AS ${sessionTableName}_local").append("  ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${sessionTableName}_local, rand())").toString();
 	
     public static String sqlitex_createSessionMessageTableSQL = new StringBuilder().append("create table $sessionMessageTableName (msgId varchar(100),")  //消息id
+			.append( "parentMsgId varchar(100),")  //父消息id
+			.append( "nextMsgId varchar(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append( "createTime number(20),") //创建时间
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
@@ -305,7 +307,9 @@ public class AgentSessionStoreDBConfig {
 	
 
 
-    public static final String mysql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL comment '消息id'," )
+    public static final String mysql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL comment '消息id'," )  //消息id
+			.append( "parentMsgId varchar(100) comment '父消息id',")  //父消息id
+			.append( "nextMsgId varchar(100) comment '后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）',")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append(" createTime datetime NOT NULL comment '创建时间', " )
             .append( "sessionId varchar(100) NOT NULL, " )  //会话id
             .append( "requestId varchar(100), " )  //请求id
@@ -328,7 +332,9 @@ public class AgentSessionStoreDBConfig {
             .append( "primary key(msgId)) comment '消息表主键' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").toString();
 
    
-    public static final String oracle_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
+    public static final String oracle_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," ) //消息id
+			.append( "parentMsgId varchar2(100),")  //父消息id
+			.append( "nextMsgId varchar2(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
             .append( "requestId varchar2(100), " )  //请求id
@@ -351,7 +357,9 @@ public class AgentSessionStoreDBConfig {
             .append( "metadata clob,")
 			.append( "name varchar2(200), " )  //消息名称
             .append( "constraint $sessionMessageTableName_PK primary key(msgId))").toString();
-    public static final String dm_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
+    public static final String dm_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," ) //消息id
+			.append( "parentMsgId varchar2(100),")  //父消息id
+			.append( "nextMsgId varchar2(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
             .append( "requestId varchar2(100), " )  //请求id
@@ -373,7 +381,9 @@ public class AgentSessionStoreDBConfig {
             .append( "metadata clob,")
 			.append( "name varchar2(200), " )  //消息名称
             .append( "constraint $sessionMessageTableName_PK primary key(msgId))").toString();
-    public static final String sqlserver_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL," )
+    public static final String sqlserver_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL," ) //消息id
+			.append( "parentMsgId varchar(100),")  //父消息id
+			.append( "nextMsgId varchar(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append( "createTime datetime NOT NULL,")  //创建时间
             .append("sessionId varchar(100) NOT NULL,") //会话id
             .append( "requestId varchar(100), " )  //请求id
@@ -396,6 +406,8 @@ public class AgentSessionStoreDBConfig {
 			.append( "name nvarchar(200), " )  //消息名称
             .append( "primary key(msgId))").toString();
     public static final String postgresql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName (msgId varchar(100) NOT NULL," )
+			.append( "parentMsgId varchar(100),")  //父消息id
+			.append( "nextMsgId varchar(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append( "createTime timestamp NOT NULL,")  //创建时间
             .append( "sessionId varchar(100) NOT NULL,")  //会话id
             .append( "requestId varchar(100), " )  //请求id
@@ -419,7 +431,9 @@ public class AgentSessionStoreDBConfig {
 	
 	public static final String clickhouse_createLocalSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageTableName}_local  ON CLUSTER $clickhouseCluster ")
 			.append("(")
-			.append("msgId String  COMMENT '消息id',")
+			.append("msgId String  COMMENT '消息id',") //消息id
+			.append( "parentMsgId Nullable(String) COMMENT '父消息id',")  //父消息id
+			.append( "nextMsgId Nullable(String) COMMENT '后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）',")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
 			.append("createTime DateTime COMMENT '创建时间',")
 			.append("sessionId String COMMENT '会话id',")
 			.append("requestId Nullable(String) COMMENT '请求id',")
@@ -921,8 +935,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
 					.append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,")
 					.append("seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId")
-					.append(",agentNodeType,subAgentIdBy,groupId,parentGroupId,name")
-					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+					.append(",agentNodeType,subAgentIdBy,groupId,parentGroupId,name,parentMsgId,nextMsgId")
+					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
 			
 			insertSessionMessageRerenceSQL = "INSERT INTO " + sessionMessageReferenceTableName + " (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
 					"VALUES (?, ?, ?, ?, ?)";

@@ -1574,4 +1574,8 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 		persistentMessage.setParentGroupId(getParentGroupId());
 		this.agentSessionStore.saveSummeryMessage(persistentMessage);
 	}
+	
+	public int getNextSeqNo() {
+		return this.getMainSessionStore().getNextSeqNo();
+	}
 }

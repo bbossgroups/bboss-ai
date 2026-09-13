@@ -17,7 +17,6 @@ package org.frameworkset.spi.ai.context;
 
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
-import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.state.PlanModeContextState;
@@ -307,12 +306,18 @@ public class ChatContext {
 	}
 	
 	public boolean isEnablePlanMode() {
-		return agentRuntimeContext.isEnablePlanMode();
+		if(agentRuntimeContext != null)
+			return agentRuntimeContext.isEnablePlanMode();
+		else
+			return false;
 	}
 	 
 	
 	public PlanModeContextState getPlanModeContextState() {
-		return agentRuntimeContext.getPlanModeContextState();
+		if(agentRuntimeContext != null)
+			return agentRuntimeContext.getPlanModeContextState();
+		else
+			return null;
 	}
 	
 	 
@@ -325,7 +330,10 @@ public class ChatContext {
 	}
 	
 	public TaskContextState getTaskContextState() {
-		return agentRuntimeContext.getTaskContextState();
+		if(agentRuntimeContext != null)
+			return agentRuntimeContext.getTaskContextState();
+		else 
+			return null;
 	}
  
 	public boolean isDebugSSEData() {
@@ -352,5 +360,10 @@ public class ChatContext {
 		this.modelInfo = modelInfo;
 	}
 	
- 
+	
+	public boolean enableMemorySearch() {
+		if(agentRuntimeContext == null)
+			return false;
+		return agentRuntimeContext.isEnableMemorySearch();
+	}
 }

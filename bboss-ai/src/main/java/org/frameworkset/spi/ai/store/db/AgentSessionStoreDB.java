@@ -215,6 +215,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         }
         return newSession;
     }
+	
+ 
 
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,
@@ -234,10 +236,13 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 				message.setId(msgId);
 			}
 			if(message.getSeqNo() < 0) {
-				message.setSeqNo(integerCount.increament());
+				message.setSeqNo(getNextSeqNo());
 			}
 			if(message.getTimestamp() == null) {
 				message.withTimestamp(createTime);
+			}
+			if(message.getMeta() != null){
+				metadata = JsonUtil.object2json(message.getMeta());
 			}
 //            if(agentResultMessage != null && !agentResultMessage.equals("1")){
 //                if(role.equals(MessageBuilder.ROLE_USER)){
@@ -260,7 +265,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                     parentAgentId, agentId,messageType,message.getSeqNo(), JsonUtil.object2json(message),
                     role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId(),agentNodeType,
 					subAgentIdBy,persistentMessage.getGroupId(),persistentMessage.getParentGroupId()
-					,message.getName()
+					,message.getName(),message.getParentMsgId(),message.getNextMsgId()
 			);
 
             if(messageType != null && messageType.equals("1")) {
@@ -311,7 +316,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
             List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
                     agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(),agentId,agentId);
             
-			return resolve(lastSubAgentSessionMessage,agentId,   agentSessionMessages);
+			return resolve(lastSubAgentSessionMessage,agentId,   agentSessionMessages,true);
            
         }
 		catch (AIRuntimeException exception){

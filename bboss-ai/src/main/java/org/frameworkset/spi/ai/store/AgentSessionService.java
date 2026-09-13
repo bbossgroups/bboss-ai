@@ -73,8 +73,14 @@ public interface AgentSessionService {
 	 * @param hitlTaskId
 	 */
 	void destroyHitlCallTask(String reason, String hitlTaskId);
-	void deleteAgentSession(String sessionid) throws AgentSessionException
-
+	void deleteAgentSession(String sessionid) throws AgentSessionException;
+	
+	/**
+	 * 重置会话，只保留session记录，message记录全部清除掉
+	 * @param sessionid
+	 * @throws AgentSessionException
+	 */
+	void resetAgentSession(String sessionid) throws AgentSessionException
 	;
 	void deleteBatchAgentSession(String... sessionids) throws AgentSessionException
  

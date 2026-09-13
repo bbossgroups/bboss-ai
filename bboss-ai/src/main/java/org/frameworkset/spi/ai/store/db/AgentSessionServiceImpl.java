@@ -215,9 +215,43 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 		}
 		
 	}
- 
-
- 
+	
+	
+	/**
+	 * 重置会话，只保留session记录，message记录全部清除掉
+	 * @param sessionid
+	 * @throws AgentSessionException
+	 */
+	public void resetAgentSession(String sessionid) throws AgentSessionException {
+		init();
+		TransactionManager tm = new TransactionManager();
+		try {
+			tm.begin();
+			if (log.isInfoEnabled()) {
+				log.info("Reset AgentSession start::sessionid={}", sessionid);
+			}
+			 
+			executor.deleteWithDBName(datasource, "deleteAgentSessionMessageByKey", sessionid);
+			executor.deleteWithDBName(datasource, "deleteAgentSessionMessageRefByKey", sessionid);
+			if(hitlDatasource != null) {
+				executor.deleteWithDBName(this.hitlDatasource, "deleteHitlCallTaskBySessionId", sessionid);
+			}
+			else{
+				executor.deleteWithDBName(this.datasource, "deleteHitlCallTaskBySessionId", sessionid);
+			}
+			tm.commit();
+			
+			
+			if (log.isInfoEnabled()) {
+				log.info("Reset AgentSession success::sessionid={}", sessionid);
+			}
+		} catch (Exception e) {
+			log.error("Reset AgentSession failed::sessionid={}", sessionid, e);
+			throw new AgentSessionException("Reset AgentSession failed::sessionid=" + sessionid, e);
+		}finally {
+			tm.release();
+		}
+	}
   
     public void deleteAgentSession(String sessionid) throws AgentSessionException
 

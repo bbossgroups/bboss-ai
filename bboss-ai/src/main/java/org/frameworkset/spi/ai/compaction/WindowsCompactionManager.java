@@ -141,7 +141,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 					logger.info("为卸载压缩的消息生成摘要，卸载记录数：{}",summeryMessage.size());
 				}
 				String summery = SummeryUtils.summarizePrefix(summeryMessage, config,chatContext);
-				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(summery,null,newMessages.get(0));
+				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(chatContext,agent,summery,summeryMessage,null,newMessages.get(0));
 				 
 				agent.saveSummeryMessage(summaryMessage);
 				newMessages.add(0, summaryMessage);
@@ -155,7 +155,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 			if(systemMessage != null) {
 				newMessages.add(0, systemMessage);
 			}
-			logger.info("压缩前消息记录size：{},压缩后消息压缩前消息记录size: {}，cuttoff position: {}",messages.size(), newMessages.size(), removePosition); // Log the size of the compacted messages
+			logger.info("压缩前消息记录size：{},压缩后消息记录size: {}，cuttoff position: {}",messages.size(), newMessages.size(), removePosition); // Log the size of the compacted messages
 			return newMessages;
 		}
 		return messages;

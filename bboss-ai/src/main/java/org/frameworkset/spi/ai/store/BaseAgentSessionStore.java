@@ -377,7 +377,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 	private LinkedMessageMap<String, Object> getPreSummerySessionMessage(List<LinkedMessageMap<String, Object>> sessionMessages,LinkedMessageMap<String, Object> sessionMessage){
 		for(LinkedMessageMap<String, Object> sessionMessagePre : sessionMessages){
 			if(sessionMessagePre.getMessageType().equals(SessionMessage.MESSAGE_TYPE_SUMMARY_MESSAGE)){
-				if(sessionMessagePre.getSeqNo() == sessionMessage.getSeqNo()){
+				if(sessionMessagePre.getNextMsgId().equals(sessionMessage.getId())){
 					return sessionMessagePre;
 				}
 				
@@ -852,4 +852,5 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 	public void setAgentMemoryStore(AgentMemoryStore agentMemoryStore) {
 		this.agentMemoryStore = agentMemoryStore;
 	}
+	public abstract int getNextSeqNo();
 }

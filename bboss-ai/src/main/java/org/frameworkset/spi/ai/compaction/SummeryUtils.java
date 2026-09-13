@@ -25,9 +25,7 @@ import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  *
@@ -157,8 +155,20 @@ public class SummeryUtils {
 	 * <p>The message name is set to {@link ConversationCompactor#SUMMARY_MSG_NAME} so hooks can identify generated
 	 * summaries, and the stable content-based ID keeps repeated session offloads idempotent.
 	 */
-	public static LinkedMessageMap<String, Object> buildSummaryMessage(String summary, String filePath,LinkedMessageMap<String, Object> nextMessage) {
+	public static LinkedMessageMap<String, Object> buildSummaryMessage(ChatContext chatContext,
+			AIAgent agent,String summary,
+																	   List<LinkedMessageMap<String, Object>> summeryMessages,
+																	   String filePath,
+																	   LinkedMessageMap<String, Object> nextMessage) {
 		String content;
+		LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
+		Map<String, Object> meta = new LinkedHashMap<>();
+		List<String> summaryIds = new ArrayList<>(summeryMessages.size());
+		for(LinkedMessageMap<String, Object> summeryMessage : summeryMessages) {
+			summaryIds.add(summeryMessage.getId());
+		}
+		meta.put("summaryIds", summaryIds);
+		linkedMessageMap.setMeta(meta);
 		if (filePath != null) {
 			content =
 					"You are in the middle of a conversation that has been summarized.\n\n"
@@ -170,18 +180,36 @@ public class SummeryUtils {
 							+ summary
 							+ "\n</summary>";
 		} else {
-			content = "Here is a summary of the conversation to date:\n\n" + summary;
+			if(chatContext.enableMemorySearch()) {
+//			content = "Here is a summary of the conversation to date:\n\n" + summary;
+				content =
+						"You are in the middle of a conversation that has been summarized.\n\n"
+								+ "The full summary history messageIds in the conversation is \n\n"
+								+ "<summaryMessageIds>\n"
+								+ String.join(",", summaryIds)
+								+ "\n</summaryMessageIds> \n\n"
+								+ " should you need to refer back to it for details.\n\n"
+								+ "A condensed summary follows:\n\n"
+								+ "<summary>\n"
+								+ summary
+								+ "\n</summary>";
+			}
+			else{
+				content = "Here is a summary of the conversation to date:\n\n" + summary;
+			}
 		}
-		LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
+		
 //		linkedMessageMap.setId(buildSummaryMessageId(content));
 		linkedMessageMap.setMessageType(SessionMessage.MESSAGE_TYPE_SUMMARY_MESSAGE);
 		linkedMessageMap.put("role", MessageBuilder.ROLE_USER);
 		linkedMessageMap.setName( ConversationCompactor.SUMMARY_MSG_NAME);
 		linkedMessageMap.put("content", content);
+		linkedMessageMap.setNextMsgId(nextMessage.getId());
+		
 		/**
 		 * 直接和下一个消息进行关联，编号一致
 		 */
-		linkedMessageMap.setSeqNo(nextMessage.getSeqNo());
+		linkedMessageMap.setSeqNo(agent.getNextSeqNo());
 		return linkedMessageMap;
 //        return Msg.builder()
 //                .id(buildSummaryMessageId(content))
@@ -191,10 +219,10 @@ public class SummeryUtils {
 //                .build();
 	}
 	
-	private static String buildSummaryMessageId(String content) {
-		UUID stableId = UUID.nameUUIDFromBytes(content.getBytes(StandardCharsets.UTF_8));
-		return ConversationCompactor.SUMMARY_MSG_NAME + ":" + stableId;
-	}
+//	private static String buildSummaryMessageId(String content) {
+//		UUID stableId = UUID.nameUUIDFromBytes(content.getBytes(StandardCharsets.UTF_8));
+//		return ConversationCompactor.SUMMARY_MSG_NAME + ":" + stableId;
+//	}
 	public static String summarizePrefix(List<LinkedMessageMap<String, Object>> prefix, CompactionConfig config, ChatContext chatContext) {
 		if (prefix.isEmpty()) {
 			return "No previous conversation history.";
@@ -208,7 +236,7 @@ public class SummeryUtils {
 		ModelInfo model = config.getCompactModel();
 		if(model == null)
 			model = chatContext.getModelInfo();
-		AIAgent agent = new AIAgent(config.getSummaryPrompt());
+		AIAgent agent = new AIAgent(config.getSummaryPrompt()).setAgentId("__summary__");
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
 		chatAgentMessage.setModel(model.getModel());
 		chatAgentMessage.setMaas(model.getMaas());

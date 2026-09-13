@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.store;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.frameworkset.orm.annotation.Column;
+import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.TokenMetrics;
 
@@ -269,13 +270,7 @@ public class SessionMessage {
 	 */
 	public static final String MESSAGE_TYPE_SUMMARY_MESSAGE_NAME = "summary";
 	
-	public String getName() {
-		return name;
-	}
-	
-	public void setName(String name) {
-		this.name = name;
-	}
+
 	
 	/**
 	 * 消息名称：用于显示特定消息的名称，如果是工具入参和工具结果，则代表工具名称
@@ -300,8 +295,9 @@ public class SessionMessage {
 	private String parentGroupId;
 	
     private String msgId;
-
-
+	
+	private String parentMsgId;
+	private String nextMsgId;
 
     private long elapsed;
     /**
@@ -496,10 +492,41 @@ public class SessionMessage {
 	
 	public void afterLoad(){
 		if(this.message != null){
+			message.setId(this.getMsgId());
 			message.setMessageType(this.messageType);
 			message.setSeqNo(this.seqNo);
 			message.setName(this.name);
 			message.withTimestamp(this.createTime);
+			message.setNextMsgId(this.nextMsgId);
+			message.setParentMsgId(this.parentMsgId);
+			if(metadata != null){
+				Map<String,Object> meta = JsonUtil.json2Object(metadata, Map.class);
+				message.setMeta(meta);
+			}
+			
 		}
+	}
+	public String getName() {
+		return name;
+	}
+	
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	public String getParentMsgId() {
+		return parentMsgId;
+	}
+	
+	public void setParentMsgId(String parentMsgId) {
+		this.parentMsgId = parentMsgId;
+	}
+	
+	public String getNextMsgId() {
+		return nextMsgId;
+	}
+	
+	public void setNextMsgId(String nextMsgId) {
+		this.nextMsgId = nextMsgId;
 	}
 }

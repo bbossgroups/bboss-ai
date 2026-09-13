@@ -37,6 +37,11 @@ public class AgentRuntimeContext {
 	 */
 	private boolean enablePlanMode;
 	
+	/**
+	 * 是否启用计划模式
+	 */
+	private boolean enableMemorySearch;
+	
 
 	private CompactionConfig compactionConfig;
 	
@@ -100,4 +105,11 @@ public class AgentRuntimeContext {
 		return this;
 	}
 	
+	public boolean isEnableMemorySearch() {
+		return enableMemorySearch;
+	}
+	public AgentRuntimeContext setEnableMemorySearch(boolean enableMemorySearch) {
+		this.enableMemorySearch = enableMemorySearch;
+		return this;
+	}
 }

@@ -37,6 +37,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     LastSessionMessage getLastSubAgentSessionMessage();
     List<LastSessionMessage> getLastSubAgentSessionMessages();
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
+	int getNextSeqNo();
     
     /**
      * 创建会话或者更新会话

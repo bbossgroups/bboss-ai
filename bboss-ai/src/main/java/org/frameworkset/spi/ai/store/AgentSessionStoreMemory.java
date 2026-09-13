@@ -35,7 +35,9 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
     protected AgentSession agentSession;
     private static Map<String,AgentSession> agentSessions = new ConcurrentHashMap();
     protected IntegerCount integerCount = new IntegerCount();
-
+	public int getNextSeqNo(){
+		return integerCount.increament();
+	}
     /**
      * 为统一流程中的智能体分配一个唯一的智能体ID
      */
@@ -295,7 +297,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             }
             synchronized (agentSession){
                 List<SessionMessage> agentSessionMessages = this.agentSession.getAgentSessionMessage(agentId);
-                return resolve(lastSubAgentSessionMessage, agentId,agentSessionMessages );
+                return resolve(lastSubAgentSessionMessage, agentId,agentSessionMessages ,false);
             }
           
         }
@@ -320,7 +322,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
     }
     
     protected List<LinkedMessageMap<String, Object>> resolve(LastSessionMessage lastSubAgentSessionMessage, String agentId, 
-															 List<SessionMessage> agentSessionMessages){
+															 List<SessionMessage> agentSessionMessages,boolean needAfterLoad){
         if(agentSessionMessages == null || agentSessionMessages.size() == 0){
             if(lastSubAgentSessionMessage != null){
                 List<LinkedMessageMap<String, Object>> _agentSessionMessages = new ArrayList<>();
@@ -349,7 +351,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 
         for (int i = 0; i < agentSessionMessages.size(); i++) {
             SessionMessage sessionMessage = agentSessionMessages.get(i);
-			sessionMessage.afterLoad();
+			if(needAfterLoad)
+				sessionMessage.afterLoad();
             if(lastSubAgentSessionMessage != null) {
                 if(lastSubAgentSessionMessage.getMsgId().equals(sessionMessage.getMsgId()))
                     contain = true;

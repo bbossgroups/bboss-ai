@@ -20,7 +20,6 @@ import org.frameworkset.spi.ai.store.SessionMessage;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -38,8 +37,16 @@ public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
 	 */	
 	private String messageType;
 	private String id;
+	/**
+	 * 父消息id
+	 */
+	private String parentMsgId;
+	/**
+	 * 后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
+	 */
+	private String nextMsgId;
 	
-
+	
 	private int seqNo = -1;
 	/**
 	 * 消息名称：工具调用输入消息和工具调用结果消息时，代表工具名称
@@ -51,6 +58,10 @@ public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
 	 */
 	private String timestamp;
 	private LocalDateTime localDateTime;
+	
+
+	
+	private Map<String,Object> meta;
 	
 	private static final DateTimeFormatter TIMESTAMP_FORMATTER =
 			DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
@@ -169,5 +180,28 @@ public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
 	
 	public void setLocalDateTime(LocalDateTime localDateTime) {
 		this.localDateTime = localDateTime;
+	}
+	public Map<String, Object> getMeta() {
+		return meta;
+	}
+	
+	public void setMeta(Map<String, Object> meta) {
+		this.meta = meta;
+	}
+	
+	public String getParentMsgId() {
+		return parentMsgId;
+	}
+	
+	public void setParentMsgId(String parentMsgId) {
+		this.parentMsgId = parentMsgId;
+	}
+	
+	public String getNextMsgId() {
+		return nextMsgId;
+	}
+	
+	public void setNextMsgId(String nextMsgId) {
+		this.nextMsgId = nextMsgId;
 	}
 }
