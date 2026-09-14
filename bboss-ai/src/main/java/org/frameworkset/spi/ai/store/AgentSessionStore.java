@@ -115,4 +115,16 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 	String getUserId();
 	
 	void saveSummeryMessage(PersistentMessage persistentMessage);
+	
+	List<SessionMessage> getSessionMessages(String sessionId, String[] summaryMessageIds);
+	List<SessionMessage> searchSessionMessages(String sessionId, String query);
+	List<SessionMessage>  getAllAgentSessionMessage(String sessionId);
+	
+	/**
+	 * 最多查询用户limit个最近会话的消息记录
+	 * @param userId
+	 * @param limit
+	 * @return
+	 */
+	List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit);
 }

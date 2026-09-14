@@ -16,6 +16,8 @@ package org.frameworkset.spi.ai.store;
  */
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
+import com.frameworkset.common.poolman.SQLExecutor;
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
@@ -74,9 +76,13 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         super(storeContext,  agent);
         
     }
-
-  
-
+	
+	
+	@Override
+	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit){
+		return null;
+		
+	}
 
     @Override
     public void removeSession(String sessionId){
@@ -84,11 +90,10 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             agentSessions.remove(sessionId);
         }
     }
+	
 
-
-    
-    
-    public void init(){
+	
+	public void init(){
         if(this.sessionId == null){
             this.sessionId = SimpleStringUtil.getUUID32();
         }
@@ -289,8 +294,45 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //                    message.get("role"));
          
     }
+	@Override
+	public List<SessionMessage> searchSessionMessages(String sessionId, String query){
+		return null;
+	}
+	
+	public List<SessionMessage>  getAllAgentSessionMessage(String sessionId){
+		try {
+			AgentSession agentSession = agentSessions.get(sessionId);
+			if (agentSession == null) {
+				return null;
+			}
+			synchronized (agentSession){
+				List<SessionMessage> summaryMessages = agentSession.getAllAgentSessionMessage();
+				return summaryMessages;
+			}
+			
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getSessionMessages: sessionId="+sessionId,exception);
+		}
+	}
+	@Override
+	public List<SessionMessage> getSessionMessages(String sessionId, String[] summaryMessageIds) {
+		try {
+			if (this.agentSession == null) {
+				return null;
+			}
+			synchronized (agentSession){
+				List<SessionMessage> summaryMessages = this.agentSession.getAgentSessionMessage(summaryMessageIds);
+				return summaryMessages;
+			}
+			
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getSessionMessages: sessionId="+sessionId+",summaryMessageIds:"+ JsonUtil.object2json(summaryMessageIds),exception);
+		}
+	}
     @Override
-    public List<LinkedMessageMap<String, Object>> getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage, String agentI ) {
+    public List<LinkedMessageMap<String, Object>> getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage, String agentId ) {
         try {
             if (this.agentSession == null) {
                 return null;
@@ -375,6 +417,9 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //        this.loadSessionMemory(prompt,agentId);
 //        return super.getLastMessage(prompt,  agentId);
 //    }
+	
 
- 
+	
+	
+	
 }

@@ -26,6 +26,8 @@ import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.tool.*;
+import org.frameworkset.spi.ai.tools.CompactSummaryMsgSearchTool;
+import org.frameworkset.spi.ai.tools.SessionSearchTool;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
@@ -490,6 +492,18 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         }
     }
     public void reactMessage(AgentMessage agentMessage){
+//		if(agentMessage.getAgentRuntimeContext() != null){
+//			AgentRuntimeContext agentRuntimeContext1
+//		}
+		if(this.agentRuntimeContext == null){
+			this.agentRuntimeContext = agentMessage.getAgentRuntimeContext();
+		}
+		if(agentRuntimeContext != null){
+			if(agentRuntimeContext.isEnableMemorySearch()){
+				this.registBeanTool(new CompactSummaryMsgSearchTool());
+				this.registBeanTool(new SessionSearchTool());
+			}
+		}
 		
         AgentSessionStore mainSessionStore = this.getMainSessionStore();
         SessionAgentMessage sessionAgentMessage = null;

@@ -24,8 +24,10 @@ import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -46,6 +48,38 @@ public class SummeryUtils {
 			String role = (String) msg.get("role");
 			if(role != null && !role.equals(MessageBuilder.ROLE_SYSTEM)){
 				String s = renderMessageForSummary(msg,role);
+				if(!s.isEmpty()) {
+					if(sb.length() > 0){
+						sb.append("\n\n");
+					}
+					sb.append(s);
+				}
+			}
+		}
+		return sb.toString();
+//        return messages.stream()
+//                .filter(m ->{
+//					String role = (String)m.get("role");
+//					return role != null && !role.equals(MessageBuilder.ROLE_SYSTEM);
+////					m.getRole() != null && m.getRole() != MsgRole.SYSTEM;
+//				} )
+//                .map(ConversationCompactor::renderMessageForSummary)
+//                .filter(s -> !s.isEmpty())
+//                .collect(Collectors.joining("\n\n"));
+	}
+	
+	/**
+	 * Formats a list of messages as a human-readable text block for the summarization LLM.
+	 *
+	 * <p>Renders TEXT blocks verbatim; TOOL_USE and TOOL_RESULT blocks as concise inline
+	 * representations so the summarizer understands what actions were taken.
+	 */
+	public static String formatSessionMessagesForSummary(List<SessionMessage> messages) {
+		StringBuilder sb = new StringBuilder();
+		for(SessionMessage msg : messages){
+			String role =  msg.getRole();
+			if(role != null && !role.equals(MessageBuilder.ROLE_SYSTEM)){
+				String s = renderMessageForSummary(msg.getMessage(),role);
 				if(!s.isEmpty()) {
 					if(sb.length() > 0){
 						sb.append("\n\n");
@@ -90,25 +124,22 @@ public class SummeryUtils {
 		
 		StringBuilder sb = new StringBuilder(roleLabel).append(": ");
 		String content = (String) msg.get("content");
-		boolean first = true;
-		if(!role.equals(MessageBuilder.ROLE_TOOL) && content != null) {
-			first = false;
-			sb.append(content);
-		}
+//		if(!role.equals(MessageBuilder.ROLE_TOOL) && content != null) {
+//			sb.append(content);
+//		}
 		
 		List<Map<String,Object>> toolCalls = (List<Map<String,Object>>) msg.get("tool_calls");
 		if(toolCalls != null && !toolCalls.isEmpty()){
 			// Append tool calls if any
 			for(Map toolCall : toolCalls){
-				if (!first) sb.append(" ");
+				if (sb.length() > 0 ) sb.append("\n\n");
 				Map<String, Object> function = (Map<String, Object>) toolCall.get("function");
 				String name = (String) function.get("name");
 				sb.append("[tool_call: ").append(name).append("]");
-				first = false;
 //				sb.append(renderToolUse(toolCall));
 			}
 		}
-		else if(role.equals(MessageBuilder.ROLE_TOOL)){
+		else if(role.equals(MessageBuilder.ROLE_TOOL)){			
 			sb.append("[tool_result: ")
 					.append(msg.getName() != null ? msg.getName() : "?")
 					.append("] ");
@@ -116,7 +147,7 @@ public class SummeryUtils {
 				sb.append(content.length() > 500 ? content.substring(0, 500) + "..." : content);
 			}
 		}
-		else{
+		else if (content != null) {			
 			sb.append(content.trim());
 		}
 

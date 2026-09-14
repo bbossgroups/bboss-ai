@@ -293,6 +293,33 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         }
     }
 	
+	@Override
+	public List<SessionMessage> searchSessionMessages(String sessionId, String query){
+		return null;
+	}
+	@Override
+	public List<SessionMessage> getSessionMessages(String sessionId, String[] summaryMessageIds) {
+		try {
+			String sql  = agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndMsgIdsSQL();
+			int size = summaryMessageIds.length;
+			StringBuilder tmp = new StringBuilder();
+			for(int i = 0; i < size; i++) {
+				if(tmp.length() > 0 ){
+					tmp.append(",");
+				}
+				tmp.append("?");
+			}
+			sql = sql.replace("{ids}", tmp.toString());
+			List<SessionMessage> sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+					sql, sessionId,summaryMessageIds);
+				return sessionMessages;
+			
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getSessionMessages: sessionId="+sessionId+",summaryMessageIds:"+ JsonUtil.object2json(summaryMessageIds),exception);
+		}
+	}
+	
 	/**
 	 * 查询会话中智能体引用的消息记录清单
 	 * @param sessionId
@@ -327,6 +354,44 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         }
         
     }
+	
+	@Override
+	public List<SessionMessage>  getAllAgentSessionMessage(String sessionId){
+		try {
+			 
+			List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+					agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), sessionId);
+			
+			return agentSessionMessages;
+			
+		}
+		catch (AIRuntimeException exception){
+			throw exception;
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentSessionMessage: sessionId="+sessionId ,exception);
+		}
+		
+	}
+	
+	@Override
+	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit){
+		try {
+			
+			List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+					agentSessionStoreDBConfig.getSelectSessionMessageByUserIdSQL(), userId,limit);
+			
+			return agentSessionMessages;
+			
+		}
+		catch (AIRuntimeException exception){
+			throw exception;
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentSessionMessage: sessionId="+sessionId ,exception);
+		}
+		
+	}
 
     @Override
     public void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId){
