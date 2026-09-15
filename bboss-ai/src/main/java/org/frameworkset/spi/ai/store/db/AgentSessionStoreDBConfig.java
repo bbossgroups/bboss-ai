@@ -957,7 +957,10 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			
 			selectSessionMessageByUserIdSQL = new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" as tm where tm.sessionId in (select sessionId from ").append(sessionTableName) 
-					.append(" as ts where ts.userId=? order by ts.createTime desc limit ?) and tm.messageType in ('0','1','2','3','4','23') order by tm.createTime,tm.seqNo desc").toString();
+					.append(" as ts where ts.userId=? order by ts.createTime desc limit ?) " +
+							"and tm.messageType in ('0','1','2','3','4','23')  and tm.agentNodeType in ('standard','route','judge') "
+							+
+							"order by tm.createTime,tm.seqNo desc").toString();
 			
 			/**
 			 * 查询最近的消息,恢复到对话中 
@@ -966,7 +969,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			 */
 			selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" where sessionId=?   ")
-					.append("and messageType in ('0','1','2','3','4','23') order by createTime,seqNo asc").toString();
+					.append("and messageType in ('0','1','2','3','4','23') and agentNodeType in ('standard','route','judge') order by createTime,seqNo asc").toString();
 			selectSessionMessageBySessionId2ndMsgIdsSQL = new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" where sessionId=? and msgId in ({ids}) order by createTime,seqNo asc").toString();
 			selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
