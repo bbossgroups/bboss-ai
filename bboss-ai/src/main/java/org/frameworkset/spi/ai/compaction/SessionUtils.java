@@ -30,7 +30,7 @@ import java.util.Map;
 public class SessionUtils {
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SessionUtils.class);
 	 
-	public static void buildSearchableText(List<String> results, SessionMessage sessionMessage,String lowerQuery) {
+	public static void buildMessageText(List<String> results, SessionMessage sessionMessage, String lowerQuery) {
 		LinkedMessageMap<String, Object> entry = sessionMessage.getMessage();
 		
 		String role = (String) entry.get("role");
@@ -87,8 +87,8 @@ public class SessionUtils {
 				String preview =
 						content.length() > 200 ? content.substring(0, 200) + "..." : content;
 				results.add(String.format(
-						"  [%s] %s — [%s]: %s",
-						sessionMessage.getSessionId(), sessionMessage.getMsgId(), roleLabel, preview));
+						"  SessionId[%s] RequestId[%s] MsgId[%s] — [%s]: %s",
+						sessionMessage.getSessionId(),sessionMessage.getRequestId(), sessionMessage.getMsgId(), roleLabel, preview));
 			}
 		}
 		else{

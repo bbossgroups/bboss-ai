@@ -708,7 +708,7 @@ public class AIAgentUtil {
             if (functionTools != null && functionTools.size() > 0) {
                 chatObject.getChatContext().setToolCallStage(ChatContext.TOOL_CALL_STAGE_EXECUTE_TOOL);
 				//推送步骤消息到客户端，说明有新的步骤开始
-				ServerEvent serverEvent = new ServerEvent();//向客户端推送人工介入消息
+				ServerEvent serverEvent = new ServerEvent();
 				serverEvent.setType(ServerEvent.TYPE_STEP);
 				ServerEventUtil.buildServerEventAgentInfo(serverEvent, chatObject.getAgent());
 				sink.next((T)serverEvent);

@@ -17,7 +17,6 @@ package org.frameworkset.spi.ai.tools;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.compaction.SessionUtils;
-import org.frameworkset.spi.ai.compaction.SummeryUtils;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
@@ -104,7 +103,7 @@ public class SessionSearchTool {
 		// 统一交给 SessionUtils 处理大小写、snippet 和上下文拼接。
 		List<String> results = new ArrayList<String>();
 		for (SessionMessage sessionMessage : sessionMessages) {
-			SessionUtils.buildSearchableText(results, sessionMessage, keyword);
+			SessionUtils.buildMessageText(results, sessionMessage, keyword);
 		}
 		
 		// ---- 5. 统一返回格式 ----
@@ -198,7 +197,7 @@ public class SessionSearchTool {
 		// ---- 5. 逐条构建可搜索文本并匹配 ----
 		List<String> results = new ArrayList<>();
 		for (SessionMessage sessionMessage : sessionMessages) {
-			SessionUtils.buildSearchableText(results, sessionMessage, keyword);
+			SessionUtils.buildMessageText(results, sessionMessage, keyword);
 		}
 		
 		// ---- 6. 统一返回格式 ----

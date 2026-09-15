@@ -957,7 +957,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			
 			selectSessionMessageByUserIdSQL = new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" as tm where tm.sessionId in (select sessionId from ").append(sessionTableName) 
-					.append(" as ts where ts.userId=? order by ts.createTime limit ?) order by tm.createTime,tm.seqNo desc").toString();
+					.append(" as ts where ts.userId=? order by ts.createTime desc limit ?) and tm.messageType in ('0','1','2','3','4','23') order by tm.createTime,tm.seqNo desc").toString();
 			
 			/**
 			 * 查询最近的消息,恢复到对话中 

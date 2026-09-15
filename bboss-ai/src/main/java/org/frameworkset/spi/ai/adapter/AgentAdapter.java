@@ -411,29 +411,45 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 String toolId = tool.getId();
                 String functionName = tool.getFunctionName();
                 FunctionCall functionCall = aiAgent.getFunctionCall(functionName);
+				Object result = null;
                 try {
                     if (functionCall == null) {
-                        throw new FunctionCallException("FunctionCall of " + functionName + " is null.");
+						result = "Function[" + functionName + "]'s function call is undefined.";
                     }
-                    Object result = functionCall.call(tool);
-                    if (result == null) {
-                        throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
-                    }
-					LinkedMessageMap<String, Object> toolMessage = null;
-                    if (result instanceof String)
-                        toolMessage = MessageBuilder.buildToolMessage((String) result, toolId, tool);
-                    else if (result instanceof MCPToolCallResponse) {
-                        result = ((MCPToolCallResponse) result).getResult();
-                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId, tool);
-                    } else {
-                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId, tool);
-                    }
-                    toolMessages.add(toolMessage);
+					else {
+						result = functionCall.call(tool);
+						if (result == null) {
+							result = "Call function return null.";
+//							throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
+						}
+					}
+					
 //                return toolMessage;
 
-                } catch (Exception e) {
-                    throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
+                }  catch (Exception e) {
+					logger.error("Call function[" + functionName + "] failed:", e);
+					result = "Call function failed:" + e.getMessage();
+//                    throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
                 }
+				LinkedMessageMap<String, Object> toolMessage = null;
+				if (result instanceof MCPToolCallResponse) {
+					result = ((MCPToolCallResponse) result).getResult();					 
+				}
+				String _result = null;
+				if (result instanceof String) {
+					_result = (String)result;
+				}
+				else {
+					try {
+						_result = JsonUtil.object2json(result);
+					}
+					catch (Exception e) {
+						logger.error("Convert result to json failed:", e);
+						_result = "Convert result to json failed:"+e.getMessage();
+					}
+				}
+				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool);
+				toolMessages.add(toolMessage);
             }
         }
         finally {
@@ -441,6 +457,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         }
         return toolMessages;
     }
+	/**
     protected Map<String, Object> buildInputToolMessage(ToolAgentMessage toolAgentMessage,AIAgent aiAgent) {
         FunctionTool tool = toolAgentMessage.getFunctionTool();
         String toolId = tool.getId();
@@ -469,6 +486,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             throw new FunctionCallException("Call tool function["+ functionName +"] failed:",e);
         }
     }
+	 */
     /**
      * 构建智能问答请求参数
      * @param toolAgentMessage
