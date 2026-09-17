@@ -51,7 +51,7 @@ public class TaskminderAgentInterceptor implements AgentInterceptor {
 	 * @param ctx   per-call runtime context (session, user, attributes)
 //	 * @param input reasoning input (messages, tools, options)
 //	 * @param next  calls the next middleware or the core reasoning logic
-	 * @return event stream from reasoning
+//	 * @return event stream from reasoning
 	 */
 	public void onReasoning(
 			AIAgent agent,

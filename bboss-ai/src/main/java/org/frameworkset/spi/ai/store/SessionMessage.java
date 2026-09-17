@@ -152,6 +152,11 @@ public class SessionMessage {
 	 */
 	public static final String MESSAGE_TYPE_SUMMARY_MESSAGE = "23";
 	
+	/**
+	 * LLM调用异常消息
+	 */
+	public static final String MESSAGE_TYPE_LLMCALLERROR_MESSAGE = "24";
+	
 	
 	/**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
@@ -266,9 +271,14 @@ public class SessionMessage {
 	public static final String MESSAGE_TYPE_PLAN_MESSAGE_NAME = "plan";
 	
 	/**
-	 * 智能体摘要消息名称
+	 * 智能体摘要消息名称:规范中同样是用user角色名称
 	 */
-	public static final String MESSAGE_TYPE_SUMMARY_MESSAGE_NAME = "summary";
+	public static final String MESSAGE_TYPE_SUMMARY_MESSAGE_NAME = "user";
+	
+	/**
+	 * LLM调用异常消息
+	 */
+	public static final String MESSAGE_TYPE_LLMCALLERROR_MESSAGE_NAME = "llmcallerror";
 	
 
 	

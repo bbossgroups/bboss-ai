@@ -66,6 +66,10 @@ public class AgentMessageTypeConvertor {
         else if(MESSAGE_TYPE_LLM_OUTPUTMESSAGE_NAME.equals(role)){
             return MESSAGE_TYPE_LLM_OUTPUTMESSAGE;
         }
+		
+		else if(MESSAGE_TYPE_LLMCALLERROR_MESSAGE_NAME.equals(role)){
+			return MESSAGE_TYPE_LLMCALLERROR_MESSAGE;
+		}
         else if(MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE_NAME.equals(role)){
             return MESSAGE_TYPE_EMBEDDING_INPUTMESSAGE;
         }

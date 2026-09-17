@@ -65,7 +65,7 @@ public interface AgentInterceptor {
 	 * @param ctx   per-call runtime context (session, user, attributes)
 //	 * @param input reasoning input (messages, tools, options)
 //	 * @param next  calls the next middleware or the core reasoning logic
-	 * @return event stream from reasoning
+//	 * @return event stream from reasoning
 	 */
 	default void onReasoning(
 			AIAgent agent,
@@ -83,7 +83,7 @@ public interface AgentInterceptor {
 	 * @param ctx   per-call runtime context (session, user, attributes)
 	 * @param input acting input (the tool calls)
 //	 * @param next  calls the next middleware or the core acting logic
-	 * @return event stream from acting
+//	 * @return event stream from acting
 	 */
 	default void onActing(
 			AIAgent agent,
@@ -104,7 +104,7 @@ public interface AgentInterceptor {
 	 * @param ctx   per-call runtime context (session, user, attributes)
 //	 * @param input model-call input (messages, tools, options, model)
 //	 * @param next  calls the next middleware or the actual model invocation
-	 * @return event stream from the model call
+//	 * @return event stream from the model call
 	 */
 	default void onModelCall(
 			AIAgent agent,

@@ -86,7 +86,6 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
 			data = serverEvent.getFullStreamData();
 		}
 //		String data = serverEvent.getFullStreamData();
-		FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
 		
 		RouteChoice result = null;
 		if (data != null) {
