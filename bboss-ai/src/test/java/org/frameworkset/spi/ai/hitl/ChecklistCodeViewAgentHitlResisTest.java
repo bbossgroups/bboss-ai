@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.audit.AuditContext;
 import org.frameworkset.spi.ai.audit.AuditResult;
 import org.frameworkset.spi.ai.audit.Auditor;
+import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
@@ -75,7 +76,7 @@ public class ChecklistCodeViewAgentHitlResisTest {
 				.setAuth("ecs123456")
 				//集群节点可以通过逗号分隔，也可以通过\n符分隔
 //          .setServers("101.13.4.15:6359\n101.13.4.15:6369\n101.13.4.15:6379\n101.13.4.15:6389")
-				.setServers("10.13.6.7:6381,10.13.6.7:6382,10.13.6.7:6383,10.13.6.7:6384,10.13.6.7:6385,10.13.6.7:6386")
+				.setServers("101.13.6.7:6381,101.13.6.7:6382,101.13.6.7:6383,101.13.6.7:6384,101.13.6.7:6385,101.13.6.7:6386")
 				
 				.setMaxRedirections(5)
 				.setMode(RedisDB.mode_cluster)
@@ -132,7 +133,9 @@ public class ChecklistCodeViewAgentHitlResisTest {
 				.setDataSource("visualops"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
-		AIAgent agent = new AIAgent();
+		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
+		agentRuntimeContext.setDebugSSEData(true);
+		AIAgent agent = new AIAgent().setAgentRuntimeContext(agentRuntimeContext);
 		agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
 		agent.setMaxLoopToolCalls(80);
 		agent.registTools(new SkillsToolRegist()

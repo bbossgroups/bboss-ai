@@ -988,7 +988,9 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			selectSessionMessageBySessionId2ndAgentIdSQL0 = new StringBuilder()
 					.append("select *  from ")
 					.append(sessionMessageTableName)
-					.append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
+					.append(" where (sessionId=? and (agentId= ? " )
+					.append("or (parentAgentId= ? and messageType = '1')" ) //将子智能体的输出作为父智能体的历史消息记录
+					.append(") ")
 					.append("and messageType in ('0','1','2','3','4','23'))")
 					.toString();
 			
