@@ -47,7 +47,7 @@
     <!--删除clickhouse本地表-->
     <property name="dropLocalSessionTableName">
         <![CDATA[
-			drop TABLE agent_session_local  ON CLUSTER vops_3shards_1replicas
+			drop TABLE agent_session_local  ON CLUSTER vops_3shards_1replicas SYNC
 		]]>
     </property>
 
@@ -63,7 +63,7 @@
     <!--删除clickhouse分布式表-->
     <property name="dropClusterSessionTableName">
         <![CDATA[
-			drop TABLE agent_session  ON CLUSTER vops_3shards_1replicas
+			drop TABLE agent_session  ON CLUSTER vops_3shards_1replicas SYNC
 		]]>
     </property>
 
@@ -96,7 +96,7 @@
     <!--删除clickhouse本地表-->
     <property name="dropLocalSessionMessageTableName">
         <![CDATA[
-			drop TABLE agent_session_message_local  ON CLUSTER vops_3shards_1replicas
+			drop TABLE agent_session_message_local  ON CLUSTER vops_3shards_1replicas SYNC
 		]]>
     </property>
     <!--基于clickhouse本地表创建clickhouse分布式表-->
@@ -110,7 +110,7 @@
     <!--删除clickhouse分布式表-->
     <property name="dropClusterSessionMessageTableName">
         <![CDATA[
-			drop TABLE agent_session_message  ON CLUSTER vops_3shards_1replicas
+			drop TABLE agent_session_message  ON CLUSTER vops_3shards_1replicas SYNC
 		]]>
     </property>
 
@@ -132,7 +132,7 @@
     <!--删除clickhouse本地表-->
     <property name="dropLocalSessionMessageReferenceTableName">
         <![CDATA[
-			drop TABLE agent_session_message_ref_local  ON CLUSTER vops_3shards_1replicas
+			drop TABLE agent_session_message_ref_local  ON CLUSTER vops_3shards_1replicas SYNC
 		]]>
     </property>
 
@@ -148,7 +148,7 @@
     <!--删除clickhouse分布式表-->
     <property name="dropClusterSessionMessageReferenceTableNamee">
         <![CDATA[
-			drop TABLE agent_session_message_ref  ON CLUSTER vops_3shards_1replicas
+			drop TABLE agent_session_message_ref  ON CLUSTER vops_3shards_1replicas SYNC
 		]]>
     </property>
 
