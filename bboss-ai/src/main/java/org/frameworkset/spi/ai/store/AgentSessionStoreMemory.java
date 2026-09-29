@@ -15,18 +15,18 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
-import com.frameworkset.common.poolman.SQLExecutor;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author biaoping.yin
@@ -121,8 +121,51 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         }
         return createOrUpdateSession(prompt, domain,   agentId,  agent);
     }
-
-    /**
+	
+	private final Map<String, AgentToolCallRules> agentToolCallRulesMap = new ConcurrentHashMap<>();
+	
+	@Override
+	public void addAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		agentToolCallRules.setAgentToolCallRulesId(SimpleStringUtil.getUUID32());
+		/**
+		 insertAgentToolCallRulesSQL = new StringBuilder().append("insert into ").append(agentToolCallRulesTableName)
+		 .append(" (agentToolCallRulesId,userId,sessionId,toolName,agentId,")
+		 .append("permissionRules,createTime,updateTime")
+		 .append(") values(?,?,?,?,?,?,?,?,?,?)").toString();
+		 */
+		agentToolCallRules.setCreateTime(LocalDateTime.now());
+		agentToolCallRules.setUpdateTime(agentToolCallRules.getCreateTime());
+		 
+		String key = agentToolCallRules.getSessionId() + ":" + agentToolCallRules.getAgentId();
+		agentToolCallRulesMap.put(key	, agentToolCallRules);
+		 
+	}
+	
+	@Override
+	public void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		String key = agentToolCallRules.getSessionId() + ":" + agentToolCallRules.getAgentId();
+		AgentToolCallRules oldAgentToolCallRules = agentToolCallRulesMap.get(key);	
+		if(oldAgentToolCallRules != null){
+			oldAgentToolCallRules.setPermissionRules(agentToolCallRules.getPermissionRules());
+			oldAgentToolCallRules.setUpdateTime(LocalDateTime.now());
+		}
+		else{
+			logger.warn("updateAgentToolCallRules: Agent tool call rules not found:sessionId "
+					+key);
+		}
+		
+		 
+	}
+	
+	@Override
+	public AgentToolCallRules getAgentToolCallRules(String sessionId, String agentId){
+		 
+		String key = sessionId + ":" + agentId;
+		return agentToolCallRulesMap.get(key)	;
+		 
+	}
+	
+	/**
      * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
      * 如果会话不存在 则创建会话
      *

@@ -27,6 +27,9 @@ public class HitlCallObject<T> {
 	private CountDownLatch countDownLatch;
 	private Throwable hitlCallException;
 	private Class<T> responseType;
+	
+
+	private Class<?> elementType;
 	private int taskStatus = HitlCallTask.TASK_STATUS_UNHANDLED;
 	
 	private T response;
@@ -129,4 +132,12 @@ public class HitlCallObject<T> {
 	public int getTaskStatus() {
 		return taskStatus;
 	}
+	public Class<?> getElementType() {
+		return elementType;
+	}
+	
+	public void setElementType(Class<?> elementType) {
+		this.elementType = elementType;
+	}
+	
 }

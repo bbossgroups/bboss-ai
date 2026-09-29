@@ -16,7 +16,6 @@ package org.frameworkset.spi.ai.util;
  */
 
 import com.frameworkset.util.JsonUtil;
-import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.model.*;
@@ -27,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -383,6 +381,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
                     FunctionTool functionTool = new FunctionTool();
 					functionTool.setFunctionName((String)function.get("name"));
 					FunctionToolDefine functionToolDefine = getFunctionToolDefine(functionToolDefines, functionTool.getFunctionName());
+					functionTool.setFunctionToolDefine(functionToolDefine);
 					if(functionToolDefine != null){
 						functionTool.setInputType(functionToolDefine.getInputType());
 					}
@@ -432,6 +431,7 @@ public abstract class BaseStreamDataBuilder implements StreamDataBuilder{
 			}
             functionTool.setFunctionName((String)function.get("name"));
 			FunctionToolDefine functionToolDefine = getFunctionToolDefine(agentTools, functionTool.getFunctionName());
+			functionTool.setFunctionToolDefine(functionToolDefine);
 			if(functionToolDefine != null){
 				functionTool.setInputType(functionToolDefine.getInputType());
 			}

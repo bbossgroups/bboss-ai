@@ -19,12 +19,23 @@ import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.hitl.HitlCallResult;
+import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
+import org.frameworkset.spi.ai.hitl.HitlTaskToolInf;
 import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.ai.material.GenMaterialFileDownload;
 import org.frameworkset.spi.ai.mcp.model.MCPToolCallResponse;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.ToolCallAsk;
+import org.frameworkset.spi.ai.model.tool.ToolCallAskResult;
+import org.frameworkset.spi.ai.model.tool.ToolCallState;
+import org.frameworkset.spi.ai.permission.*;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
+import org.frameworkset.spi.ai.tool.ToolBase;
+import org.frameworkset.spi.ai.tool.ToolCallContext;
+import org.frameworkset.spi.ai.tools.HitlAssistant;
 import org.frameworkset.spi.ai.util.*;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -401,37 +412,280 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     protected LinkedMessageMap<String, Object> buildInputImagesMessage(String message,String... imageUrls) {
         return MessageBuilder.buildInputImagesMessage(message,imageUrls);
     }
-
-    protected List<LinkedMessageMap<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent aiAgent,ChatObject chatObject) {
+	
+	/**
+	 * Run every tool call through the permission gate.
+	 *
+	 * <p>When the agent's {link PermissionContextState} is trivial
+	 * (default mode, no rules, no working directories — i.e. the user has not opted into the
+	 * permission system) we fall back to the lightweight pre-2.0 path: the tool's own
+	 * {link ToolBase#checkPermissions} ASK gates a confirmation, anything else is approved.
+	 *
+	 * <p>Otherwise we engage the full {link PermissionEngine} pipeline so deny/ask/allow rules
+	 * and EXPLORE/ACCEPT_EDITS/BYPASS/DONT_ASK modes are honoured before execution. Legacy
+	 * {link AgentTool}s that do not extend {link ToolBase} always pass through approved.
+	 */
+	private PermissionGate evaluatePermissions( List<FunctionTool> toolCalls,ChatObject chatObject) {
+		if (toolCalls == null || toolCalls.isEmpty()) {
+			return null;
+		}
+		AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
+		boolean useEngine = agentRuntimeContext != null && !agentRuntimeContext.isTrivial();
+		Set<String> denied = new HashSet<>();
+		List<PermissionVerdict> pending = new ArrayList<>();
+		for (FunctionTool toolCall : toolCalls) {
+			PermissionVerdict permissionVerdict = evaluateOne(toolCall, useEngine,chatObject.getChatContext());
+			FunctionTool functionTool = permissionVerdict.getFunctionTool();
+			switch (permissionVerdict.getBehavior()) {
+				case DENY: denied.add(functionTool.getId());break;
+				case ASK : pending.add(permissionVerdict);break;
+				case ALLOW:
+				case PASSTHROUGH:
+					// auto-approved; falls through to execution
+				
+			}
+//			
+		}
+		return new PermissionGate(pending, denied);
+	}
+	
+	private PermissionVerdict evaluateOne(FunctionTool use, boolean useEngine, ChatContext chatContext) {
+		// Tools already promoted to ALLOWED by user confirmation skip the engine entirely.
+		if (use.getToolCallState() == ToolCallState.ALLOWED) {
+			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null,null);
+		}
+		ToolBase toolBase = use.getToolBase();
+		if(toolBase == null){
+			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null,null);
+		}
+//		AgentTool tool = toolkit.getTool(use.getName());
+//		if (!(tool instanceof ToolBase tb)) {
+//			return Mono.just(new PermissionVerdict(use, PermissionBehavior.ALLOW));
+//		}
+//		AgentRuntimeContext context = chatContext.getAgentRuntimeContext();
+		Map<String, Object> input = use.getArguments() == null ? Collections.emptyMap() : use.getArguments	();
+		if (useEngine) {
+			PermissionEngine permissionEngine = new PermissionEngine(chatContext);
+			PermissionDecision permissionDecision = permissionEngine
+					.checkPermission(use, input);
+			PermissionVerdict permissionVerdict = new PermissionVerdict(
+					use,
+					permissionDecision == null
+							? PermissionBehavior.ASK
+							: permissionDecision.getBehavior(),permissionDecision,permissionEngine);
+			return permissionVerdict;
+//					.map(
+//							decision ->
+//									new PermissionVerdict(
+//											use,
+//											decision == null
+//													? PermissionBehavior.ASK
+//													: decision.getBehavior()));
+		}
+		PermissionVerdict permissionVerdict = null;
+		PermissionDecision permissionDecision =  toolBase.checkPermissions(use, use.getArguments(),chatContext);
+		if (permissionDecision == null) {
+			return new PermissionVerdict(use, PermissionBehavior.ALLOW,permissionDecision,null);
+		}
+		// In the legacy lightweight path only an explicit ASK from the tool
+		// gates execution; PASSTHROUGH and ALLOW both run, DENY is
+		// honoured.
+		switch (permissionDecision.getBehavior()) {
+			case ASK: permissionVerdict = new PermissionVerdict(use, PermissionBehavior.ASK,permissionDecision,null);
+			break;
+			case DENY: permissionVerdict = new PermissionVerdict(use, PermissionBehavior.DENY,permissionDecision,null);
+			break;
+			default : permissionVerdict = new PermissionVerdict(use, PermissionBehavior.ALLOW,permissionDecision,null);
+		};
+		return permissionVerdict;
+//				.map(
+//						decision -> {
+//							if (decision == null) {
+//								return new PermissionVerdict(use, PermissionBehavior.ALLOW);
+//							}
+//							// In the legacy lightweight path only an explicit ASK from the tool
+//							// gates execution; PASSTHROUGH and ALLOW both run, DENY is
+//							// honoured.
+//							return switch (decision.getBehavior()) {
+//								case ASK -> new PermissionVerdict(use, PermissionBehavior.ASK);
+//								case DENY ->
+//										new PermissionVerdict(use, PermissionBehavior.DENY);
+//								default -> new PermissionVerdict(use, PermissionBehavior.ALLOW);
+//							};
+//						});
+	}
+	
+//	/**
+//	 * Synthesise DENIED ToolResultBlocks for tools that were rejected by deny rules and append
+//	 * them to context so the conversation reflects the rejection (and resume doesn't see them
+//	 * as pending).
+//	 */
+//	private void writeAutoDeniedResults(List<ToolUseBlock> toolCalls, Set<String> deniedIds) {
+//		for (ToolUseBlock tc : toolCalls) {
+//			if (!deniedIds.contains(tc.getId())) {
+//				continue;
+//			}
+//			ToolResultBlock denied =
+//					ToolResultBlock.text("Permission denied by rules")
+//							.withIdAndName(tc.getId(), tc.getName())
+//							.withState(ToolResultState.DENIED);
+//			Msg deniedMsg = ToolResultMessageBuilder.buildToolResultMsg(denied, tc, getName());
+//			state.contextMutable().add(deniedMsg);
+//		}
+//	}
+	
+	private ToolCallAskResult getToolCallAskResult(String toolId, List<ToolCallAskResult> toolCallAskResults){
+		if(toolCallAskResults == null || toolCallAskResults.size() == 0)
+			return null;	
+		for(ToolCallAskResult toolCallAskResult:toolCallAskResults){
+			if(toolCallAskResult.getToolId().equals(toolId)){
+				return toolCallAskResult;
+			}
+		}
+		return null;	
+	}
+	
+	private List<ToolCallAskResult> toolCallAsk(ChatObject chatObject,AgentRuntimeContext agentRuntimeContext,List<PermissionVerdict> pendingAsk){
+		if(pendingAsk == null || pendingAsk.size() == 0)
+			return null;	
+		List<ToolCallAskResult> toolCallAskResults = null;
+		ToolCallContext toolCallContext = new ToolCallContext();
+		List<ToolCallAsk> askTools = new ArrayList<>();
+		for (PermissionVerdict permissionVerdict : pendingAsk) {
+			FunctionTool tool = permissionVerdict.getFunctionTool();
+			PermissionDecision permissionDecision = permissionVerdict.getPermissionDecision();	
+			ToolCallAsk toolData = new ToolCallAsk();
+			toolData.setToolId(tool.getId());
+			toolData.setToolName(tool.getFunctionName());
+			toolData.setInput(tool.getArguments());
+			toolData.setSuggestedRules(permissionDecision.getSuggestedRules());
+			askTools.add(toolData);
+		}
+		HitlCallResult<List> hitlCallResult = HitlTaskHelper.hitlTaskTool(new HitlTaskToolInf() {
+			@Override
+			public String getTimeoutAction() {
+				return HitlTaskToolInf.TIMEOUT_ACTION_CONTINUE;
+			}
+			
+			@Override
+			public long getHitlTaskTimeout() {
+				return agentRuntimeContext.getPermissionHitlTaskTimeout();
+			}
+			
+			
+			
+			@Override
+			public HitlAssistant<?> getHitlAssistant() {
+				return new HitlAssistant<Object>() {
+					@Override
+					public Map<String, Object> getHumanAssistantDatas(ToolCallContext toolCallContext) {
+						Map<String, Object> humanAssistantDatas = new HashMap<>();
+						
+						humanAssistantDatas.put("pendingAsk", askTools);
+						humanAssistantDatas.put(HitlTaskToolInf.HITL_TASK_TYPE_KEY, HitlTaskToolInf.HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK);
+						return humanAssistantDatas;
+					}
+					
+					@Override
+					public void handleHumanSubbmitDatas(Object humanSubbmitDatas, ToolCallContext toolCallContext) {
+						
+					}
+				};
+			}
+			
+		},chatObject, "需要用户确认是否执行工具:", toolCallContext,List.class,ToolCallAskResult.class);
+		if(hitlCallResult != null && hitlCallResult.getResult() != null){
+			toolCallAskResults = hitlCallResult.getResult();
+		}
+		return toolCallAskResults;
+	}
+	
+    protected List<LinkedMessageMap<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent agent,ChatObject chatObject) {
         List<FunctionTool> tools = toolAgentMessage.getFunctionTools();
         List<LinkedMessageMap<String, Object>> toolMessages = new ArrayList<>(tools.size());
         try {
             AgentTraceHolder.setChatObject(chatObject);
+			AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
+			PermissionGate permissionGate = evaluatePermissions(tools,chatObject);
+			List<PermissionVerdict> pendingAsk = null;
+			Map<String,PermissionEngine> toolPermissionEngines = null;
+			Set<String> autoDeniedIds = null;
+			if(permissionGate != null){
+				pendingAsk = permissionGate.getPendingAsk();
+				autoDeniedIds = permissionGate.getAutoDeniedIds();
+			}
+			if(pendingAsk != null){
+				for(PermissionVerdict permissionVerdict : pendingAsk)
+					if(permissionVerdict.getPermissionEngine() != null) {
+						toolPermissionEngines.put(permissionVerdict.getFunctionTool().getId(), permissionVerdict.getPermissionEngine());
+					}
+			}
+			// Handle pending ask
+			List<ToolCallAskResult> toolCallAskResults = this.toolCallAsk(chatObject,agentRuntimeContext,pendingAsk);	
+			 
             for (FunctionTool tool : tools) {
                 String toolId = tool.getId();
                 String functionName = tool.getFunctionName();
-                FunctionCall functionCall = aiAgent.getFunctionCall(functionName);
+                FunctionCall functionCall = agent.getFunctionCall(functionName);
+				LinkedMessageMap<String, Object> toolMessage = null;				
+				if(autoDeniedIds != null && autoDeniedIds.contains(toolId)){
+					toolMessage = MessageBuilder.buildToolMessage("Permission denied by rules", toolId, tool, ToolCallState.DENIED);					
+					toolMessages.add(toolMessage);
+					continue;
+				}
+				ToolCallAskResult toolCallAskResult = getToolCallAskResult( toolId, toolCallAskResults);
+				ToolCallState toolCallState = null;
+				PermissionEngine permissionEngine = null;
+				if(toolCallAskResult != null){
+					if(!toolCallAskResult.isApproved()){
+						toolMessage = MessageBuilder.buildToolMessage("Tool call ask denied", toolId, tool, ToolCallState.DENIED);
+						toolMessages.add(toolMessage);
+						continue;
+					}
+					else{
+						Map<String, Object> updateInput =	 toolCallAskResult.getUpdateInput();
+						if (updateInput != null) {							
+							tool.setArguments(updateInput);	
+						}
+						PermissionRule choosedAlwaysPermissionRule = toolCallAskResult.getChoosedAlwaysPermissionRule();
+						if(choosedAlwaysPermissionRule != null){
+							permissionEngine = toolPermissionEngines.get(toolId);
+							if(permissionEngine != null){
+								permissionEngine.addRule(choosedAlwaysPermissionRule);
+							}
+						}					
+						
+					}
+					
+					
+					
+				}
+				
 				Object result = null;
                 try {
                     if (functionCall == null) {
 						result = "Function[" + functionName + "]'s function call is undefined.";
+						toolCallState = ToolCallState.FAILED;
                     }
 					else {
 						result = functionCall.call(tool);
+						toolCallState = ToolCallState.FINISHED;
 						if (result == null) {
 							result = "Call function return null.";
 //							throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
 						}
 					}
 					
+					
 //                return toolMessage;
 
                 }  catch (Exception e) {
 					logger.error("Call function[" + functionName + "] failed:", e);
+					toolCallState = ToolCallState.FAILED;
 					result = "Call function failed:" + e.getMessage();
 //                    throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
                 }
-				LinkedMessageMap<String, Object> toolMessage = null;
+			
 				if (result instanceof MCPToolCallResponse) {
 					result = ((MCPToolCallResponse) result).getResult();					 
 				}
@@ -445,10 +699,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 					}
 					catch (Exception e) {
 						logger.error("Convert result to json failed:", e);
+						toolCallState = ToolCallState.FAILED;
 						_result = "Convert result to json failed:"+e.getMessage();
 					}
 				}
-				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool);
+				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool,toolCallState);
 				toolMessages.add(toolMessage);
             }
         }
@@ -1031,6 +1286,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(code != null) {
             return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
         }
-        return null;
+		else{
+			return new StreamData(ServerEvent.CONTENT, JsonUtil.object2json(map), "error").setStreamTokenMetrics(tokenMetrics);
+		}
     }
 }

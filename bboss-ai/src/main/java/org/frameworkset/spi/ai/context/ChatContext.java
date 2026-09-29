@@ -366,4 +366,12 @@ public class ChatContext {
 			return false;
 		return agentRuntimeContext.isEnableMemorySearch();
 	}
+	
+	/**
+	 * 是否处于计划模式
+	 * @return
+	 */
+	public boolean inPlanMode() {
+		return false;
+	}
 }

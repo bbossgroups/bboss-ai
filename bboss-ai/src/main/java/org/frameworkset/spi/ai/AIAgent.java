@@ -24,6 +24,7 @@ import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.tool.*;
 import org.frameworkset.spi.ai.tools.CompactSummaryMsgSearchTool;
@@ -37,6 +38,7 @@ import reactor.core.publisher.FluxSink;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1591,5 +1593,26 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 	
 	public int getNextSeqNo() {
 		return this.getMainSessionStore().getNextSeqNo();
+	}
+	
+	public void addAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		if(this.getMainSessionStore() != null)
+			this.getMainSessionStore().addAgentToolCallRules(agentToolCallRules);
+		
+	}
+	
+	public void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		if(this.getMainSessionStore() != null)
+			this.getMainSessionStore().updateAgentToolCallRules(agentToolCallRules);	
+		
+		
+	}
+	
+	public AgentToolCallRules getAgentToolCallRules(String sessionId, String agentId){
+		
+		if(this.getMainSessionStore() != null)
+			return this.getMainSessionStore().getAgentToolCallRules(sessionId, agentId);	
+		return null;
+		
 	}
 }

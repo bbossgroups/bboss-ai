@@ -26,7 +26,6 @@ import org.frameworkset.util.annotations.wraper.ColumnWraper;
 
 import java.sql.Clob;
 import java.sql.SQLException;
-import java.util.Map;
 
 /**
  * @author biaoping.yin

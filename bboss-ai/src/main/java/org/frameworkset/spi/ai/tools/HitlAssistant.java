@@ -24,7 +24,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/8/5
  */
-public interface HitlAssistant {
+public interface HitlAssistant<T> {
 	/**
 	 * 人工干预时，智能体通过方法getHumanAssistantDatas给前端提供辅助干预帮助信息
 	 * @param toolCallContext
@@ -36,7 +36,7 @@ public interface HitlAssistant {
 	 * @param humanSubbmitDatas
 	 * @param toolCallContext
 	 */
-	void handleHumanSubbmitDatas(Map<String, Object> humanSubbmitDatas,ToolCallContext toolCallContext); 
+	void handleHumanSubbmitDatas(T humanSubbmitDatas,ToolCallContext toolCallContext); 
 	
 	
 }

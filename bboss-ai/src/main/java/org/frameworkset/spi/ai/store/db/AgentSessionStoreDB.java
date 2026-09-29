@@ -20,6 +20,7 @@ import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
@@ -164,15 +165,21 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                                 prompt.length() > 50 ? prompt.substring(0, 50) : prompt,domain);
                         newSession = true;
                     } else {
-						//只有非clickhouse数据库才需要更新session最后访问时间，clickhouse数据库不支持更新最后访问时间
-						if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
-							SQLExecutor.updateWithDBName(
-									dataSource,
-									agentSessionStoreDBConfig.getUpdateSessionLastAccessTimeSQL(),
-									new Date(),
-									getSessionId()
-							);
-						}
+						String updateSessionLastAccessTimeSQL = !agentSessionStoreDBConfig.isClickhouse(this.dataSource) ?
+								agentSessionStoreDBConfig.getUpdateSessionLastAccessTimeSQL():agentSessionStoreDBConfig.getUpdateClickhouseSessionLastAccessTimeSQL();
+//						//只有非clickhouse数据库才需要更新session最后访问时间，clickhouse数据库不支持更新最后访问时间
+//						if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
+//							
+//						}
+//						else{
+//							
+//						}
+						SQLExecutor.updateWithDBName(
+								dataSource,
+								updateSessionLastAccessTimeSQL,
+								new Date(),
+								getSessionId()
+						);
 						//以下代码无需再主store中加载会话列表--注释开始
 //                        //获取主智能体记忆记录
 //                        List<SessionMessage> sessionMessages = null;
@@ -216,12 +223,60 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         return newSession;
     }
 	
- 
-
+ 	@Override
+	public void addAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		agentToolCallRules.setAgentToolCallRulesId(SimpleStringUtil.getUUID32());
+		/**
+		 insertAgentToolCallRulesSQL = new StringBuilder().append("insert into ").append(agentToolCallRulesTableName)
+		 .append(" (agentToolCallRulesId,userId,sessionId,toolName,agentId,")
+		 .append("permissionRules,createTime,updateTime")
+		 .append(") values(?,?,?,?,?,?,?,?,?,?)").toString();
+		 */
+		agentToolCallRules.setCreateTime(LocalDateTime.now());
+		agentToolCallRules.setUpdateTime(agentToolCallRules.getCreateTime());
+		try{
+			SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertAgentToolCallRulesSQL(),
+						agentToolCallRules.getAgentToolCallRulesId(),this.getUserId(),
+					this.getSessionId(), agentToolCallRules.getToolName(), 
+					agentToolCallRules.getAgentId(),
+					JsonUtil.object2json(agentToolCallRules.getPermissionRules()),
+					agentToolCallRules.getCreateTime(),agentToolCallRules.getUpdateTime()
+			);
+		} catch (SQLException e) {
+			throw new AIRuntimeException("add agent tool call rules error",e);
+		}	
+	}
+	
+	@Override
+	public void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		agentToolCallRules.setUpdateTime(LocalDateTime.now());
+		try{
+			SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.getUpdateAgentToolCallRulesSQL(),
+					JsonUtil.object2json(agentToolCallRules.getPermissionRules()),
+					agentToolCallRules.getUpdateTime(),
+					agentToolCallRules.getSessionId(),
+					agentToolCallRules.getAgentId()
+			);
+		} catch (SQLException e) {
+			throw new AIRuntimeException("add agent tool call rules error",e);
+		}
+	}
+	
+	@Override
+	public AgentToolCallRules getAgentToolCallRules(String sessionId, String agentId){
+		try{
+			return SQLExecutor.queryObjectWithDBName(AgentToolCallRules.class, dataSource, 
+				agentSessionStoreDBConfig.getSelectAgentToolCallRulesSQL(), sessionId, agentId);	
+		} catch (SQLException e) {
+			throw new AIRuntimeException("get agent tool call rules error:sessionId "+sessionId+" agentId "+agentId	,e);
+		}	
+	}	
+	
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,
                                                        String agentId, String parentAgentId,
-													   String agentNodeType,String subAgentIdBy, String marks, String metadata, String messageType){
+													   String agentNodeType,String subAgentIdBy,
+													   String marks, String metadata, String messageType){
         try { 
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role

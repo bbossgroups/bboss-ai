@@ -16,8 +16,14 @@ package org.frameworkset.spi.ai.context;
  */
 
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
+import org.frameworkset.spi.ai.permission.PermissionMode;
+import org.frameworkset.spi.ai.permission.PermissionRule;
 import org.frameworkset.spi.ai.state.PlanModeContextState;
 import org.frameworkset.spi.ai.state.TaskContextState;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -32,6 +38,17 @@ public class AgentRuntimeContext {
 	
 	private PlanModeContextState planModeContextState;
 	private TaskContextState taskContextState;
+	private PermissionMode mode;
+	private  Map<String, List<PermissionRule>> allowRules;
+	private  Map<String, List<PermissionRule>> denyRules;
+	private  Map<String, List<PermissionRule>> askRules;
+	
+
+	/**
+	 * 权限确认超时时间
+	 */
+	private long permissionHitlTaskTimeout = 60L * 1000L;
+ 
 	/**
 	 * 是否启用计划模式
 	 */
@@ -111,5 +128,58 @@ public class AgentRuntimeContext {
 	public AgentRuntimeContext setEnableMemorySearch(boolean enableMemorySearch) {
 		this.enableMemorySearch = enableMemorySearch;
 		return this;
+	}
+	 
+	
+	public Map<String, List<PermissionRule>> getAllowRules() {
+		return allowRules;
+	}
+	
+ 
+	public Map<String, List<PermissionRule>> getDenyRules() {
+		return denyRules;
+	}
+	
+ 
+	
+	public Map<String, List<PermissionRule>> getAskRules() {
+		return askRules;
+	}
+	
+	public AgentRuntimeContext setMode(PermissionMode mode) {
+		this.mode = mode;
+		return this;
+	}
+	
+	public boolean isTrivial() {
+		return mode == PermissionMode.DEFAULT
+//				&& workingDirectories.isEmpty()
+				&& allowRules.isEmpty()
+				&& denyRules.isEmpty()
+				&& askRules.isEmpty();
+	}
+	public long getPermissionHitlTaskTimeout() {
+		return permissionHitlTaskTimeout;
+	}
+	
+	public AgentRuntimeContext setPermissionHitlTaskTimeout(long permissionHitlTaskTimeout) {
+		this.permissionHitlTaskTimeout = permissionHitlTaskTimeout;
+		return this;
+	}
+	
+	
+	public void addAllowRule(String toolName, PermissionRule permissionRule) {
+		allowRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
+	}
+	
+	public void addDenyRule(String toolName, PermissionRule permissionRule) {
+		denyRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
+	}
+	public void addAskRule(String toolName, PermissionRule permissionRule) {
+		askRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
+	}
+	
+	public PermissionMode getMode() {
+		return mode;
 	}
 }

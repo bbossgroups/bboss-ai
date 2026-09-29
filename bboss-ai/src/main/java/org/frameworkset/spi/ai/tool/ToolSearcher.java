@@ -16,7 +16,6 @@ package org.frameworkset.spi.ai.tool;
  */
 
 
-import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import java.util.List;
 

@@ -15,21 +15,7 @@
  */
 package org.frameworkset.spi.ai.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.frameworkset.util.JsonUtil;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.HttpException;
-import org.frameworkset.spi.ai.model.annotation.Tool;
-import org.frameworkset.spi.ai.model.annotation.ToolParam;
-import org.frameworkset.spi.ai.tools.model.WebToolResult;
-import org.frameworkset.spi.remote.http.BaseURLResponseHandler;
-import org.frameworkset.spi.remote.http.HttpRequestProxy;
-import org.frameworkset.spi.remote.http.ResponseUtil;
-import org.frameworkset.spi.remote.http.proxy.HttpProxyRequestException;
-
-import java.io.IOException;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /**

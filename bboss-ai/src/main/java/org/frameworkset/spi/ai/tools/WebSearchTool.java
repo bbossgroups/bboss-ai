@@ -15,8 +15,6 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameworkset.util.JsonUtil;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -42,7 +40,13 @@ public class WebSearchTool {
 	private  String httpWebSearchToolProxy = "http_websearch_tool";
 	//        private static final String TAVILY_API = "https://api.tavily.com/search";
 	private static final String TAVILY_API = "/search";
-	
+	public WebSearchTool(String httpWebSearchToolProxy){
+		this.httpWebSearchToolProxy = httpWebSearchToolProxy;
+		
+	}
+	public WebSearchTool(){	 
+		
+	}
 	
 	@Tool(
 			name = "web_search",

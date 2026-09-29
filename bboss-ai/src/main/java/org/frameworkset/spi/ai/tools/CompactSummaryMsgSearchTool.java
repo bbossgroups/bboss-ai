@@ -15,7 +15,6 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.compaction.SummeryUtils;
 import org.frameworkset.spi.ai.model.ChatObject;

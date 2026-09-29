@@ -15,9 +15,6 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.frameworkset.spi.ai.state.Task;
 import org.frameworkset.spi.ai.model.ChatObject;

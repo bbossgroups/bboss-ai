@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.tool;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
-import org.frameworkset.spi.ai.model.Property;
+import org.frameworkset.spi.ai.model.tool.Property;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.frameworkset.util.ClassUtil;
@@ -114,7 +114,8 @@ public class BeanToolHandle {
                 functionToolDefine.funtionName2ndDescription(name,tool.description());
                 functionToolDefine.setType(tool.type());
                 functionToolDefine.additionalProperties(tool.additionalProperties());
-                functionToolDefine.strict(tool.strict());                
+                functionToolDefine.strict(tool.strict());
+				functionToolDefine.setReadOnly(tool.readOnly());
                 
                 List<String> requirements = new ArrayList<>();
 

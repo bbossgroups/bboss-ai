@@ -35,6 +35,12 @@ import static org.frameworkset.spi.ai.tools.HttpWebTools.headers;
  */
 public class WebFetchTool {
 	private  String httpWebfetchToolProxy = "http_webfetch_tool";
+	public WebFetchTool(String httpWebfetchToolProxy ){
+		this.httpWebfetchToolProxy = httpWebfetchToolProxy;
+	}
+	public WebFetchTool(){
+		
+	}
 	@Tool(
 			name = "web_fetch",
 			readOnly = true,

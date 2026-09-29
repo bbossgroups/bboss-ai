@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.store;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
 import java.util.List;
@@ -94,7 +95,12 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,//Map<String, Object> message,
                                                 String agentId, String parentAgentId,String agentNodeType,String subAgentIdBy,
 												String marks, String metadata, String messageType);
-            
+	
+	AgentToolCallRules getAgentToolCallRules(String sessionId, String agentId);
+	
+	void addAgentToolCallRules(AgentToolCallRules agentToolCallRules);
+	
+	void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules);
             //, TokenMetrics tokenMetrics);
     AgentSessionStore getMainAgentSessionStore() ;
 
