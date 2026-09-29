@@ -28,46 +28,227 @@
  -->
 <properties>
 	
+	<!--新增智能体会话记录：会话id、智能体id、创建时间、所属领域、标题、用户id-->
 	<property name="addAgentSession">
 		<![CDATA[
 			insert into agent_session (sessionId,agentId,createTime,domain,title,useId) values(#[sessionid],#[agentid],#[createtime],#[domain],#[title],#[useid])
 		]]>
 	</property>
-	<property name="deleteByKey">
-		<![CDATA[
-			delete from agent_session where sessionId=?
-		]]>
-	</property>
 
+
+    <property name="updateAgentSessionTitle">
+        <![CDATA[
+			update agent_session set title=#[newTitle] where sessionId=#[sessionId]    
+		]]>
+    </property>
+
+
+    <property name="updateAgentSessionTitle-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_session_local on cluster $clusterName
+        UPDATE
+            title=#[newTitle]  
+        WHERE sessionId=#[sessionId]    
+        SETTINGS mutations_sync = $mutationsSync
+			 
+		]]>
+    </property>
+
+    <!--根据会话id删除智能体会话记录-->
+    <property name="deleteByKey">
+        <![CDATA[
+			delete from agent_session where  sessionId in (
+			#foreach($sessionId in $sessionIds) 
+                #if($foreach.index == 0) 
+                    #[sessionIds[$foreach.index]] 
+                #else 
+                    ,#[sessionIds[$foreach.index]] 
+                #end 
+            #end 			 
+			) 
+		]]>
+    </property>
+
+    <!--根据会话id删除会话下的全部消息记录-->
     <property name="deleteAgentSessionMessageByKey">
         <![CDATA[
-			delete from agent_session_message where sessionId=?
+			delete from agent_session_message where sessionId in (
+			#foreach($sessionId in $sessionIds) 
+                #if($foreach.index == 0) 
+                    #[sessionIds[$foreach.index]] 
+                #else 
+                    ,#[sessionIds[$foreach.index]] 
+                #end 
+            #end 			 
+			) 
 		]]>
     </property>
+    <!--根据会话id删除会话下的智能体消息引用关系记录-->
     <property name="deleteAgentSessionMessageRefByKey">
         <![CDATA[
-			delete from agent_session_message_ref where sessionId=?
+			delete from agent_session_message_ref where sessionId in (
+			#foreach($sessionId in $sessionIds) 
+                #if($foreach.index == 0) 
+                    #[sessionIds[$foreach.index]] 
+                #else 
+                    ,#[sessionIds[$foreach.index]] 
+                #end 
+            #end 			 
+			) 
 		]]>
     </property>
-    
 
+    <!--根据会话id删除该会话下的人工介入任务记录-->
+    <property name="deleteHitlCallTaskBySessionId">
+        <![CDATA[
+			delete from agent_hitl_calltask where sessionId in (
+			#foreach($sessionId in $sessionIds) 
+                #if($foreach.index == 0) 
+                    #[sessionIds[$foreach.index]] 
+                #else 
+                    ,#[sessionIds[$foreach.index]] 
+                #end 
+            #end 			 
+			) 
+
+		]]>
+    </property>
+
+    <property name="deleteAgentToolCallRulesBySessionId">
+        <![CDATA[
+        delete from agent_tool_call_rules where  sessionId in (
+			#foreach($sessionId in $sessionIds) 
+                #if($foreach.index == 0) 
+                    #[sessionIds[$foreach.index]] 
+                #else 
+                    ,#[sessionIds[$foreach.index]] 
+                #end 
+            #end 			 
+			)        
+    ]]>
+    </property>
+
+    <!--根据会话id删除智能体会话记录-->
+    <property name="deleteByKey-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_session_local on cluster $clusterName
+        DELETE
+        WHERE sessionId in (
+            #foreach($sessionId in $sessionIds)
+                #if($foreach.index == 0)
+                    #[sessionIds[$foreach.index]]
+                #else
+                    ,#[sessionIds[$foreach.index]]
+                #end
+            #end
+        )
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--根据会话id删除会话下的全部消息记录-->
+    <property name="deleteAgentSessionMessageByKey-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_session_message_local on cluster $clusterName
+        DELETE
+        WHERE sessionId in (
+            #foreach($sessionId in $sessionIds)
+                #if($foreach.index == 0)
+                    #[sessionIds[$foreach.index]]
+                #else
+                    ,#[sessionIds[$foreach.index]]
+                #end
+            #end
+        )
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--根据会话id删除会话下的智能体消息引用关系记录-->
+    <property name="deleteAgentSessionMessageRefByKey-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_session_message_ref_local on cluster $clusterName
+        DELETE
+        WHERE sessionId in (
+            #foreach($sessionId in $sessionIds)
+                #if($foreach.index == 0)
+                    #[sessionIds[$foreach.index]]
+                #else
+                    ,#[sessionIds[$foreach.index]]
+                #end
+            #end
+        )
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--根据会话id删除该会话下的人工介入任务记录-->
+    <property name="deleteHitlCallTaskBySessionId-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+        DELETE
+        WHERE sessionId in (
+            #foreach($sessionId in $sessionIds)
+                #if($foreach.index == 0)
+                    #[sessionIds[$foreach.index]]
+                #else
+                    ,#[sessionIds[$foreach.index]]
+                #end
+            #end
+        )
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+
+    <!--deleteHitlCallTaskBySessionId 的ClickHouse方言适配SQL（代码中通过名称 deleteHitlCallTaskBySessionId 访问）：根据会话id删除人工介入任务-->
+    <property name="deleteHitlCallTaskBySessionId-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+        DELETE
+        WHERE  sessionId in (
+			#foreach($sessionId in $sessionIds) 
+                #if($foreach.index == 0) 
+                    #[sessionIds[$foreach.index]] 
+                #else 
+                    ,#[sessionIds[$foreach.index]] 
+                #end 
+            #end 			 
+			)    
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+    <!--deleteHitlCallTaskBySessionId 的ClickHouse方言适配SQL（代码中通过名称 deleteHitlCallTaskBySessionId 访问）：根据会话id删除人工介入任务-->
+    <property name="deleteAgentToolCallRulesBySessionId-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_tool_call_rules_local on cluster $clusterName
+        DELETE
+        WHERE sessionId = #[sessionId]
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
     
+    
+	<!--更新会话信息：会话id、智能体id、创建时间、所属领域、标题、用户id-->
 	<property name="updateAgentSession">
 		<![CDATA[
 			update agent_session set sessionId=#[sessionid],agentId=#[agentid],createTime=#[createtime],domain=#[domain],title=#[title],useId=#[useid] where sessionId=#[sessionid]
 		]]>
 	</property>
+	<!--根据会话id查询会话记录-->
 	<property name="selectById">
 		<![CDATA[
 			select * from agent_session where sessionId=?
 		]]>
 	</property>
+    <!--判断会话是否存在，返回会话数量sessionCount-->
     <property name="existAgentSession">
         <![CDATA[
 			select count(1) as sessionCount from agent_session where sessionId=?
 		]]>
     </property>
     
+	<!--条件查询会话列表：支持按智能体id、用户id、所属领域(domain/domains)、标题(title)过滤，支持时间范围(timeStart/timeEnd，条件字段timeConditionField)及排序(sortKey/sortDesc)-->
 	<property name="queryListAgentSession">
 		<![CDATA[
 			select * from agent_session where 1=1
@@ -103,6 +284,7 @@
 		]]>
 	</property>
 
+    <!--根据会话id查询会话消息列表，按创建时间、消息序号升序排列-->
     <property name="queryListSessionMessages">
         <![CDATA[
 			select *  from agent_session_message where sessionId=? order by createTime,seqNo asc
@@ -110,6 +292,7 @@
 		]]>
     </property>
 
+    <!--根据会话id和智能体id查询该智能体产生的会话消息列表，按创建时间、消息序号升序排列-->
     <property name="queryListAgentSessionMessages">
         <![CDATA[
 			select *  from agent_session_message where sessionId=? and agentid=? order by createTime,seqNo asc
@@ -119,61 +302,147 @@
 
 
     <!--
-    hitlTaskStatus 0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束
+    人工介入(HitL)任务状态：hitlTaskStatus 0 待处理 1 已处理 2 已拒绝 3 超时忽略 4 已销毁 5 已结束
+    以下以 -yandex_clickhouse 结尾的SQL为对应基础名称（无后缀）SQL的ClickHouse方言适配版本，
+    代码中统一通过基础名称（如 handledHitlCallTask）访问，框架按数据库方言自动匹配对应的SQL。
     -->
     <property name="handledHitlCallTask">
         <![CDATA[
 			update agent_hitl_calltask
-                  set hitlTaskStatus=1,hitlTaskData=?,exception=?,hitlTaskHandleTime=?  where hitlTaskId=?
+                  set hitlTaskStatus=1,hitlTaskData=#[hitlTaskData],exception=#[exception],hitlTaskHandleTime=#[hitlTaskHandleTime]  where hitlTaskId=#[hitlTaskId]
 
 		]]>
     </property>
 
+    <!--
+    handledHitlCallTask 的ClickHouse方言适配SQL，代码中仍通过基础名称 handledHitlCallTask 访问：
+    将人工介入任务置为已处理(hitlTaskStatus=1)，记录处理数据、异常信息及处理时间
+-->
+    <property name="handledHitlCallTask-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+        UPDATE
+            hitlTaskStatus = 1,
+            hitlTaskData = #[hitlTaskData],
+            exception = #[exception],
+            hitlTaskHandleTime = #[hitlTaskHandleTime]
+        WHERE hitlTaskId = #[hitlTaskId]
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--拒绝人工介入任务处理：hitlTaskStatus 置为 2（已拒绝），记录处理数据、异常信息及处理时间-->
     <property name="refusedHitlCallTask">
         <![CDATA[
 			update agent_hitl_calltask
-                  set hitlTaskStatus=2,hitlTaskData=?,exception=?,hitlTaskHandleTime=?  where hitlTaskId=?
+                  set hitlTaskStatus=2,hitlTaskData=#[hitlTaskData],exception=#[exception],hitlTaskHandleTime=#[hitlTaskHandleTime]  where hitlTaskId=#[hitlTaskId]
 
 		]]>
     </property>
 
+    <!--完成人工介入任务：hitlTaskStatus 置为 5（已结束），记录处理结果及完成时间-->
     <property name="completeHitlCallTask">
         <![CDATA[
 			update agent_hitl_calltask
-                  set hitlTaskStatus=5,hitlTaskHandleResult=?,hitlTaskCompleteTime=?  where hitlTaskId=?
+                  set hitlTaskStatus=5,hitlTaskHandleResult=#[hitlTaskHandleResult],hitlTaskCompleteTime=#[hitlTaskCompleteTime]  where hitlTaskId=#[hitlTaskId]
 
 		]]>
     </property>
 
+    <!--人工介入任务超时忽略：hitlTaskStatus 置为 3（超时忽略），记录处理结果及完成时间-->
     <property name="timeoutHitlCallTask">
         <![CDATA[
 			update agent_hitl_calltask
-                  set hitlTaskStatus=3,hitlTaskHandleResult=?,hitlTaskCompleteTime=?  where hitlTaskId=?
+                  set hitlTaskStatus=3,hitlTaskHandleResult=#[hitlTaskHandleResult],hitlTaskCompleteTime=#[hitlTaskCompleteTime]   where hitlTaskId=#[hitlTaskId]
 
 		]]>
     </property>
+     <!--销毁/终止人工介入任务：hitlTaskStatus 置为 4（已销毁），记录处理结果及完成时间-->
      <property name="destroyHitlCallTask">
         <![CDATA[
 			update agent_hitl_calltask
-                  set hitlTaskStatus=4,hitlTaskHandleResult=?,hitlTaskCompleteTime=?  where hitlTaskId=?
+                  set hitlTaskStatus=4,hitlTaskHandleResult=#[hitlTaskHandleResult],hitlTaskCompleteTime=#[hitlTaskCompleteTime]      where hitlTaskId=#[hitlTaskId]
 
 		]]>
     </property>
 
-    <property name="deleteHitlCallTaskBySessionId">
-        <![CDATA[
-			delete from agent_hitl_calltask where sessionId=? 
 
-		]]>
-    </property>
     
+    <!--删除已完成且完成时间早于指定时间(hitlTaskCompleteTime<?)的人工介入任务记录，用于清理历史任务-->
     <property name="deleteCompleteHitlCallTaskSQLWithCompleteTime">
         <![CDATA[
-			delete from agent_hitl_calltask where hitlTaskStatus=5 and hitlTaskCompleteTime<?
+			delete from agent_hitl_calltask where hitlTaskStatus=5 and hitlTaskCompleteTime<#[hitlTaskCompleteTime]
 
 		]]>
     </property>
 
+    <!--refusedHitlCallTask 的ClickHouse方言适配SQL（代码中通过名称 refusedHitlCallTask 访问）：拒绝人工介入任务，hitlTaskStatus 置为 2-->
+    <property name="refusedHitlCallTask-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+        UPDATE
+            hitlTaskStatus = 2,
+            hitlTaskData = #[hitlTaskData],
+            exception = #[exception],
+            hitlTaskHandleTime = #[hitlTaskHandleTime]  
+        WHERE hitlTaskId = #[hitlTaskId]
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--completeHitlCallTask 的ClickHouse方言适配SQL（代码中通过名称 completeHitlCallTask 访问）：完成人工介入任务，hitlTaskStatus 置为 5-->
+    <property name="completeHitlCallTask-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+        UPDATE
+            hitlTaskStatus = 5,
+            hitlTaskHandleResult = #[hitlTaskHandleResult],
+            hitlTaskCompleteTime = #[hitlTaskCompleteTime]
+        WHERE hitlTaskId = #[hitlTaskId]
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--timeoutHitlCallTask 的ClickHouse方言适配SQL（代码中通过名称 timeoutHitlCallTask 访问）：超时忽略人工介入任务，hitlTaskStatus 置为 3-->
+    <property name="timeoutHitlCallTask-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+        UPDATE
+            hitlTaskStatus = 3,
+            hitlTaskHandleResult = #[hitlTaskHandleResult],
+            hitlTaskCompleteTime = #[hitlTaskCompleteTime]
+        WHERE hitlTaskId = #[hitlTaskId]
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--destroyHitlCallTask 的ClickHouse方言适配SQL（代码中通过名称 destroyHitlCallTask 访问）：销毁人工介入任务，hitlTaskStatus 置为 4-->
+    <property name="destroyHitlCallTask-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+        UPDATE
+            hitlTaskStatus = 4,
+            hitlTaskHandleResult = #[hitlTaskHandleResult],
+            hitlTaskCompleteTime = #[hitlTaskCompleteTime]
+        WHERE hitlTaskId = #[hitlTaskId]    
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+
+
+    <!--deleteCompleteHitlCallTaskSQLWithCompleteTime 的ClickHouse方言适配SQL（代码中通过名称 deleteCompleteHitlCallTaskSQLWithCompleteTime 访问）：清理已完成且完成时间较早的历史任务-->
+    <property name="deleteCompleteHitlCallTaskSQLWithCompleteTime-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+        DELETE
+        WHERE hitlTaskStatus = 5
+          AND hitlTaskCompleteTime < #[hitlTaskCompleteTime]    
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--新增人工介入任务记录（HITL人工介入任务的发起），记录 traceId、会话、请求、用户、介入原因等信息-->
     <property name="insertHitlCallTask">
         <![CDATA[
 			insert into agent_hitl_calltask (hitlTaskId,traceId,agentId,agentName,parentAgentId,parentAgentName, 
@@ -186,6 +455,7 @@
     </property>
 
     
+    <!--根据人工介入任务id查询任务记录-->
     <property name="getHitlCallTask">
         <![CDATA[
 			select * from agent_hitl_calltask where hitlTaskId=?

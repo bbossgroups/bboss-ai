@@ -31,6 +31,9 @@ import java.util.List;
  * yinbp @version v1.0
  */
 public interface AgentSessionService {
+	int MUTATIONS_SYNC_MODE_0 = 0;
+	int MUTATIONS_SYNC_MODE_1 = 1;
+	int MUTATIONS_SYNC_MODE_2 = 2	;
 	void setClickhouseCluster(String clickhouseCluster);
 	
 	void setHitlDatasource(String hitlDatasource);
@@ -89,8 +92,17 @@ public interface AgentSessionService {
 	AgentSession getAgentSession(String sessionid) throws AgentSessionException
 
 	;
-
-    /**
+	
+	/**
+	 * 修改会话标题
+	 * @param sessionid
+	 * @param newTitle
+	 * @return
+	 * @throws AgentSessionException
+	 */
+	void updateAgentSessionTitle(String sessionid,String newTitle) throws AgentSessionException;
+	
+	/**
      * 判断会话是否存在
      * @param sessionid
      * @return

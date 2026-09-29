@@ -20,7 +20,6 @@ import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -29,7 +28,8 @@ import java.util.Map;
 public class StoreContext {
     public static final String STORE_TYPE_DB = "db";
     public static final String STORE_TYPE_MEMORY = "memory";
-	private String clickhouseCluster;
+	public static final String DEFAULT_CLICKHOUSE_CLUSTER = "vops_3shards_1replicas";
+	private String clickhouseCluster = DEFAULT_CLICKHOUSE_CLUSTER;
     private AgentSessionStore mainSessionStore;
     private AgentMessageTypeConvertor agentMessageTypeConvertor;
 	
@@ -100,6 +100,9 @@ public class StoreContext {
 	
 	
 	private ModelInfo compactModelInfo;
+	private boolean enableHitl;
+	private String redisDSName;
+	private	 String channel;
     public int getSessionSize() {
         return sessionSize;
     }
@@ -266,4 +269,33 @@ public class StoreContext {
 		this.compactModelInfo = compactModelInfo;
 		return this;
 	}
+	
+	/**
+	 * 设置人工介入redis通道
+	 * @param redisDSName
+	 * @param channel
+	 * @return
+	 */
+	public StoreContext setHitlRedisChannel(String redisDSName, String channel) {
+		this.redisDSName = redisDSName;
+		this.channel = channel;
+		this.enableHitl = true;	
+		return this;
+	}
+	
+	public String getChannel() {
+		return channel;
+	}
+	public String getRedisDSName() {
+		return redisDSName;
+	}
+	
+	public StoreContext setEnableHitl(boolean enableHitl) {
+		this.enableHitl = enableHitl;
+		return this;
+	}
+	
+	public boolean isEnableHitl() {
+		return enableHitl;
+	}	
 }

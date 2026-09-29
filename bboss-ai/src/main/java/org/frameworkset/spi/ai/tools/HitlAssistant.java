@@ -25,6 +25,9 @@ import java.util.Map;
  * @Date 2026/8/5
  */
 public interface HitlAssistant<T> {
+	String HITL_TASK_TYPE_KEY = "hitlTaskType";
+	
+	String HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK = "tool_call_permission_ask";
 	/**
 	 * 人工干预时，智能体通过方法getHumanAssistantDatas给前端提供辅助干预帮助信息
 	 * @param toolCallContext

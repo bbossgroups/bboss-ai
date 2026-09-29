@@ -26,9 +26,7 @@ public interface HitlTaskToolInf<T extends HitlTaskToolInf> {
 	 String TIMEOUT_ACTION_CONTINUE = "continue";
 	 String TIMEOUT_ACTION_REJECTED = "rejected";
 	 
-	 String HITL_TASK_TYPE_KEY = "hitlTaskType";
-	
-	String HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK = "tool_call_permission_ask";
+
 	
 	String getTimeoutAction() ;
 	long getHitlTaskTimeout();

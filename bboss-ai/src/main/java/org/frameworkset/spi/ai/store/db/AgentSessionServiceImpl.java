@@ -22,16 +22,12 @@ import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.ListInfo;
 import org.frameworkset.spi.ai.hitl.HitlCallTask;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
-import org.frameworkset.spi.ai.store.AgentSession;
-import org.frameworkset.spi.ai.store.AgentSessionException;
-import org.frameworkset.spi.ai.store.AgentSessionService;
-import org.frameworkset.spi.ai.store.SessionMessage;
+import org.frameworkset.spi.ai.store.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * <p>Title: AgentSessionServiceImpl</p> <p>Description: 会话管理业务处理类 </p>
@@ -44,7 +40,8 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	 * 人工介入任务数据库表数据源
 	 */
 	private String hitlDatasource  ;	
-	private String clickhouseCluster ;
+	private String clickhouseCluster = StoreContext.DEFAULT_CLICKHOUSE_CLUSTER ;
+	private int mutationsSync = AgentSessionService.MUTATIONS_SYNC_MODE_0;
     private static Logger log = LoggerFactory
             .getLogger(AgentSessionServiceImpl.class);
 
@@ -118,7 +115,24 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 			if(throwable != null){
 				_throwable = throwable.getMessage();
 			}
-			executor.updateWithDBName(hitlDatasource, "handledHitlCallTask", _hitlTaskData,_throwable,new Date(),hitlTaskId);
+			/**
+			 * ALTER TABLE agent_hitl_calltask_local on cluster vops_3shards_1replicas
+			 *         UPDATE
+			 *             hitlTaskStatus = 1,
+			 *             hitlTaskData = ?,
+			 *             exception = ?,
+			 *             hitlTaskHandleTime = ?
+			 *         WHERE hitlTaskId = ?
+			 *         SETTINGS mutations_sync = 0
+			 */
+			Map params = new HashMap();
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+			params.put("hitlTaskData", _hitlTaskData);
+			params.put("exception", _throwable);
+			params.put("hitlTaskHandleTime", new Date()	);
+			params.put("hitlTaskId", hitlTaskId	);
+			executor.updateBean(hitlDatasource, "handledHitlCallTask", params);
 		} catch (SQLException e) {
 			throw new AgentSessionException("handledHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",hitlTaskData=" + _hitlTaskData, e);
 		}
@@ -147,7 +161,14 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 			if(throwable != null){
 				_throwable = throwable.getMessage();
 			}
-			executor.updateWithDBName(hitlDatasource, "refusedHitlCallTask", _hitlTaskContent,_throwable,new Date(),hitlTaskId);
+			Map params = new HashMap();
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+			params.put("hitlTaskData", _hitlTaskContent);
+			params.put("exception", _throwable);
+			params.put("hitlTaskHandleTime", new Date()	);
+			params.put("hitlTaskId", hitlTaskId	);	
+			executor.updateBean(hitlDatasource, "refusedHitlCallTask", params);
 		} catch (SQLException e) {
 			throw new AgentSessionException("refusedHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",hitlTaskContent=" + _hitlTaskContent, e);
 		}
@@ -156,6 +177,13 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	}
 	
 	/**
+	 *  ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+	 *         UPDATE
+	 *             hitlTaskStatus = 5,
+	 *             hitlTaskHandleResult = #[hitlTaskHandleResult],
+	 *             hitlTaskCompleteTime = #[hitlTaskCompleteTime]
+	 *         WHERE hitlTaskId = #[hitlTaskId]
+	 *         SETTINGS mutations_sync = $mutationsSync
 	 * 完成人工任务
 	 * @param hitlTaskHandleResult
 	 * @param hitlTaskId
@@ -163,7 +191,13 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	public void completeHitlCallTask(String  hitlTaskHandleResult,String hitlTaskId){
 		init();
 		try {
-			executor.updateWithDBName(hitlDatasource, "completeHitlCallTask", hitlTaskHandleResult,new Date(),hitlTaskId);
+			Map params = new HashMap();
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+			params.put("hitlTaskHandleResult", hitlTaskHandleResult);
+			params.put("hitlTaskId", hitlTaskId);
+			params.put("hitlTaskCompleteTime", new Date());	
+			executor.updateBean(hitlDatasource, "completeHitlCallTask", params);
 		} catch (SQLException e) {
 			throw new AgentSessionException("completeHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",hitlTaskContent=" + hitlTaskHandleResult, e);
 		}
@@ -173,6 +207,13 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	
 	
 	/**
+	 *  ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+	 *         UPDATE
+	 *             hitlTaskStatus = 3,
+	 *             hitlTaskHandleResult = #[hitlTaskHandleResult],
+	 *             hitlTaskCompleteTime = #[hitlTaskCompleteTime]
+	 *         WHERE hitlTaskId = #[hitlTaskId]
+	 *         SETTINGS mutations_sync = $mutationsSync
 	 * 完成人工任务
 	 * @param hitlTaskHandleResult
 	 * @param hitlTaskId
@@ -180,7 +221,13 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	public void timeoutHitlCallTask(String  hitlTaskHandleResult,String hitlTaskId){
 		init();
 		try {
-			executor.updateWithDBName(hitlDatasource, "timeoutHitlCallTask", hitlTaskHandleResult,new Date(),hitlTaskId);
+			Map params = new HashMap();
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+			params.put("hitlTaskHandleResult", hitlTaskHandleResult);
+			params.put("hitlTaskId", hitlTaskId);
+			params.put("hitlTaskCompleteTime", new Date());
+			executor.updateBean(hitlDatasource, "timeoutHitlCallTask",params);
 		} catch (SQLException e) {
 			throw new AgentSessionException("timeoutHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",hitlTaskContent=" + hitlTaskHandleResult, e);
 		}
@@ -188,6 +235,13 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	}
 	
 	/**
+	 *  ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+	 *         UPDATE
+	 *             hitlTaskStatus = 4,
+	 *             hitlTaskHandleResult = #[hitlTaskHandleResult],
+	 *             hitlTaskCompleteTime = #[hitlTaskCompleteTime]
+	 *         WHERE hitlTaskId = #[hitlTaskId]    
+	 *         SETTINGS mutations_sync = $mutationsSync
 	 * 销毁人工任务
 	 * @param reason
 	 * @param hitlTaskId
@@ -195,7 +249,13 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	public void destroyHitlCallTask(String reason, String hitlTaskId){
 		init();
 		try {
-			executor.updateWithDBName(hitlDatasource, "destroyHitlCallTask", reason,new Date(),hitlTaskId);
+			Map params = new HashMap();
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+			params.put("hitlTaskHandleResult", reason);
+			params.put("hitlTaskId", hitlTaskId);
+			params.put("hitlTaskCompleteTime", new Date());		
+			executor.updateBean(hitlDatasource, "destroyHitlCallTask", params);
 		} catch (SQLException e) {
 			throw new AgentSessionException("destroyHitlCallTask failed::hitlTaskId=" + hitlTaskId + ",reason=" + reason, e);
 		}
@@ -203,20 +263,48 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	}
 	
 	/**
+	 *  ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
+	 *         DELETE
+	 *         WHERE hitlTaskStatus = 5
+	 *           AND hitlTaskCompleteTime < #[hitlTaskCompleteTime]    
+	 *         SETTINGS mutations_sync = $mutationsSync
 	 * 归档人工任务
 	 * @param archiveTime
 	 */
 	public void deleteCompleteHitlCallTaskSQLWithCompleteTime(Date archiveTime){
 		init();
 		try {
-			executor.deleteWithDBName(hitlDatasource, "deleteCompleteHitlCallTaskSQLWithCompleteTime", archiveTime);
+			Map params = new HashMap();
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+			params.put("hitlTaskCompleteTime", archiveTime);
+			executor.deleteBean(hitlDatasource, "deleteCompleteHitlCallTaskSQLWithCompleteTime", params);
 		} catch (SQLException e) {
 			throw new AgentSessionException("deleteCompleteHitlCallTaskSQLWithCompleteTime failed::archiveTime=" + archiveTime, e);
 		}
 		
 	}
 	
-	
+	/**
+	 * 修改会话标题
+	 * @param sessionId
+	 * @param newTitle
+	 * @return
+	 * @throws AgentSessionException
+	 */
+	public void updateAgentSessionTitle(String sessionId,String newTitle) throws AgentSessionException{
+		init();
+		try {
+			Map params = new HashMap();
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+			params.put("sessionId", sessionId);
+			params.put("newTitle", newTitle);
+			executor.updateBean(datasource, "updateAgentSessionTitle", params);
+		} catch (SQLException e) {
+			throw new AgentSessionException("updateAgentSessionTitle failed::sessionid=" + sessionId + ",newTitle=" + newTitle, e);
+		}
+	}
 	/**
 	 * 重置会话，只保留session记录，message记录全部清除掉
 	 * @param sessionid
@@ -263,15 +351,21 @@ public class AgentSessionServiceImpl implements AgentSessionService {
             if (log.isInfoEnabled()) {
                 log.info("delete AgentSession start::sessionid={}", sessionid);
             }
-            executor.deleteWithDBName(datasource, "deleteByKey", sessionid);
-            executor.deleteWithDBName(datasource, "deleteAgentSessionMessageByKey", sessionid);
-            executor.deleteWithDBName(datasource, "deleteAgentSessionMessageRefByKey", sessionid);
-			if(hitlDatasource != null) {
-				executor.deleteWithDBName(this.hitlDatasource, "deleteHitlCallTaskBySessionId", sessionid);
-			}
-			else{
-				executor.deleteWithDBName(this.datasource, "deleteHitlCallTaskBySessionId", sessionid);
-			}
+			Map params = new HashMap();
+			params.put("sessionIds", Arrays.asList(sessionid))	;
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+            executor.deleteBean(datasource, "deleteByKey", params);
+            executor.deleteBean(datasource, "deleteAgentSessionMessageByKey", params);
+            executor.deleteBean(datasource, "deleteAgentSessionMessageRefByKey", params);
+////			if(hitlDatasource != null) {
+//				executor.deleteWithDBName(this.hitlDatasource, "deleteHitlCallTaskBySessionId", sessionid);
+//			}
+//			else{
+				executor.deleteBean(this.datasource, "deleteHitlCallTaskBySessionId", params);
+				executor.deleteBean(this.datasource, "deleteAgentToolCallRulesBySessionId", params);
+			
+//			}
             tm.commit();
             
             
@@ -296,19 +390,23 @@ public class AgentSessionServiceImpl implements AgentSessionService {
         if (log.isInfoEnabled()) {
             log.info("deleteBatchAgentSession start::sessionids count={}", sessionids != null ? sessionids.length : 0);
         }
-        TransactionManager tm = new TransactionManager();
+//        TransactionManager tm = new TransactionManager();
         try {
-            tm.begin();
-            executor.deleteByKeysWithDBName(datasource, "deleteByKey", sessionids);
-            executor.deleteByKeysWithDBName(datasource, "deleteAgentSessionMessageByKey", sessionids);
-            executor.deleteByKeysWithDBName(datasource, "deleteAgentSessionMessageRefByKey", sessionids);
-			if(hitlDatasource != null) {
-				executor.deleteByKeysWithDBName(this.hitlDatasource, "deleteHitlCallTaskBySessionId", sessionids);
-			}
-			else{
-				executor.deleteByKeysWithDBName(this.datasource, "deleteHitlCallTaskBySessionId", sessionids);
-			}
-            tm.commit();
+//            tm.begin();
+			Map params = new HashMap();
+			params.put("sessionIds", Arrays.asList(sessionids));
+			params.put("clusterName", clickhouseCluster	);
+			params.put("mutationsSync", mutationsSync		);
+            executor.deleteBean(datasource, "deleteByKey", params);
+            executor.deleteBean(datasource, "deleteAgentSessionMessageByKey", params);
+            executor.deleteBean(datasource, "deleteAgentSessionMessageRefByKey", params	);
+//			if(hitlDatasource != null) {
+//				executor.deleteBean(this.hitlDatasource, "deleteHitlCallTaskBySessionId", params);
+//			}
+//			else{
+				executor.deleteBean(this.datasource, "deleteHitlCallTaskBySessionId", params);
+//			}
+//            tm.commit();
             if (log.isInfoEnabled()) {
                 log.info("deleteBatchAgentSession success::sessionids count={}", sessionids != null ? sessionids.length : 0);
             }
@@ -316,7 +414,7 @@ public class AgentSessionServiceImpl implements AgentSessionService {
             log.error("batch delete AgentSession failed::sessionids count={}", sessionids != null ? sessionids.length : 0, e);
             throw new AgentSessionException("batch delete AgentSession failed::sessionids=" + JsonUtil.object2json(sessionids), e);
         } finally {
-            tm.release();
+//            tm.release();
         }
 
     }
@@ -457,5 +555,14 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	
 	public void setHitlDatasource(String hitlDatasource) {
 		this.hitlDatasource = hitlDatasource;
+	}
+	
+	
+	public int getMutationsSync() {
+		return mutationsSync;
+	}
+	
+	public void setMutationsSync(int mutationsSync) {
+		this.mutationsSync = mutationsSync;
 	}
 }

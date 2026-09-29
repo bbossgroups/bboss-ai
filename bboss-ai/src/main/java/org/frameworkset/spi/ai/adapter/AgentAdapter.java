@@ -582,7 +582,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 						Map<String, Object> humanAssistantDatas = new HashMap<>();
 						
 						humanAssistantDatas.put("pendingAsk", askTools);
-						humanAssistantDatas.put(HitlTaskToolInf.HITL_TASK_TYPE_KEY, HitlTaskToolInf.HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK);
+						humanAssistantDatas.put(HitlAssistant.HITL_TASK_TYPE_KEY, HitlAssistant.HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK);
 						return humanAssistantDatas;
 					}
 					

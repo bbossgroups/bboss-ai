@@ -902,6 +902,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	
     private String	 insertAgentToolCallRulesSQL ;
 	private String	 updateAgentToolCallRulesSQL ;
+	private String	 updateClickhouseAgentToolCallRulesSQL ;	
 	
 
 	
@@ -1175,7 +1176,13 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			
 			updateAgentToolCallRulesSQL = new StringBuilder().append("update ").append(agentToolCallRulesTableName)
 					.append(" set permissionRules=?,updateTime=?")
-					.append(" where sessionId=? and agentId = ?").toString();	
+					.append(" where sessionId=? and agentId = ?").toString();
+			updateClickhouseAgentToolCallRulesSQL = new StringBuilder()
+					.append("ALTER TABLE ").append(agentToolCallRulesTableName).append("_local on cluster ").append(clickhouseCluster)
+					.append(" UPDATE permissionRules = ?, updateTime = ?")
+					.append(" WHERE sessionId = ? AND agentId = ?")
+					.append(" SETTINGS mutations_sync = 0")
+					.toString();
 			
 			selectAgentToolCallRulesSQL = new StringBuilder().append("select * from ").append(agentToolCallRulesTableName)
 					.append(" where sessionId=? and agentId = ?").toString();
@@ -1185,7 +1192,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			updateSessionLastAccessTimeSQL = "UPDATE " + sessionTableName + " SET lastAccessTime = ? WHERE sessionId = ?";
 			
 			updateClickhouseSessionLastAccessTimeSQL =  "ALTER TABLE " + sessionTableName + 
-					" UPDATE lastAccessTime = ? WHERE sessionId = ? SETTINGS mutations_sync = 1";
+					"_local on cluster " + clickhouseCluster + " UPDATE lastAccessTime = ? WHERE sessionId = ? SETTINGS mutations_sync = 0";
 			
 			deleteSessionByUserIdSQL = new StringBuilder().append("delete from ")
 					.append(sessionTableName).append(" where  userId=?").toString();
@@ -1621,5 +1628,9 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	
 	public String getUpdateAgentToolCallRulesSQL() {
 		return updateAgentToolCallRulesSQL;
+	}
+	
+	public String getUpdateClickhouseAgentToolCallRulesSQL() {
+		return updateClickhouseAgentToolCallRulesSQL;
 	}
 }

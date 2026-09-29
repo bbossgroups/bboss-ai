@@ -51,14 +51,19 @@ public class HitlTaskHelper {
 	private HitlTaskCallListener hitlTaskCallListener;
 	
 	
-	
 	private HitlTaskCallNotifier hitlTaskCallNotifier;
 	
 	private static Object lock = new Object();
 	private AgentSessionService agentSessionService;
 	
+	public static void setHitlTaskHelper(HitlTaskHelper hitlTaskHelper) {
+		HitlTaskHelper.hitlTaskHelper = hitlTaskHelper;	
+	}
+	
 	public HitlTaskHelper setAgentSessionService(AgentSessionService agentSessionService) {
-		this.agentSessionService = agentSessionService;
+		if (this.agentSessionService == null) {
+			this.agentSessionService = agentSessionService;
+		}
 		return this;
 	}
 	private   HitlCallObject _getHitlCallObject(String hitlTaskId) {
@@ -106,6 +111,11 @@ public class HitlTaskHelper {
 			this.hitlTaskCallListener.destroy();
 		}
 	}
+	/**
+	 * 获取HitlTaskHelper实例
+	 * 需要全局初始化Hitl
+	 * @return
+	 */
 	public static HitlTaskHelper getHitlTaskHelper() {
 		if(hitlTaskHelper != null){
 			return hitlTaskHelper;
@@ -115,8 +125,28 @@ public class HitlTaskHelper {
 				hitlTaskHelper = new HitlTaskHelper();
 			}
 		}
+		 
 		return hitlTaskHelper;
 	}
+	
+	public static HitlTaskHelper getHitlTaskHelperOnly() {
+//		if(hitlTaskHelper != null){
+//			return hitlTaskHelper;
+//		}
+//		synchronized (lock) {
+//			if (hitlTaskHelper == null) {
+//				hitlTaskHelper = new HitlTaskHelper();
+//			}
+//		}
+ 
+		return hitlTaskHelper;
+	}
+	
+	public static Object getLock() {
+		return lock;
+	}	
+	
+ 
 	/**
 	 * 获取人工任务
 	 * @param hitlTaskId
@@ -457,12 +487,27 @@ public class HitlTaskHelper {
 	}
 	
 	public HitlTaskHelper setRedisChannel(String redis,String channel) {
-		this.hitlTaskCallListener = new RedisHitlTaskCallListener(redis,channel);
-		this.hitlTaskCallNotifier = new RedisHitlTaskCallNotifier(redis,channel);
+		if(initialized){
+			return this;
+		}
+		synchronized (lock) {
+			if(!initialized) {
+				this.hitlTaskCallListener = new RedisHitlTaskCallListener(redis, channel);
+				this.hitlTaskCallNotifier = new RedisHitlTaskCallNotifier(redis, channel);
+			}
+		}
 		return this;
 	}
 	public HitlTaskHelper setHitlTaskCallNotifier(HitlTaskCallNotifier hitlTaskCallNotifier) {
-		this.hitlTaskCallNotifier = hitlTaskCallNotifier;
+		if(initialized){
+			return this;
+		}
+		synchronized (lock) {
+			if(!initialized) {
+				this.hitlTaskCallNotifier = hitlTaskCallNotifier;
+			}
+		}
+		
 		return this;
 	}
 	
@@ -471,7 +516,14 @@ public class HitlTaskHelper {
 	}
 	
 	public HitlTaskHelper setHitlTaskCallListener(HitlTaskCallListener hitlTaskCallListener) {
-		this.hitlTaskCallListener = hitlTaskCallListener;
+		if(initialized){
+			return this;
+		}
+		synchronized (lock) {
+			if(!initialized) {
+				this.hitlTaskCallListener = hitlTaskCallListener;
+			}
+		}	
 		return this;
 	}
 	

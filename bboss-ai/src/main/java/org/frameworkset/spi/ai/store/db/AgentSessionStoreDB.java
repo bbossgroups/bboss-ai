@@ -251,7 +251,9 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	public void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules){
 		agentToolCallRules.setUpdateTime(LocalDateTime.now());
 		try{
-			SQLExecutor.updateWithDBName(dataSource, agentSessionStoreDBConfig.getUpdateAgentToolCallRulesSQL(),
+			String updateAgentToolCallRulesSQL = !agentSessionStoreDBConfig.isClickhouse(this.dataSource) ?
+					agentSessionStoreDBConfig.getUpdateAgentToolCallRulesSQL():agentSessionStoreDBConfig.getUpdateClickhouseAgentToolCallRulesSQL	();
+			SQLExecutor.updateWithDBName(dataSource, updateAgentToolCallRulesSQL,
 					JsonUtil.object2json(agentToolCallRules.getPermissionRules()),
 					agentToolCallRules.getUpdateTime(),
 					agentToolCallRules.getSessionId(),
