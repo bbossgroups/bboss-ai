@@ -34,10 +34,10 @@
                 sessionId String  COMMENT '会话id',  
                  createTime DateTime COMMENT '创建时间',
                  lastAccessTime DateTime COMMENT '最后访问时间',
-                 userId String COMMENT '用户id',
-                 agentId String COMMENT '代理id',
-                 title String COMMENT '会话标题',   
-                 domain String COMMENT '会话所属领域'         
+                 userId Nullable(String) COMMENT '用户id',
+                 agentId Nullable(String) COMMENT '代理id',
+                 title Nullable(String) COMMENT '会话标题',   
+                 domain Nullable(String) COMMENT '会话所属领域'         
 			)
 			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
 			ORDER BY (sessionId)
@@ -72,22 +72,27 @@
 			CREATE TABLE agent_session_message_local  ON CLUSTER vops_3shards_1replicas
 			(
                 msgId String  COMMENT '消息id',  
+                 parentMsgId Nullable(String) COMMENT '父消息id',
+                 nextMsgId Nullable(String) COMMENT '后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）',
                  createTime DateTime COMMENT '创建时间',
                  sessionId String COMMENT '会话id',
-                 requestId String COMMENT '请求id',
-                 traceId String COMMENT 'trace id',
-                 parentAgentId String COMMENT '父智能体id',
-                 agentId String COMMENT '创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值',
-                 agentNodeType String COMMENT '智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）',
-                 subAgentIdBy String COMMENT '创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值',
-                 messageType String COMMENT '0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中',
+                 requestId Nullable(String) COMMENT '请求id',
+                 traceId Nullable(String) COMMENT 'trace id',
+                 parentAgentId Nullable(String) COMMENT '父智能体id',
+                 agentId Nullable(String) COMMENT '创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值',
+                 agentNodeType Nullable(String) COMMENT '智能体节点类型：标准化智能体节点（standard）、串行容器智能体节点（sequence）、并行容器智能体节点（parallel）',
+                 subAgentIdBy Nullable(String) COMMENT '创建消息的子agentid，节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel）有值',
+                 messageType Nullable(String) COMMENT '0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中',
                  seqNo Int32 COMMENT '消息序号',
-                 message String COMMENT '消息正文',
-                 tokenMetrics String COMMENT 'token消耗统计',
+                 message Nullable(String) COMMENT '消息正文',
+                 groupId Nullable(String) COMMENT '消息分组id，隶属于并行分支中时，该字段有值',
+                 parentGroupId Nullable(String) COMMENT '消息父分组id，分组所在的并行分支隶属于父并行分支中时，该字段有值，为父并行节点的分组id',
+                 tokenMetrics Nullable(String) COMMENT 'token消耗统计',
                  elapsed Int32 COMMENT '耗时',
-                 role String COMMENT '角色',
-                 marks String COMMENT '消息标记',
-                 metadata String COMMENT '消息元数据'
+                 role Nullable(String) COMMENT '角色',
+                 marks Nullable(String) COMMENT '消息标记',
+                 metadata Nullable(String) COMMENT '消息元数据',
+                 name Nullable(String) COMMENT '消息名称'
 			)
 			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
 			ORDER BY (sessionId, createTime,seqNo)
@@ -122,7 +127,7 @@
                  msgAgentId String COMMENT '消息所属智能体agentId', 
                  refAgentId String COMMENT '引用消息智能体agentId',
                  sessionId String COMMENT '会话id',
-                 requestId String COMMENT '请求id'
+                 requestId Nullable(String) COMMENT '请求id'
             )
 			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
 			ORDER BY (sessionId)
@@ -149,6 +154,88 @@
     <property name="dropClusterSessionMessageReferenceTableNamee">
         <![CDATA[
 			drop TABLE agent_session_message_ref  ON CLUSTER vops_3shards_1replicas SYNC
+		]]>
+    </property>
+
+    <!--智能体记忆表：记录智能体流水账和记忆摘要-->
+    <property name="createLocalMemoryTableName">
+        <![CDATA[
+			CREATE TABLE agent_memory_local  ON CLUSTER vops_3shards_1replicas
+			(
+                memoryId String COMMENT '记录id，主键',
+                 agentId String COMMENT '智能体id',
+                 parentAgentId Nullable(String) COMMENT '父智能体id',
+                 userId String COMMENT '用户id',
+                 sessionId String COMMENT '会话id',
+                 content Nullable(String) COMMENT '记忆内容',
+                 memoryDay Nullable(String) COMMENT '记忆时间 yyyy-MM-dd',
+                 memoryType Nullable(String) DEFAULT 'day' COMMENT '记忆类型 day/longterm'
+			)
+			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
+			ORDER BY (memoryId)
+		]]>
+    </property>
+
+    <!--删除clickhouse本地表-->
+    <property name="dropLocalMemoryTableName">
+        <![CDATA[
+			drop TABLE agent_memory_local  ON CLUSTER vops_3shards_1replicas SYNC
+		]]>
+    </property>
+
+    <!--基于clickhouse本地表创建clickhouse分布式表-->
+    <property name="createClusterMemoryTableName">
+        <![CDATA[
+			CREATE TABLE agent_memory ON CLUSTER vops_3shards_1replicas AS agent_memory_local
+                ENGINE = Distributed(vops_3shards_1replicas, currentDatabase(), agent_memory_local, sipHash64(sessionId))
+		]]>
+    </property>
+
+    <!--删除clickhouse分布式表-->
+    <property name="dropClusterMemoryTableName">
+        <![CDATA[
+			drop TABLE agent_memory  ON CLUSTER vops_3shards_1replicas SYNC
+		]]>
+    </property>
+
+    <!--智能体工具调用权限规则表-->
+    <property name="createLocalAgentToolCallRulesTableName">
+        <![CDATA[
+			CREATE TABLE agent_tool_call_rules_local  ON CLUSTER vops_3shards_1replicas
+			(
+                agentToolCallRulesId String COMMENT '存储用户调用工具的权限规则id',
+                 createTime DateTime COMMENT '创建时间',
+                 updateTime DateTime COMMENT '更新时间',
+                 userId Nullable(String) COMMENT '用户id',
+                 sessionId String COMMENT '调用工具的会话id',
+                 toolName String COMMENT '工具名称',
+                 agentId String COMMENT '调用工具的智能体id',
+                 permissionRules String COMMENT '工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则'
+			)
+			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
+			ORDER BY (agentToolCallRulesId)
+		]]>
+    </property>
+
+    <!--删除clickhouse本地表-->
+    <property name="dropLocalAgentToolCallRulesTableName">
+        <![CDATA[
+			drop TABLE agent_tool_call_rules_local  ON CLUSTER vops_3shards_1replicas SYNC
+		]]>
+    </property>
+
+    <!--基于clickhouse本地表创建clickhouse分布式表-->
+    <property name="createClusterAgentToolCallRulesTableName">
+        <![CDATA[
+			CREATE TABLE agent_tool_call_rules ON CLUSTER vops_3shards_1replicas AS agent_tool_call_rules_local
+                ENGINE = Distributed(vops_3shards_1replicas, currentDatabase(), agent_tool_call_rules_local, sipHash64(sessionId))
+		]]>
+    </property>
+
+    <!--删除clickhouse分布式表-->
+    <property name="dropClusterAgentToolCallRulesTableName">
+        <![CDATA[
+			drop TABLE agent_tool_call_rules  ON CLUSTER vops_3shards_1replicas SYNC
 		]]>
     </property>
 
