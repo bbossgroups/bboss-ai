@@ -27,7 +27,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/9/30
  */
-public interface PermissionManager {
+public interface ToolCallPermissionManager {
 	default PermissionDecision checkPermissions(FunctionTool functionTool, Map<String, Object> toolInput, ChatContext chatContext){
 		return PermissionDecision.passthrough(functionTool.getFunctionName());
 	}

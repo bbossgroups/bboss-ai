@@ -21,7 +21,6 @@ import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.tool.ToolBase;
-import reactor.core.publisher.Mono;
 
 import java.util.*;
 
@@ -214,7 +213,7 @@ public final class PermissionEngine {
         }
 
         // 5. BYPASS fallback
-        if (context.getMode() == PermissionMode.BYPASS) {
+        if (context.getMode() == null || context.getMode() == PermissionMode.BYPASS) {
 			PermissionDecision permissionDecision = new PermissionDecision();
 			permissionDecision.setBehavior(PermissionBehavior.ALLOW);
 			permissionDecision.setMessage("Permission granted for " + tool.getFunctionName() + " (bypass mode)");
@@ -242,8 +241,20 @@ public final class PermissionEngine {
                 return modeDecision;
             }
         }
-		PermissionDecision modeDecision = tool.checkPermissions(input, chatContext);
-		if(modeDecision.getBehavior() == PermissionBehavior.PASSTHROUGH)
+		PermissionDecision modeDecision = null;
+		if(tool.getToolBase() != null) {
+			modeDecision = tool.checkPermissions(input, chatContext);
+		}
+		else{
+			AgentRuntimeContext agentRuntimeContext = this.chatContext.getAgentRuntimeContext();	
+			if(agentRuntimeContext != null){
+				ToolCallPermissionManager toolCallPermissionManager = agentRuntimeContext.getToolCallPermissionManager();
+				if(toolCallPermissionManager != null){
+					modeDecision = toolCallPermissionManager.checkPermissions(tool, input, chatContext);	
+				}
+			}
+		}
+		if(modeDecision == null || modeDecision.getBehavior() == PermissionBehavior.PASSTHROUGH)
 			return null;
 		else 
 			return modeDecision;

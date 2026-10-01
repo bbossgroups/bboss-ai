@@ -15,7 +15,10 @@ package org.frameworkset.spi.ai.context;
  * limitations under the License.
  */
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
+import org.frameworkset.spi.ai.permission.ToolCallPermissionManager;
 import org.frameworkset.spi.ai.permission.PermissionMode;
 import org.frameworkset.spi.ai.permission.PermissionRule;
 import org.frameworkset.spi.ai.state.PlanModeContextState;
@@ -24,6 +27,7 @@ import org.frameworkset.spi.ai.state.TaskContextState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -36,9 +40,13 @@ public class AgentRuntimeContext {
 	 */
 	private boolean debugSSEData;
 	
+
+	
+	private ToolCallPermissionManager toolCallPermissionManager;
+	
 	private PlanModeContextState planModeContextState;
 	private TaskContextState taskContextState;
-	private PermissionMode mode;
+	private PermissionMode mode = PermissionMode.BYPASS;
 	private  Map<String, List<PermissionRule>> allowRules;
 	private  Map<String, List<PermissionRule>> denyRules;
 	private  Map<String, List<PermissionRule>> askRules;
@@ -154,9 +162,9 @@ public class AgentRuntimeContext {
 	public boolean isTrivial() {
 		return mode == PermissionMode.DEFAULT
 //				&& workingDirectories.isEmpty()
-				&& allowRules.isEmpty()
-				&& denyRules.isEmpty()
-				&& askRules.isEmpty();
+				&& MapUtils.isEmpty(allowRules)
+				&& MapUtils.isEmpty(denyRules)
+				&& MapUtils.isEmpty(askRules);
 	}
 	public long getPermissionHitlTaskTimeout() {
 		return permissionHitlTaskTimeout;
@@ -168,18 +176,48 @@ public class AgentRuntimeContext {
 	}
 	
 	
-	public void addAllowRule(String toolName, PermissionRule permissionRule) {
+	public AgentRuntimeContext addAllowRule(String toolName, PermissionRule permissionRule) {
+		if(permissionRule.getToolName() == null){
+			permissionRule.setToolName(toolName);
+		}
+		if(allowRules == null){
+			allowRules = new ConcurrentHashMap<>();	
+		}
 		allowRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
+		return this;
 	}
 	
-	public void addDenyRule(String toolName, PermissionRule permissionRule) {
+	public AgentRuntimeContext addDenyRule(String toolName, PermissionRule permissionRule) {
+		if(permissionRule.getToolName() == null){
+			permissionRule.setToolName(toolName);
+		}
+		if(denyRules == null){
+			denyRules = new ConcurrentHashMap<>();
+		}
 		denyRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
+		return this;
 	}
-	public void addAskRule(String toolName, PermissionRule permissionRule) {
+	public AgentRuntimeContext addAskRule(String toolName, PermissionRule permissionRule) {
+		if(permissionRule.getToolName() == null){
+			permissionRule.setToolName(toolName);
+		}
+		if(askRules == null){
+			askRules = new ConcurrentHashMap<>();
+		}
 		askRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
+		return this;
 	}
 	
 	public PermissionMode getMode() {
 		return mode;
+	}
+	
+	public ToolCallPermissionManager getToolCallPermissionManager() {
+		return toolCallPermissionManager;
+	}
+	
+	public AgentRuntimeContext setToolCallPermissionManager(ToolCallPermissionManager toolCallPermissionManager) {
+		this.toolCallPermissionManager = toolCallPermissionManager;
+		return this;
 	}
 }

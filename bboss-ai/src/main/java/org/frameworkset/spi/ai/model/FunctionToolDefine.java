@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.frameworkset.spi.ai.model.tool.Parameters;
 import org.frameworkset.spi.ai.model.tool.Property;
+import org.frameworkset.spi.ai.tool.ToolBase;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 
 /**
@@ -52,6 +53,10 @@ public class FunctionToolDefine {
     @JsonIgnore
     private FunctionCall functionCall;
 	
+
+	
+	@JsonIgnore
+	private ToolBase toolBase;
 
 	
 	@JsonIgnore
@@ -205,5 +210,13 @@ public class FunctionToolDefine {
 	
 	public void setReadOnly(boolean readOnly) {
 		this.readOnly = readOnly;
+	}
+	
+	public ToolBase getToolBase() {
+		return toolBase;
+	}
+	
+	public void setToolBase(ToolBase toolBase) {
+		this.toolBase = toolBase;
 	}
 }

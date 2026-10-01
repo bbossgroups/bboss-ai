@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.permission.PermissionDecision;
 import org.frameworkset.spi.ai.permission.PermissionRule;
 import org.frameworkset.spi.ai.tool.ToolBase;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -135,8 +136,11 @@ public class FunctionTool {
 		this.toolBase = toolBase;
 	}
 	
-	public boolean matchRule(String content, Map<String, Object> input) {
-		return toolBase.matchRule(content, input);
+	public boolean matchRule(String ruleContent, Map<String, Object> input) {
+		if(toolBase != null) {
+			return toolBase.matchRule(ruleContent, input);
+		}
+		return ruleContent == null;
 	}
 	
 	/**
@@ -145,7 +149,14 @@ public class FunctionTool {
 	 * prefixes) override this to produce more specific patterns.
 	 */
 	public List<PermissionRule> generateSuggestions(Map<String, Object> toolInput) {
-		return toolBase.generateSuggestions(this,toolInput);
+		if(toolBase != null) {
+			return toolBase.generateSuggestions(this, toolInput);
+		}
+		else{
+			List<PermissionRule> suggestions = new ArrayList<>();
+			suggestions.add(new PermissionRule(getFunctionName(), null, PermissionBehavior.ALLOW, "suggested"));
+			return suggestions;
+		}
 	}
 	
 	public boolean isReadOnly() {
@@ -163,6 +174,9 @@ public class FunctionTool {
 	}
 	
 	public PermissionDecision checkPermissions( Map<String, Object> toolInput, ChatContext chatContext) {
-		return toolBase.checkPermissions(this,   toolInput, chatContext);	
+		if(toolBase != null) {
+			return toolBase.checkPermissions(this, toolInput, chatContext);
+		}
+		return PermissionDecision.passthrough(getFunctionName());
 	}
 }

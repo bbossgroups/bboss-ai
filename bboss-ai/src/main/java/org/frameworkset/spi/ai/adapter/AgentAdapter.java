@@ -455,20 +455,28 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null,null);
 		}
 		ToolBase toolBase = use.getToolBase();
-		if(toolBase == null){
+		ToolCallPermissionManager toolCallPermissionManager = null;
+		AgentRuntimeContext context = chatContext.getAgentRuntimeContext();
+		if(context != null ){
+			toolCallPermissionManager = context.getToolCallPermissionManager();
+		}
+		if(toolBase == null && !useEngine && toolCallPermissionManager == null){
 			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null,null);
 		}
+		 
 //		AgentTool tool = toolkit.getTool(use.getName());
 //		if (!(tool instanceof ToolBase tb)) {
 //			return Mono.just(new PermissionVerdict(use, PermissionBehavior.ALLOW));
 //		}
-//		AgentRuntimeContext context = chatContext.getAgentRuntimeContext();
+		
 		Map<String, Object> input = use.getArguments() == null ? Collections.emptyMap() : use.getArguments	();
+		PermissionDecision permissionDecision = null;
+		PermissionVerdict permissionVerdict = null;
 		if (useEngine) {
 			PermissionEngine permissionEngine = new PermissionEngine(chatContext);
-			PermissionDecision permissionDecision = permissionEngine
+			permissionDecision = permissionEngine
 					.checkPermission(use, input);
-			PermissionVerdict permissionVerdict = new PermissionVerdict(
+			permissionVerdict = new PermissionVerdict(
 					use,
 					permissionDecision == null
 							? PermissionBehavior.ASK
@@ -482,10 +490,17 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 //													? PermissionBehavior.ASK
 //													: decision.getBehavior()));
 		}
-		PermissionVerdict permissionVerdict = null;
-		PermissionDecision permissionDecision =  toolBase.checkPermissions(use, use.getArguments(),chatContext);
-		if (permissionDecision == null) {
-			return new PermissionVerdict(use, PermissionBehavior.ALLOW,permissionDecision,null);
+		else if(toolBase != null) {
+			permissionDecision = toolBase.checkPermissions(use, use.getArguments(), chatContext);
+			if (permissionDecision == null) {
+				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision, null);
+			}
+		}
+		else {
+			permissionDecision = toolCallPermissionManager.checkPermissions(use, use.getArguments(), chatContext);
+			if (permissionDecision == null) {
+				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision, null);
+			}
 		}
 		// In the legacy lightweight path only an explicit ASK from the tool
 		// gates execution; PASSTHROUGH and ALLOW both run, DENY is
@@ -581,7 +596,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 					public Map<String, Object> getHumanAssistantDatas(ToolCallContext toolCallContext) {
 						Map<String, Object> humanAssistantDatas = new HashMap<>();
 						
-						humanAssistantDatas.put("pendingAsk", askTools);
+						humanAssistantDatas.put(HitlAssistant.HITL_TASK_PERMISSION_ASK_TOOLS, askTools);
 						humanAssistantDatas.put(HitlAssistant.HITL_TASK_TYPE_KEY, HitlAssistant.HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK);
 						return humanAssistantDatas;
 					}
@@ -608,7 +623,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 			AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
 			PermissionGate permissionGate = evaluatePermissions(tools,chatObject);
 			List<PermissionVerdict> pendingAsk = null;
-			Map<String,PermissionEngine> toolPermissionEngines = null;
+			Map<String,PermissionEngine> toolPermissionEngines = new LinkedHashMap<>();
 			Set<String> autoDeniedIds = null;
 			if(permissionGate != null){
 				pendingAsk = permissionGate.getPendingAsk();

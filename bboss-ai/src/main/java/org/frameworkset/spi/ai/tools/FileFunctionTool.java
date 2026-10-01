@@ -24,8 +24,12 @@ import org.frameworkset.spi.ai.filesystem.local.LocalFilesystem;
 import org.frameworkset.spi.ai.filesystem.model.*;
 import org.frameworkset.spi.ai.filesystem.WorkspacePathNormalizer;
 import org.frameworkset.spi.ai.model.ChatObject;
+import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
+import org.frameworkset.spi.ai.permission.PermissionBehavior;
+import org.frameworkset.spi.ai.permission.PermissionDecision;
+import org.frameworkset.spi.ai.permission.PermissionRule;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.ai.util.FileToolUtil;
 import org.slf4j.Logger;
@@ -710,5 +714,25 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
             }
         }
     }
-
+	
+	@Override
+	public PermissionDecision checkPermissions(FunctionTool functionTool, Map<String, Object> toolInput, ChatContext chatContext) {
+		return super.checkPermissions(functionTool, toolInput, chatContext);
+	}
+	@Override
+	public boolean matchRule(String ruleContent, Map<String, Object> input) {
+		return ruleContent == null;
+	}
+	
+	/**
+	 * Default suggestion: a single tool-name-level {@link PermissionBehavior#ALLOW} rule sourced
+	 * from {@code "suggested"}. Subclasses with finer-grained context (file paths, command
+	 * prefixes) override this to produce more specific patterns.
+	 */
+	@Override
+	public List<PermissionRule> generateSuggestions(FunctionTool functionTool, Map<String, Object> toolInput) {
+		List<PermissionRule> suggestions = new ArrayList<>();
+		suggestions.add(new PermissionRule(functionTool.getFunctionName(), null, PermissionBehavior.ALLOW, "suggested"));
+		return suggestions;
+	}
 }

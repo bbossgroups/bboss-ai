@@ -94,4 +94,9 @@ public class SkillsToolRegist  implements ToolsRegist {
 	public FunctionCall getFunctionCall(String functionName) {
 		return null;
 	}
+	
+	public SkillsToolRegist setSkillFilter(SkillFilter skillFilter) {
+		this.skillFilter = skillFilter;
+		return this;
+	}
 }

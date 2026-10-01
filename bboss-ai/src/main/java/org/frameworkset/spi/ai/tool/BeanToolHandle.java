@@ -99,7 +99,7 @@ public class BeanToolHandle {
         Method[] methods = classInfo.getDeclaredMethods();
        
         List<FunctionToolDefine> functionToolDefines = null;
-
+		ToolBase toolBase = toolObject instanceof ToolBase?(ToolBase)toolObject:null;
         //从methods中筛选出包含注解Tool的方法
         for (Method method : methods) {
             if (method.isAnnotationPresent(Tool.class)) {
@@ -116,6 +116,7 @@ public class BeanToolHandle {
                 functionToolDefine.additionalProperties(tool.additionalProperties());
                 functionToolDefine.strict(tool.strict());
 				functionToolDefine.setReadOnly(tool.readOnly());
+				functionToolDefine.setToolBase(toolBase);
                 
                 List<String> requirements = new ArrayList<>();
 

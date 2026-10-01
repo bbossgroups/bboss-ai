@@ -174,6 +174,16 @@ public class HitlTaskHelper {
 	}
 	
 	/**
+	 * 处理人工任务
+	 * @param hitlTaskData
+	 * @param hitlTaskId
+	 */
+	public static void handleHitlCallTask(Object  hitlTaskData, String hitlTaskId){
+		
+		getHitlTaskHelper()._handleHitlCallTask(false,hitlTaskData, null, hitlTaskId);
+	}
+	
+	/**
 	 * 拒绝人工任务
 	 * @param hitlTaskData
 	 * @param hitlTaskId

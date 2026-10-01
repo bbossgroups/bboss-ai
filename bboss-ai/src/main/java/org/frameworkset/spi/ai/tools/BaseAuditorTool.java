@@ -21,6 +21,7 @@ import org.frameworkset.spi.ai.audit.AuditContext;
 import org.frameworkset.spi.ai.audit.AuditResult;
 import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
+import org.frameworkset.spi.ai.tool.ToolBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/7/26
  */
-public abstract class BaseAuditorTool<T extends BaseAuditorTool> {
+public abstract class BaseAuditorTool<T extends BaseAuditorTool> extends ToolBase {
 	private static final Logger logger = LoggerFactory.getLogger(BaseAuditorTool.class);
 	/**
 	 * 审计工具接口

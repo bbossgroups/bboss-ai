@@ -553,6 +553,10 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 		return hitlAssistant;
 	}
 	
+	public Object hitlAssistant(String key) {
+		return hitlAssistant == null ? null : hitlAssistant.get(key);
+	}	
+	
 	public void setHitlAssistant(Map<String, Object> hitlAssistant) {
 		this.hitlAssistant = hitlAssistant;
 	}
