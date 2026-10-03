@@ -509,6 +509,7 @@ public class SessionMessage {
 			message.withTimestamp(this.createTime);
 			message.setNextMsgId(this.nextMsgId);
 			message.setParentMsgId(this.parentMsgId);
+			message.setAgentId(this.agentId);
 			if(metadata != null){
 				Map<String,Object> meta = JsonUtil.json2Object(metadata, Map.class);
 				message.setMeta(meta);

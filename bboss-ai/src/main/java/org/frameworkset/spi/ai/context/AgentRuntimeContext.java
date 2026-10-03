@@ -15,12 +15,13 @@ package org.frameworkset.spi.ai.context;
  * limitations under the License.
  */
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
-import org.frameworkset.spi.ai.permission.ToolCallPermissionManager;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
+import org.frameworkset.spi.ai.permission.PermissionBehavior;
 import org.frameworkset.spi.ai.permission.PermissionMode;
 import org.frameworkset.spi.ai.permission.PermissionRule;
+import org.frameworkset.spi.ai.permission.ToolCallPermissionManager;
 import org.frameworkset.spi.ai.state.PlanModeContextState;
 import org.frameworkset.spi.ai.state.TaskContextState;
 
@@ -30,7 +31,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- *
+ * 智能体运行上下文，静态配置
  * @author biaoping.yin
  * @Date 2026/8/25
  */
@@ -40,6 +41,9 @@ public class AgentRuntimeContext {
 	 */
 	private boolean debugSSEData;
 	
+
+	
+	private PermissionRules permissionRules;
 
 	
 	private ToolCallPermissionManager toolCallPermissionManager;
@@ -180,6 +184,8 @@ public class AgentRuntimeContext {
 		if(permissionRule.getToolName() == null){
 			permissionRule.setToolName(toolName);
 		}
+		if(permissionRule.getBehavior() == null)
+			permissionRule.setBehavior(PermissionBehavior.ALLOW);
 		if(allowRules == null){
 			allowRules = new ConcurrentHashMap<>();	
 		}
@@ -187,27 +193,95 @@ public class AgentRuntimeContext {
 		return this;
 	}
 	
+	/**
+	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})	 
+	 * ruleContent optional tool-specific matcher pattern (nullable)
+	 */
+	public AgentRuntimeContext addAllowRule(String toolName, String ruleContent,String source) {
+		PermissionRule permissionRule = new PermissionRule();
+		permissionRule.setSource(source);
+		permissionRule.setRuleContent(ruleContent);
+		permissionRule.setBehavior(PermissionBehavior.ALLOW);
+		
+		return addAllowRule(  toolName, permissionRule);
+	}
+	
+	/**
+	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})
+	 */
+	
+	public AgentRuntimeContext addAllowRule(String toolName, String source) {
+		
+		return addAllowRule(  toolName,  (String) null,  source) ;
+	}
+	
 	public AgentRuntimeContext addDenyRule(String toolName, PermissionRule permissionRule) {
 		if(permissionRule.getToolName() == null){
 			permissionRule.setToolName(toolName);
 		}
+		if(permissionRule.getBehavior() == null)
+			permissionRule.setBehavior(PermissionBehavior.DENY);
 		if(denyRules == null){
 			denyRules = new ConcurrentHashMap<>();
 		}
 		denyRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
 		return this;
 	}
+	
+	/**
+	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})	 
+	 * ruleContent optional tool-specific matcher pattern (nullable)
+	 */ 
+	public AgentRuntimeContext addDenyRule(String toolName, String ruleContent,String source) {
+		PermissionRule permissionRule = new PermissionRule();
+		permissionRule.setSource(source);
+		permissionRule.setRuleContent(ruleContent);
+		permissionRule.setBehavior(PermissionBehavior.DENY);	 
+		 
+		return addDenyRule(  toolName,   permissionRule);
+	}
+	
+	/**
+	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})
+	 */
+	
+	public AgentRuntimeContext addDenyRule(String toolName, String source) {
+		 
+		return addDenyRule(  toolName,  (String) null,  source) ;
+	}
 	public AgentRuntimeContext addAskRule(String toolName, PermissionRule permissionRule) {
 		if(permissionRule.getToolName() == null){
 			permissionRule.setToolName(toolName);
 		}
+		if(permissionRule.getBehavior() == null)
+			permissionRule.setBehavior(PermissionBehavior.ASK);
 		if(askRules == null){
 			askRules = new ConcurrentHashMap<>();
 		}
 		askRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
 		return this;
 	}
+	/**
+	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})	 
+	 * ruleContent optional tool-specific matcher pattern (nullable)
+	 */
+	public AgentRuntimeContext addAskRule(String toolName, String ruleContent,String source) {
+		PermissionRule permissionRule = new PermissionRule();
+		permissionRule.setSource(source);
+		permissionRule.setRuleContent(ruleContent);
+		permissionRule.setBehavior(PermissionBehavior.ASK);
+		 
+		return addAskRule(  toolName, permissionRule);
+	}
 	
+	/**
+	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})
+	 */
+	
+	public AgentRuntimeContext addAskRule(String toolName, String source) {
+		
+		return addAskRule(  toolName,  (String) null,  source) ;
+	}
 	public PermissionMode getMode() {
 		return mode;
 	}
@@ -219,5 +293,25 @@ public class AgentRuntimeContext {
 	public AgentRuntimeContext setToolCallPermissionManager(ToolCallPermissionManager toolCallPermissionManager) {
 		this.toolCallPermissionManager = toolCallPermissionManager;
 		return this;
+	}
+	/**
+	 * 从历史消息中恢复权限规则：智能体会话记忆中保存了工具调用的最新权限规则，当会话开始时，会调用此方法恢复保存在历史会话记忆中的权限规则。
+	 * @param permissionRules
+	 * @return
+	 */
+	public AgentRuntimeContext restoreCachedPermissionRule(PermissionRules permissionRules) {
+		this.permissionRules = permissionRules;
+		return this;
+	}
+	
+	/**
+	 * 获取权限规则：权限规则用于控制工具调用的权限，如果权限规则为空，则表示没有权限调用任何工具。
+	 * @return
+	 */
+	public PermissionRules getPermissionRules() {
+		return permissionRules;
+	}
+	public void setPermissionRules(PermissionRules permissionRules) {
+		this.permissionRules = permissionRules;
 	}
 }

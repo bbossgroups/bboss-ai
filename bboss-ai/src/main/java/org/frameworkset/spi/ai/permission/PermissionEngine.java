@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.FunctionTool;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.tool.ToolBase;
 
 import java.util.*;
@@ -49,10 +50,11 @@ public final class PermissionEngine {
     private final AgentRuntimeContext context;
 	@JsonIgnore
 	private ChatContext chatContext	;
-    private final Map<String, List<PermissionRule>> allowRules;
-    private final Map<String, List<PermissionRule>> denyRules;
-    private final Map<String, List<PermissionRule>> askRules;
+    private Map<String, List<PermissionRule>> allowRules;
+    private Map<String, List<PermissionRule>> denyRules;
+    private Map<String, List<PermissionRule>> askRules;
 
+	
     /**
      * Creates an engine seeded from the given context's rules and mode.
      *
@@ -60,11 +62,22 @@ public final class PermissionEngine {
      */
     public PermissionEngine(ChatContext chatContext) {
 		this.context = chatContext.getAgentRuntimeContext();
+		
 		this.chatContext = chatContext;
 //        this.context = Objects.requireNonNull(context, "context must not be null");
-        this.allowRules = copyMutable(context.getAllowRules());
-        this.denyRules = copyMutable(context.getDenyRules());
-        this.askRules = copyMutable(context.getAskRules());
+		if(context != null) {
+			PermissionRules permissionRules = context.getPermissionRules();
+			if(permissionRules == null) {
+				this.allowRules = copyMutable(context.getAllowRules());
+				this.denyRules = copyMutable(context.getDenyRules());
+				this.askRules = copyMutable(context.getAskRules());
+			}
+			else{//从会话上下文中恢复权限规则
+				this.allowRules = copyMutable(permissionRules.getAllowRules());
+				this.denyRules = copyMutable(permissionRules.getDenyRules());
+				this.askRules = copyMutable(permissionRules.getAskRules());
+			}
+		}
     }
 
     private static Map<String, List<PermissionRule>> copyMutable(
@@ -375,4 +388,6 @@ public final class PermissionEngine {
 		permissionDecision.setDecisionReason("Mode: " + context.getMode().name().toLowerCase(Locale.ROOT));
 		return permissionDecision	;
     }
+	
+	
 }

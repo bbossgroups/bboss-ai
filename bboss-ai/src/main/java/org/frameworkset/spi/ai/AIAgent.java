@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.frameworkset.spi.ai.callback.AgentOutput;
@@ -25,6 +26,7 @@ import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.tool.*;
 import org.frameworkset.spi.ai.tools.CompactSummaryMsgSearchTool;
@@ -456,42 +458,64 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         return lastSubAgentSessionMessage;
     }
     
+	public void restorePermissionRules(List<LinkedMessageMap<String,Object>> sessionMemory){
+		if(CollectionUtils.isEmpty(sessionMemory)){
+			return;
+		}
+		Map<String, Object> permissionRules = null;
+		for(LinkedMessageMap<String,Object> sessionMemoryItem : sessionMemory){
+			String msgAgentId = sessionMemoryItem.getAgentId();
+			//只恢复智能体自身的工具权限规则
+			if(msgAgentId == null || !msgAgentId.equals(this.agentId)){
+				continue;
+			}
+			Map<String, Object> permissionRules_ = (Map<String, Object>)	 sessionMemoryItem.getMetaValue(PermissionRules.PERMISSION_RULES_KEY);
+			if(permissionRules_ != null){
+				permissionRules = permissionRules_;
+			}
+			
+		}
+		if(permissionRules != null){
+			String json = JsonUtil.object2json(permissionRules);
+			agentRuntimeContext.setPermissionRules(JsonUtil.json2Object(json, PermissionRules.class));
+		}
+	}
     protected void loadHistoryMessages(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
         if(agentSessionStore == null){
             return;
         }
-        List<Map<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
+        List<LinkedMessageMap<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
         boolean empty = sessionMemory.isEmpty();
 //                sessionAgentMessage.setSessionStore(agentSessionStore);
         mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
-        if(!isDisableReferenceParentLastSubMessage()) {
+		LastSessionMessage lastSubAgentSessionMessage = null;
+		if(!isDisableReferenceParentLastSubMessage()) {
 //        if(!isDisableGloableStore()) {
             //UserAgent无需追加父智能体中产生的最新的消息作
-            LastSessionMessage lastSubAgentSessionMessage = getLastSubAgentSessionMessage(mainSessionStore, agentMessage);
-
-
-            if (empty) {
-                //加载历史消息
-                List<LinkedMessageMap<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId);
-                if (sessionMessages != null && sessionMessages.size() > 0) {
-                    for (LinkedMessageMap<String, Object> sessionMessage : sessionMessages) {
-                        agentSessionStore.appendSessionMessageFromParent(this,sessionMessage);
-                    }
-
-
-                }
-            } else if (lastSubAgentSessionMessage != null) {//不为空，直接append主智能体中的最后一条消息
-                //如果父智能体的最后一个子智能体消息就是智能体自己产生消息,无需添加到自己的消息列表中（因为结果生成后，已经添加到消息列表）
-			
-                if(!lastSubAgentSessionMessage.getMsgAgentId().equals(this.getAgentId())) {
-                    
-                    agentSessionStore.appendSessionMessageFromParent(this,lastSubAgentSessionMessage.getLastSessionMessage());
-                    //记录消息引用关系
-                    mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
-                }
-               
-            }
+            lastSubAgentSessionMessage = getLastSubAgentSessionMessage(mainSessionStore, agentMessage);            
         }
+		if (empty) {
+			//加载历史消息
+			List<LinkedMessageMap<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(this,lastSubAgentSessionMessage, agentId);
+			
+			if (sessionMessages != null && sessionMessages.size() > 0) {
+				for (LinkedMessageMap<String, Object> sessionMessage : sessionMessages) {
+					agentSessionStore.appendSessionMessageFromParent(this,sessionMessage);
+				}
+				
+				
+			}
+		} else if (lastSubAgentSessionMessage != null) {//不为空，直接append主智能体中的最后一条消息
+			//如果父智能体的最后一个子智能体消息就是智能体自己产生消息,无需添加到自己的消息列表中（因为结果生成后，已经添加到消息列表）
+			restorePermissionRules(    sessionMemory);
+			if(!lastSubAgentSessionMessage.getMsgAgentId().equals(this.getAgentId())) {
+				
+				agentSessionStore.appendSessionMessageFromParent(this,lastSubAgentSessionMessage.getLastSessionMessage());
+				//记录消息引用关系
+				mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
+			}
+			
+		}
     }
     public void reactMessage(AgentMessage agentMessage){
 //		if(agentMessage.getAgentRuntimeContext() != null){

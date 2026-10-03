@@ -87,7 +87,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 
     List<LinkedMessageMap<String, Object>> getSessionMemory();
 
-    List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId );
+    List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage,String agentId );
 
     void recordTraceMessage(TraceMessage traceMessage);
     void recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics);

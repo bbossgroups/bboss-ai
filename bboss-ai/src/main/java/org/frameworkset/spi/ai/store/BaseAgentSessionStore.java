@@ -402,7 +402,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 	 * @param sessionMessages
 	 * @return
 	 */
-	protected List<LinkedMessageMap<String, Object>> refactorLinkedMessageMapSessionMessages(List<LinkedMessageMap<String, Object>> sessionMessages) {
+	protected List<LinkedMessageMap<String, Object>> refactorLinkedMessageMapSessionMessages(AIAgent agent,List<LinkedMessageMap<String, Object>> sessionMessages) {
 		//将摘要信息移动到对应的消息前面
 		List<LinkedMessageMap<String, Object>> sessionMessagesNew = new ArrayList<>();
 		LinkedMessageMap<String, Object> systemSessionMessage = sessionMessages.get(0);
@@ -428,6 +428,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 			
 			
 		}
+		agent.restorePermissionRules(     sessionMessagesNew);
 		if(lastSummaryPosition > -1){
 			if(lastSummaryPosition > 0){
 				sessionMessagesNew = sessionMessagesNew.subList(lastSummaryPosition, sessionMessagesNew.size());

@@ -431,13 +431,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		}
 		AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
 		boolean useEngine = agentRuntimeContext != null && !agentRuntimeContext.isTrivial();
-		Set<String> denied = new HashSet<>();
+		Map<String,PermissionVerdict> denied = new LinkedHashMap();
 		List<PermissionVerdict> pending = new ArrayList<>();
 		for (FunctionTool toolCall : toolCalls) {
 			PermissionVerdict permissionVerdict = evaluateOne(toolCall, useEngine,chatObject.getChatContext());
 			FunctionTool functionTool = permissionVerdict.getFunctionTool();
 			switch (permissionVerdict.getBehavior()) {
-				case DENY: denied.add(functionTool.getId());break;
+				case DENY: denied.put(functionTool.getId(), permissionVerdict);break;
 				case ASK : pending.add(permissionVerdict);break;
 				case ALLOW:
 				case PASSTHROUGH:
@@ -579,7 +579,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		HitlCallResult<List> hitlCallResult = HitlTaskHelper.hitlTaskTool(new HitlTaskToolInf() {
 			@Override
 			public String getTimeoutAction() {
-				return HitlTaskToolInf.TIMEOUT_ACTION_CONTINUE;
+				return HitlTaskToolInf.TIMEOUT_ACTION_REJECTED;
 			}
 			
 			@Override
@@ -624,7 +624,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 			PermissionGate permissionGate = evaluatePermissions(tools,chatObject);
 			List<PermissionVerdict> pendingAsk = null;
 			Map<String,PermissionEngine> toolPermissionEngines = new LinkedHashMap<>();
-			Set<String> autoDeniedIds = null;
+			Map<String,PermissionVerdict> autoDeniedIds = null;
 			if(permissionGate != null){
 				pendingAsk = permissionGate.getPendingAsk();
 				autoDeniedIds = permissionGate.getAutoDeniedIds();
@@ -642,18 +642,23 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 String toolId = tool.getId();
                 String functionName = tool.getFunctionName();
                 FunctionCall functionCall = agent.getFunctionCall(functionName);
-				LinkedMessageMap<String, Object> toolMessage = null;				
-				if(autoDeniedIds != null && autoDeniedIds.contains(toolId)){
-					toolMessage = MessageBuilder.buildToolMessage("Permission denied by rules", toolId, tool, ToolCallState.DENIED);					
-					toolMessages.add(toolMessage);
-					continue;
+				PermissionEngine permissionEngine = toolPermissionEngines.get(toolId);
+				LinkedMessageMap<String, Object> toolMessage = null;
+				
+				
+				if(autoDeniedIds != null ){
+					PermissionVerdict  denyPermissionVerdict = autoDeniedIds.get(toolId);
+					if(denyPermissionVerdict != null) {
+						toolMessage = MessageBuilder.buildToolMessage("Permission denied by rules", toolId, tool, ToolCallState.DENIED, denyPermissionVerdict.getPermissionEngine());
+						toolMessages.add(toolMessage);
+						continue;
+					}
 				}
 				ToolCallAskResult toolCallAskResult = getToolCallAskResult( toolId, toolCallAskResults);
 				ToolCallState toolCallState = null;
-				PermissionEngine permissionEngine = null;
 				if(toolCallAskResult != null){
 					if(!toolCallAskResult.isApproved()){
-						toolMessage = MessageBuilder.buildToolMessage("Tool call ask denied", toolId, tool, ToolCallState.DENIED);
+						toolMessage = MessageBuilder.buildToolMessage("Tool call ask denied", toolId, tool, ToolCallState.DENIED,permissionEngine);
 						toolMessages.add(toolMessage);
 						continue;
 					}
@@ -718,7 +723,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 						_result = "Convert result to json failed:"+e.getMessage();
 					}
 				}
-				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool,toolCallState);
+				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool,toolCallState,permissionEngine);
 				toolMessages.add(toolMessage);
             }
         }

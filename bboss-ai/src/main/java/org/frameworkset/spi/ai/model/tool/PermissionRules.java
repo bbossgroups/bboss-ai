@@ -26,6 +26,7 @@ import java.util.Map;
  * @Date 2026/9/28
  */
 public class PermissionRules {
+	public static final String PERMISSION_RULES_KEY = "permissionRules";
 	/**
 	 * 允许调用工具的权限规则
 	 */
@@ -41,5 +42,23 @@ public class PermissionRules {
 	 */
 	
 	private   Map<String, List<PermissionRule>> askRules;
+	public Map<String, List<PermissionRule>> getAllowRules() {
+		return allowRules;
+	}
+	public void setAllowRules(Map<String, List<PermissionRule>> allowRules) {
+		this.allowRules = allowRules;
+	}
 	
+	public Map<String, List<PermissionRule>> getDenyRules() {
+		return denyRules;
+	}
+	public void setDenyRules(Map<String, List<PermissionRule>> denyRules) {
+		this.denyRules = denyRules;
+	}
+	public Map<String, List<PermissionRule>> getAskRules() {
+		return askRules;
+	}
+	public void setAskRules(Map<String, List<PermissionRule>> askRules) {
+		this.askRules = askRules;
+	}
 }

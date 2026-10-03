@@ -17,7 +17,9 @@ package org.frameworkset.spi.ai.util;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.model.tool.ToolCallState;
+import org.frameworkset.spi.ai.permission.PermissionEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -481,19 +483,34 @@ public class MessageBuilder {
      * @param toolId
      * @return
      */
-    public static LinkedMessageMap<String,Object> buildToolMessage(String message, String toolId, FunctionTool tool, ToolCallState toolCallState){
+    public static LinkedMessageMap<String,Object> buildToolMessage(String message, String toolId, FunctionTool tool,
+																   ToolCallState toolCallState, PermissionEngine permissionEngine){
 		
 		LinkedMessageMap<String, Object> toolMessage = new LinkedMessageMap<>();
 		toolMessage.setName(tool.getFunctionName());
         toolMessage.put("role", ROLE_TOOL);
         toolMessage.put("content", message);
         toolMessage.put("tool_call_id", toolId);
+		Map<String, Object> metas = null;
 		if(toolCallState != null) {
-			Map<String, Object> metas = new LinkedHashMap<>();
+			metas = new LinkedHashMap<>();
 			metas.put("toolCallState", toolCallState.name());
-			toolMessage.setMeta(metas);
+			
 		}
 		
+		if(permissionEngine != null) {
+			if(metas == null) {
+				metas = new LinkedHashMap<>();
+			}
+			PermissionRules permissionRules = new PermissionRules();
+			permissionRules.setAllowRules(permissionEngine.getAllowRules());
+			permissionRules.setDenyRules(permissionEngine.getDenyRules());
+			permissionRules.setAskRules(permissionEngine.getAskRules());
+			metas.put(PermissionRules.PERMISSION_RULES_KEY, permissionRules);
+		}
+		if(metas != null) {
+			toolMessage.setMeta(metas);
+		}
 
         return toolMessage;
     }

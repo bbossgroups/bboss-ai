@@ -301,6 +301,9 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 			if(message.getMeta() != null){
 				metadata = JsonUtil.object2json(message.getMeta());
 			}
+			if(message.getAgentId() == null){
+				message.setAgentId(agentId);
+			}
 //            if(agentResultMessage != null && !agentResultMessage.equals("1")){
 //                if(role.equals(MessageBuilder.ROLE_USER)){
 //                    agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
@@ -394,13 +397,13 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 		}
 	}
     @Override
-    public List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId){
+    public List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage,String agentId){
         try {
 			List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
             List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
                     agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(),agentId,agentId);
             
-			return resolve(lastSubAgentSessionMessage,agentId,   agentSessionMessages,true);
+			return resolve(agent,lastSubAgentSessionMessage,agentId,   agentSessionMessages,true);
            
         }
 		catch (AIRuntimeException exception){

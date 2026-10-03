@@ -253,6 +253,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 
 //        loadSessionMemory(message,  agentId);
 		LinkedMessageMap<String, Object> message = persistentMessage.getMessage();
+		
         SessionMessage sessionMessage = new SessionMessage();
 		if(message.getId() == null){
 			sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
@@ -285,6 +286,9 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         sessionMessage.setSessionId(this.getSessionId());
         sessionMessage.setRequestId(this.getRequestId());
         sessionMessage.setAgentId(agentId);
+		if(message.getAgentId() == null){
+			message.setAgentId(agentId);
+		}
         sessionMessage.setParentAgentId(parentAgentId);
         sessionMessage.setMessageType(messageType);
 		message.setMessageType(messageType);
@@ -375,14 +379,14 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 		}
 	}
     @Override
-    public List<LinkedMessageMap<String, Object>> getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage, String agentId ) {
+    public List<LinkedMessageMap<String, Object>> getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage, String agentId ) {
         try {
             if (this.agentSession == null) {
                 return null;
             }
             synchronized (agentSession){
                 List<SessionMessage> agentSessionMessages = this.agentSession.getAgentSessionMessage(agentId);
-                return resolve(lastSubAgentSessionMessage, agentId,agentSessionMessages ,false);
+                return resolve(agent,lastSubAgentSessionMessage, agentId,agentSessionMessages ,false);
             }
           
         }
@@ -406,7 +410,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //        }
     }
     
-    protected List<LinkedMessageMap<String, Object>> resolve(LastSessionMessage lastSubAgentSessionMessage, String agentId, 
+    protected List<LinkedMessageMap<String, Object>> resolve(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage, String agentId, 
 															 List<SessionMessage> agentSessionMessages,boolean needAfterLoad){
         if(agentSessionMessages == null || agentSessionMessages.size() == 0){
             if(lastSubAgentSessionMessage != null){
@@ -451,7 +455,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             
         }
 		
-		_agentSessionMessages = refactorLinkedMessageMapSessionMessages(_agentSessionMessages);  
+		_agentSessionMessages = refactorLinkedMessageMapSessionMessages(agent,_agentSessionMessages);  
         return _agentSessionMessages;
     } 
 

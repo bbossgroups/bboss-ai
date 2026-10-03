@@ -108,37 +108,34 @@ public class PermissionChecklistCodeViewAgentHitlResisTest {
 		
 		//设置模型调用参数，
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-//		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
+		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwentokenplan").setRetry(3);
 		
 //		chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
 		
 //		chatAgentMessage.setMaas("kimi").setModel("kimi-k2.6");
-		chatAgentMessage.setMaas("hunyuan").setModel("hy3");
+//		chatAgentMessage.setMaas("hunyuan").setModel("hy3");
 		chatAgentMessage.setIncludeUsage(true);
 		
 //		chatAgentMessage.setMaas("kimi").setModel("kimi-k3");
 		chatAgentMessage.setRetry(3);
-		String message = "请评审Java文件中的代码并修复问题,java文件路径：C:\\data\\ai\\code\\HitlTaskcallTool.java";
+		String message = "请评审Java文件中的代码并修复问题,java文件路径：C:\\data\\ai\\code\\bboss-ai\\src\\main\\java\\org\\frameworkset\\spi\\ai\\tools\\HitlTaskcallTool.java";
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个 Java 代码审查助手。 长期规则： - 如果用户提交 Java 代码并要求审查，先调用 Skill 工具加载 code-review-skill。 - 加载技能书后，再按照技能书里的审查顺序审查java代码。 - 优先指出 bug、安全风险、边界条件、异常处理和缺失测试。 - 如果信息不足，要说明缺少哪些上下文，不要编造项目背景。 - 不要输出与代码审查无关的泛泛建议。 输出要求： - 用中文回答。 - 使用 Markdown。 - 先给总体结论，再列主要问题，最后给测试建议和下一步。");
 		
 		chatAgentMessage.setStream(true).setThinking(false);
 //				.setTemperature(1.0);//.addParameter("max_tokens", 2048);
 		chatAgentMessage.setStoreContext(new StoreContext()
-				.setUserId("user123").setSessionSize(100).setRequestId("request123")
+				.setUserId("user123").setSessionSize(100).setRequestId("request123").setSessionId("1234567")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
 				.setHitlRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)
 				.setDataSource("visualops"));
 		
 		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
 		agentRuntimeContext.setDebugSSEData(false);
-		agentRuntimeContext.addAllowRule("get_weather", new PermissionRule(  "city=北京",
-				PermissionBehavior.ALLOW, "userSettings"))
-				.addDenyRule("deleteFile", 
-						new PermissionRule( null,PermissionBehavior.DENY, "userSettings"))
-				.addAskRule("writeFile",
-						new PermissionRule( null,PermissionBehavior.ASK, "userSettings"))
+		agentRuntimeContext.addAllowRule("get_weather", "city=北京","userSettings")
+				.addDenyRule("deleteFile", "userSettings")
+				.addAskRule("writeFile","userSettings")
 				.setPermissionHitlTaskTimeout(60000);   // 人工确认超时 60s
 		AIAgent agent = new AIAgent().setAgentRuntimeContext(agentRuntimeContext);
 		agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
@@ -187,11 +184,11 @@ public class PermissionChecklistCodeViewAgentHitlResisTest {
 									ToolCallAskResult toolCallAskResult = new ToolCallAskResult();
 									toolCallAskResult.setToolId(askTool.getToolId());
 									toolCallAskResult.setToolName(askTool.getToolName());
-									toolCallAskResult.setApproved(false);//审批通过，放行工具操作，如果返回false则拒绝操作
+									toolCallAskResult.setApproved(true);//审批通过，放行工具操作，如果返回false则拒绝操作
 									toolCallAskResult.setHitlConfirm("确认修改文件");
 									List<PermissionRule> suggestedRules = askTool.getSuggestedRules();
 									if (suggestedRules != null && suggestedRules.size() > 0){
-										toolCallAskResult.setChoosedAlwaysPermissionRule(suggestedRules.get(0));
+										toolCallAskResult.setChoosedAlwaysPermissionRule(suggestedRules.get(0)); //从建议规则列表中选择一个即可，这里选择第一个规则
 									}
 									toolCallAskResult.setUpdateInput(askTool.getInput());//模拟修改工具入参，这里不做任何修改直接放回去
 									toolCallAskResults.add(toolCallAskResult);

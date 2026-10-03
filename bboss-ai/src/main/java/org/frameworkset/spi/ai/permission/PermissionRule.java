@@ -58,6 +58,13 @@ public class PermissionRule {
 		this.behavior = permissionBehavior;
 		this.source = source;
 	}
+	public PermissionRule(  String ruleContent,   String source) {
+		this.ruleContent = ruleContent;
+		this.source = source;
+	}
+	public PermissionRule(    String source) {
+		this.source = source;
+	}
 	public String getToolName() {
 		return toolName;
 	}

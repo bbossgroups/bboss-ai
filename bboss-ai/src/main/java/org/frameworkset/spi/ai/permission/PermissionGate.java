@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.permission;
 import org.frameworkset.spi.ai.model.FunctionTool;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,9 +28,9 @@ import java.util.Set;
  */
 public class PermissionGate {
 	private List<PermissionVerdict> pendingAsk;
-	private Set<String> autoDeniedIds;
+	private Map<String,PermissionVerdict> autoDeniedIds;
 	
-	public PermissionGate(List<PermissionVerdict> pendingAsk, Set<String> autoDeniedIds) {
+	public PermissionGate(List<PermissionVerdict> pendingAsk, Map<String,PermissionVerdict> autoDeniedIds) {
 		this.pendingAsk = pendingAsk;
 		this.autoDeniedIds = autoDeniedIds;
 	}
@@ -39,7 +40,7 @@ public class PermissionGate {
 		return pendingAsk;
 	}
  
-	public Set<String> getAutoDeniedIds() {
+	public Map<String,PermissionVerdict> getAutoDeniedIds() {
 		return autoDeniedIds;
 	}
 }

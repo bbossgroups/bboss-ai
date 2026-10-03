@@ -63,6 +63,8 @@ public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
 	
 	private Map<String,Object> meta;
 	
+
+	private String agentId;
 	private static final DateTimeFormatter TIMESTAMP_FORMATTER =
 			DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
 	
@@ -204,4 +206,18 @@ public class LinkedMessageMap<K,V> extends LinkedHashMap<K,V> {
 	public void setNextMsgId(String nextMsgId) {
 		this.nextMsgId = nextMsgId;
 	}
+	public Object getMetaValue(String key){
+		if(meta != null){
+			return meta.get(key);
+		}
+		return null;
+	}
+	public String getAgentId() {
+		return agentId;
+	}
+	
+	public void setAgentId(String agentId) {
+		this.agentId = agentId;
+	}
+	
 }

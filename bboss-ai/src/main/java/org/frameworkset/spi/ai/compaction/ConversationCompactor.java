@@ -180,7 +180,7 @@ public class ConversationCompactor {
 		String summarize = summarizePrefix(summaryInput, config);
 		
 		List<LinkedMessageMap<String, Object>> compacted = new ArrayList<>();
-		LinkedMessageMap<String, Object> summaryMsg = buildSummaryMessage(summarize, null);
+		LinkedMessageMap<String, Object> summaryMsg = buildSummaryMessage(agentId,summarize, null);
 		compacted.add(summaryMsg);
 		compacted.addAll(tail);
 		log.info(
@@ -566,7 +566,7 @@ public class ConversationCompactor {
      * <p>The message name is set to {@link #SUMMARY_MSG_NAME} so hooks can identify generated
      * summaries, and the stable content-based ID keeps repeated session offloads idempotent.
      */
-    private static LinkedMessageMap<String, Object> buildSummaryMessage(String summary, String filePath) {
+    private static LinkedMessageMap<String, Object> buildSummaryMessage(String agentId,String summary, String filePath) {
         String content;
         if (filePath != null) {
             content =
@@ -583,6 +583,7 @@ public class ConversationCompactor {
         }
 		LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
 		linkedMessageMap.setId(buildSummaryMessageId(content));
+		linkedMessageMap.setAgentId(agentId);
 		linkedMessageMap.put("role", MessageBuilder.ROLE_USER);
 		linkedMessageMap.setName( SUMMARY_MSG_NAME);
 		linkedMessageMap.put("content", content);

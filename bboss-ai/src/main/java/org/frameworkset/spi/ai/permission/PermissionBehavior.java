@@ -47,7 +47,7 @@ public enum PermissionBehavior {
 	PermissionBehavior(String value) {
 		this.value = value;
 	}
-	
+	@JsonValue
 	public String getValue() {
 		return value;
 	}

@@ -19,6 +19,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 		LinkedMessageMap<String, Object> systemMessage = messages.get(0);
 		String systemRole = (String) systemMessage.get("role");
 		List<LinkedMessageMap<String, Object>> compactedMessages = null;
+	
 		if(systemRole != null && systemRole.equals(MessageBuilder.ROLE_SYSTEM)) {
 			compactedMessages = messages.subList(1, messages.size());
 		}
@@ -78,6 +80,16 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 			
 			if(removePosition == 0){
 				return messages;
+			}
+			PermissionRules  permissionRules = null;
+			for(int i = 0; i < compactedMessages.size(); i ++){
+				LinkedMessageMap<String, Object> message = compactedMessages.get(i	);
+				
+				PermissionRules  permissionRules_ = (PermissionRules)message.getMetaValue(PermissionRules.PERMISSION_RULES_KEY);
+				if(permissionRules_ != null){
+					permissionRules = permissionRules_;
+				}
+				 
 			}
 			//确保工具调用结果和对应的入参都在keep messages窗口内
 			Map<String, Object> toolCallIds = new LinkedHashMap<>();
@@ -141,7 +153,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 					logger.info("为卸载压缩的消息生成摘要，卸载记录数：{}",summeryMessage.size());
 				}
 				String summery = SummeryUtils.summarizePrefix(summeryMessage, config,chatContext);
-				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(chatContext,agent,summery,summeryMessage,null,newMessages.get(0));
+				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(chatContext,agent,summery,summeryMessage,null,newMessages.get(0),permissionRules);
 				 
 				agent.saveSummeryMessage(summaryMessage);
 				newMessages.add(0, summaryMessage);

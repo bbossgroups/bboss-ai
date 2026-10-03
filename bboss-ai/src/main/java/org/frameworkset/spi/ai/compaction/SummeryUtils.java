@@ -21,6 +21,7 @@ import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 
@@ -187,10 +188,10 @@ public class SummeryUtils {
 	 * summaries, and the stable content-based ID keeps repeated session offloads idempotent.
 	 */
 	public static LinkedMessageMap<String, Object> buildSummaryMessage(ChatContext chatContext,
-			AIAgent agent,String summary,
+																	   AIAgent agent, String summary,
 																	   List<LinkedMessageMap<String, Object>> summeryMessages,
 																	   String filePath,
-																	   LinkedMessageMap<String, Object> nextMessage) {
+																	   LinkedMessageMap<String, Object> nextMessage, PermissionRules permissionRules) {
 		String content;
 		LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
 		Map<String, Object> meta = new LinkedHashMap<>();
@@ -199,6 +200,9 @@ public class SummeryUtils {
 			summaryIds.add(summeryMessage.getId());
 		}
 		meta.put("summaryIds", summaryIds);
+		if(permissionRules != null){
+			meta.put(PermissionRules.PERMISSION_RULES_KEY,permissionRules);
+		}
 		linkedMessageMap.setMeta(meta);
 		if (filePath != null) {
 			content =
@@ -241,6 +245,8 @@ public class SummeryUtils {
 		 * 直接和下一个消息进行关联，编号一致
 		 */
 		linkedMessageMap.setSeqNo(agent.getNextSeqNo());
+		linkedMessageMap.setAgentId(agent.getAgentId());
+		
 		return linkedMessageMap;
 //        return Msg.builder()
 //                .id(buildSummaryMessageId(content))
