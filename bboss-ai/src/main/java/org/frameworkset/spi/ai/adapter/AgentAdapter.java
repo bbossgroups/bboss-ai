@@ -28,10 +28,12 @@ import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.ai.material.GenMaterialFileDownload;
 import org.frameworkset.spi.ai.mcp.model.MCPToolCallResponse;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.model.tool.ToolCallAsk;
 import org.frameworkset.spi.ai.model.tool.ToolCallAskResult;
 import org.frameworkset.spi.ai.model.tool.ToolCallState;
 import org.frameworkset.spi.ai.permission.*;
+import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
 import org.frameworkset.spi.ai.tool.ToolBase;
 import org.frameworkset.spi.ai.tool.ToolCallContext;
@@ -431,10 +433,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		}
 		AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
 		boolean useEngine = agentRuntimeContext != null && !agentRuntimeContext.isTrivial();
+		PermissionEngine permissionEngine = useEngine?new PermissionEngine(chatObject.getChatContext()):null;
 		Map<String,PermissionVerdict> denied = new LinkedHashMap();
 		List<PermissionVerdict> pending = new ArrayList<>();
 		for (FunctionTool toolCall : toolCalls) {
-			PermissionVerdict permissionVerdict = evaluateOne(toolCall, useEngine,chatObject.getChatContext());
+			PermissionVerdict permissionVerdict = evaluateOne(toolCall, permissionEngine,chatObject.getChatContext());
 			FunctionTool functionTool = permissionVerdict.getFunctionTool();
 			switch (permissionVerdict.getBehavior()) {
 				case DENY: denied.put(functionTool.getId(), permissionVerdict);break;
@@ -446,13 +449,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 			}
 //			
 		}
-		return new PermissionGate(pending, denied);
+		return new PermissionGate(pending, denied,permissionEngine);
 	}
 	
-	private PermissionVerdict evaluateOne(FunctionTool use, boolean useEngine, ChatContext chatContext) {
+	private PermissionVerdict evaluateOne(FunctionTool use, PermissionEngine permissionEngine, ChatContext chatContext) {
 		// Tools already promoted to ALLOWED by user confirmation skip the engine entirely.
 		if (use.getToolCallState() == ToolCallState.ALLOWED) {
-			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null,null);
+			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null);
 		}
 		ToolBase toolBase = use.getToolBase();
 		ToolCallPermissionManager toolCallPermissionManager = null;
@@ -460,8 +463,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		if(context != null ){
 			toolCallPermissionManager = context.getToolCallPermissionManager();
 		}
-		if(toolBase == null && !useEngine && toolCallPermissionManager == null){
-			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null,null);
+		if(toolBase == null && permissionEngine == null && toolCallPermissionManager == null){
+			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null);
 		}
 		 
 //		AgentTool tool = toolkit.getTool(use.getName());
@@ -472,15 +475,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		Map<String, Object> input = use.getArguments() == null ? Collections.emptyMap() : use.getArguments	();
 		PermissionDecision permissionDecision = null;
 		PermissionVerdict permissionVerdict = null;
-		if (useEngine) {
-			PermissionEngine permissionEngine = new PermissionEngine(chatContext);
+		if (permissionEngine != null) {			
 			permissionDecision = permissionEngine
 					.checkPermission(use, input);
 			permissionVerdict = new PermissionVerdict(
 					use,
 					permissionDecision == null
 							? PermissionBehavior.ASK
-							: permissionDecision.getBehavior(),permissionDecision,permissionEngine);
+							: permissionDecision.getBehavior(),permissionDecision);
 			return permissionVerdict;
 //					.map(
 //							decision ->
@@ -493,24 +495,24 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		else if(toolBase != null) {
 			permissionDecision = toolBase.checkPermissions(use, use.getArguments(), chatContext);
 			if (permissionDecision == null) {
-				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision, null);
+				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision );
 			}
 		}
 		else {
 			permissionDecision = toolCallPermissionManager.checkPermissions(use, use.getArguments(), chatContext);
 			if (permissionDecision == null) {
-				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision, null);
+				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision );
 			}
 		}
 		// In the legacy lightweight path only an explicit ASK from the tool
 		// gates execution; PASSTHROUGH and ALLOW both run, DENY is
 		// honoured.
 		switch (permissionDecision.getBehavior()) {
-			case ASK: permissionVerdict = new PermissionVerdict(use, PermissionBehavior.ASK,permissionDecision,null);
+			case ASK: permissionVerdict = new PermissionVerdict(use, PermissionBehavior.ASK,permissionDecision );
 			break;
-			case DENY: permissionVerdict = new PermissionVerdict(use, PermissionBehavior.DENY,permissionDecision,null);
+			case DENY: permissionVerdict = new PermissionVerdict(use, PermissionBehavior.DENY,permissionDecision );
 			break;
-			default : permissionVerdict = new PermissionVerdict(use, PermissionBehavior.ALLOW,permissionDecision,null);
+			default : permissionVerdict = new PermissionVerdict(use, PermissionBehavior.ALLOW,permissionDecision );
 		};
 		return permissionVerdict;
 //				.map(
@@ -618,23 +620,26 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     protected List<LinkedMessageMap<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent agent,ChatObject chatObject) {
         List<FunctionTool> tools = toolAgentMessage.getFunctionTools();
         List<LinkedMessageMap<String, Object>> toolMessages = new ArrayList<>(tools.size());
+		PermissionEngine permissionEngine = null;
         try {
             AgentTraceHolder.setChatObject(chatObject);
 			AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
 			PermissionGate permissionGate = evaluatePermissions(tools,chatObject);
+		
 			List<PermissionVerdict> pendingAsk = null;
-			Map<String,PermissionEngine> toolPermissionEngines = new LinkedHashMap<>();
+//			Map<String,PermissionEngine> toolPermissionEngines = new LinkedHashMap<>();
 			Map<String,PermissionVerdict> autoDeniedIds = null;
 			if(permissionGate != null){
 				pendingAsk = permissionGate.getPendingAsk();
 				autoDeniedIds = permissionGate.getAutoDeniedIds();
+				permissionEngine = permissionGate.getPermissionEngine();
 			}
-			if(pendingAsk != null){
-				for(PermissionVerdict permissionVerdict : pendingAsk)
-					if(permissionVerdict.getPermissionEngine() != null) {
-						toolPermissionEngines.put(permissionVerdict.getFunctionTool().getId(), permissionVerdict.getPermissionEngine());
-					}
-			}
+//			if(pendingAsk != null){
+//				for(PermissionVerdict permissionVerdict : pendingAsk)
+//					if(permissionVerdict.getPermissionEngine() != null) {
+//						toolPermissionEngines.put(permissionVerdict.getFunctionTool().getId(), permissionVerdict.getPermissionEngine());
+//					}
+//			}
 			// Handle pending ask
 			List<ToolCallAskResult> toolCallAskResults = this.toolCallAsk(chatObject,agentRuntimeContext,pendingAsk);	
 			 
@@ -642,14 +647,15 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 String toolId = tool.getId();
                 String functionName = tool.getFunctionName();
                 FunctionCall functionCall = agent.getFunctionCall(functionName);
-				PermissionEngine permissionEngine = toolPermissionEngines.get(toolId);
+//				PermissionEngine permissionEngine = toolPermissionEngines.get(toolId);
 				LinkedMessageMap<String, Object> toolMessage = null;
 				
 				
 				if(autoDeniedIds != null ){
 					PermissionVerdict  denyPermissionVerdict = autoDeniedIds.get(toolId);
 					if(denyPermissionVerdict != null) {
-						toolMessage = MessageBuilder.buildToolMessage("Permission denied by rules", toolId, tool, ToolCallState.DENIED, denyPermissionVerdict.getPermissionEngine());
+						toolMessage = MessageBuilder.buildToolMessage("Permission denied by rules", 
+								toolId, tool, ToolCallState.DENIED );
 						toolMessages.add(toolMessage);
 						continue;
 					}
@@ -658,7 +664,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 				ToolCallState toolCallState = null;
 				if(toolCallAskResult != null){
 					if(!toolCallAskResult.isApproved()){
-						toolMessage = MessageBuilder.buildToolMessage("Tool call ask denied", toolId, tool, ToolCallState.DENIED,permissionEngine);
+						toolMessage = MessageBuilder.buildToolMessage("Tool call ask denied", toolId, tool, ToolCallState.DENIED);
 						toolMessages.add(toolMessage);
 						continue;
 					}
@@ -669,16 +675,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 						}
 						PermissionRule choosedAlwaysPermissionRule = toolCallAskResult.getChoosedAlwaysPermissionRule();
 						if(choosedAlwaysPermissionRule != null){
-							permissionEngine = toolPermissionEngines.get(toolId);
+						 
 							if(permissionEngine != null){
 								permissionEngine.addRule(choosedAlwaysPermissionRule);
 							}
 						}					
 						
-					}
-					
-					
-					
+					}					
 				}
 				
 				Object result = null;
@@ -723,10 +726,27 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 						_result = "Convert result to json failed:"+e.getMessage();
 					}
 				}
-				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool,toolCallState,permissionEngine);
+				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool,toolCallState);
 				toolMessages.add(toolMessage);
             }
-        }
+			//记录模型调用异常轨迹消息
+			if(permissionEngine != null) {
+				TraceMessage agentToolPermissionRules = new TraceMessage();
+				LinkedMessageMap tracemessage = new LinkedMessageMap();
+				tracemessage.setAgentId(agent.getAgentId());
+				PermissionRules permissionRules = new PermissionRules();
+				permissionRules.setAllowRules(permissionEngine.getAllowRules());
+				permissionRules.setDenyRules(permissionEngine.getDenyRules());
+				permissionRules.setAskRules(permissionEngine.getAskRules());
+				
+				tracemessage.put(PermissionRules.PERMISSION_RULES_KEY, JsonUtil.object2json(permissionRules));
+//        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
+				tracemessage.put("role", SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME);
+				agentToolPermissionRules.setMessage(tracemessage);
+				agent.recordTraceMessage(agentToolPermissionRules);
+			}
+			
+		}
         finally {
             AgentTraceHolder.removeChatObject();
         }

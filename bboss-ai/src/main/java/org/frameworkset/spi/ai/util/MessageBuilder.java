@@ -484,7 +484,7 @@ public class MessageBuilder {
      * @return
      */
     public static LinkedMessageMap<String,Object> buildToolMessage(String message, String toolId, FunctionTool tool,
-																   ToolCallState toolCallState, PermissionEngine permissionEngine){
+																   ToolCallState toolCallState){
 		
 		LinkedMessageMap<String, Object> toolMessage = new LinkedMessageMap<>();
 		toolMessage.setName(tool.getFunctionName());
@@ -497,17 +497,17 @@ public class MessageBuilder {
 			metas.put("toolCallState", toolCallState.name());
 			
 		}
-		
-		if(permissionEngine != null) {
-			if(metas == null) {
-				metas = new LinkedHashMap<>();
-			}
-			PermissionRules permissionRules = new PermissionRules();
-			permissionRules.setAllowRules(permissionEngine.getAllowRules());
-			permissionRules.setDenyRules(permissionEngine.getDenyRules());
-			permissionRules.setAskRules(permissionEngine.getAskRules());
-			metas.put(PermissionRules.PERMISSION_RULES_KEY, permissionRules);
-		}
+//		
+//		if(permissionEngine != null) {
+//			if(metas == null) {
+//				metas = new LinkedHashMap<>();
+//			}
+//			PermissionRules permissionRules = new PermissionRules();
+//			permissionRules.setAllowRules(permissionEngine.getAllowRules());
+//			permissionRules.setDenyRules(permissionEngine.getDenyRules());
+//			permissionRules.setAskRules(permissionEngine.getAskRules());
+//			metas.put(PermissionRules.PERMISSION_RULES_KEY, permissionRules);
+//		}
 		if(metas != null) {
 			toolMessage.setMeta(metas);
 		}

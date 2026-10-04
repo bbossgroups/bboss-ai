@@ -16,7 +16,6 @@ package org.frameworkset.spi.ai;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.frameworkset.spi.ai.callback.AgentOutput;
@@ -40,7 +39,6 @@ import reactor.core.publisher.FluxSink;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -457,28 +455,33 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         }
         return lastSubAgentSessionMessage;
     }
-    
-	public void restorePermissionRules(List<LinkedMessageMap<String,Object>> sessionMemory){
-		if(CollectionUtils.isEmpty(sessionMemory)){
-			return;
-		}
-		Map<String, Object> permissionRules = null;
-		for(LinkedMessageMap<String,Object> sessionMemoryItem : sessionMemory){
-			String msgAgentId = sessionMemoryItem.getAgentId();
-			//只恢复智能体自身的工具权限规则
-			if(msgAgentId == null || !msgAgentId.equals(this.agentId)){
-				continue;
-			}
-			Map<String, Object> permissionRules_ = (Map<String, Object>)	 sessionMemoryItem.getMetaValue(PermissionRules.PERMISSION_RULES_KEY);
-			if(permissionRules_ != null){
-				permissionRules = permissionRules_;
-			}
-			
-		}
+	
+	/**
+	 * 恢复缓存的智能体权限规则
+	 * @param mainSessionStore
+	 */
+	private void restorePermissionRules(AgentSessionStore mainSessionStore){
+		PermissionRules permissionRules = mainSessionStore.getAgentPermissionRules(this.getSessionId(),this.agentId);
 		if(permissionRules != null){
-			String json = JsonUtil.object2json(permissionRules);
-			agentRuntimeContext.setPermissionRules(JsonUtil.json2Object(json, PermissionRules.class));
+			agentRuntimeContext.setPermissionRules(permissionRules);
 		}
+//		Map<String, Object> permissionRules = null;
+//		for(LinkedMessageMap<String,Object> sessionMemoryItem : sessionMemory){
+//			String msgAgentId = sessionMemoryItem.getAgentId();
+//			//只恢复智能体自身的工具权限规则
+//			if(msgAgentId == null || !msgAgentId.equals(this.agentId)){
+//				continue;
+//			}
+//			Map<String, Object> permissionRules_ = (Map<String, Object>)	 sessionMemoryItem.getMetaValue(PermissionRules.PERMISSION_RULES_KEY);
+//			if(permissionRules_ != null){
+//				permissionRules = permissionRules_;
+//			}
+//			
+//		}
+//		if(permissionRules != null){
+//			String json = JsonUtil.object2json(permissionRules);
+//			agentRuntimeContext.setPermissionRules(JsonUtil.json2Object(json, PermissionRules.class));
+//		}
 	}
     protected void loadHistoryMessages(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
         if(agentSessionStore == null){
@@ -507,7 +510,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 			}
 		} else if (lastSubAgentSessionMessage != null) {//不为空，直接append主智能体中的最后一条消息
 			//如果父智能体的最后一个子智能体消息就是智能体自己产生消息,无需添加到自己的消息列表中（因为结果生成后，已经添加到消息列表）
-			restorePermissionRules(    sessionMemory);
+//			restorePermissionRules(    sessionMemory);
 			if(!lastSubAgentSessionMessage.getMsgAgentId().equals(this.getAgentId())) {
 				
 				agentSessionStore.appendSessionMessageFromParent(this,lastSubAgentSessionMessage.getLastSessionMessage());
@@ -581,7 +584,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
                 agentSessionStore.setMainAgentSessionStore(mainSessionStore);
             }
             loadHistoryMessages(  mainSessionStore,  agentMessage);
-
+			restorePermissionRules(mainSessionStore);
 
         }
         

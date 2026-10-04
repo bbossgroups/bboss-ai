@@ -111,6 +111,9 @@ public class AgentMessageTypeConvertor {
 		else if(MESSAGE_TYPE_SUMMARY_MESSAGE_NAME.equals(role)) {
 			return MESSAGE_TYPE_SUMMARY_MESSAGE;
 		}
+		else if(MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME.equals(role)){
+			return MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE;
+		}
 
 
         return MESSAGE_TYPE_OTHER_MESSAGE;

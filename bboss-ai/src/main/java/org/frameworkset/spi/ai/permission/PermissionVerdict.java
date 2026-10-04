@@ -28,13 +28,11 @@ public class PermissionVerdict {
 	private	 PermissionDecision permissionDecision;
 	
 
-	private PermissionEngine permissionEngine;
 	
-	public PermissionVerdict(FunctionTool functionTool, PermissionBehavior permissionBehavior,PermissionDecision permissionDecision,PermissionEngine permissionEngine) {
+	public PermissionVerdict(FunctionTool functionTool, PermissionBehavior permissionBehavior,PermissionDecision permissionDecision ) {
 		this.functionTool = functionTool;
 		this.behavior = permissionBehavior;
 		this.permissionDecision = permissionDecision;	
-		this.permissionEngine = permissionEngine;
 	}
 	public PermissionVerdict(){
 		
@@ -64,8 +62,6 @@ public class PermissionVerdict {
 	public void setPermissionDecision(PermissionDecision permissionDecision) {
 		this.permissionDecision = permissionDecision;
 	}
-	public PermissionEngine getPermissionEngine() {
-		return permissionEngine;
-	}
+ 
 	
 }

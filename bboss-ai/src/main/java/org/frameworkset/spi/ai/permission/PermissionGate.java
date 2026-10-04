@@ -29,8 +29,9 @@ import java.util.Set;
 public class PermissionGate {
 	private List<PermissionVerdict> pendingAsk;
 	private Map<String,PermissionVerdict> autoDeniedIds;
+	private PermissionEngine permissionEngine;
 	
-	public PermissionGate(List<PermissionVerdict> pendingAsk, Map<String,PermissionVerdict> autoDeniedIds) {
+	public PermissionGate(List<PermissionVerdict> pendingAsk, Map<String,PermissionVerdict> autoDeniedIds,PermissionEngine permissionEngine) {
 		this.pendingAsk = pendingAsk;
 		this.autoDeniedIds = autoDeniedIds;
 	}
@@ -42,5 +43,9 @@ public class PermissionGate {
  
 	public Map<String,PermissionVerdict> getAutoDeniedIds() {
 		return autoDeniedIds;
+	}
+	
+	public PermissionEngine getPermissionEngine() {
+		return permissionEngine;
 	}
 }

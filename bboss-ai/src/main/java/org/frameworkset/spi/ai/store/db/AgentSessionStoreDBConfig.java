@@ -866,6 +866,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	
 	
 	private String selectSessionMessageBySessionId2ndMsgIdsSQL;
+	
+	private String selectAgentPermissionRulesSQL;
     
 
     private String selectMaxSeqNoBySessionIdSQL;
@@ -1240,12 +1242,16 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			
 			/**
 			 * 查询最近的消息,恢复到对话中 
-			 * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+			 * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 23 摘要消息，是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
 			 * 排除掉智能体跟踪消息
 			 */
 			selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" where sessionId=?   ")
 					.append("and messageType in ('0','1','2','3','4','23') and agentNodeType in ('standard','route','judge') order by createTime,seqNo asc").toString();
+			
+			selectAgentPermissionRulesSQL =  new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" where sessionId=?   ")
+					.append("and messageType = '25' and agentId= ? order by createTime,seqNo desc").toString();
 			selectSessionMessageBySessionId2ndMsgIdsSQL = new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" where sessionId=? and msgId in ({ids}) order by createTime,seqNo asc").toString();
 			selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
@@ -1632,5 +1638,9 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	
 	public String getUpdateClickhouseAgentToolCallRulesSQL() {
 		return updateClickhouseAgentToolCallRulesSQL;
+	}
+	
+	public String getSelectAgentPermissionRulesSQL() {
+		return selectAgentPermissionRulesSQL;
 	}
 }

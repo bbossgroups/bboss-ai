@@ -21,6 +21,7 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
@@ -395,6 +396,21 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 		catch (Exception exception){
 			throw new AIRuntimeException("getAgentRefMsgIds: agentId="+agentId + ",sessionId="+sessionId,exception);
 		}
+	}
+	@Override
+	public PermissionRules getAgentPermissionRules(String sessionId,String agentId){
+		try {
+			List<SessionMessage> permissionRuleMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+					agentSessionStoreDBConfig.getSelectAgentPermissionRulesSQL(),sessionId, agentId);
+			if(permissionRuleMessages != null && permissionRuleMessages.size() > 0){
+				SessionMessage permissionRulesMessage = permissionRuleMessages.get(0);
+				return resolvePermissionRules(  permissionRulesMessage);
+			}
+			return null;
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentPermissionRules: agentId="+agentId,exception);
+		}	
 	}
     @Override
     public List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage,String agentId){

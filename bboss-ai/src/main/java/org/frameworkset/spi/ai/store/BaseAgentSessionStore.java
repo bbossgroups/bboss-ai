@@ -428,7 +428,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 			
 			
 		}
-		agent.restorePermissionRules(     sessionMessagesNew);
+//		agent.restorePermissionRules(     sessionMessagesNew);
 		if(lastSummaryPosition > -1){
 			if(lastSummaryPosition > 0){
 				sessionMessagesNew = sessionMessagesNew.subList(lastSummaryPosition, sessionMessagesNew.size());

@@ -298,4 +298,18 @@ public class AgentSession {
     public void setDomain(String domain) {
         this.domain = domain;
     }
+	
+	public SessionMessage getAgentPermissionRules(String agentId) {
+		if(assistantMessages == null || assistantMessages.size() == 0)
+			return null;
+		 
+		SessionMessage permissionRulesMessage = null;
+		for(SessionMessage assistantMessage : assistantMessages){
+			String role = assistantMessage.getRole();
+			if(role.equals(SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME)){
+				permissionRulesMessage = assistantMessage;	
+			}
+		}
+		return permissionRulesMessage;
+	}
 }

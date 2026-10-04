@@ -15,11 +15,13 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import com.frameworkset.common.poolman.SQLExecutor;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.time.LocalDateTime;
@@ -376,6 +378,31 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 		}
 		catch (Exception exception){
 			throw new AIRuntimeException("getSessionMessages: sessionId="+sessionId+",summaryMessageIds:"+ JsonUtil.object2json(summaryMessageIds),exception);
+		}
+	}
+	protected PermissionRules resolvePermissionRules(SessionMessage permissionRulesMessage){
+		if(permissionRulesMessage == null)
+			return null;
+		LinkedMessageMap<String,Object> message = permissionRulesMessage.getMessage();
+		String rules = (String) message.get(PermissionRules.PERMISSION_RULES_KEY);
+		return JsonUtil.json2Object(rules, PermissionRules.class);
+		 
+	}
+	@Override
+	public PermissionRules getAgentPermissionRules(String sessionId, String agentId){
+		try {
+			if (this.agentSession == null) {
+				return null;
+			}
+			SessionMessage permissionRulesMessage = null;
+			synchronized (agentSession){
+				 permissionRulesMessage = this.agentSession.getAgentPermissionRules(agentId);
+				
+			}
+			return resolvePermissionRules(  permissionRulesMessage);
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentPermissionRules: sessionId="+sessionId+",agentId="+agentId,exception);
 		}
 	}
     @Override

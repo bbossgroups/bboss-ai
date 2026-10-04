@@ -157,6 +157,11 @@ public class SessionMessage {
 	 */
 	public static final String MESSAGE_TYPE_LLMCALLERROR_MESSAGE = "24";
 	
+	/**
+	 * LLM调用工具权限消息
+	 */
+	public static final String MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE = "25";
+	
 	
 	/**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
@@ -279,8 +284,11 @@ public class SessionMessage {
 	 * LLM调用异常消息
 	 */
 	public static final String MESSAGE_TYPE_LLMCALLERROR_MESSAGE_NAME = "llmcallerror";
+	/**
+	 * LLM调用工具权限消息
+	 */
+	public static final String MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME = "toolpermissionrules";
 	
-
 	
 	/**
 	 * 消息名称：用于显示特定消息的名称，如果是工具入参和工具结果，则代表工具名称

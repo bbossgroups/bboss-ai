@@ -19,6 +19,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
 import java.util.List;
@@ -133,4 +134,6 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 	 * @return
 	 */
 	List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit);
+	
+	PermissionRules getAgentPermissionRules(String sessionId,String agentId);
 }
