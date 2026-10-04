@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.hitl;
 
 import com.frameworkset.common.poolman.util.SQLUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.skill.SkillsToolRegist;
@@ -46,6 +47,8 @@ public class ChecklistCodeViewAgentHitlTest {
 //            String message = "当前OS为windows，生成一段shell脚本，首先查找占用端口808的进程，如果存在对应进程，则关闭进程，输出端口进程信息和关闭核对结果";
 //            message = "请依次执行以下命令：\n1.获取OS版本信息\n2.获取CPU信息\n3.打印OS和CPU信息\n4.查找端口808的进程\n5.如果存在对应进程，则关闭进程\n6.输出端口进程信息和关闭核对结果";
 			initDB();
+			//全局hitl配置
+			/**
 			AgentSessionService agentSessionService = new AgentSessionServiceImpl();
 			agentSessionService.setDatasource("visualops");
 			agentSessionService.setHitlDatasource("visualops");
@@ -53,7 +56,7 @@ public class ChecklistCodeViewAgentHitlTest {
 			HitlTaskHelper.getHitlTaskHelper()
 					.setAgentSessionService(agentSessionService)
 				 
-					.init();
+					.init();*/
 			callMinimaxSimple();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -91,7 +94,8 @@ public class ChecklistCodeViewAgentHitlTest {
 		chatAgentMessage.setStoreContext(new StoreContext()
 				.setUserId("user123").setSessionSize(100).setRequestId("request123")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
-				.setDataSource("visualops").setHitlDatasource("visualops"));
+				.setHitlRedisChannel("test", RedisHitlTaskCallListener.DEFAULT_CHANNEL)
+				.setDataSource("visualops"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		AIAgent agent = new AIAgent();

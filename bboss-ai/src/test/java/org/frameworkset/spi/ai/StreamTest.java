@@ -27,7 +27,6 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
-import org.frameworkset.spi.feishu.BaseFeishuConfig;
 import org.frameworkset.spi.reactor.BaseStreamDataHandler;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.spi.reactor.FluxSinkStatus;

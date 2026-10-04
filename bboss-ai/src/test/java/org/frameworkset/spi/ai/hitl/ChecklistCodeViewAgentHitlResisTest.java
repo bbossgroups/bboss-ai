@@ -55,6 +55,7 @@ public class ChecklistCodeViewAgentHitlResisTest {
 //            message = "请依次执行以下命令：\n1.获取OS版本信息\n2.获取CPU信息\n3.打印OS和CPU信息\n4.查找端口808的进程\n5.如果存在对应进程，则关闭进程\n6.输出端口进程信息和关闭核对结果";
 			initDB();
 			initRedis();
+			//全局hitl配置
 			AgentSessionService agentSessionService = new AgentSessionServiceImpl();
 			agentSessionService.setDatasource("visualops");
 			
@@ -130,11 +131,12 @@ public class ChecklistCodeViewAgentHitlResisTest {
 		chatAgentMessage.setStoreContext(new StoreContext()
 				.setUserId("user123").setSessionSize(100).setRequestId("request123")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
+				.setHitlRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)
 				.setDataSource("visualops"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
 		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
-		agentRuntimeContext.setDebugSSEData(true);
+		agentRuntimeContext.setDebugSSEData(false);
 		AIAgent agent = new AIAgent().setAgentRuntimeContext(agentRuntimeContext);
 		agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
 		agent.setMaxLoopToolCalls(80);

@@ -65,7 +65,7 @@ public class CliToolLoopPortClickhouseServicePromptTest {
 		DBConf tempConf = new DBConf();
 		tempConf.setPoolname("visualops");
 		tempConf.setDriver("com.clickhouse.jdbc.ClickHouseDriver");
-		tempConf.setJdbcurl("jdbc:clickhouse:http://101.13.6.4:28123,10.131.6.7:28123,10.13.41.6:28123/visualops?b.enableBalance=true&b.balance=roundbin");
+		tempConf.setJdbcurl("jdbc:clickhouse:http://101.13.6.4:28123,101.13.6.7:28123,101.13.4.6:28123/visualops?b.enableBalance=true&b.balance=roundbin");
 		tempConf.setUsername("default");
 		tempConf.setPassword("123456");
 		tempConf.setValidationQuery("select 1 ");

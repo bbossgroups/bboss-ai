@@ -110,7 +110,7 @@ public class StreamTest {
         chatAgentMessage.setMaas(maas);
 		
 		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
-		agentRuntimeContext.setDebugSSEData(true);
+		agentRuntimeContext.setDebugSSEData(false);
 		chatAgentMessage.setAgentRuntimeContext(agentRuntimeContext);
 		
 		

@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.permission.PermissionRule;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
@@ -32,6 +33,8 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+
+import static org.frameworkset.spi.ai.permission.PermissionBehavior.*;
 
 /**
  * @author biaoping.yin
@@ -82,6 +85,10 @@ public class RoutingStreamTest {
                 .setModel(model)
                 .setMaas(maas).setPrompt(prompt).setThinking(true);
 		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
+//		agentRuntimeContext.addAllowRule("bash", new PermissionRule("bash", "git status:*", ALLOW, "userSettings"));
+//		agentRuntimeContext.addAllowRule("bash", new PermissionRule("bash", "git diff:*",  ALLOW, "userSettings"));
+//		agentRuntimeContext.addDenyRule ("bash", new PermissionRule("bash", "rm -rf:*",   DENY,  "userSettings"));
+//		agentRuntimeContext.addAskRule  ("bash", new PermissionRule("bash", "sudo:*",     ASK,   "userSettings"));
 		agentRuntimeContext.setDebugSSEData(false);
 		chatAgentMessage.setAgentRuntimeContext(agentRuntimeContext);
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
