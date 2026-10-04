@@ -289,7 +289,6 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	 * 修改会话标题
 	 * @param sessionId
 	 * @param newTitle
-	 * @return
 	 * @throws AgentSessionException
 	 */
 	public void updateAgentSessionTitle(String sessionId,String newTitle) throws AgentSessionException{

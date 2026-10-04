@@ -228,7 +228,7 @@ AgentAdapter (抽象基类)
 - 构建各类请求参数（Chat、Image、Audio、Video、Embedding、Rerank）
 - 解析响应数据
 - 处理流式数据解析
-- 管理端点 URL
+- 管理端点 URL：`AgentAdapter` 实现 `CompletionsUrlInterface` 接口，抽象出各类媒体请求的完成端点 URL 构建方法（`getChatCompletionsUrl`、`getGenImageCompletionsUrl`、`getGenAudioCompletionsUrl`、`getImageVLCompletionsUrl`、`getVideoVLCompletionsUrl`、`getSubmitVideoTaskUrl`、`getVideoTaskResultUrl`、`getEmbeddingUrl`、`getRerankUrl`、`getAudioSTTCompletionsUrl`），各平台适配器按需覆写
 
 #### 3.2.3 Model 消息模型层
 
@@ -1267,7 +1267,7 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 
 **消息类型对照表：**
 
-消息类型体系采用 `messageType` 数值编码与 `role` 字符串名称双标识设计，覆盖用户交互、模型调用、工具执行、技能调用、人工介入、规划、摘要压缩、观测追踪等全链路场景。其中 0–24 为框架内置标准类型，`MESSAGE_TYPE_OTHER_MESSAGE=18` 为未映射类型的兜底编码；业务如需自定义扩展，建议从 101 开始编码，并在 `AgentMessageTypeConvertor` 中注册映射关系。
+消息类型体系采用 `messageType` 数值编码与 `role` 字符串名称双标识设计，覆盖用户交互、模型调用、工具执行、工具权限、技能调用、人工介入、规划、摘要压缩、观测追踪等全链路场景。其中 0–25 为框架内置标准类型，`MESSAGE_TYPE_OTHER_MESSAGE=18` 为未映射类型的兜底编码；业务如需自定义扩展，建议从 101 开始编码，并在 `AgentMessageTypeConvertor` 中注册映射关系。
 
 | 常量 | 值 | role 名称 | 说明 |
 |------|-----|-----------|------|
@@ -1296,6 +1296,7 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 | `MESSAGE_TYPE_PLAN_MESSAGE` | 22 | plan | 自主规划（Plan）消息 |
 | `MESSAGE_TYPE_SUMMARY_MESSAGE` | 23 | user | 会话摘要压缩消息（记录被压缩的消息清单到 meta.summaryIds） |
 | `MESSAGE_TYPE_LLMCALLERROR_MESSAGE` | 24 | llmcallerror | 模型调用异常消息（执行轨迹记录模型调用异常） |
+| `MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE` | 25 | toolpermissionrules | 工具权限规则消息（每轮工具调用后将权限引擎的 allow/deny/ask 规则表快照持久化，会话恢复时用于还原"始终允许/拒绝"等规则） |
 
 **自动 Trace 采集：**
 
@@ -1486,7 +1487,15 @@ message.setStoreContext(storeContext);
 5. BYPASS 模式回退 → 全部 ALLOW
 6. 默认 ASK；`DONT_ASK` 模式下降级为 DENY
 
-**人工确认流程（ASK）：** `AgentAdapter.buildInputToolMessages` 将 `pendingAsk` 包装为 `ToolCallAsk` 通过 `HitlTaskHelper.hitlTaskTool` 走 HitL 人工介入（任务类型 `HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK`），超时默认 60s。`ToolCallAskResult` 支持 `approved`、`updateInput`（人工修订后的工具入参将覆盖原参数执行）、`choosedAlwaysPermissionRule`（用户选择"始终允许/始终拒绝"时回写规则，此后相同场景不再询问）。被用户确认过（`ToolCallState.ALLOWED`）的工具下轮直接跳过引擎。
+**人工确认流程（ASK）：** `AgentAdapter.buildInputToolMessages` 将 `pendingAsk` 包装为 `ToolCallAsk` 通过 `HitlTaskHelper.hitlTaskTool` 走 HitL 人工介入（任务类型 `HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK`），超时默认 60s。`ToolCallAskResult` 支持 `approved`、`updateInput`（人工修订后的工具入参将覆盖原参数执行）、`choosedAlwaysPermissionRule`（用户选择"始终允许/始终拒绝"时即时回填引擎规则并持久化，此后相同场景不再询问）。被用户确认过（`ToolCallState.ALLOWED`）的工具下轮直接跳过引擎。
+
+**权限规则持久化与还原（会话级）：** 工具权限规则的"始终允许/始终拒绝"状态支持跨轮次、跨会话持久化，保证恢复历史会话时沿用最新的权限决策，用户无需重复确认。
+
+1. **自动持久化（模式 2，当前采用）**：每轮工具调用结束后，`AgentAdapter` 将当前 `PermissionEngine` 的 allow/deny/ask 三张规则表快照封装为 `PermissionRules`，以 role=`toolpermissionrules`（`MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE=25`）的 Trace 消息（meta 的 `permissionRules` 键）写入会话存储（`agent.recordTraceMessage`）。
+2. **会话恢复还原**：会话续问续答时，`AIAgent.restorePermissionRules(chatObject)` 调用 `mainSessionStore.getAgentPermissionRules(sessionId, agentId)`（内存实现从 `AgentSession.getAgentPermissionRules` 取最新一条，DB 实现经 `selectAgentPermissionRulesSQL` 查询）加载该智能体最新的权限规则，还原到 `ChatObject.permissionRules`。
+3. **会话规则优先**：`PermissionEngine` 构造时优先采用会话中还原的权限规则；若 `ChatObject.getPermissionRules()` 为 null 才回退到 `AgentRuntimeContext` 上配置的初始规则。
+4. **"总是允许/拒绝"免确认（含同用户消息内跨轮）**：Ask 审批时用户通过 `ToolCallAskResult.choosedAlwaysPermissionRule` 选中的规则，会立即通过 `permissionEngine.addRule(...)` 追加到引擎内部规则表，同一请求内后续工具调用（包括同一用户消息内的多轮工具循环）直接命中 ALLOW/DENY 不再询问；同时随类型 25 消息持久化，供后续会话还原。
+5. **表持久化（模式 1）**：保留 `agent_tool_call_rules` 表（`AIAgent.addAgentToolCallRules/updateAgentToolCallRules/getAgentToolCallRules`）作为独立的规则持久化通道，支持 MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse（ClickHouse 下同样创建 `agent_tool_call_rules_local` 本地表与分布式表）；`deleteAgentSession` 删除会话时一并清理该表规则。
 
 **配置示例：**
 
@@ -1960,10 +1969,10 @@ BaseAgentSessionStore → PersistentMessage
 | Apache HttpCore5 | 5.x | HTTP 核心 |
 | Project Reactor | 3.x | 响应式编程 |
 | Jackson | 2.22.1 | JSON 处理 |
-| bboss-http5 | 6.5.5 | 负载均衡 HTTP 组件 |
+| bboss-http5 | 6.5.6 | 负载均衡 HTTP 组件 |
 | bboss-core-entity | 6.3.5 | 基础实体类 |
 | bboss-datatran-jdbc | 7.5.7 | 工作流引擎（JobFlow） |
-| bboss-feishu | 6.5.5 | 飞书集成 |
+| bboss-feishu | 6.5.6 | 飞书集成 |
 | bboss-persistent | 6.3.5 | 数据库持久化 |
 | bboss-data | 6.3.8 | 数据处理 |
 | flexmark | 0.64.8 | Markdown 处理 |
@@ -2303,11 +2312,11 @@ bboss-ai 是一个功能完善的 Java AI 智能体开发框架，具有以下�
 8. **多轮工具调用**：支持智能体自主决策多步骤任务执行，默认最大 80 轮
 9. **人工介入（HitL）**：支持单节点内存共享和集群 Redis 发布/订阅两种模式，内置 `HitlTaskcallTool` 和自定义 Hitl 工具扩展
 10. **工具审计**：内置 `Auditor` 审计系统，支持工具调用前审计拦截，适用于敏感操作审批
-11. **工具权限管控**：`PermissionEngine` 规则引擎 + 四种评估模式 + HitL 人工确认，"始终允许/拒绝"规则可持久化（`agent_tool_call_rules` 表）
+11. **工具权限管控**：`PermissionEngine` 规则引擎 + 五种评估模式 + HitL 人工确认，"始终允许/拒绝"规则可持久化（`agent_tool_call_rules` 表 + 消息类型 25 会话自动持久化还原，会话规则优先），同一请求内跨轮次免确认
 12. **生产级会话存储**：支持 ClickHouse 分布式集群，提供高吞吐会话持久化能力
 13. **会话记忆压缩**：窗口压缩/摘要压缩两种策略，支持记忆 Flush、工具结果剪枝、入参截断，动态触发阈值适配模型上下文窗口
 14. **智能体记忆**：`agent_memory` 表持久化按日流水账与长期记忆，记忆检索与会话/摘要检索工具联动
-15. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路（含模型调用异常记录），消息类型体系扩展到 24 种
+15. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路（含模型调用异常记录），消息类型体系扩展到 25 种
 16. **内置工具体系**：Shell 执行、代码执行（Java/Python/JavaScript）、文件操作（含 glob/list/grep 检索）、系统信息查询、文本搜索（Grep）、网页抓取（`web_fetch`）、联网搜索（`web_search`）、任务清单（`todo_write`）、会话/摘要检索、人工介入
 17. **混合推理内容流式推送**：`mixedData` 报文自动拆分，推理流与答案流分别渲染，适配九天 deepseek 等边推理边输出模型
 18. **步骤级事件**：`ServerEvent.TYPE_STEP` 实时推送"新一轮工具调用开始/人工介入完成"信号，支持按步骤进度展示

@@ -97,7 +97,6 @@ public interface AgentSessionService {
 	 * 修改会话标题
 	 * @param sessionid
 	 * @param newTitle
-	 * @return
 	 * @throws AgentSessionException
 	 */
 	void updateAgentSessionTitle(String sessionid,String newTitle) throws AgentSessionException;
