@@ -59,8 +59,8 @@ public class AgentAdapterFactory {
 	public static void registerAgentAdapter(ClientConfiguration clientConfiguration,String modelType, AgentAdapter agentAdapter){
 		if(agentAdapters.containsKey(modelType)) {
 //			throw new AIRuntimeException("modelType:[" + modelType + "] has been registered.");
-			if(log.isInfoEnabled()) {
-				log.info("modelType:[{}] agentAdapter[{}]  used in [{}] has been registered.",modelType,agentAdapter.getClass().getName(),clientConfiguration.getBeanName());
+			if(log.isWarnEnabled()) {
+				log.warn("modelType:[{}] agentAdapter[{}]  used in [{}] has been registered.",modelType,agentAdapter.getClass().getName(),clientConfiguration.getBeanName());
 			}
 			return;
 		}
