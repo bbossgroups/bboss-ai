@@ -118,6 +118,7 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 	 */
 	private Map<String,Object> hitlAssistant;
     
+	@JsonIgnore
     private List<FunctionTool> functionTools;
 
 
