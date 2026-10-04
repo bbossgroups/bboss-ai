@@ -306,7 +306,7 @@ public class AgentSession {
 		SessionMessage permissionRulesMessage = null;
 		for(SessionMessage assistantMessage : assistantMessages){
 			String role = assistantMessage.getRole();
-			if(role.equals(SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME)){
+			if(assistantMessage.getAgentId().equals(agentId) &&	 role.equals(SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME) ){
 				permissionRulesMessage = assistantMessage;	
 			}
 		}

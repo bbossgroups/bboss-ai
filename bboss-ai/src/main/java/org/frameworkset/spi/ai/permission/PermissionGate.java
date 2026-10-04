@@ -34,6 +34,7 @@ public class PermissionGate {
 	public PermissionGate(List<PermissionVerdict> pendingAsk, Map<String,PermissionVerdict> autoDeniedIds,PermissionEngine permissionEngine) {
 		this.pendingAsk = pendingAsk;
 		this.autoDeniedIds = autoDeniedIds;
+		this.permissionEngine = permissionEngine;
 	}
 
 	

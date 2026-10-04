@@ -433,7 +433,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		}
 		AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
 		boolean useEngine = agentRuntimeContext != null && !agentRuntimeContext.isTrivial();
-		PermissionEngine permissionEngine = useEngine?new PermissionEngine(chatObject.getChatContext()):null;
+		PermissionEngine permissionEngine = useEngine?new PermissionEngine(chatObject):null;
 		Map<String,PermissionVerdict> denied = new LinkedHashMap();
 		List<PermissionVerdict> pending = new ArrayList<>();
 		for (FunctionTool toolCall : toolCalls) {

@@ -374,4 +374,5 @@ public class ChatContext {
 	public boolean inPlanMode() {
 		return false;
 	}
+	
 }

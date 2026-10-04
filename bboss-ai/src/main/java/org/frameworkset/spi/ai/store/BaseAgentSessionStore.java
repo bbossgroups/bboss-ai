@@ -298,10 +298,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 		
 		LinkedMessageMap<String, Object> message = traceMessage.getMessage();
         persistentMessage.setMessage(message);
-        TokenMetrics tokenMetrics = new TokenMetrics();
-        tokenMetrics.setStartTime(traceMessage.getStartTime());
-        tokenMetrics.setEndTime(traceMessage.getEndTime());
-        persistentMessage.setTokenMetrics(tokenMetrics);
+		if(traceMessage.getStartTime() != null || traceMessage.getEndTime() != null) {
+			TokenMetrics tokenMetrics = new TokenMetrics();
+			tokenMetrics.setStartTime(traceMessage.getStartTime());
+			tokenMetrics.setEndTime(traceMessage.getEndTime());
+			persistentMessage.setTokenMetrics(tokenMetrics);
+		}
         String metadata = null;
         if(traceMessage.getMetaData() != null){
             metadata = JsonUtil.object2json(traceMessage.getMetaData());

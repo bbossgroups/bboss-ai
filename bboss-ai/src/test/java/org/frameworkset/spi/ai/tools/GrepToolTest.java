@@ -43,7 +43,6 @@ public class GrepToolTest {
 		
 		chatAgentMessage.setStream( true).setThinking(false);//.addParameter("max_tokens", 2048);
 		
-		CountDownLatch countDownLatch = new CountDownLatch(1);
 		String message = "根据用户问题：#[input.query]，调用文件检索工具grep，检索包含用户问题的文件内容。如果用户问题中没有指定文件目录，则将目录设置为空";
 		AIAgent aiAgent = new AIAgent(message);
 		aiAgent.registBeanTool(new TodoTools());
@@ -63,13 +62,9 @@ public class GrepToolTest {
 					}
 //					
 				}) //打印流式调用返回的问题答案片段
-				.doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
-				.doOnError(error ->{countDownLatch.countDown(); logger.error("错误: " + error.getMessage(),error);})
-				.subscribe();
-		try {
-			countDownLatch.await();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+				.doOnComplete(() -> { System.out.println();logger.info("\n=== 流完成 ===");})
+				.doOnError(error ->{  logger.error("错误: " + error.getMessage(),error);})
+				.blockLast();
+		 
 	}
 }

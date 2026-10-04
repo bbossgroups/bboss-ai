@@ -458,12 +458,11 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 	
 	/**
 	 * 恢复缓存的智能体权限规则
-	 * @param mainSessionStore
 	 */
-	private void restorePermissionRules(AgentSessionStore mainSessionStore){
+	public void restorePermissionRules(ChatObject chatObject){
 		PermissionRules permissionRules = mainSessionStore.getAgentPermissionRules(this.getSessionId(),this.agentId);
 		if(permissionRules != null){
-			agentRuntimeContext.setPermissionRules(permissionRules);
+			chatObject.restoreCachedPermissionRule(permissionRules);
 		}
 //		Map<String, Object> permissionRules = null;
 //		for(LinkedMessageMap<String,Object> sessionMemoryItem : sessionMemory){
@@ -584,7 +583,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
                 agentSessionStore.setMainAgentSessionStore(mainSessionStore);
             }
             loadHistoryMessages(  mainSessionStore,  agentMessage);
-			restorePermissionRules(mainSessionStore);
+			
 
         }
         

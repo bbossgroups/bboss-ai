@@ -35,9 +35,8 @@ public class MapAgentMessage extends AgentMessage<MapAgentMessage>{
         this.agentMessage = agentMessage;
     }
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, ChatContext chatContext) {
-        ChatObject chatObject = new ChatObject();
-        chatObject.setChatContext(chatContext);
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent agent, ChatContext chatContext) {
+        ChatObject chatObject = buildChatObject(chatContext,agent);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         String aiChatRequestType = null;
         StreamDataBuilder streamDataBuilder = null;

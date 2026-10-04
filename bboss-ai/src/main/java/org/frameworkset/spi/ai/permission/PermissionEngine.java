@@ -19,6 +19,7 @@ package org.frameworkset.spi.ai.permission;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.tool.ToolBase;
@@ -58,26 +59,29 @@ public final class PermissionEngine {
     /**
      * Creates an engine seeded from the given context's rules and mode.
      *
-     * @param chatContext permission context providing mode, working directories, and initial rules
+     * @param chatObject permission context providing mode, working directories, and initial rules
      */
-    public PermissionEngine(ChatContext chatContext) {
+    public PermissionEngine(ChatObject chatObject) {
+		this.chatContext = chatObject.getChatContext();
 		this.context = chatContext.getAgentRuntimeContext();
 		
-		this.chatContext = chatContext;
+		
 //        this.context = Objects.requireNonNull(context, "context must not be null");
-		if(context != null) {
-			PermissionRules permissionRules = context.getPermissionRules();
-			if(permissionRules == null) {
+		 
+		PermissionRules permissionRules = chatObject.getPermissionRules();
+		if(permissionRules == null ) {
+			if(context != null) {
 				this.allowRules = copyMutable(context.getAllowRules());
 				this.denyRules = copyMutable(context.getDenyRules());
 				this.askRules = copyMutable(context.getAskRules());
 			}
-			else{//从会话上下文中恢复权限规则
-				this.allowRules = copyMutable(permissionRules.getAllowRules());
-				this.denyRules = copyMutable(permissionRules.getDenyRules());
-				this.askRules = copyMutable(permissionRules.getAskRules());
-			}
 		}
+		else{//从会话上下文中恢复权限规则
+			this.allowRules = copyMutable(permissionRules.getAllowRules());
+			this.denyRules = copyMutable(permissionRules.getDenyRules());
+			this.askRules = copyMutable(permissionRules.getAskRules());
+		}
+		 
     }
 
     private static Map<String, List<PermissionRule>> copyMutable(

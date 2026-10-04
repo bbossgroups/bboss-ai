@@ -19,6 +19,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import reactor.core.publisher.FluxSink;
@@ -48,6 +49,26 @@ public class ChatObject extends StoreChatObject{
 
 
     private String completionsUrl;
+	
+	private PermissionRules permissionRules;
+	
+	/**
+	 * 从历史消息中恢复权限规则：智能体会话记忆中保存了工具调用的最新权限规则，当会话开始时，会调用此方法恢复保存在历史会话记忆中的权限规则。
+	 * @param permissionRules
+	 * @return
+	 */
+	public ChatObject restoreCachedPermissionRule(PermissionRules permissionRules) {
+		this.permissionRules = permissionRules;
+		return this;
+	}
+	
+	/**
+	 * 获取权限规则：权限规则用于控制工具调用的权限，如果权限规则为空，则表示没有权限调用任何工具。
+	 * @return
+	 */
+	public PermissionRules getPermissionRules() {
+		return permissionRules;
+	}
     public String getCompletionsUrl() {
         return completionsUrl;
     }

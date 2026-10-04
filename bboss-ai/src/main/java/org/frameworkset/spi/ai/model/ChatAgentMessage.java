@@ -46,11 +46,9 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
 //            thinking = _thinking;
 //        chatObject.setThinking(thinking);
 //    }
-    public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, ChatContext chatContext){
-        ChatObject chatObject = new ChatObject();
-        chatObject.setChatContext(chatContext);
-        chatObject.setAgent(aiAgent);
-        SSEHeaderSetFunction sseHeaderSetFunction = null;
+    public  ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent agent, ChatContext chatContext){
+        ChatObject chatObject = buildChatObject(  chatContext,  agent);
+		SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
         Boolean stream = false;
 
@@ -58,7 +56,7 @@ public class ChatAgentMessage   extends SessionAgentMessage<ChatAgentMessage>{
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
         
-        parameters = buildOpenAIRequestMap(agentAdapter,   aiAgent,chatObject,chatContext);
+        parameters = buildOpenAIRequestMap(agentAdapter,   agent,chatObject,chatContext);
 //        buildThinking(  chatObject,  agentAdapter,   parameters);
         if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             parameters.put("stream",false);

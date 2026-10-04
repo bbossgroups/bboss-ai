@@ -126,7 +126,8 @@ public class PermissionChecklistCodeViewAgentHitlResisTest {
 		chatAgentMessage.setStream(true).setThinking(false);
 //				.setTemperature(1.0);//.addParameter("max_tokens", 2048);
 		chatAgentMessage.setStoreContext(new StoreContext()
-				.setUserId("user123").setSessionSize(100).setRequestId("request123").setSessionId("1234567")
+				.setUserId("user123").setSessionSize(100)
+				.setRequestId("request123").setSessionId("1234569")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
 				.setHitlRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)
 				.setDataSource("visualops"));

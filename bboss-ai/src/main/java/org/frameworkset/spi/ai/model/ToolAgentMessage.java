@@ -40,8 +40,8 @@ public class ToolAgentMessage extends ChatAgentMessage{
         return chatAgentMessage.getMaas();
 	}
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter,AIAgent aiAgent, ChatContext chatContext) {
-        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter,aiAgent, chatContext);
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent agent, ChatContext chatContext) {
+        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter, agent, chatContext);
         chatObject.setToolCall(true);
         return chatObject;
     }

@@ -17,7 +17,6 @@ package org.frameworkset.spi.ai.context;
 
 import org.apache.commons.collections.MapUtils;
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
-import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.permission.PermissionBehavior;
 import org.frameworkset.spi.ai.permission.PermissionMode;
 import org.frameworkset.spi.ai.permission.PermissionRule;
@@ -42,8 +41,7 @@ public class AgentRuntimeContext {
 	private boolean debugSSEData;
 	
 
-	
-	private PermissionRules permissionRules;
+
 
 	
 	private ToolCallPermissionManager toolCallPermissionManager;
@@ -294,24 +292,6 @@ public class AgentRuntimeContext {
 		this.toolCallPermissionManager = toolCallPermissionManager;
 		return this;
 	}
-	/**
-	 * 从历史消息中恢复权限规则：智能体会话记忆中保存了工具调用的最新权限规则，当会话开始时，会调用此方法恢复保存在历史会话记忆中的权限规则。
-	 * @param permissionRules
-	 * @return
-	 */
-	public AgentRuntimeContext restoreCachedPermissionRule(PermissionRules permissionRules) {
-		this.permissionRules = permissionRules;
-		return this;
-	}
 	
-	/**
-	 * 获取权限规则：权限规则用于控制工具调用的权限，如果权限规则为空，则表示没有权限调用任何工具。
-	 * @return
-	 */
-	public PermissionRules getPermissionRules() {
-		return permissionRules;
-	}
-	public void setPermissionRules(PermissionRules permissionRules) {
-		this.permissionRules = permissionRules;
-	}
+ 
 }

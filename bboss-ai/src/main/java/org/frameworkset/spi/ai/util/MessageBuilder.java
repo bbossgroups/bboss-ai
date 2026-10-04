@@ -17,9 +17,7 @@ package org.frameworkset.spi.ai.util;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.model.tool.ToolCallState;
-import org.frameworkset.spi.ai.permission.PermissionEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

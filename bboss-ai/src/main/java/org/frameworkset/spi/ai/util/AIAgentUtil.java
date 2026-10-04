@@ -434,6 +434,7 @@ public class AIAgentUtil {
 		if (params != null && params.size() > 0) {
 			chatContext.addContextDatas(params);
 		}
+		
 		return chatContext;
 	}
     public static ChatContext getChatContext(String maas,AgentMessage chatMessage, AIAgent agent){
@@ -478,7 +479,7 @@ public class AIAgentUtil {
                 outputResult(agent, serverEvent, chatContext);
             }
         });
-     
+		
         return chatContext;
     }
     public static void outputResult(AIAgent agent, ServerEvent serverEvent, ChatContext chatContext){
@@ -975,6 +976,8 @@ public class AIAgentUtil {
         ChatContext chatContext = AIAgentUtil.getChatContext(poolName,(AgentMessage)chatMessage, aiAgent);
         return chatCompletionEvent(  poolName,   chatMessage ,   aiAgent,chatContext);
     }
+	
+	
 	public static Map listModels(String maas ){
 		return listModels(  maas, (Map) null);
 	}
@@ -1060,7 +1063,7 @@ public class AIAgentUtil {
                 }
             }
             ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage,functionTools);
-            return chatCompletionEvent(  poolName,toolAgentMessage,aiAgent);
+            return chatCompletionEvent(  poolName,toolAgentMessage,aiAgent,chatContext);
 
         }
         else {

@@ -382,4 +382,12 @@ public class AgentMessage<T extends AgentMessage> {
 		this.agentRuntimeContext = agentRuntimeContext;
 	}
 	
+	protected ChatObject buildChatObject(ChatContext chatContext,AIAgent agent){
+		ChatObject chatObject = new ChatObject();
+		chatObject.setChatContext(chatContext);
+		chatObject.setAgent(agent);
+		agent.restorePermissionRules(chatObject);
+		return chatObject;
+	}
+	
 }

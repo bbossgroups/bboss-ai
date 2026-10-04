@@ -47,7 +47,8 @@ public class HttpWebToolTest {
 		chatAgentMessage.setStream( true).setThinking(false);//.addParameter("max_tokens", 2048);
 		
 		AIAgent aiAgent = new AIAgent();
-		aiAgent.registBeanTool(new WebSearchTool()).registBeanTool(new WebFetchTool());
+		aiAgent.registBeanTool(new WebSearchTool("http_websearch_tool"))
+				.registBeanTool(new WebFetchTool("http_webfetch_tool"));
 		aiAgent.setEnableLoopToolCall(true);
 		aiAgent.setMaxLoopToolCalls(10);
 		
