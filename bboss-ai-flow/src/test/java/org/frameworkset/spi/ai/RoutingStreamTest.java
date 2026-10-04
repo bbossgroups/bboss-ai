@@ -17,12 +17,13 @@ package org.frameworkset.spi.ai;
 
 import com.frameworkset.common.poolman.util.SQLUtil;
 import com.frameworkset.util.SimpleStringUtil;
-import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
+import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.flow.*;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.permission.PermissionRule;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
@@ -32,6 +33,8 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+
+import static org.frameworkset.spi.ai.permission.PermissionBehavior.*;
 
 /**
  * @author biaoping.yin
@@ -57,7 +60,7 @@ public class RoutingStreamTest {
 
 //        multiagentWeathor("qwenvlplus","创建一篇关于中国首都介绍的飞书文档","qwen3.7-plus",null);
 		
-		multiagentWeathor("qwenvlplus","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","qwen3.7-plus",null);
+		multiagentWeathor("qwenvlplus","查询长沙市天气，根据天气情况给出穿衣建议、出行建议","qwen3.7-plus","f5bc2622a5c84696a4aead5cfe7d4dd8");
 //        multiagentWeathor("kimi","创建一篇关于中国首都介绍的飞书文档","kimi-k2.6",null);
 //        multiagentWeathor("qwenvlplus","介绍一下solon","qwen3.6-plus",null);
 
@@ -82,14 +85,18 @@ public class RoutingStreamTest {
                 .setModel(model)
                 .setMaas(maas).setPrompt(prompt).setThinking(true);
 		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
-		agentRuntimeContext.setDebugSSEData(true);
+//		agentRuntimeContext.addAllowRule("bash", new PermissionRule("bash", "git status:*", ALLOW, "userSettings"));
+//		agentRuntimeContext.addAllowRule("bash", new PermissionRule("bash", "git diff:*",  ALLOW, "userSettings"));
+//		agentRuntimeContext.addDenyRule ("bash", new PermissionRule("bash", "rm -rf:*",   DENY,  "userSettings"));
+//		agentRuntimeContext.addAskRule  ("bash", new PermissionRule("bash", "sudo:*",     ASK,   "userSettings"));
+		agentRuntimeContext.setDebugSSEData(false);
 		chatAgentMessage.setAgentRuntimeContext(agentRuntimeContext);
         //定义工作流智能体，设置会话存储机制为DB，设置DB数据源、当前会id以及用户id
         // 设置短期会话窗口
         AIPlanAgent planAgent = new AIPlanAgent(new StoreContext()
                 .setSessionId(sessionId).setUserId("user123")
                 .setRequestId(SimpleStringUtil.getUUID32())
-                .setSessionSize(100)                 
+                .setSessionSize(3).setTriggerSessionSize(6)              
                 .setStoreType(StoreContext.STORE_TYPE_DB)
                 .setDataSource("visualops"))
                 .setAgentMessage(chatAgentMessage)

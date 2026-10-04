@@ -16,7 +16,7 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
@@ -25,7 +25,6 @@ import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.tran.jobflow.context.JobFlowNodeExecuteContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.FluxSink;
 
 /**
  * @author biaoping.yin
@@ -111,7 +110,7 @@ public class AIJudgeNodeBuilder extends AIBaseNodeBuilder {
 		if(agentMessage == null){
 			throw new AIRuntimeException("agentMessage is null");
 		}
-		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, judgeAgent);
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage.getMaas(),agentMessage, judgeAgent);
 		chatContext.setJobFlowNodeExecuteContext(jobFlowNodeExecuteContext);
    
         chatContext.setChatStreamCallback(new ChatStreamCallback() {

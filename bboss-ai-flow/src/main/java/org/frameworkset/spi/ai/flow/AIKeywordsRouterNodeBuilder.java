@@ -16,11 +16,8 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import com.frameworkset.util.JsonUtil;
-import org.frameworkset.spi.ai.callback.ChatContext;
-import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.AgentMessage;
-import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.model.TraceMessage;
+import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.FlowPromptEval;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
@@ -31,9 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.frameworkset.spi.ai.model.ServerEvent.TYPE_TRACE;
 
@@ -79,7 +74,7 @@ public class AIKeywordsRouterNodeBuilder extends AIBaseNodeBuilder {
         jobFlowNodeExecuteContext.addContextData("route.ChoiceList", JsonUtil.object2json(routeChoiceList));
         
         FlowPromptEval flowPromptEval = new FlowPromptEval();
-		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, agent);
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage.getMaas(),agentMessage, agent);
         prompt = flowPromptEval.eval(prompt, jobFlowNodeExecuteContext,chatContext);
         RouteChoice result = null;
         for(RouteChoice routeChoice: routeChoiceList) {
@@ -117,7 +112,7 @@ public class AIKeywordsRouterNodeBuilder extends AIBaseNodeBuilder {
         traceServerEvent.setData(message);
         traceServerEvent.setType(TYPE_TRACE);
         TraceMessage traceMessage = new TraceMessage();
-        Map<String, Object> messageMap = new LinkedHashMap<>();
+		LinkedMessageMap<String, Object> messageMap = new LinkedMessageMap<>();
         messageMap.put("text",message);
 		messageMap.put("role", SessionMessage.MESSAGE_TYPE_TRACE_MESSAGE_NAME);
 

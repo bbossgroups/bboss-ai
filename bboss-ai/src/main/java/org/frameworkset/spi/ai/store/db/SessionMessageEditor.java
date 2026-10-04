@@ -21,11 +21,11 @@ import com.frameworkset.util.ColumnEditorInf;
 import com.frameworkset.util.JsonUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.util.annotations.wraper.ColumnWraper;
 
 import java.sql.Clob;
 import java.sql.SQLException;
-import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -51,14 +51,14 @@ public class SessionMessageEditor  implements ColumnEditorInf {
         }
 
         if (BaseSimpleStringUtil.isNotEmpty(s)) {
-            return JsonUtil.json2Object(s, Map.class);
+            return JsonUtil.json2Object(s, LinkedMessageMap.class);
         }
         return null;
     }
 
     @Override
     public Object getValueFromString(ColumnWraper columnWraper, String fromValue) {
-        return JsonUtil.json2Object(fromValue, Map.class);
+        return JsonUtil.json2Object(fromValue, LinkedMessageMap.class);
     }
 
     @Override

@@ -15,19 +15,20 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
+import com.frameworkset.common.poolman.SQLExecutor;
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.model.PersistentMessage;
-import org.frameworkset.spi.ai.model.TokenMetrics;
+import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author biaoping.yin
@@ -38,17 +39,19 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
     protected AgentSession agentSession;
     private static Map<String,AgentSession> agentSessions = new ConcurrentHashMap();
     protected IntegerCount integerCount = new IntegerCount();
-
+	public int getNextSeqNo(){
+		return integerCount.increament();
+	}
     /**
      * 为统一流程中的智能体分配一个唯一的智能体ID
      */
     protected IntegerCount agentIdCount = new IntegerCount();
 
-    public AgentSessionStoreMemory(List<Map<String, Object>> sessionMemory) {
+    public AgentSessionStoreMemory(List<LinkedMessageMap<String, Object>> sessionMemory) {
         super(sessionMemory);
     }
 
-    public AgentSessionStoreMemory(List<Map<String, Object>> sessionMemory, int sessionSize) {
+    public AgentSessionStoreMemory(List<LinkedMessageMap<String, Object>> sessionMemory, int sessionSize) {
         super(sessionMemory, sessionSize);
     }
 
@@ -75,9 +78,13 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         super(storeContext,  agent);
         
     }
-
-  
-
+	
+	
+	@Override
+	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit){
+		return null;
+		
+	}
 
     @Override
     public void removeSession(String sessionId){
@@ -85,11 +92,10 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             agentSessions.remove(sessionId);
         }
     }
+	
 
-
-    
-    
-    public void init(){
+	
+	public void init(){
         if(this.sessionId == null){
             this.sessionId = SimpleStringUtil.getUUID32();
         }
@@ -109,16 +115,59 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 
   
     protected Object lockLoadSessionMemory = new Object();
-    public boolean loadSessionMemory(String prompt,String agentId){
+    public boolean createOrUpdateSession(String prompt, String agentId, AIAgent agent){
         String domain = null;
         StoreContext storeContext = this.getStoreContext();
         if(storeContext != null){
             domain = storeContext.getDomain();
         }
-        return loadSessionMemory(prompt, domain,   agentId);
+        return createOrUpdateSession(prompt, domain,   agentId,  agent);
     }
-
-    /**
+	
+	private final Map<String, AgentToolCallRules> agentToolCallRulesMap = new ConcurrentHashMap<>();
+	
+	@Override
+	public void addAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		agentToolCallRules.setAgentToolCallRulesId(SimpleStringUtil.getUUID32());
+		/**
+		 insertAgentToolCallRulesSQL = new StringBuilder().append("insert into ").append(agentToolCallRulesTableName)
+		 .append(" (agentToolCallRulesId,userId,sessionId,toolName,agentId,")
+		 .append("permissionRules,createTime,updateTime")
+		 .append(") values(?,?,?,?,?,?,?,?,?,?)").toString();
+		 */
+		agentToolCallRules.setCreateTime(LocalDateTime.now());
+		agentToolCallRules.setUpdateTime(agentToolCallRules.getCreateTime());
+		 
+		String key = agentToolCallRules.getSessionId() + ":" + agentToolCallRules.getAgentId();
+		agentToolCallRulesMap.put(key	, agentToolCallRules);
+		 
+	}
+	
+	@Override
+	public void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		String key = agentToolCallRules.getSessionId() + ":" + agentToolCallRules.getAgentId();
+		AgentToolCallRules oldAgentToolCallRules = agentToolCallRulesMap.get(key);	
+		if(oldAgentToolCallRules != null){
+			oldAgentToolCallRules.setPermissionRules(agentToolCallRules.getPermissionRules());
+			oldAgentToolCallRules.setUpdateTime(LocalDateTime.now());
+		}
+		else{
+			logger.warn("updateAgentToolCallRules: Agent tool call rules not found:sessionId "
+					+key);
+		}
+		
+		 
+	}
+	
+	@Override
+	public AgentToolCallRules getAgentToolCallRules(String sessionId, String agentId){
+		 
+		String key = sessionId + ":" + agentId;
+		return agentToolCallRulesMap.get(key)	;
+		 
+	}
+	
+	/**
      * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
      * 如果会话不存在 则创建会话
      *
@@ -128,7 +177,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
      * @return
      */
     @Override
-    public boolean loadSessionMemory(String prompt, String domain, String agentId) {
+    public boolean createOrUpdateSession(String prompt, String domain, String agentId, AIAgent agent) {
         if(agentSession != null){
             return false;
         }
@@ -160,37 +209,39 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 
                 } else {
                     agentSession.setLastAccessTime(LocalDateTime.now());
-                    //获取主智能体记忆记录
-                    List<SessionMessage> sessionMessages = null;
-                    if (this.getAgentId() == null) {
-                        sessionMessages = agentSession.getMainAgentMessage(null);
-//                        sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-//                                agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), this.getSessionId());
-                    } else {
-
-                        sessionMessages = agentSession.getMainAgentMessage(this.getAgentId());
-//                        sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-//                                agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(), this.getSessionId(),this.getAgentId());
-                    }
-
-
-                    if (sessionMessages != null && !sessionMessages.isEmpty()) {
-                        int sessionSize = this.getSessionSize();
-                        int dataSize = sessionMessages.size();
-
-                        if (sessionSize > 0 && dataSize > sessionSize) {
-
-                            sessionMessages = sessionMessages.subList(dataSize - sessionSize, dataSize);
-
-                        }
-                        for (SessionMessage sessionMessage : sessionMessages) {
-                            PersistentMessage persistentMessage = new PersistentMessage();
-                            persistentMessage.setMessage(sessionMessage.getMessage());
-                            persistentMessage.setTokenMetrics(sessionMessage.getTokenMetrics());
-                            appendSessionMessageFromParent(sessionMessage.getMessage());
-                        }
-
-                    }
+					//以下代码无需再主store中加载会话列表--注释开始
+//                    //获取主智能体记忆记录
+//                    List<SessionMessage> sessionMessages = null;
+//                    if (this.getAgentId() == null) {
+//                        sessionMessages = agentSession.getMainAgentMessage(null);
+////                        sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+////                                agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), this.getSessionId());
+//                    } else {
+//
+//                        sessionMessages = agentSession.getMainAgentMessage(this.getAgentId());
+////                        sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+////                                agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(), this.getSessionId(),this.getAgentId());
+//                    }
+//
+//
+//                    if (sessionMessages != null && !sessionMessages.isEmpty()) {
+//						//消息截断和压缩，交给后续环节统一处理
+//						/**
+//                        int sessionSize = this.getSessionSize();
+//                        int dataSize = sessionMessages.size();
+//
+//                        if (sessionSize > 0 && dataSize > sessionSize) {
+//
+//                            sessionMessages = sessionMessages.subList(dataSize - sessionSize, dataSize);
+//
+//                        }*/
+//						sessionMessages = refactorSessionMessages(sessionMessages);
+//                        for (SessionMessage sessionMessage : sessionMessages) {                            
+//                            appendSessionMessageFromParent(agent,sessionMessage.getMessage());
+//                        }
+//
+//                    }
+					//以上代码无需再主store中加载会话列表--注释结束
                 }
             }
         }
@@ -203,10 +254,26 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
                                                        String messageType){
 
 //        loadSessionMemory(message,  agentId);
-        Map<String, Object> message = persistentMessage.getMessage();
+		LinkedMessageMap<String, Object> message = persistentMessage.getMessage();
+		
         SessionMessage sessionMessage = new SessionMessage();
-        sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
+		if(message.getId() == null){
+			sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
+			message.setId(sessionMessage.getMsgId());
+		}
+		else{
+			sessionMessage.setMsgId(message.getId());
+		}
         sessionMessage.setMessage(message);
+		
+		
+		if(message.getSeqNo() < 0) {
+			sessionMessage.setSeqNo(integerCount.increament());
+			message.setSeqNo(sessionMessage.getSeqNo());
+		}
+		else{
+			sessionMessage.setSeqNo(message.getSeqNo());
+		}
         String role = (String) message.get("role");
         
 //        if(messageType != null && !messageType.equals("1")){
@@ -215,13 +282,18 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //            }
 //        }
         sessionMessage.setRole(role);
-        sessionMessage.setSeqNo(integerCount.increament());
+        
         sessionMessage.setCreateTime(LocalDateTime.now());
+		message.withTimestamp(sessionMessage.getCreateTime());
         sessionMessage.setSessionId(this.getSessionId());
         sessionMessage.setRequestId(this.getRequestId());
         sessionMessage.setAgentId(agentId);
+		if(message.getAgentId() == null){
+			message.setAgentId(agentId);
+		}
         sessionMessage.setParentAgentId(parentAgentId);
         sessionMessage.setMessageType(messageType);
+		message.setMessageType(messageType);
         sessionMessage.setMarks(marks);
         sessionMessage.setMetadata(metadata);
         sessionMessage.setTraceId(this.getTraceId());
@@ -239,7 +311,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         }
         sessionMessage.setElapsed(elapsed);
         sessionMessage.setTokenMetrics(tokenMetrics_);
-        sessionMessage.setMsgId(SimpleStringUtil.getUUID32());
+         
 		if(agentSession != null) {
 			agentSession.addSessionMessage(sessionMessage);
 		}
@@ -271,20 +343,82 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //                    message.get("role"));
          
     }
+	@Override
+	public List<SessionMessage> searchSessionMessages(String sessionId, String query){
+		return null;
+	}
+	
+	public List<SessionMessage>  getAllAgentSessionMessage(String sessionId){
+		try {
+			AgentSession agentSession = agentSessions.get(sessionId);
+			if (agentSession == null) {
+				return null;
+			}
+			synchronized (agentSession){
+				List<SessionMessage> summaryMessages = agentSession.getAllAgentSessionMessage();
+				return summaryMessages;
+			}
+			
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getSessionMessages: sessionId="+sessionId,exception);
+		}
+	}
+	@Override
+	public List<SessionMessage> getSessionMessages(String sessionId, String[] summaryMessageIds) {
+		try {
+			if (this.agentSession == null) {
+				return null;
+			}
+			synchronized (agentSession){
+				List<SessionMessage> summaryMessages = this.agentSession.getAgentSessionMessage(summaryMessageIds);
+				return summaryMessages;
+			}
+			
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getSessionMessages: sessionId="+sessionId+",summaryMessageIds:"+ JsonUtil.object2json(summaryMessageIds),exception);
+		}
+	}
+	protected PermissionRules resolvePermissionRules(SessionMessage permissionRulesMessage){
+		if(permissionRulesMessage == null)
+			return null;
+		LinkedMessageMap<String,Object> message = permissionRulesMessage.getMessage();
+		String rules = (String) message.get(PermissionRules.PERMISSION_RULES_KEY);
+		return JsonUtil.json2Object(rules, PermissionRules.class);
+		 
+	}
+	@Override
+	public PermissionRules getAgentPermissionRules(String sessionId, String agentId){
+		try {
+			if (this.agentSession == null) {
+				return null;
+			}
+			SessionMessage permissionRulesMessage = null;
+			synchronized (agentSession){
+				 permissionRulesMessage = this.agentSession.getAgentPermissionRules(agentId);
+				
+			}
+			return resolvePermissionRules(  permissionRulesMessage);
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentPermissionRules: sessionId="+sessionId+",agentId="+agentId,exception);
+		}
+	}
     @Override
-    public List<Map<String, Object>> getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage, String agentId, int agentSessionSize) {
+    public List<LinkedMessageMap<String, Object>> getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage, String agentId ) {
         try {
             if (this.agentSession == null) {
                 return null;
             }
             synchronized (agentSession){
                 List<SessionMessage> agentSessionMessages = this.agentSession.getAgentSessionMessage(agentId);
-                return resolve(lastSubAgentSessionMessage, agentId,agentSessionMessages, agentSessionSize);
+                return resolve(agent,lastSubAgentSessionMessage, agentId,agentSessionMessages ,false);
             }
           
         }
         catch (Exception exception){
-            throw new AIRuntimeException("getAgentSessionMessage: agentId="+agentId + ",agentSessionSize="+agentSessionSize,exception);
+            throw new AIRuntimeException("getAgentSessionMessage: agentId="+agentId ,exception);
         }
     }
 
@@ -303,10 +437,11 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //        }
     }
     
-    protected List<Map<String, Object>> resolve(LastSessionMessage lastSubAgentSessionMessage, String agentId, List<SessionMessage> agentSessionMessages, int agentSessionSize){
+    protected List<LinkedMessageMap<String, Object>> resolve(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage, String agentId, 
+															 List<SessionMessage> agentSessionMessages,boolean needAfterLoad){
         if(agentSessionMessages == null || agentSessionMessages.size() == 0){
             if(lastSubAgentSessionMessage != null){
-                List<Map<String, Object>> _agentSessionMessages = new ArrayList<>();
+                List<LinkedMessageMap<String, Object>> _agentSessionMessages = new ArrayList<>();
                 _agentSessionMessages.add(lastSubAgentSessionMessage.getLastSessionMessage());
                 //构建引用关系
                 saveLastSessionMessage(lastSubAgentSessionMessage, agentId);                
@@ -314,7 +449,9 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             }
             return null;
         }
-        List<Map<String, Object>> _agentSessionMessages = new ArrayList<>();
+        List<LinkedMessageMap<String, Object>> _agentSessionMessages = new ArrayList<>();
+		//消息截断和压缩，交给后续环节统一处理
+		/**
         int dataSize = agentSessionMessages.size();
  
 
@@ -324,13 +461,14 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
  
             agentSessionMessages = agentSessionMessages.subList(start, dataSize);
 
-        }
+        }*/
 
         boolean contain = false;
 
         for (int i = 0; i < agentSessionMessages.size(); i++) {
             SessionMessage sessionMessage = agentSessionMessages.get(i);
-
+			if(needAfterLoad)
+				sessionMessage.afterLoad();
             if(lastSubAgentSessionMessage != null) {
                 if(lastSubAgentSessionMessage.getMsgId().equals(sessionMessage.getMsgId()))
                     contain = true;
@@ -343,8 +481,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
             saveLastSessionMessage(lastSubAgentSessionMessage, agentId);            
             
         }
-
-         
+		
+		_agentSessionMessages = refactorLinkedMessageMapSessionMessages(agent,_agentSessionMessages);  
         return _agentSessionMessages;
     } 
 
@@ -353,6 +491,9 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //        this.loadSessionMemory(prompt,agentId);
 //        return super.getLastMessage(prompt,  agentId);
 //    }
+	
 
- 
+	
+	
+	
 }

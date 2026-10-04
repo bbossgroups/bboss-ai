@@ -17,8 +17,8 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.AgentRuntimeContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.util.BBOSSAIVersion;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
@@ -380,6 +380,14 @@ public class AgentMessage<T extends AgentMessage> {
 	
 	public void setAgentRuntimeContext(AgentRuntimeContext agentRuntimeContext) {
 		this.agentRuntimeContext = agentRuntimeContext;
+	}
+	
+	protected ChatObject buildChatObject(ChatContext chatContext,AIAgent agent){
+		ChatObject chatObject = new ChatObject();
+		chatObject.setChatContext(chatContext);
+		chatObject.setAgent(agent);
+		agent.restorePermissionRules(chatObject);
+		return chatObject;
 	}
 	
 }

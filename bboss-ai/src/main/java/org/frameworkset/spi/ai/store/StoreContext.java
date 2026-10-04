@@ -15,8 +15,11 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.compaction.CompactionConfig;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
+import org.frameworkset.spi.ai.model.ModelInfo;
+
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -25,9 +28,14 @@ import java.util.Map;
 public class StoreContext {
     public static final String STORE_TYPE_DB = "db";
     public static final String STORE_TYPE_MEMORY = "memory";
-	private String clickhouseCluster;
+	public static final String DEFAULT_CLICKHOUSE_CLUSTER = "vops_3shards_1replicas";
+	private String clickhouseCluster = DEFAULT_CLICKHOUSE_CLUSTER;
     private AgentSessionStore mainSessionStore;
     private AgentMessageTypeConvertor agentMessageTypeConvertor;
+	
+
+	
+	private CompactionConfig compactionConfig;
     /**
      * 会话id
      */
@@ -77,8 +85,24 @@ public class StoreContext {
      * 会话消息记录存储表名称
      */
     private String sessionMessageTableName = "agent_session_message";
-    private List<Map<String,Object>> sessionMemory;
+    private List<LinkedMessageMap<String,Object>> sessionMemory;
+	/**
+     * 压缩后只保留最近 sessionSize 条原文,其余旧消息被总结成一条 summary 消息
+     */
     private int sessionSize = 20;
+	
+
+	
+	/**
+     * 对话达到 triggerSessionSize 条消息时触发压缩
+     */
+	private int triggerSessionSize = 40;
+	
+	
+	private ModelInfo compactModelInfo;
+	private boolean enableHitl;
+	private String redisDSName;
+	private	 String channel;
     public int getSessionSize() {
         return sessionSize;
     }
@@ -133,10 +157,10 @@ public class StoreContext {
         return this;
     }
     
-    public List<Map<String,Object>> getSessionMemory() {
+    public List<LinkedMessageMap<String,Object>> getSessionMemory() {
         return sessionMemory;
     }
-    public StoreContext setSessionMemory(List<Map<String,Object>> sessionMemory) {
+    public StoreContext setSessionMemory(List<LinkedMessageMap<String,Object>> sessionMemory) {
         this.sessionMemory = sessionMemory;
         return this;
     }
@@ -210,4 +234,68 @@ public class StoreContext {
 		this.clickhouseCluster = clickhouseCluster;
 		return this;
 	}
+	
+	public CompactionConfig getCompactionConfig() {
+		return compactionConfig;
+	}
+	
+	public StoreContext setCompactionConfig(CompactionConfig compactionConfig) {
+		this.compactionConfig = compactionConfig;
+		return this;
+	}
+	public int getTriggerSessionSize() {
+		return triggerSessionSize;
+	}
+	
+	public StoreContext setTriggerSessionSize(int triggerSessionSize) {
+		this.triggerSessionSize = triggerSessionSize;
+		return this;
+	}
+	
+	
+	public ModelInfo getCompactModelInfo() {
+		return compactModelInfo;
+	}
+	
+	public StoreContext setCompactModelInfo(ModelInfo compactModelInfo) {
+		this.compactModelInfo = compactModelInfo;
+		return this;
+	}
+	
+	public StoreContext setCompactModelInfo(String maas,String model) {
+		ModelInfo compactModelInfo = new ModelInfo();
+		compactModelInfo.setMaas(maas);
+		compactModelInfo.setModel(model);
+		this.compactModelInfo = compactModelInfo;
+		return this;
+	}
+	
+	/**
+	 * 设置人工介入redis通道
+	 * @param redisDSName
+	 * @param channel
+	 * @return
+	 */
+	public StoreContext setHitlRedisChannel(String redisDSName, String channel) {
+		this.redisDSName = redisDSName;
+		this.channel = channel;
+		this.enableHitl = true;	
+		return this;
+	}
+	
+	public String getChannel() {
+		return channel;
+	}
+	public String getRedisDSName() {
+		return redisDSName;
+	}
+	
+	public StoreContext setEnableHitl(boolean enableHitl) {
+		this.enableHitl = enableHitl;
+		return this;
+	}
+	
+	public boolean isEnableHitl() {
+		return enableHitl;
+	}	
 }

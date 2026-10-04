@@ -107,8 +107,24 @@ public class AgentSessionStoreDBConfig {
             .append("COMMENT ON COLUMN $sessionTableName.agentId IS '代理id';")
             .append("COMMENT ON COLUMN $sessionTableName.title IS '会话标题';")
             .toString();
-
-    public static String sqlite_createHitlCallTaskTableSQL = new StringBuilder().append("create table $hitlCallTaskTableName (hitlTaskId varchar(100),")  //人工介入任务id
+	
+	public static final String clickhouse_createLocalSessionTableSQL = new StringBuilder().append("CREATE TABLE ${sessionTableName}_local  ON CLUSTER $clickhouseCluster ")
+			.append(" (")
+			.append("sessionId String  COMMENT '会话id',  ")
+			.append("createTime DateTime COMMENT '创建时间',")
+			.append("lastAccessTime DateTime COMMENT '最后访问时间',")
+			.append("userId Nullable(String) COMMENT '用户id',")
+			.append("agentId Nullable(String) COMMENT '代理id',")
+			.append("title Nullable(String) COMMENT '会话标题',")
+			.append("domain Nullable(String) COMMENT '会话所属领域'         ")
+			.append(")")
+			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
+			.append("ORDER BY (sessionId)").toString();
+	
+	public static final String clickhouse_createClusterSessionTableSQL = new StringBuilder().append("CREATE TABLE ${sessionTableName} on cluster $clickhouseCluster AS ${sessionTableName}_local").append("  ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${sessionTableName}_local, rand())").toString();
+	
+	
+	public static String sqlite_createHitlCallTaskTableSQL = new StringBuilder().append("create table $hitlCallTaskTableName (hitlTaskId varchar(100),")  //人工介入任务id
             .append( "traceId varchar(100),")  //trace id
             .append( "agentId varchar(100),")  //智能体id
             .append( "agentName varchar(200),")  //智能体名称
@@ -264,23 +280,40 @@ public class AgentSessionStoreDBConfig {
             .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskHandleTime IS '人工介入任务处理时间';")
             .append("COMMENT ON COLUMN $hitlCallTaskTableName.hitlTaskCompleteTime IS '人工介入任务完成时间';")
             .toString();
-	
-	public static final String clickhouse_createLocalSessionTableSQL = new StringBuilder().append("CREATE TABLE ${sessionTableName}_local  ON CLUSTER $clickhouseCluster ")
-			.append(" (")
-                .append("sessionId String  COMMENT '会话id',  ")  
-                 .append("createTime DateTime COMMENT '创建时间',")
-                 .append("lastAccessTime DateTime COMMENT '最后访问时间',")
-                 .append("userId Nullable(String) COMMENT '用户id',")
-                 .append("agentId Nullable(String) COMMENT '代理id',")
-                 .append("title Nullable(String) COMMENT '会话标题',")   
-                 .append("domain Nullable(String) COMMENT '会话所属领域'         ")
+	public static final String clickhouse_createLocalHitlCallTaskTableSQL = new StringBuilder()
+			.append("CREATE TABLE ${hitlCallTaskTableName}_local ON CLUSTER $clickhouseCluster ")
+			.append("(")
+			.append("hitlTaskId String COMMENT '人工介入任务id',")
+			.append("traceId Nullable(String) COMMENT 'trace id',")
+			.append("agentId Nullable(String) COMMENT '智能体id',")
+			.append("agentName Nullable(String) COMMENT '智能体名称',")
+			.append("parentAgentId Nullable(String) COMMENT '父智能体id',")
+			.append("parentAgentName Nullable(String) COMMENT '父智能体名称',")
+			.append("sessionId String COMMENT '会话id',")
+			.append("requestId Nullable(String) COMMENT '请求id',")
+			.append("userId Nullable(String) COMMENT '用户id',")
+			.append("hitlTaskReason Nullable(String) COMMENT '人工介入任务内容，LLM生成',")
+			.append("hitlTaskData Nullable(String) COMMENT '人工介入任务内容，人工辅助提供',")
+			.append("exception Nullable(String) COMMENT '异常信息',")
+			.append("hitlTaskStatus Nullable(Int32) COMMENT '人工介入任务状态：0 待处理 1 已处理 2 已拒绝 3 超时忽略 5 已结束',")
+			.append("hitlTaskHandleResult Nullable(String) COMMENT '人工介入任务处理结果说明',")
+			.append("hitlTaskCreateTime Nullable(DateTime) COMMENT '人工介入任务创建时间',")
+			.append("hitlTaskHandleTime Nullable(DateTime) COMMENT '人工介入任务处理时间',")
+			.append("hitlTaskCompleteTime Nullable(DateTime) COMMENT '人工介入任务完成时间'")
 			.append(")")
 			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
-			.append("ORDER BY (sessionId)").toString();
+			.append("ORDER BY (hitlTaskId)")
+			.toString();
 	
-	public static final String clickhouse_createClusterSessionTableSQL = new StringBuilder().append("CREATE TABLE ${sessionTableName} on cluster $clickhouseCluster AS ${sessionTableName}_local").append("  ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${sessionTableName}_local, rand())").toString();
+	public static final String clickhouse_createClusterHitlCallTaskTableSQL = new StringBuilder()
+			.append("CREATE TABLE ${hitlCallTaskTableName} ON CLUSTER $clickhouseCluster ")
+			.append("AS ${hitlCallTaskTableName}_local ")
+			.append("ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${hitlCallTaskTableName}_local, sipHash64(sessionId))")
+			.toString();
 	
     public static String sqlitex_createSessionMessageTableSQL = new StringBuilder().append("create table $sessionMessageTableName (msgId varchar(100),")  //消息id
+			.append( "parentMsgId varchar(100),")  //父消息id
+			.append( "nextMsgId varchar(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append( "createTime number(20),") //创建时间
             .append( "parentAgentId varchar(100),")  //父agentid
             .append( "agentId varchar(100),")  //创建或者消息所属的agentid,如果节点类型是串行容器智能体节点（sequence）、并行容器智能体节点（parallel），对应创建消息的agentid为subAgentIdBy对应的值
@@ -300,11 +333,14 @@ public class AgentSessionStoreDBConfig {
             .append( "role varchar(100),")
             .append( "marks varchar(500),")
             .append( "metadata text,")
+			.append( "name varchar(200), " )  //消息名称
             .append( "PRIMARY KEY (msgId))").toString();
 	
 
 
-    public static final String mysql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL comment '消息id'," )
+    public static final String mysql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL comment '消息id'," )  //消息id
+			.append( "parentMsgId varchar(100) comment '父消息id',")  //父消息id
+			.append( "nextMsgId varchar(100) comment '后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）',")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append(" createTime datetime NOT NULL comment '创建时间', " )
             .append( "sessionId varchar(100) NOT NULL, " )  //会话id
             .append( "requestId varchar(100), " )  //请求id
@@ -323,10 +359,13 @@ public class AgentSessionStoreDBConfig {
             .append( "elapsed BIGINT,")  //耗时
             .append( "marks varchar(500),")
             .append( "metadata  LONGTEXT  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,")
+			.append( "name varchar(200), " )  //消息名称
             .append( "primary key(msgId)) comment '消息表主键' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci").toString();
 
    
-    public static final String oracle_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
+    public static final String oracle_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," ) //消息id
+			.append( "parentMsgId varchar2(100),")  //父消息id
+			.append( "nextMsgId varchar2(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
             .append( "requestId varchar2(100), " )  //请求id
@@ -347,8 +386,11 @@ public class AgentSessionStoreDBConfig {
 
             .append( "marks varchar2(500),")
             .append( "metadata clob,")
+			.append( "name varchar2(200), " )  //消息名称
             .append( "constraint $sessionMessageTableName_PK primary key(msgId))").toString();
-    public static final String dm_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," )
+    public static final String dm_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar2(100) NOT NULL," ) //消息id
+			.append( "parentMsgId varchar2(100),")  //父消息id
+			.append( "nextMsgId varchar2(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append(" createTime timestamp NOT NULL,")
             .append(" sessionId varchar2(100) NOT NULL, " )
             .append( "requestId varchar2(100), " )  //请求id
@@ -368,8 +410,11 @@ public class AgentSessionStoreDBConfig {
 
             .append( "marks varchar2(500),")
             .append( "metadata clob,")
+			.append( "name varchar2(200), " )  //消息名称
             .append( "constraint $sessionMessageTableName_PK primary key(msgId))").toString();
-    public static final String sqlserver_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL," )
+    public static final String sqlserver_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName ( msgId varchar(100) NOT NULL," ) //消息id
+			.append( "parentMsgId varchar(100),")  //父消息id
+			.append( "nextMsgId varchar(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append( "createTime datetime NOT NULL,")  //创建时间
             .append("sessionId varchar(100) NOT NULL,") //会话id
             .append( "requestId varchar(100), " )  //请求id
@@ -389,8 +434,11 @@ public class AgentSessionStoreDBConfig {
 
             .append( "marks varchar(500),")
             .append( "metadata nvarchar(max),")
+			.append( "name nvarchar(200), " )  //消息名称
             .append( "primary key(msgId))").toString();
     public static final String postgresql_createSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE $sessionMessageTableName (msgId varchar(100) NOT NULL," )
+			.append( "parentMsgId varchar(100),")  //父消息id
+			.append( "nextMsgId varchar(100),")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
             .append( "createTime timestamp NOT NULL,")  //创建时间
             .append( "sessionId varchar(100) NOT NULL,")  //会话id
             .append( "requestId varchar(100), " )  //请求id
@@ -409,11 +457,14 @@ public class AgentSessionStoreDBConfig {
             .append( "role varchar(100) NOT NULL,")//消息角色名称
             .append( "marks varchar(500),") //消息标记，冗余备用字段，暂未使用
             .append( "metadata text,") //消息元数据
+			.append( "name varchar(200), " )  //消息名称
             .append( "primary key(msgId))").toString();
 	
 	public static final String clickhouse_createLocalSessionMessageTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageTableName}_local  ON CLUSTER $clickhouseCluster ")
 			.append("(")
-			.append("    msgId String  COMMENT '消息id',")
+			.append("msgId String  COMMENT '消息id',") //消息id
+			.append( "parentMsgId Nullable(String) COMMENT '父消息id',")  //父消息id
+			.append( "nextMsgId Nullable(String) COMMENT '后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）',")  //后序消息id，摘要消息时需指定，以便恢复状态时，能够将摘要消息放置到正确的位置（后序消息的前面）
 			.append("createTime DateTime COMMENT '创建时间',")
 			.append("sessionId String COMMENT '会话id',")
 			.append("requestId Nullable(String) COMMENT '请求id',")
@@ -431,7 +482,8 @@ public class AgentSessionStoreDBConfig {
 			.append("elapsed Int32 COMMENT '耗时',")
 			.append("role Nullable(String) COMMENT '角色',")
 			.append("marks Nullable(String) COMMENT '消息标记',")
-			.append("metadata Nullable(String) COMMENT '消息元数据'")
+			.append("metadata Nullable(String) COMMENT '消息元数据',")
+			.append( "name Nullable(String) COMMENT '消息名称'" )  //消息名称
 			.append(")")
 			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
 			.append("ORDER BY (sessionId, createTime,seqNo)").toString();
@@ -534,8 +586,268 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	
 	public static final String clickhouse_createClusterSessionMessageReferenceTableSQL = new StringBuilder().append("CREATE TABLE ${sessionMessageReferenceTableName} on cluster $clickhouseCluster AS ${sessionMessageReferenceTableName}_local ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${sessionMessageReferenceTableName}_local, sipHash64(sessionId))").toString();
 	
+	// ============ SQLite ============
+	public static String sqlite_createMemoryTableSQL = new StringBuilder()
+			.append("create table $memoryTableName (")
+			.append("memoryId varchar(100) PRIMARY KEY,")          // 记录id，主键
+			.append("agentId varchar(100) not null,")              // 智能体id
+			.append("parentAgentId varchar(100),")                 // 父智能体id
+			.append("userId varchar(100) not null,")               // 用户id
+			.append("sessionId varchar(100) not null,")            // 会话id
+			.append("content text,")                               // 记忆内容
+			.append("memoryDay varchar(20),")                      // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar(20) default 'day')")      // 记忆类型 day/longterm
+			.toString();
+	
+	
+	// ============ MySQL ============
+	public static final String mysql_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar(100) NOT NULL COMMENT '记录id，主键',")
+			.append("agentId varchar(100) NOT NULL COMMENT '智能体id',")
+			.append("parentAgentId varchar(100) COMMENT '父智能体id',")
+			.append("userId varchar(100) NOT NULL COMMENT '用户id',")
+			.append("sessionId varchar(100) NOT NULL COMMENT '会话id',")
+			.append("content text COMMENT '记忆内容',")
+			.append("memoryDay varchar(20) COMMENT '记忆时间 yyyy-MM-dd',")
+			.append("memoryType varchar(20) DEFAULT 'day' COMMENT '记忆类型 day/longterm',")
+			.append("PRIMARY KEY(memoryId),")
+			.append("KEY idx_agent_user (agentId, userId),")
+			.append("KEY idx_session (sessionId),")
+			.append("KEY idx_memory_day (memoryDay)")
+			.append(") COMMENT='智能体记忆表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+			.toString();
+	
+	
+	// ============ Oracle ============
+	public static final String oracle_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar2(100) NOT NULL,")            // 记录id，主键
+			.append("agentId varchar2(100) NOT NULL,")             // 智能体id
+			.append("parentAgentId varchar2(100),")                // 父智能体id
+			.append("userId varchar2(100) NOT NULL,")              // 用户id
+			.append("sessionId varchar2(100) NOT NULL,")           // 会话id
+			.append("content clob,")                               // 记忆内容
+			.append("memoryDay varchar2(20),")                     // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar2(20) DEFAULT 'day',")      // 记忆类型 day/longterm
+			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
+			.toString();
+	
+	public static final String oracle_addCommentsToMemoryTableSQL = new StringBuilder()
+			.append("COMMENT ON COLUMN $memoryTableName.memoryId IS '记录id，主键';")
+			.append("COMMENT ON COLUMN $memoryTableName.agentId IS '智能体id';")
+			.append("COMMENT ON COLUMN $memoryTableName.parentAgentId IS '父智能体id';")
+			.append("COMMENT ON COLUMN $memoryTableName.userId IS '用户id';")
+			.append("COMMENT ON COLUMN $memoryTableName.sessionId IS '会话id';")
+			.append("COMMENT ON COLUMN $memoryTableName.content IS '记忆内容';")
+			.append("COMMENT ON COLUMN $memoryTableName.memoryDay IS '记忆时间 yyyy-MM-dd';")
+			.append("COMMENT ON COLUMN $memoryTableName.memoryType IS '记忆类型 day/longterm';")
+			.toString();
+	
+	
+	// ============ 达梦数据库 (DM) ============
+	public static final String dm_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar2(100) NOT NULL,")            // 记录id，主键
+			.append("agentId varchar2(100) NOT NULL,")             // 智能体id
+			.append("parentAgentId varchar2(100),")                // 父智能体id
+			.append("userId varchar2(100) NOT NULL,")              // 用户id
+			.append("sessionId varchar2(100) NOT NULL,")           // 会话id
+			.append("content text,")                               // 记忆内容
+			.append("memoryDay varchar2(20),")                     // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar2(20) DEFAULT 'day',")      // 记忆类型 day/longterm
+			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
+			.toString();
+	
+	
+	// ============ SQL Server ============
+	public static final String sqlserver_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar(100) NOT NULL,")             // 记录id，主键
+			.append("agentId varchar(100) NOT NULL,")              // 智能体id
+			.append("parentAgentId varchar(100),")                 // 父智能体id
+			.append("userId varchar(100) NOT NULL,")               // 用户id
+			.append("sessionId varchar(100) NOT NULL,")            // 会话id
+			.append("content nvarchar(max),")                      // 记忆内容
+			.append("memoryDay varchar(20),")                      // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar(20) DEFAULT 'day',")       // 记忆类型 day/longterm
+			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
+			.toString();
+	
+	
+	// ============ PostgreSQL ============
+	public static final String postgresql_createMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE $memoryTableName (")
+			.append("memoryId varchar(100) NOT NULL,")             // 记录id，主键
+			.append("agentId varchar(100) NOT NULL,")              // 智能体id
+			.append("parentAgentId varchar(100),")                 // 父智能体id
+			.append("userId varchar(100) NOT NULL,")               // 用户id
+			.append("sessionId varchar(100) NOT NULL,")            // 会话id
+			.append("content text,")                               // 记忆内容
+			.append("memoryDay varchar(20),")                      // 记忆时间 yyyy-MM-dd
+			.append("memoryType varchar(20) DEFAULT 'day',")       // 记忆类型 day/longterm
+			.append("PRIMARY KEY(memoryId))")
+			.toString();
+	
+	public static final String postgresql_addCommentsToMemoryTableSQL = new StringBuilder()
+			.append("COMMENT ON COLUMN $memoryTableName.memoryId IS '记录id，主键';")
+			.append("COMMENT ON COLUMN $memoryTableName.agentId IS '智能体id';")
+			.append("COMMENT ON COLUMN $memoryTableName.parentAgentId IS '父智能体id';")
+			.append("COMMENT ON COLUMN $memoryTableName.userId IS '用户id';")
+			.append("COMMENT ON COLUMN $memoryTableName.sessionId IS '会话id';")
+			.append("COMMENT ON COLUMN $memoryTableName.content IS '记忆内容';")
+			.append("COMMENT ON COLUMN $memoryTableName.memoryDay IS '记忆时间 yyyy-MM-dd';")
+			.append("COMMENT ON COLUMN $memoryTableName.memoryType IS '记忆类型 day/longterm';")
+			.toString();
+	
+	public static final String clickhouse_createLocalMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE ${memoryTableName}_local ON CLUSTER $clickhouseCluster ")
+			.append("(")
+			.append("memoryId String COMMENT '记录id，主键',")
+			.append("agentId String COMMENT '智能体id',")
+			.append("parentAgentId Nullable(String) COMMENT '父智能体id',")
+			.append("userId String COMMENT '用户id',")
+			.append("sessionId String COMMENT '会话id',")
+			.append("content Nullable(String) COMMENT '记忆内容',")
+			.append("memoryDay Nullable(String) COMMENT '记忆时间 yyyy-MM-dd',")
+			.append("memoryType Nullable(String) DEFAULT 'day' COMMENT '记忆类型 day/longterm'")
+			.append(")")
+			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
+			.append("ORDER BY (memoryId)")
+			.toString();
+	
+	public static final String clickhouse_createClusterMemoryTableSQL = new StringBuilder()
+			.append("CREATE TABLE ${memoryTableName} ON CLUSTER $clickhouseCluster ")
+			.append("AS ${memoryTableName}_local ")
+			.append("ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${memoryTableName}_local, sipHash64(sessionId))")
+			.toString();
+	public static final String sqlite_createAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("CREATE TABLE $agentToolCallRulesTableName (")
+			.append(" agentToolCallRulesId VARCHAR(100) NOT NULL,")  //存储用户调用工具的权限规则id
+			.append(" userId VARCHAR(100),")                          //用户id
+			.append(" sessionId VARCHAR(100),")                       //调用工具的会话id
+			.append(" toolName VARCHAR(100),")                        //工具名称
+			.append(" agentId VARCHAR(100),")                         //调用工具的智能体id
+			.append(" permissionRules TEXT,")                              //工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则	
+			 
+			.append(" PRIMARY KEY (agentToolCallRulesId))")           //智能体工具调用权限规则表
+			.toString();
+	
+	public static final String mysql_createAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("CREATE TABLE $agentToolCallRulesTableName ( agentToolCallRulesId varchar(100) NOT NULL comment '存储用户调用工具的权限规则id',")  //存储用户调用工具的权限规则id
+			.append(" createTime datetime comment '创建时间', " ) //创建时间
+			.append(" updateTime datetime comment '更新时间', " ) //更新时间
+			.append(" userId varchar(100) comment '用户id',")  //用户id
+			.append(" sessionId varchar(100) comment '调用工具的会话id',")  //调用工具的会话id
+			.append(" toolName varchar(100) comment '工具名称',")  //工具名称
+			.append(" agentId varchar(100) comment '调用工具的智能体id',")  //调用工具的智能体id
+			.append(" permissionRules LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci comment '工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则',")  //允许调用工具的权限规则
+			.append(" primary key(agentToolCallRulesId)) comment '智能体工具调用权限规则表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci")
+			.toString();
+	
+	public static final String oracle_createAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("CREATE TABLE $agentToolCallRulesTableName (")
+			.append(" agentToolCallRulesId VARCHAR2(100) NOT NULL,")  //存储用户调用工具的权限规则id
+			.append(" createTime TIMESTAMP  ,") //创建时间
+			.append(" updateTime TIMESTAMP  ,")	//更新时间				
+			.append(" userId VARCHAR2(100),")                         //用户id
+			.append(" sessionId VARCHAR2(100),")                      //调用工具的会话id
+			.append(" toolName VARCHAR2(100),")                       //工具名称
+			.append(" agentId VARCHAR2(100),")                        //调用工具的智能体id
+			.append(" permissionRules clob,")                              //工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则	
+			.append(" CONSTRAINT pk_agentToolCallRules PRIMARY KEY (agentToolCallRulesId))")  //智能体工具调用权限规则表
+			.toString();
+	
+	public static final String oracle_commentAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("COMMENT ON TABLE $agentToolCallRulesTableName IS '智能体工具调用权限规则表'")
+			.toString();
+	
+	public static final String oracle_commentAgentToolCallRulesColumnsSQL = new StringBuilder()
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.agentToolCallRulesId IS '存储用户调用工具的权限规则id';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.userId IS '用户id';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.sessionId IS '调用工具的会话id';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.toolName IS '工具名称';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.agentId IS '调用工具的智能体id';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.permissionRules IS '工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则';")
+			.toString();
+	
+	public static final String dm_createAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("CREATE TABLE $agentToolCallRulesTableName (")
+			.append(" agentToolCallRulesId VARCHAR2(100) NOT NULL,")  //存储用户调用工具的权限规则id
+			.append(" createTime TIMESTAMP  ,") //创建时间
+			.append(" updateTime TIMESTAMP  ,")	//更新时间		
+			.append(" userId VARCHAR2(100),")                         //用户id
+			.append(" sessionId VARCHAR2(100),")                      //调用工具的会话id
+			.append(" toolName VARCHAR2(100),")                       //工具名称
+			.append(" agentId VARCHAR2(100),")                        //调用工具的智能体id
+			.append(" permissionRules CLOB,")                              //工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则	
+			.append(" CONSTRAINT pk_agentToolCallRules PRIMARY KEY (agentToolCallRulesId))")  //智能体工具调用权限规则表
+			.toString();
+	
+	public static final String sqlserver_createAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("CREATE TABLE $agentToolCallRulesTableName (")
+			.append(" agentToolCallRulesId VARCHAR(100) NOT NULL,")  //存储用户调用工具的权限规则id			
+			.append(" createTime datetime  ,") //创建时间
+			.append(" updateTime datetime  ,")	//更新时间		
+			.append(" userId VARCHAR(100),")                          //用户id
+			.append(" sessionId VARCHAR(100),")                       //调用工具的会话id
+			.append(" toolName VARCHAR(100),")                        //工具名称
+			.append(" agentId VARCHAR(100),")                         //调用工具的智能体id
+			.append(" permissionRules NVARCHAR(MAX),")                     //工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则
+			.append(" CONSTRAINT pk_agentToolCallRules PRIMARY KEY (agentToolCallRulesId))")  //智能体工具调用权限规则表
+			.toString();
+	
+	public static final String postgresql_createAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("CREATE TABLE $agentToolCallRulesTableName (")
+			.append(" agentToolCallRulesId VARCHAR(100) NOT NULL,")  //存储用户调用工具的权限规则id
+			.append(" createTime TIMESTAMP  ,") //创建时间
+			.append(" updateTime TIMESTAMP  ,")	//更新时间		
+			.append(" userId VARCHAR(100),")                          //用户id
+			.append(" sessionId VARCHAR(100),")                       //调用工具的会话id
+			.append(" toolName VARCHAR(100),")                        //工具名称
+			.append(" agentId VARCHAR(100),")                         //调用工具的智能体id
+			.append(" permissionRules TEXT,")                              //工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则	
+			.append(" CONSTRAINT pk_agentToolCallRules PRIMARY KEY (agentToolCallRulesId))")  //智能体工具调用权限规则表
+			.toString();
+	
+	public static final String postgresql_commentAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("COMMENT ON TABLE $agentToolCallRulesTableName IS '智能体工具调用权限规则表'")
+			.toString();
+	
+	public static final String postgresql_commentAgentToolCallRulesColumnsSQL = new StringBuilder()
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.agentToolCallRulesId IS '存储用户调用工具的权限规则id';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.userId IS '用户id';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.sessionId IS '调用工具的会话id';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.toolName IS '工具名称';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.agentId IS '调用工具的智能体id';")
+			.append("COMMENT ON COLUMN $agentToolCallRulesTableName.permissionRules IS '工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则';")
+			.toString();
+	
+	public static final String clickhouse_createLocalAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("CREATE TABLE ${agentToolCallRulesTableName}_local ON CLUSTER $clickhouseCluster ")
+			.append("(")
+			.append("agentToolCallRulesId String COMMENT '存储用户调用工具的权限规则id',")
+			.append("createTime DateTime COMMENT '创建时间',")
+			.append("updateTime DateTime COMMENT '更新时间',")
+			.append("userId Nullable(String) COMMENT '用户id',")
+			.append("sessionId String COMMENT '调用工具的会话id',")
+			.append("toolName String COMMENT '工具名称',")
+			.append("agentId String COMMENT '调用工具的智能体id',")
+			.append("permissionRules String COMMENT '工具调用权限规则：允许调用工具的权限规则,拒绝调用工具的权限规则，需要用户确认的权限规则'")
+			.append(")")
+			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
+			.append("ORDER BY (agentToolCallRulesId)")
+			.toString();
+	
+	public static final String clickhouse_createClusterAgentToolCallRulesTableSQL = new StringBuilder()
+			.append("CREATE TABLE ${agentToolCallRulesTableName} ON CLUSTER $clickhouseCluster ")
+			.append("AS ${agentToolCallRulesTableName}_local ")
+			.append("ENGINE = Distributed($clickhouseCluster, currentDatabase(), ${agentToolCallRulesTableName}_local, sipHash64(sessionId))")
+			.toString();
+	
 	private String insertSessionSQL;
     private String updateSessionLastAccessTimeSQL;
+	private String updateClickhouseSessionLastAccessTimeSQL;
     private String deleteSessionSQL;
     private String deleteSessionByUserIdSQL;
     private String deleteSessionBySessionIdSQL;
@@ -551,11 +863,18 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     
     private String selectSessionMessageByUserIdSQL;
     private String selectSessionMessageBySessionIdSQL;
+	
+	
+	private String selectSessionMessageBySessionId2ndMsgIdsSQL;
+	
+	private String selectAgentPermissionRulesSQL;
     
 
     private String selectMaxSeqNoBySessionIdSQL;
 
     private String selectSessionMessageBySessionId2ndAgentIdSQL0;
+	
+	
 	
 	
 	private String selectSessionMessageBySessionId2ndAgentIdSQL1;
@@ -573,6 +892,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     private String existMessageReferenceSQL;
 	
 	private String existHitlCallTaskSQL;
+	
+	private String existMemorySQL;
 
     private String insertHitlCallTaskSQL;
 
@@ -580,8 +901,17 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	private String refusedHitlCallTaskSQL;
     private String completeHitlCallTaskSQL;
 	private String timeoutHitlCallTaskSQL;
+	
+    private String	 insertAgentToolCallRulesSQL ;
+	private String	 updateAgentToolCallRulesSQL ;
+	private String	 updateClickhouseAgentToolCallRulesSQL ;	
+	
 
+	
+	private String selectAgentToolCallRulesSQL;	
+	private String agentToolCallRulesTableName = "agent_tool_call_rules";
     private String deleteCompleteHitlCallTaskSQLWithCompleteTimeSQL;
+
 	
 	public String getInsertSessionMessageRerenceSQL() {
         return insertSessionMessageRerenceSQL;
@@ -598,6 +928,11 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
      * 会话基本信息存储表名称
      */
     private String sessionTableName = "agent_session";
+	
+	/**
+	 * 智能体记忆存储表名称:记录智能体流水账和记忆摘要
+	 */
+	private String memoryTableName = "agent_memory";
 
     /**
      * 会话消息记录存储表名称
@@ -672,6 +1007,47 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 		}
 		
 		try {
+			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistAgentToolCallRulesSQL());
+		}
+		catch (Exception exception){
+			try {
+				logger.info("Creating agent tool call rules table {}...", getAgentToolCallRulesTableName());
+				
+				
+				if(!isClickhouse(dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource, evalCreateAgentToolCallRulesTableSQL(dataSource));
+				}
+				else{
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClickhouseLocalAgentToolCallRulesTableSQL(clickhouseCluster));
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClusterAgentToolCallRulesTableSQL(clickhouseCluster));
+				}
+				 
+			} catch (SQLException e) {
+				throw new AIRuntimeException("Failed to create agent tool call rules table", e);
+			}
+		}
+		//创建记忆表 
+		try {
+			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMemorySQL());
+		}
+		catch (Exception exception){
+			try {
+				logger.info("Creating memory table {}...", getMemoryTableName());
+				
+				if(!isClickhouse(dataSource)) {
+					SQLExecutor.updateWithDBName(dataSource,evalCreateAgentMemoryTableSQL(dataSource));
+				}
+				else{
+					//暂时不支持Clickhouse保存记忆和流水账数据
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClickhouseLocalAgentMemoryTableSQL(clickhouseCluster));
+					SQLExecutor.updateWithDBName(dataSource, evalCreateClusterAgentMemoryTableSQL(clickhouseCluster));
+				}
+			} catch (SQLException e) {
+				throw new AIRuntimeException("Failed to create session message table", e);
+			}
+		}
+		
+		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMessageReferenceSQL());
 		}
 		catch (Exception exception){
@@ -688,24 +1064,71 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create session message reference table "+getSessionMessageReferenceTableName(), e);
 			}
 		}
-		String sqlhitl = evalCreateHitlCallTaskTableSQL(hitlDatasource);
-		if(sqlhitl != null) {
+//		String sqlhitl = evalCreateHitlCallTaskTableSQL(hitlDatasource);
+//		if(sqlhitl != null) {
 			try {
 				SQLExecutor.queryObjectWithDBName(int.class, hitlDatasource, getExistHitlCallTaskSQL());
 			} catch (Exception exception) {
 				try {
 					logger.info("Creating HitlCallTaskTable table {}...", getHitlCallTaskTableName());
+					if(!isClickhouse(dataSource)) {
+						SQLExecutor.updateWithDBName(dataSource, evalCreateHitlCallTaskTableSQL(dataSource));
+					}
+					else{
+						SQLExecutor.updateWithDBName(dataSource, evalCreateClickhouseLocalHitlCallTaskTableSQL(clickhouseCluster));
+						SQLExecutor.updateWithDBName(dataSource, evalCreateClusterHitlCallTaskTableSQL(clickhouseCluster));
+					}
 					
-					SQLExecutor.updateWithDBName(hitlDatasource, evalCreateHitlCallTaskTableSQL(hitlDatasource));
 					
 				} catch (SQLException e) {
 					throw new AIRuntimeException("Failed to create HitlCallTaskTable table", e);
 				}
 			}
-		}
+//		}
 	
 	}
-    public void init(String clickhouseCluster, String hitlDatasource,String dataSource){
+	
+	private String evalCreateClusterHitlCallTaskTableSQL(String clickhouseCluster) {
+		String sql = this.clickhouse_createClusterHitlCallTaskTableSQL;
+		return sql.replace("${hitlCallTaskTableName}", hitlCallTaskTableName	).replace("$clickhouseCluster", clickhouseCluster);
+	}
+	
+	private String evalCreateClickhouseLocalHitlCallTaskTableSQL(String clickhouseCluster) {
+		String sql = this.clickhouse_createLocalHitlCallTaskTableSQL;
+		return sql.replace("${hitlCallTaskTableName}", this.hitlCallTaskTableName	).replace("$clickhouseCluster", clickhouseCluster);
+	}
+	
+	private String evalCreateClusterAgentMemoryTableSQL(String clickhouseCluster) {
+		String sql = this.clickhouse_createClusterMemoryTableSQL;
+		return sql.replace("${memoryTableName}", memoryTableName).replace("$clickhouseCluster", clickhouseCluster);
+	}
+	
+	private String evalCreateClickhouseLocalAgentMemoryTableSQL(String clickhouseCluster) {
+		String sql = this.clickhouse_createLocalMemoryTableSQL;
+		return sql.replace("${memoryTableName}", this.memoryTableName).replace("$clickhouseCluster", clickhouseCluster);
+		
+	}
+	
+	private String evalCreateClusterAgentToolCallRulesTableSQL(String clickhouseCluster) {
+		String sql = this.clickhouse_createClusterAgentToolCallRulesTableSQL;
+		return sql.replace("${agentToolCallRulesTableName}", agentToolCallRulesTableName).replace("$clickhouseCluster", clickhouseCluster);
+	}
+	
+	private String evalCreateClickhouseLocalAgentToolCallRulesTableSQL(String clickhouseCluster) {
+		String sql = this.clickhouse_createLocalAgentToolCallRulesTableSQL;
+		return sql.replace("${agentToolCallRulesTableName}", agentToolCallRulesTableName).replace("$clickhouseCluster", clickhouseCluster);
+		
+	}
+	
+	public String getAgentToolCallRulesTableName() {
+		return agentToolCallRulesTableName;
+	}
+	
+	public String getExistAgentToolCallRulesSQL() {
+		return new StringBuilder().append("select 1 from ").append(agentToolCallRulesTableName).toString();
+	}
+	
+	public void init(String clickhouseCluster, String hitlDatasource,String dataSource){
 		if(inited )
 			return;
 		synchronized (lock) {
@@ -713,6 +1136,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				return;
 			existSQL = new StringBuilder().append("select 1 from ").append(sessionTableName).toString();
 			existMessageSQL = new StringBuilder().append("select 1 from ").append(sessionMessageTableName).toString();
+			existMemorySQL = new StringBuilder().append("select 1 from ").append(memoryTableName).toString();	
 			existMessageReferenceSQL = new StringBuilder().append("select 1 from ").append(sessionMessageReferenceTableName).toString();
 			existHitlCallTaskSQL = new StringBuilder().append("select 1 from ").append(hitlCallTaskTableName).toString();
 			
@@ -721,6 +1145,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 					.append("sessionId,requestId,userId,hitlTaskReason,hitlTaskStatus,hitlTaskHandleResult,")
 					.append("hitlTaskCreateTime,hitlTaskHandleTime,hitlTaskCompleteTime")
 					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+			
+			
 			
 			//处理人工介入任务：更新状态为已处理(1)或已拒绝(2)，记录处理结果和处理时间
 			handledHitlCallTaskSQL = new StringBuilder().append("update ").append(hitlCallTaskTableName)
@@ -745,9 +1171,30 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 					.append(hitlCallTaskTableName)
 					.append(" where hitlTaskStatus=5 and hitlTaskCompleteTime<?").toString();
 			
+			insertAgentToolCallRulesSQL = new StringBuilder().append("insert into ").append(agentToolCallRulesTableName)
+					.append(" (agentToolCallRulesId,userId,sessionId,toolName,agentId,")
+					.append("permissionRules,createTime,updateTime")
+					.append(") values(?,?,?,?,?,?,?,?)").toString();
+			
+			updateAgentToolCallRulesSQL = new StringBuilder().append("update ").append(agentToolCallRulesTableName)
+					.append(" set permissionRules=?,updateTime=?")
+					.append(" where sessionId=? and agentId = ?").toString();
+			updateClickhouseAgentToolCallRulesSQL = new StringBuilder()
+					.append("ALTER TABLE ").append(agentToolCallRulesTableName).append("_local on cluster ").append(clickhouseCluster)
+					.append(" UPDATE permissionRules = ?, updateTime = ?")
+					.append(" WHERE sessionId = ? AND agentId = ?")
+					.append(" SETTINGS mutations_sync = 0")
+					.toString();
+			
+			selectAgentToolCallRulesSQL = new StringBuilder().append("select * from ").append(agentToolCallRulesTableName)
+					.append(" where sessionId=? and agentId = ?").toString();
+			
 			insertSessionSQL = "INSERT INTO " + sessionTableName + " (sessionId, createTime, lastAccessTime,userId, agentId, title,domain) \n" +
 					"VALUES (?, ?, ?, ?, ?,?,?)";
 			updateSessionLastAccessTimeSQL = "UPDATE " + sessionTableName + " SET lastAccessTime = ? WHERE sessionId = ?";
+			
+			updateClickhouseSessionLastAccessTimeSQL =  "ALTER TABLE " + sessionTableName + 
+					"_local on cluster " + clickhouseCluster + " UPDATE lastAccessTime = ? WHERE sessionId = ? SETTINGS mutations_sync = 0";
 			
 			deleteSessionByUserIdSQL = new StringBuilder().append("delete from ")
 					.append(sessionTableName).append(" where  userId=?").toString();
@@ -771,8 +1218,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			insertSessionMessageSQL = new StringBuilder().append("insert into ").append(sessionMessageTableName)
 					.append(" (msgId,createTime,sessionId,parentAgentId,agentId,messageType,")
 					.append("seqNo,message,role,marks,metadata,requestId,tokenMetrics,elapsed,traceId")
-					.append(",agentNodeType,subAgentIdBy,groupId,parentGroupId")
-					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
+					.append(",agentNodeType,subAgentIdBy,groupId,parentGroupId,name,parentMsgId,nextMsgId")
+					.append(") values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").toString();
 			
 			insertSessionMessageRerenceSQL = "INSERT INTO " + sessionMessageReferenceTableName + " (msgId,msgAgentId,refAgentId,sessionId,requestId) " +
 					"VALUES (?, ?, ?, ?, ?)";
@@ -787,17 +1234,26 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 					.append(sessionMessageReferenceTableName).append(" where sessionId=? ").toString();
 			
 			selectSessionMessageByUserIdSQL = new StringBuilder().append("select *  from ")
-					.append(sessionMessageTableName).append(" where userId=? order by createTime,seqNo desc").toString();
+					.append(sessionMessageTableName).append(" as tm where tm.sessionId in (select sessionId from ").append(sessionTableName) 
+					.append(" as ts where ts.userId=? order by ts.createTime desc limit ?) " +
+							"and tm.messageType in ('0','1','2','3','4','23')  and tm.agentNodeType in ('standard','route','judge') "
+							+
+							"order by tm.createTime,tm.seqNo desc").toString();
 			
 			/**
 			 * 查询最近的消息,恢复到对话中 
-			 * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
+			 * 0 代表子智能体辅助消息， 1 代表子智能体输出结果 2 代表用户输入消息 3 智能体系统消息 5 智能体跟踪消息 23 摘要消息，是否是agent的最终结果消息（messageType=1），需要加载到父agent的记忆消息中
 			 * 排除掉智能体跟踪消息
 			 */
 			selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
-					.append(sessionMessageTableName).append(" where sessionId=? and (agentId is null or (parentAgentId is null and messageType = '1')) ")
-					.append("and messageType in ('0','1','2','3','4') order by createTime,seqNo asc").toString();
+					.append(sessionMessageTableName).append(" where sessionId=?   ")
+					.append("and messageType in ('0','1','2','3','4','23') and agentNodeType in ('standard','route','judge') order by createTime,seqNo asc").toString();
 			
+			selectAgentPermissionRulesSQL =  new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" where sessionId=?   ")
+					.append("and messageType = '25' and agentId= ? order by createTime,seqNo desc").toString();
+			selectSessionMessageBySessionId2ndMsgIdsSQL = new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" where sessionId=? and msgId in ({ids}) order by createTime,seqNo asc").toString();
 			selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
 					.append(sessionMessageTableName).append(" where sessionId=? ").toString();
 
@@ -805,7 +1261,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 //				.append("select *  from ")
 //				.append(sessionMessageTableName)
 //				.append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
-//				.append("and messageType in ('0','1','2','3','4'))" )
+//				.append("and messageType in ('0','1','2','3','4','23'))" )
 //				.append(" or msgId in (select msgId from ")
 //				.append(sessionMessageReferenceTableName)
 //				.append(" where sessionId=? and refAgentId = ?) " )
@@ -814,8 +1270,10 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			selectSessionMessageBySessionId2ndAgentIdSQL0 = new StringBuilder()
 					.append("select *  from ")
 					.append(sessionMessageTableName)
-					.append(" where (sessionId=? and (agentId= ? or (parentAgentId= ? and messageType = '1')) ")
-					.append("and messageType in ('0','1','2','3','4'))")
+					.append(" where (sessionId=? and (agentId= ? " )
+					.append("or (parentAgentId= ? and messageType = '1')" ) //将子智能体的输出作为父智能体的历史消息记录
+					.append(") ")
+					.append("and messageType in ('0','1','2','3','4','23'))")
 					.toString();
 			
 			selectSessionMessageBySessionId2ndAgentIdSQL1 = new StringBuilder()
@@ -907,6 +1365,50 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         
         return sql.replace("$sessionMessageTableName", sessionMessageTableName);
     }
+	
+	public String evalCreateAgentToolCallRulesTableSQL(String dbName) {
+		DB adaptor = DBUtil.getDBAdapter(dbName);
+		String type = adaptor.getDBTYPE();
+		String sql = null;
+		if ("mysql".equalsIgnoreCase(type)) {
+			sql = mysql_createAgentToolCallRulesTableSQL;
+		} else if ("oracle".equalsIgnoreCase(type)) {
+			sql = oracle_createAgentToolCallRulesTableSQL;
+		} else if ("dm".equalsIgnoreCase(type)) {
+			sql = dm_createAgentToolCallRulesTableSQL;
+		} else if ("sqlserver".equalsIgnoreCase(type)) {
+			sql = sqlserver_createAgentToolCallRulesTableSQL;
+		} else if ("postgresql".equalsIgnoreCase(type)) {
+			sql = postgresql_createAgentToolCallRulesTableSQL;
+		} else if ("sqlite".equalsIgnoreCase(type)) {
+			sql = sqlite_createAgentToolCallRulesTableSQL;
+		}
+		
+		return sql.replace("$agentToolCallRulesTableName", agentToolCallRulesTableName);
+	}
+	
+	public String evalCreateAgentMemoryTableSQL(String dbName) {
+		DB adaptor  = DBUtil.getDBAdapter(dbName);
+		String type = adaptor.getDBTYPE();
+		String sql = null;
+		if ("mysql".equalsIgnoreCase(type)) {
+			sql = mysql_createMemoryTableSQL;
+		} else if ("oracle".equalsIgnoreCase(type)) {
+			sql = oracle_createMemoryTableSQL;
+		} else if ("dm".equalsIgnoreCase(type)) {
+			sql = dm_createMemoryTableSQL;
+		} else if ("sqlserver".equalsIgnoreCase(type)) {
+			sql = sqlserver_createMemoryTableSQL;
+		} else if ("postgresql".equalsIgnoreCase(type)) {
+			sql = postgresql_createMemoryTableSQL;
+		}
+		else if("sqlite".equalsIgnoreCase(type)) {
+			sql = sqlite_createMemoryTableSQL;
+		}
+		
+		return sql.replace("$memoryTableName", memoryTableName);
+	}
+	
 	
 	public String evalCreateClickhouseLocalSessionMessageTableSQL( String clickhouseCluster) {
 		
@@ -1000,13 +1502,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         return sql.replace("$hitlCallTaskTableName", hitlCallTaskTableName);
     }
 
-    public String evalOracleAddCommentsToHitlCallTaskTableSQL() {
-        return oracle_addCommentsToHitlCallTaskTableSQL.replace("$hitlCallTaskTableName", hitlCallTaskTableName);
-    }
-
-    public String evalPostgresqlAddCommentsToHitlCallTaskTableSQL() {
-        return postgresql_addCommentsToHitlCallTaskTableSQL.replace("$hitlCallTaskTableName", hitlCallTaskTableName);
-    }
+ 
 
 
     public String getInsertSessionSQL() {
@@ -1015,6 +1511,10 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 
     public String getUpdateSessionLastAccessTimeSQL() {
         return updateSessionLastAccessTimeSQL;
+    }
+	
+	public String getUpdateClickhouseSessionLastAccessTimeSQL() {
+        return updateClickhouseSessionLastAccessTimeSQL;
     }
 
     public String getDeleteSessionSQL() {
@@ -1072,8 +1572,16 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
     public String getExistMessageSQL() {
         return existMessageSQL;
     }
-
-    public void setSessionMessageTableName(String sessionMessageTableName) {
+	
+	public String getExistMemorySQL() {
+		return existMemorySQL;
+	}
+	
+	public String getMemoryTableName() {
+		return memoryTableName;
+	}
+	
+	public void setSessionMessageTableName(String sessionMessageTableName) {
         this.sessionMessageTableName = sessionMessageTableName;
     }
 
@@ -1096,7 +1604,11 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	public String getCompleteHitlCallTaskSQL() {
 		return completeHitlCallTaskSQL;
 	}
-
+	
+	public String getInsertAgentToolCallRulesSQL() {
+		return insertAgentToolCallRulesSQL;
+	}
+	
 	public String getDeleteCompleteHitlCallTaskSQLWithCompleteTimeSQL() {
 		return deleteCompleteHitlCallTaskSQLWithCompleteTimeSQL;
 	}
@@ -1111,5 +1623,24 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	
 	public String getTimeoutHitlCallTaskSQL() {
 		return timeoutHitlCallTaskSQL;
+	}
+	
+	public String getSelectSessionMessageBySessionId2ndMsgIdsSQL() {
+		return selectSessionMessageBySessionId2ndMsgIdsSQL;
+	}
+	public String getSelectAgentToolCallRulesSQL() {
+		return selectAgentToolCallRulesSQL;
+	}
+	
+	public String getUpdateAgentToolCallRulesSQL() {
+		return updateAgentToolCallRulesSQL;
+	}
+	
+	public String getUpdateClickhouseAgentToolCallRulesSQL() {
+		return updateClickhouseAgentToolCallRulesSQL;
+	}
+	
+	public String getSelectAgentPermissionRulesSQL() {
+		return selectAgentPermissionRulesSQL;
 	}
 }

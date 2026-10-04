@@ -17,13 +17,12 @@ package org.frameworkset.spi.ai.adapter;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**

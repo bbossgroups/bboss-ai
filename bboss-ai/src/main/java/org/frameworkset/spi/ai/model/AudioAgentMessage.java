@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
@@ -47,16 +47,15 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
 //    }
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, ChatContext chatContext) {
-        ChatObject chatObject = new ChatObject();
-        chatObject.setChatContext(chatContext);
-        SSEHeaderSetFunction sseHeaderSetFunction = null;
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent agent, ChatContext chatContext) {
+        ChatObject chatObject = buildChatObject(  chatContext,  agent);
+		SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
         Boolean stream = false;
         String aiChatRequestType = null;
         StreamDataBuilder streamDataBuilder = null;
         Object agentMessage = null;       
-        parameters = agentAdapter._buildGenAudioRequestMap(this,chatObject,clientConfiguration,aiAgent,   chatContext);
+        parameters = agentAdapter._buildGenAudioRequestMap(this,chatObject,clientConfiguration,agent,   chatContext);
         if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             parameters.put("stream",false);
         }
@@ -110,7 +109,6 @@ public class AudioAgentMessage extends StoreAgentMessage<AudioAgentMessage> {
         chatObject.setStream(stream);
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
-        chatObject.setAgent(aiAgent);
         return chatObject;
     }
 }

@@ -19,15 +19,13 @@ import com.frameworkset.common.poolman.SQLExecutor;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.AIRuntimeException;
-import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.model.PersistentMessage;
-import org.frameworkset.spi.ai.model.TokenMetrics;
+import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.store.AgentSession;
 import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.store.StoreContext;
-import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
@@ -35,7 +33,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -55,14 +52,14 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	 * 人工介入任务数据库表数据源
 	 */
 	private String hitlDatasource = "bboss";
-    public AgentSessionStoreDB(List<Map<String, Object>> sessionMemory) {
+    public AgentSessionStoreDB(List<LinkedMessageMap<String, Object>> sessionMemory) {
         super(sessionMemory);
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         persistentSessionMemory = true;
         init();
     }
 
-    public AgentSessionStoreDB(List<Map<String, Object>> sessionMemory, int sessionSize) {
+    public AgentSessionStoreDB(List<LinkedMessageMap<String, Object>> sessionMemory, int sessionSize) {
         super(sessionMemory, sessionSize);
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         persistentSessionMemory = true;
@@ -130,12 +127,12 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	}
 	
 	@Override
-    public boolean loadSessionMemory(String prompt,String agentId){
+    public boolean createOrUpdateSession(String prompt, String agentId, AIAgent agent){
         String domain = this.storeContext != null ?this.storeContext.getDomain():null;
-        return loadSessionMemory(  prompt,domain,  agentId);
+        return createOrUpdateSession(  prompt,domain,  agentId,agent);
     }
     @Override
-    public boolean loadSessionMemory(String prompt,String domain,String agentId){
+    public boolean createOrUpdateSession(String prompt, String domain, String agentId, AIAgent agent){
         if(agentSession != null){
             return false;
         }
@@ -147,7 +144,8 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                         this.sessionMemory = new ArrayList<>();
 
                     }
-                    agentSession = SQLExecutor.queryObjectWithDBName(AgentSession.class, dataSource, agentSessionStoreDBConfig.getSelectSessionBySessionIdSQL(), this.getSessionId());
+                    agentSession = SQLExecutor.queryObjectWithDBName(AgentSession.class, dataSource, 
+							agentSessionStoreDBConfig.getSelectSessionBySessionIdSQL(), this.getSessionId());
                     if (agentSession == null) {//不存在session，则创建一个session
                         agentSession = new AgentSession();
                         agentSession.setSessionId(this.getSessionId());
@@ -168,42 +166,53 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
                                 prompt.length() > 50 ? prompt.substring(0, 50) : prompt,domain);
                         newSession = true;
                     } else {
-						//只有非clickhouse数据库才需要更新session最后访问时间，clickhouse数据库不支持更新最后访问时间
-						if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
-							SQLExecutor.updateWithDBName(
-									dataSource,
-									agentSessionStoreDBConfig.getUpdateSessionLastAccessTimeSQL(),
-									new Date(),
-									getSessionId()
-							);
-						}
-                        //获取主智能体记忆记录
-                        List<SessionMessage> sessionMessages = null;
-                        if (this.getAgentId() == null) {
-                            sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), this.getSessionId());
-                        } else {
-							List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
-                            sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(), this.getAgentId(), this.getAgentId());
-                        }
-
-
-                        if (sessionMessages != null && !sessionMessages.isEmpty()) {
-                            int sessionSize = this.getSessionSize();
-                            int dataSize = sessionMessages.size();
-
-                            if (sessionSize > 0 && dataSize > sessionSize) {
-
-                                sessionMessages = sessionMessages.subList(dataSize - sessionSize, dataSize);
-
-                            }
-                            for (SessionMessage sessionMessage : sessionMessages) {
-                                
-                                appendSessionMessageFromParent(sessionMessage.getMessage());
-                            }
-
-                        }
+						String updateSessionLastAccessTimeSQL = !agentSessionStoreDBConfig.isClickhouse(this.dataSource) ?
+								agentSessionStoreDBConfig.getUpdateSessionLastAccessTimeSQL():agentSessionStoreDBConfig.getUpdateClickhouseSessionLastAccessTimeSQL();
+//						//只有非clickhouse数据库才需要更新session最后访问时间，clickhouse数据库不支持更新最后访问时间
+//						if(!agentSessionStoreDBConfig.isClickhouse(this.dataSource)) {
+//							
+//						}
+//						else{
+//							
+//						}
+						SQLExecutor.updateWithDBName(
+								dataSource,
+								updateSessionLastAccessTimeSQL,
+								new Date(),
+								getSessionId()
+						);
+						//以下代码无需再主store中加载会话列表--注释开始
+//                        //获取主智能体记忆记录
+//                        List<SessionMessage> sessionMessages = null;
+//                        if (this.getAgentId() == null) {
+//                            sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+//                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), this.getSessionId());
+//                        } else {
+//							List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
+//                            sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+//                                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(), this.getAgentId(), this.getAgentId());
+//                        }
+//
+//
+//                        if (sessionMessages != null && !sessionMessages.isEmpty()) {
+//							//消息截断和压缩，交给后续环节统一处理
+//							/**
+//                            int sessionSize = this.getSessionSize();
+//                            int dataSize = sessionMessages.size();
+//
+//                            if (sessionSize > 0 && dataSize > sessionSize) {
+//
+//                                sessionMessages = sessionMessages.subList(dataSize - sessionSize, dataSize);
+//
+//                            }*/
+//							sessionMessages = refactorSessionMessages(sessionMessages);
+//                            for (SessionMessage sessionMessage : sessionMessages) {
+//                                sessionMessage.afterLoad();
+//                                appendSessionMessageFromParent(agent,sessionMessage.getMessage());
+//                            }
+//
+//                        }
+						//以上代码无需再主store中加载会话列表--注释结束
                     }
 
 
@@ -214,17 +223,88 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         }
         return newSession;
     }
-
+	
+ 	@Override
+	public void addAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		agentToolCallRules.setAgentToolCallRulesId(SimpleStringUtil.getUUID32());
+		/**
+		 insertAgentToolCallRulesSQL = new StringBuilder().append("insert into ").append(agentToolCallRulesTableName)
+		 .append(" (agentToolCallRulesId,userId,sessionId,toolName,agentId,")
+		 .append("permissionRules,createTime,updateTime")
+		 .append(") values(?,?,?,?,?,?,?,?,?,?)").toString();
+		 */
+		agentToolCallRules.setCreateTime(LocalDateTime.now());
+		agentToolCallRules.setUpdateTime(agentToolCallRules.getCreateTime());
+		try{
+			SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertAgentToolCallRulesSQL(),
+						agentToolCallRules.getAgentToolCallRulesId(),this.getUserId(),
+					this.getSessionId(), agentToolCallRules.getToolName(), 
+					agentToolCallRules.getAgentId(),
+					JsonUtil.object2json(agentToolCallRules.getPermissionRules()),
+					agentToolCallRules.getCreateTime(),agentToolCallRules.getUpdateTime()
+			);
+		} catch (SQLException e) {
+			throw new AIRuntimeException("add agent tool call rules error",e);
+		}	
+	}
+	
+	@Override
+	public void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		agentToolCallRules.setUpdateTime(LocalDateTime.now());
+		try{
+			String updateAgentToolCallRulesSQL = !agentSessionStoreDBConfig.isClickhouse(this.dataSource) ?
+					agentSessionStoreDBConfig.getUpdateAgentToolCallRulesSQL():agentSessionStoreDBConfig.getUpdateClickhouseAgentToolCallRulesSQL	();
+			SQLExecutor.updateWithDBName(dataSource, updateAgentToolCallRulesSQL,
+					JsonUtil.object2json(agentToolCallRules.getPermissionRules()),
+					agentToolCallRules.getUpdateTime(),
+					agentToolCallRules.getSessionId(),
+					agentToolCallRules.getAgentId()
+			);
+		} catch (SQLException e) {
+			throw new AIRuntimeException("add agent tool call rules error",e);
+		}
+	}
+	
+	@Override
+	public AgentToolCallRules getAgentToolCallRules(String sessionId, String agentId){
+		try{
+			return SQLExecutor.queryObjectWithDBName(AgentToolCallRules.class, dataSource, 
+				agentSessionStoreDBConfig.getSelectAgentToolCallRulesSQL(), sessionId, agentId);	
+		} catch (SQLException e) {
+			throw new AIRuntimeException("get agent tool call rules error:sessionId "+sessionId+" agentId "+agentId	,e);
+		}	
+	}	
+	
     @Override
     public LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,
                                                        String agentId, String parentAgentId,
-													   String agentNodeType,String subAgentIdBy, String marks, String metadata, String messageType){
+													   String agentNodeType,String subAgentIdBy,
+													   String marks, String metadata, String messageType){
         try { 
 //            loadSessionMemory(message, agentId);
             //msgId,createTime,sessionId,seqNo,message,role
-            Map<String, Object> message = persistentMessage.getMessage();
-            String msgId = SimpleStringUtil.getUUID32();
+			LinkedMessageMap<String, Object> message = persistentMessage.getMessage();
+			LocalDateTime createTime = LocalDateTime.now();
+			
+          
             String role = (String) message.get("role");
+			String msgId = message.getId();
+			if(msgId == null) {
+				msgId = SimpleStringUtil.getUUID32();
+				message.setId(msgId);
+			}
+			if(message.getSeqNo() < 0) {
+				message.setSeqNo(getNextSeqNo());
+			}
+			if(message.getTimestamp() == null) {
+				message.withTimestamp(createTime);
+			}
+			if(message.getMeta() != null){
+				metadata = JsonUtil.object2json(message.getMeta());
+			}
+			if(message.getAgentId() == null){
+				message.setAgentId(agentId);
+			}
 //            if(agentResultMessage != null && !agentResultMessage.equals("1")){
 //                if(role.equals(MessageBuilder.ROLE_USER)){
 //                    agentResultMessage = SessionMessage.MESSAGE_TYPE_USER_MESSAGE;
@@ -242,10 +322,12 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
            
             
             SQLExecutor.insertWithDBName(dataSource, agentSessionStoreDBConfig.getInsertSessionMessageSQL(),
-                    msgId,new Date(),this.getSessionId(),
-                    parentAgentId, agentId,messageType,integerCount.increament(), JsonUtil.object2json(message),
+                    msgId,createTime,this.getSessionId(),
+                    parentAgentId, agentId,messageType,message.getSeqNo(), JsonUtil.object2json(message),
                     role,marks,metadata,this.getRequestId(), tokenMetrics,elapsed,this.getTraceId(),agentNodeType,
-					subAgentIdBy,persistentMessage.getGroupId(),persistentMessage.getParentGroupId());
+					subAgentIdBy,persistentMessage.getGroupId(),persistentMessage.getParentGroupId()
+					,message.getName(),message.getParentMsgId(),message.getNextMsgId()
+			);
 
             if(messageType != null && messageType.equals("1")) {
                 LastSessionMessage lastSessionMessage = new LastSessionMessage();
@@ -272,8 +354,35 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         }
     }
 	
+	@Override
+	public List<SessionMessage> searchSessionMessages(String sessionId, String query){
+		return null;
+	}
+	@Override
+	public List<SessionMessage> getSessionMessages(String sessionId, String[] summaryMessageIds) {
+		try {
+			String sql  = agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndMsgIdsSQL();
+			int size = summaryMessageIds.length;
+			StringBuilder tmp = new StringBuilder();
+			for(int i = 0; i < size; i++) {
+				if(tmp.length() > 0 ){
+					tmp.append(",");
+				}
+				tmp.append("?");
+			}
+			sql = sql.replace("{ids}", tmp.toString());
+			List<SessionMessage> sessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+					sql, sessionId,summaryMessageIds);
+				return sessionMessages;
+			
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getSessionMessages: sessionId="+sessionId+",summaryMessageIds:"+ JsonUtil.object2json(summaryMessageIds),exception);
+		}
+	}
+	
 	/**
-	 * 查询会话中智能体引用的消息记录清空
+	 * 查询会话中智能体引用的消息记录清单
 	 * @param sessionId
 	 * @param agentId
 	 * @return
@@ -288,23 +397,77 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 			throw new AIRuntimeException("getAgentRefMsgIds: agentId="+agentId + ",sessionId="+sessionId,exception);
 		}
 	}
+	@Override
+	public PermissionRules getAgentPermissionRules(String sessionId,String agentId){
+		try {
+			List<SessionMessage> permissionRuleMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+					agentSessionStoreDBConfig.getSelectAgentPermissionRulesSQL(),sessionId, agentId);
+			if(permissionRuleMessages != null && permissionRuleMessages.size() > 0){
+				SessionMessage permissionRulesMessage = permissionRuleMessages.get(0);
+				return resolvePermissionRules(  permissionRulesMessage);
+			}
+			return null;
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentPermissionRules: agentId="+agentId,exception);
+		}	
+	}
     @Override
-    public List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize){
+    public List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage,String agentId){
         try {
 			List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
             List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
                     agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(),agentId,agentId);
-            return resolve(lastSubAgentSessionMessage,agentId,   agentSessionMessages,   agentSessionSize);
+            
+			return resolve(agent,lastSubAgentSessionMessage,agentId,   agentSessionMessages,true);
            
         }
 		catch (AIRuntimeException exception){
 			throw exception;
 		}
         catch (Exception exception){
-            throw new AIRuntimeException("getAgentSessionMessage: agentId="+agentId + ",agentSessionSize="+agentSessionSize,exception);
+            throw new AIRuntimeException("getAgentSessionMessage: agentId="+agentId ,exception);
         }
         
     }
+	
+	@Override
+	public List<SessionMessage>  getAllAgentSessionMessage(String sessionId){
+		try {
+			 
+			List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+					agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), sessionId);
+			
+			return agentSessionMessages;
+			
+		}
+		catch (AIRuntimeException exception){
+			throw exception;
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentSessionMessage: sessionId="+sessionId ,exception);
+		}
+		
+	}
+	
+	@Override
+	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit){
+		try {
+			
+			List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+					agentSessionStoreDBConfig.getSelectSessionMessageByUserIdSQL(), userId,limit);
+			
+			return agentSessionMessages;
+			
+		}
+		catch (AIRuntimeException exception){
+			throw exception;
+		}
+		catch (Exception exception){
+			throw new AIRuntimeException("getAgentSessionMessage: sessionId="+sessionId ,exception);
+		}
+		
+	}
 
     @Override
     public void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId){

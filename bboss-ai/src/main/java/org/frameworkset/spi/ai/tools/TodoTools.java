@@ -15,9 +15,6 @@ package org.frameworkset.spi.ai.tools;
  * limitations under the License.
  */
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.apache.commons.lang3.StringUtils;
 import org.frameworkset.spi.ai.state.Task;
 import org.frameworkset.spi.ai.model.ChatObject;
@@ -37,7 +34,7 @@ import java.util.Map;
  *
  * <p>The single {@code todo_write} tool uses <b>full-list-replace</b> semantics: the model passes
  * the <i>entire</i> updated list every call and the tool rebuilds
- * {@link } from it. This is intentionally simpler than a granular
+ * {link } from it. This is intentionally simpler than a granular
  * create/update/delete surface — the model never has to reason about ids or partial diffs, and the
  * latest complete list is always the source of truth (and is re-surfaced every turn by
  * {@code TaskReminderMiddleware}).

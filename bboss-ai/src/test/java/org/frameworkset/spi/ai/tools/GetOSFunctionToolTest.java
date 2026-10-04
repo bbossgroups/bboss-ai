@@ -16,9 +16,6 @@ package org.frameworkset.spi.ai.tools;
  */
 
 import org.frameworkset.spi.ai.model.annotation.Tool;
-import org.slf4j.Logger;
-
-import java.util.Map;
 
 /**
  * 操作系统信息查询工具类。

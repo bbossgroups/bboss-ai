@@ -18,21 +18,21 @@ package org.frameworkset.spi.ai;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
 import org.frameworkset.spi.ai.callback.AgentOutput;
-import org.frameworkset.spi.ai.callback.AgentRuntimeContext;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.AgentRuntimeContext;
+import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.tool.*;
-import org.frameworkset.spi.ai.tool.ToolSearcher;
+import org.frameworkset.spi.ai.tools.CompactSummaryMsgSearchTool;
+import org.frameworkset.spi.ai.tools.SessionSearchTool;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
-import org.frameworkset.spi.remote.http.ClientConfiguration;
-import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -50,6 +50,8 @@ import java.util.Map;
  * @Date 2026/1/4
  */
 public class AIAgent<T extends AIAgent> implements AgentInfoInf{
+	
+	private List<AgentInterceptor> agentInterceptors;
 
 	
 	private AgentRuntimeContext agentRuntimeContext;
@@ -158,7 +160,10 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
     protected int outputVaribleScope = AIFlowConst.AIFLOW_VAR_SCOPE_FLOW;
     
     protected AgentOutput agentOutput;
-
+	
+	/**
+	 * 虚拟主智能体对象，对应的Agent对象，可以是planAgent，可以是不存在的agent
+	 */
     protected volatile AgentSessionStore mainSessionStore;
     protected StoreContext storeContext;
 
@@ -300,7 +305,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
             return parentAgent;
         }
         if(this.parentSessionStore != null){
-            return parentSessionStore.getAiAgent();
+            return parentSessionStore.getAgent();
         }
         return null;
     }
@@ -450,45 +455,84 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         }
         return lastSubAgentSessionMessage;
     }
-    
+	
+	/**
+	 * 恢复缓存的智能体权限规则
+	 */
+	public void restorePermissionRules(ChatObject chatObject){
+		PermissionRules permissionRules = mainSessionStore.getAgentPermissionRules(this.getSessionId(),this.agentId);
+		if(permissionRules != null){
+			chatObject.restoreCachedPermissionRule(permissionRules);
+		}
+//		Map<String, Object> permissionRules = null;
+//		for(LinkedMessageMap<String,Object> sessionMemoryItem : sessionMemory){
+//			String msgAgentId = sessionMemoryItem.getAgentId();
+//			//只恢复智能体自身的工具权限规则
+//			if(msgAgentId == null || !msgAgentId.equals(this.agentId)){
+//				continue;
+//			}
+//			Map<String, Object> permissionRules_ = (Map<String, Object>)	 sessionMemoryItem.getMetaValue(PermissionRules.PERMISSION_RULES_KEY);
+//			if(permissionRules_ != null){
+//				permissionRules = permissionRules_;
+//			}
+//			
+//		}
+//		if(permissionRules != null){
+//			String json = JsonUtil.object2json(permissionRules);
+//			agentRuntimeContext.setPermissionRules(JsonUtil.json2Object(json, PermissionRules.class));
+//		}
+	}
     protected void loadHistoryMessages(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
         if(agentSessionStore == null){
             return;
         }
-        List<Map<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
+        List<LinkedMessageMap<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
         boolean empty = sessionMemory.isEmpty();
 //                sessionAgentMessage.setSessionStore(agentSessionStore);
         mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
-        if(!isDisableReferenceParentLastSubMessage()) {
+		LastSessionMessage lastSubAgentSessionMessage = null;
+		if(!isDisableReferenceParentLastSubMessage()) {
 //        if(!isDisableGloableStore()) {
             //UserAgent无需追加父智能体中产生的最新的消息作
-            LastSessionMessage lastSubAgentSessionMessage = getLastSubAgentSessionMessage(mainSessionStore, agentMessage);
-
-
-            if (empty) {
-                //加载历史消息
-                List<Map<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(lastSubAgentSessionMessage, agentId, sessionSize);
-                if (sessionMessages != null && sessionMessages.size() > 0) {
-                    for (Map<String, Object> sessionMessage : sessionMessages) {
-                        agentSessionStore.appendSessionMessageFromParent(sessionMessage);
-                    }
-
-
-                }
-            } else if (lastSubAgentSessionMessage != null) {//不为空，直接append主智能体中的最后一条消息
-                //如果父智能体的最后一个子智能体消息就是智能体自己产生消息,无需添加到自己的消息列表中（因为结果生成后，已经添加到消息列表）
-                if(!lastSubAgentSessionMessage.getMsgAgentId().equals(this.getAgentId())) {
-                    
-                    agentSessionStore.appendSessionMessageFromParent(lastSubAgentSessionMessage.getLastSessionMessage());
-                    //记录消息引用关系
-                    mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
-                }
-               
-            }
+            lastSubAgentSessionMessage = getLastSubAgentSessionMessage(mainSessionStore, agentMessage);            
         }
+		if (empty) {
+			//加载历史消息
+			List<LinkedMessageMap<String, Object>> sessionMessages = mainSessionStore.getAgentSessionMessage(this,lastSubAgentSessionMessage, agentId);
+			
+			if (sessionMessages != null && sessionMessages.size() > 0) {
+				for (LinkedMessageMap<String, Object> sessionMessage : sessionMessages) {
+					agentSessionStore.appendSessionMessageFromParent(this,sessionMessage);
+				}
+				
+				
+			}
+		} else if (lastSubAgentSessionMessage != null) {//不为空，直接append主智能体中的最后一条消息
+			//如果父智能体的最后一个子智能体消息就是智能体自己产生消息,无需添加到自己的消息列表中（因为结果生成后，已经添加到消息列表）
+//			restorePermissionRules(    sessionMemory);
+			if(!lastSubAgentSessionMessage.getMsgAgentId().equals(this.getAgentId())) {
+				
+				agentSessionStore.appendSessionMessageFromParent(this,lastSubAgentSessionMessage.getLastSessionMessage());
+				//记录消息引用关系
+				mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
+			}
+			
+		}
     }
     public void reactMessage(AgentMessage agentMessage){
-
+//		if(agentMessage.getAgentRuntimeContext() != null){
+//			AgentRuntimeContext agentRuntimeContext1
+//		}
+		if(this.agentRuntimeContext == null){
+			this.agentRuntimeContext = agentMessage.getAgentRuntimeContext();
+		}
+		if(agentRuntimeContext != null){
+			if(agentRuntimeContext.isEnableMemorySearch()){
+				this.registBeanTool(new CompactSummaryMsgSearchTool());
+				this.registBeanTool(new SessionSearchTool());
+			}
+		}
+		
         AgentSessionStore mainSessionStore = this.getMainSessionStore();
         SessionAgentMessage sessionAgentMessage = null;
         if( agentMessage instanceof SessionAgentMessage) {
@@ -525,7 +569,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 				}
 			}
 
-            mainSessionStore.loadSessionMemory(title, agentId);
+            mainSessionStore.createOrUpdateSession(title, agentId,this);
             if(parentSessionStore == null && this.parentAgent != null){
                 this.parentSessionStore = parentAgent.getAgentSessionStore();
             }
@@ -539,7 +583,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
                 agentSessionStore.setMainAgentSessionStore(mainSessionStore);
             }
             loadHistoryMessages(  mainSessionStore,  agentMessage);
-
+			
 
         }
         
@@ -729,8 +773,23 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this);
     }
-
-    /**
+	
+	public Flux<ServerEvent> streamChat(String maasName, String prompt,  ChatAgentMessage chatAgentMessage ){
+		if(prompt != null && prompt.length() > 0){
+			chatAgentMessage.setPrompt(prompt);
+		}
+ 
+		
+		return streamChat(  maasName,   chatAgentMessage );
+	}
+	
+	/**
+	 * 实现流式智能问答功能,在指定的数据源上执行
+	 */
+	public Flux<ServerEvent> streamChatWithQuestion(String question, ChatAgentMessage chatAgentMessage){
+		return streamChat(chatAgentMessage.getMaas(),   question,   chatAgentMessage );
+	}
+	/**
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat( ChatAgentMessage chatAgentMessage){
@@ -744,7 +803,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage, ChatContext chatContext ){
         reactMessage(  chatAgentMessage);
 //        chatAgentMessage.init();
-
+		
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this,chatContext);
     }
 
@@ -772,9 +831,19 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 		if(this.agentRuntimeContext == null){
 			this.agentRuntimeContext = chatAgentMessage.getAgentRuntimeContext();
 		}
-        ChatContext chatContext = AIAgentUtil.getChatContext(  chatAgentMessage, this);
+        ChatContext chatContext = AIAgentUtil.getChatContext( maasName, chatAgentMessage, this);
         return chat(  maasName,   chatAgentMessage,chatContext);
     }
+	public ServerEvent chatWithQuestion( String question, ChatAgentMessage chatAgentMessage ){
+		return chat(chatAgentMessage.getMaas(),   question,   chatAgentMessage );
+	}
+	public ServerEvent chat(String maasName, String question, ChatAgentMessage chatAgentMessage ){
+		if(question != null && question.length() > 0){
+			chatAgentMessage.setPrompt(question);
+		}
+		 
+		return chat(  maasName,   chatAgentMessage);
+	}
     /**
      * 实现同步智能问答,在指定的数据源上执行
      */
@@ -914,14 +983,14 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         return null;
     }
 
-    public List<Map<String, Object>> getSessionMemory() {
+    public List<LinkedMessageMap<String, Object>> getSessionMemory() {
         if(this.agentSessionStore != null) {
             return this.agentSessionStore.getSessionMemory();
         }
         return getSessionMemory(false);
     }
 
-	public List<Map<String, Object>> getSessionMemory(boolean create) {
+	public List<LinkedMessageMap<String, Object>> getSessionMemory(boolean create) {
 		
 		if(agentSessionStore == null && create){
 			this.agentSessionStore = new AgentSessionStoreMemory(new ArrayList<>());
@@ -1325,7 +1394,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
     }
 
     /**
-     * 加载会话历史记录，如果会话历史记录不存在，则根据prompt创建一个会话
+     * 创建或者更新会话
      * @param prompt
      * @return
      */
@@ -1338,10 +1407,17 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
         return loadSessionMemory(  prompt,domain );
     }
 
+	/**
+     * 创建或者更新会话
+     * @param prompt
+     * @param domain
+     * @return
+     */
+	
     public boolean loadSessionMemory(String prompt ,String domain){
         this.initSessionStore();
         if(this.mainSessionStore != null)
-            return this.mainSessionStore.loadSessionMemory(prompt,domain,this.agentId);
+            return this.mainSessionStore.createOrUpdateSession(prompt,domain,this.agentId,this);
         return false;
     }
     
@@ -1522,5 +1598,47 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
 	public T setAgentRuntimeContext(AgentRuntimeContext agentRuntimeContext) {
 		this.agentRuntimeContext = agentRuntimeContext;
 		return (T)this;
+	}
+	
+	public List<LinkedMessageMap<String, Object>> compact(ChatContext chatContext,AIAgent agent, List<LinkedMessageMap<String, Object>> messages) {
+		if(getMainSessionStore() != null) {
+			return getMainSessionStore().compact(chatContext,agent, messages);
+		}
+		else{
+			return messages;
+		}
+	}
+	
+	public void saveSummeryMessage(LinkedMessageMap<String, Object> summaryMessage) {
+		PersistentMessage persistentMessage = new PersistentMessage();
+		persistentMessage.setMessage(summaryMessage);
+		persistentMessage.setGroupId(getGroupId());
+		persistentMessage.setParentGroupId(getParentGroupId());
+		this.agentSessionStore.saveSummeryMessage(persistentMessage);
+	}
+	
+	public int getNextSeqNo() {
+		return this.getMainSessionStore().getNextSeqNo();
+	}
+	
+	public void addAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		if(this.getMainSessionStore() != null)
+			this.getMainSessionStore().addAgentToolCallRules(agentToolCallRules);
+		
+	}
+	
+	public void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules){
+		if(this.getMainSessionStore() != null)
+			this.getMainSessionStore().updateAgentToolCallRules(agentToolCallRules);	
+		
+		
+	}
+	
+	public AgentToolCallRules getAgentToolCallRules(String sessionId, String agentId){
+		
+		if(this.getMainSessionStore() != null)
+			return this.getMainSessionStore().getAgentToolCallRules(sessionId, agentId);	
+		return null;
+		
 	}
 }

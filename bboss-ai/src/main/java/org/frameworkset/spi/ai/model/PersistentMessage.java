@@ -15,6 +15,9 @@ package org.frameworkset.spi.ai.model;
  * limitations under the License.
  */
 
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.ChatContext;
+
 import java.util.Map;
 
 /**
@@ -28,7 +31,11 @@ public class PersistentMessage {
     private TokenMetrics tokenMetrics;
 
     private TokenMetrics totalTokenMetrics;
-    private Map<String, Object> message;
+    private LinkedMessageMap<String, Object> message;
+	
+	
+	private AIAgent agent;
+ 
 
     public TokenMetrics getTokenMetrics() {
         return tokenMetrics;
@@ -38,11 +45,11 @@ public class PersistentMessage {
         this.tokenMetrics = tokenMetrics;
     }
 
-    public Map<String, Object> getMessage() {
+    public LinkedMessageMap<String, Object> getMessage() {
         return message;
     }
 
-    public void setMessage(Map<String, Object> message) {
+    public void setMessage(LinkedMessageMap<String, Object> message) {
         this.message = message;
     }
 
@@ -77,4 +84,14 @@ public class PersistentMessage {
 	public void setParentGroupId(String parentGroupId) {
 		this.parentGroupId = parentGroupId;
 	}
+	
+	public AIAgent getAgent() {
+		return agent;
+	}
+	
+	public void setAgent(AIAgent agent) {
+		this.agent = agent;
+	}
+	
+ 
 }

@@ -16,7 +16,10 @@ package org.frameworkset.spi.ai.store;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
+import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
+import org.frameworkset.spi.ai.store.db.AgentSessionServiceImpl;
 import org.frameworkset.spi.ai.store.db.AgentSessionStoreDB;
 
 import java.util.ArrayList;
@@ -44,9 +47,26 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
         }
         if(agentSessionStore == null)
             throw new AIRuntimeException("Invalid store type: " + storeContext.getStoreType())  ;
-
         agentSessionStore.init();
+		
         storeContext.setMainSessionStore(agentSessionStore);
+		if(storeContext.isEnableHitl()) {
+			synchronized (HitlTaskHelper.getLock()) {
+				if (storeContext.getDataSource() != null && HitlTaskHelper.getHitlTaskHelperOnly() == null) {
+					AgentSessionService agentSessionService = new AgentSessionServiceImpl();
+					agentSessionService.setDatasource(storeContext.getDataSource());
+					agentSessionService.setClickhouseCluster(storeContext.getClickhouseCluster());
+					HitlTaskHelper hitlTaskHelper = new HitlTaskHelper();
+					hitlTaskHelper.setAgentSessionService(agentSessionService);
+					if (storeContext.getRedisDSName() != null) {
+						hitlTaskHelper.setRedisChannel(storeContext.getRedisDSName(),
+								storeContext.getChannel() != null ? storeContext.getChannel() : RedisHitlTaskCallListener.DEFAULT_CHANNEL);
+					}
+					hitlTaskHelper.init();
+					HitlTaskHelper.setHitlTaskHelper(hitlTaskHelper);	
+				}
+			}
+		}
         return agentSessionStore;
     }
 }

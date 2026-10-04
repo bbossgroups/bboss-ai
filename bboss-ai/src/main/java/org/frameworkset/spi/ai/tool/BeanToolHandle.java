@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.tool;
 
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
-import org.frameworkset.spi.ai.model.Property;
+import org.frameworkset.spi.ai.model.tool.Property;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.frameworkset.util.ClassUtil;
@@ -99,7 +99,7 @@ public class BeanToolHandle {
         Method[] methods = classInfo.getDeclaredMethods();
        
         List<FunctionToolDefine> functionToolDefines = null;
-
+		ToolBase toolBase = toolObject instanceof ToolBase?(ToolBase)toolObject:null;
         //从methods中筛选出包含注解Tool的方法
         for (Method method : methods) {
             if (method.isAnnotationPresent(Tool.class)) {
@@ -114,7 +114,9 @@ public class BeanToolHandle {
                 functionToolDefine.funtionName2ndDescription(name,tool.description());
                 functionToolDefine.setType(tool.type());
                 functionToolDefine.additionalProperties(tool.additionalProperties());
-                functionToolDefine.strict(tool.strict());                
+                functionToolDefine.strict(tool.strict());
+				functionToolDefine.setReadOnly(tool.readOnly());
+				functionToolDefine.setToolBase(toolBase);
                 
                 List<String> requirements = new ArrayList<>();
 
@@ -175,10 +177,11 @@ public class BeanToolHandle {
                                 property.setFormat(format);
 							if("array".equals(paramType)){
 								if(paramTypeClass.isArray()){
-									Property arrayPropertyItems = new Property();
-									arrayPropertyItems.setType(toolParam.elementType());
-									arrayPropertyItems.setDescription(toolParam.elementDescription());
-									property.setItems(arrayPropertyItems);
+//									Property arrayPropertyItems = new Property();
+//									arrayPropertyItems.setType(toolParam.elementType());
+//									arrayPropertyItems.setDescription(toolParam.elementDescription());
+//									property.setItems(arrayPropertyItems);
+									buildArraySchema(  property,  paramTypeClass,  toolParam);
 								}
 								else{
 									 
@@ -279,10 +282,11 @@ public class BeanToolHandle {
 					property.setFormat(format);
 				if("array".equals(paramType)){
 					if(paramTypeClass.isArray()){
-						Property arrayPropertyItems_ = new Property();
-						arrayPropertyItems_.setType(toolParam.elementType());
-						arrayPropertyItems_.setDescription(toolParam.elementDescription());
-						property.setItems(arrayPropertyItems_);
+//						Property arrayPropertyItems_ = new Property();
+//						arrayPropertyItems_.setType(toolParam.elementType());
+//						arrayPropertyItems_.setDescription(toolParam.elementDescription());
+//						property.setItems(arrayPropertyItems_);
+						buildArraySchema(  property,  paramTypeClass,  toolParam);
 					}
 					else{
 						// 获取方法参数的泛型
@@ -310,6 +314,25 @@ public class BeanToolHandle {
 		return arrayPropertyItems;
     }
 	
+	private static  void buildArraySchema(Property property,Class paramTypeClass,ToolParam toolParam){
+		
+		Property arrayPropertyItems_ = new Property();
+		if(SimpleStringUtil.isNotEmpty(toolParam.elementType())) {
+			arrayPropertyItems_.setType(toolParam.elementType());
+		}
+		else{
+			Class<?> componentType = paramTypeClass;
+			while (componentType.isArray()) {
+				componentType = componentType.getComponentType();
+			}
+			arrayPropertyItems_.setType(getParamType(componentType));
+		}
+		if(SimpleStringUtil.isNotEmpty(toolParam.elementDescription())) {
+			arrayPropertyItems_.setDescription(toolParam.elementDescription());
+		}
+		property.setItems(arrayPropertyItems_);
+		
+	}
 	
 	private static void parserToolObjectParams(Property parent,Class<?> elementType) {
 	  
@@ -370,10 +393,11 @@ public class BeanToolHandle {
 					property.setFormat(format);
 				if("array".equals(paramType)){
 					if(paramTypeClass.isArray()){
-						Property arrayPropertyItems_ = new Property();
-						arrayPropertyItems_.setType(toolParam.elementType());
-						arrayPropertyItems_.setDescription(toolParam.elementDescription());
-						property.setItems(arrayPropertyItems_);
+//						Property arrayPropertyItems_ = new Property();
+//						arrayPropertyItems_.setType(toolParam.elementType());
+//						arrayPropertyItems_.setDescription(toolParam.elementDescription());
+//						property.setItems(arrayPropertyItems_);
+						buildArraySchema(  property,  paramTypeClass,  toolParam);
 					}
 					else{
 						// 获取方法参数的泛型

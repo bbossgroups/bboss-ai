@@ -15,7 +15,7 @@ package org.frameworkset.spi.ai.flow;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
@@ -69,7 +69,7 @@ public class AIBaseNodeBuilder extends CallableJobFlowNodeBuilder {
 		agent.setGroupId(jobFlowNodeExecuteContext.getGroupId());
 		agent.setParentGroupId(jobFlowNodeExecuteContext.getParentGroupId());
 		
-        ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, agent);
+        ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage.getMaas(),agentMessage, agent);
 		chatContext.setJobFlowNodeExecuteContext(jobFlowNodeExecuteContext);
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**

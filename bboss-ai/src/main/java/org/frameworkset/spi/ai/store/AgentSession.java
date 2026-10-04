@@ -16,6 +16,8 @@ package org.frameworkset.spi.ai.store;
  */
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
+import com.frameworkset.util.JsonUtil;
+import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 
 import java.time.LocalDateTime;
@@ -94,6 +96,48 @@ public class AgentSession {
         }
         return false;
     }
+	
+	/**
+	 * 根据summaryMessageIds获取历史消息
+	 * @param summaryMessageIds
+	 * @return
+	 */
+	public List<SessionMessage> getAgentSessionMessage(String[] summaryMessageIds) {
+		if(assistantMessages == null || assistantMessages.size() == 0)
+			return null;
+		List<SessionMessage> summaryMessages = null;
+		for(SessionMessage assistantMessage : assistantMessages) {
+		 	String msgId = assistantMessage.getMsgId();
+			 for(String summaryMessageId : summaryMessageIds)
+			 {
+				 if(summaryMessageId.equals(msgId)){
+					 summaryMessages.add(assistantMessage);
+				 }
+			 }			
+		}
+		
+		 
+		return summaryMessages;
+	}
+	
+	public List<SessionMessage>  getAllAgentSessionMessage( ){
+		if(assistantMessages == null || assistantMessages.size() == 0)
+			return null;
+		List<SessionMessage> agentMessages = null;
+		for(SessionMessage assistantMessage : assistantMessages) {			 
+		 
+			if (agentMessages == null)
+				agentMessages = new ArrayList<>();
+			//messageType in ('0',1','2','3','4','23')
+			String messageType = assistantMessage.getMessageType();
+			if (needSessionMessage(messageType)) {
+				agentMessages.add(assistantMessage);
+			}		 
+			
+		}
+		 
+		return agentMessages;
+	}
     //msgId,msgAgentId,refAgentId,sessionId
     /**
      * 根据agentId获取agentId的历史消息
@@ -116,9 +160,9 @@ public class AgentSession {
             else if (messageAgentId != null && messageAgentId.equals(agentId) ) {
                 if (agentMessages == null)
                     agentMessages = new ArrayList<>();
-                //messageType in ('0',1','2','3','4')
+                //messageType in ('0',1','2','3','4','23')
                 String messageType = assistantMessage.getMessageType();
-                if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
+                if (needSessionMessage(messageType)) {
                     agentMessages.add(assistantMessage);
                 }
             }
@@ -171,6 +215,14 @@ public class AgentSession {
     }
 
 
+	private boolean needSessionMessage(String messageType){
+		return messageType.equals("0") 
+				|| messageType.equals("1") 
+				|| messageType.equals("2") 
+				|| messageType.equals("3") 
+				|| messageType.equals("4") 
+				|| messageType.equals("23");
+	}
     public synchronized List<SessionMessage> getMainAgentMessage(String agentId) {
         if(assistantMessages == null || assistantMessages.size() == 0)
             return null;
@@ -182,9 +234,9 @@ public class AgentSession {
                 if (messageAgentId == null) {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
-                    //messageType in ('0',1','2','3','4')
+                    //messageType in ('0',1','2','3','4','23')
                     String messageType = assistantMessage.getMessageType();
-                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
+                    if (needSessionMessage(messageType)) {
                         mainAgentMessages.add(assistantMessage);
                     }
                    
@@ -204,9 +256,9 @@ public class AgentSession {
                     if (mainAgentMessages == null)
                         mainAgentMessages = new ArrayList<>();
 
-                    //messageType in ('0',1','2','3','4')
+                    //messageType in ('0',1','2','3','4','23')
                     String messageType = assistantMessage.getMessageType();
-                    if (messageType.equals("0") || messageType.equals("1") || messageType.equals("2") || messageType.equals("3") || messageType.equals("4")) {
+					if (needSessionMessage(messageType)) {
                         mainAgentMessages.add(assistantMessage);
                     }
                    
@@ -246,4 +298,18 @@ public class AgentSession {
     public void setDomain(String domain) {
         this.domain = domain;
     }
+	
+	public SessionMessage getAgentPermissionRules(String agentId) {
+		if(assistantMessages == null || assistantMessages.size() == 0)
+			return null;
+		 
+		SessionMessage permissionRulesMessage = null;
+		for(SessionMessage assistantMessage : assistantMessages){
+			String role = assistantMessage.getRole();
+			if(assistantMessage.getAgentId().equals(agentId) &&	 role.equals(SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME) ){
+				permissionRulesMessage = assistantMessage;	
+			}
+		}
+		return permissionRulesMessage;
+	}
 }

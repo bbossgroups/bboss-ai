@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.flow;
 
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.*;
@@ -31,9 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxSink;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.frameworkset.spi.ai.model.ServerEvent.TYPE_TRACE;
 
@@ -88,7 +86,6 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
 			data = serverEvent.getFullStreamData();
 		}
 //		String data = serverEvent.getFullStreamData();
-		FluxSink<ServerEvent> fluxSink = routeAgent.getAgentFluxSink();
 		
 		RouteChoice result = null;
 		if (data != null) {
@@ -138,7 +135,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
 				traceServerEvent.setData(message);
 				traceServerEvent.setType(TYPE_TRACE);
 				TraceMessage traceMessage = new TraceMessage();
-				Map<String, Object> messageMap = new LinkedHashMap<>();
+				LinkedMessageMap<String, Object> messageMap = new LinkedMessageMap<>();
 				messageMap.put("text", message);
 				messageMap.put("data", data);
 				
@@ -175,7 +172,7 @@ public class AIRouterNodeBuilder extends AIBaseNodeBuilder {
         }
         jobFlowNodeExecuteContext.addContextData("route.ChoiceList", JsonUtil.object2json(routeChoiceList));
         routeAgent.setPrompt(prompt);
-		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage, routeAgent);
+		ChatContext chatContext = AIAgentUtil.getChatContextOnly(agentMessage.getMaas(),agentMessage, routeAgent);
 		chatContext.setJobFlowNodeExecuteContext(jobFlowNodeExecuteContext);
         chatContext.setChatStreamCallback(new ChatStreamCallback() {
             /**

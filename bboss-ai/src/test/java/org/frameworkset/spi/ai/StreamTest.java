@@ -27,7 +27,6 @@ import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
-import org.frameworkset.spi.feishu.BaseFeishuConfig;
 import org.frameworkset.spi.reactor.BaseStreamDataHandler;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.spi.reactor.FluxSinkStatus;
@@ -100,7 +99,7 @@ public class StreamTest {
 
 
 //        chatWithTools("qwenvlplus","qwen3.7-plus");
-        chatWithTools("zhipu","glm-5.3");
+//        chatWithTools("zhipu","glm-5.3");
 
 
 
@@ -140,7 +139,7 @@ public class StreamTest {
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
 //        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
 
-//        streamChatWithMcpTools("custom","shuqi","qwen3.7-plus","推荐一部穿越小说",true);
+        streamChatWithMcpTools("custom1","shuqi","qwen3.7-plus","推荐一部穿越小说",true);
 
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出知识库飞书定制开发和应用中的文档",true);
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
@@ -148,7 +147,9 @@ public class StreamTest {
 //        streamDBStoreChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
         
 //        streamChatWithMcpTools("openai","feishumcp","gpt-5.4","列出知识库飞书定制开发和应用中的文档",true);
-        streamChatWithMcpTools("qwenvlplus","12306","qwen3.8-max","帮我查一下明天北京到上海的高铁",true);
+//        streamChatWithMcpTools("qwenvlplus","12306","qwen3.8-max","帮我查一下明天北京到上海的高铁",true);
+
+//        streamDBStoreChatWithMcpTools("qwenvlplus","feishumcp","qwen3.8-max","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
 		//多智能体协同
 //		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁");
 
@@ -464,7 +465,7 @@ public class StreamTest {
                 .setPrompt("查询杭州市天气，并根据天气给出穿衣、饮食以及出行建议")
                 .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))
 //                .setModel("deepseek-chat")
-                .setModel(model)
+                .setModel(model)//.setThinking(true)
                 .setMaxTokens(65536L);
 
         AIAgent aiAgent = new AIAgent();
@@ -576,7 +577,8 @@ public class StreamTest {
 
     }
 
-	public static void streamChatWithMcpTools(String maas, String mcpServer,String model, String prompt,boolean thinking) throws InterruptedException {
+	public static void streamChatWithMcpTools(String maas, String mcpServer,
+											  String model, String prompt,boolean thinking) throws InterruptedException {
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
 				.setPrompt(prompt,true)
                 .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))

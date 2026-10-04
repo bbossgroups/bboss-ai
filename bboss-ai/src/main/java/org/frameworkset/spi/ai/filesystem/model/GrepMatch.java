@@ -1,0 +1,77 @@
+/*
+ * Copyright 2024-2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.frameworkset.spi.ai.filesystem.model;
+
+ 
+/**
+ * A single match from a grep search.
+ */
+public class GrepMatch {
+	/**
+	 * path to the file containing the match
+	 */
+	private String path;
+	/**
+	 * 1-indexed line number of the match
+	 */
+	private int line;
+	/**
+	 * content of the matching line
+	 */
+	private String text;
+	
+	public GrepMatch() {
+	}
+	
+	public GrepMatch(String path, int line, String text) {
+		this.path = path;
+		this.line = line;
+		this.text = text;
+	}
+	
+	public String getPath() {
+		return path;
+	}
+	
+	public void setPath(String path) {
+		this.path = path;
+	}
+	
+	public int getLine() {
+		return line;
+	}
+	
+	public void setLine(int line) {
+		this.line = line;
+	}
+	
+	public String getText() {
+		return text;
+	}
+	
+	public void setText(String text) {
+		this.text = text;
+	}
+	
+	@Override
+	public String toString() {
+		return "GrepMatch{" +
+				"path='" + path + '\'' +
+				", line=" + line +
+				", text='" + text + '\'' +
+				'}';
+	}
+}

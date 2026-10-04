@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
@@ -40,8 +40,8 @@ public class ToolAgentMessage extends ChatAgentMessage{
         return chatAgentMessage.getMaas();
 	}
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter,AIAgent aiAgent, ChatContext chatContext) {
-        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter,aiAgent, chatContext);
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent agent, ChatContext chatContext) {
+        ChatObject chatObject = super.buildChatObject(clientConfiguration, agentAdapter, agent, chatContext);
         chatObject.setToolCall(true);
         return chatObject;
     }
@@ -148,17 +148,17 @@ public class ToolAgentMessage extends ChatAgentMessage{
 //        return chatAgentMessage.getSessionMemory();
 //    }
 
-    @Override
-    public int getSessionSize() {
-        return chatAgentMessage.getSessionSize();
-    }
+//    @Override
+//    public int getSessionSize() {
+//        return chatAgentMessage.getSessionSize();
+//    }
 //    @Override
 //    public String getChatCompletionsUrl() {
 //        return chatAgentMessage.getChatCompletionsUrl();
 //    }
 
     @Override
-    public ChatAgentMessage addSessionMessage(Map<String, Object> message, AIAgent aiAgent) {
+    public ChatAgentMessage addSessionMessage(LinkedMessageMap<String, Object> message, AIAgent aiAgent) {
           chatAgentMessage.addSessionMessage(message,   aiAgent);
           return this;
     }

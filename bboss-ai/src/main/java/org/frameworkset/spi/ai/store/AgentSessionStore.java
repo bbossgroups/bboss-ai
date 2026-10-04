@@ -16,11 +16,13 @@ package org.frameworkset.spi.ai.store;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author biaoping.yin
@@ -28,6 +30,7 @@ import java.util.Map;
  */
 public interface AgentSessionStore<T extends AgentSessionStore> {
     void init();
+	AgentMemoryStore getAgentMemoryStore();
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     StoreContext getStoreContext();
     String getAgentId();
@@ -36,14 +39,16 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     LastSessionMessage getLastSubAgentSessionMessage();
     List<LastSessionMessage> getLastSubAgentSessionMessages();
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
+	int getNextSeqNo();
     
     /**
-     * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
+     * 创建会话或者更新会话
+	 * //根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
      * @param prompt
      * @param agentId
      * @return
      */
-    boolean loadSessionMemory(String prompt,String agentId);
+    boolean createOrUpdateSession(String prompt, String agentId, AIAgent agent);
 
     /**
      * 根据prompt和agentId加载记忆消息，如果未加载记忆消息，则进行加载
@@ -54,10 +59,10 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
      * @param agentId
      * @return
      */
-    boolean loadSessionMemory(String prompt,String domain,String agentId);
+    boolean createOrUpdateSession(String prompt, String domain, String agentId, AIAgent agent);
     
     String getParantAgentId();
-    AIAgent getAiAgent();
+    AIAgent getAgent();
     T setAIAgent(AIAgent aiAgent);
     T setSessionSize(int sessionSize) ;
     T setAgentId(String agentId) ;
@@ -69,25 +74,34 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     LastSessionMessage addAgentResultSessionMessage(AgentResultSessionMessageContext agentResultSessionMessageContext,String persistentMessage);
     LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent);
 
-    LastSessionMessage addAgentResultSessionMessage(Map<String, Object> message,String agentId,String parentAgentId);
-    void appendSessionMessageFromParent(Map<String,Object> message);
-    void addSessionMessage( Map<String,Object> systemMessage,String prompt,String agentId,String parentAgentId,String agentNodeType, AIAgent aiAgent);
-   
+    LastSessionMessage addAgentResultSessionMessage(LinkedMessageMap<String, Object> message,String agentId,String parentAgentId, AIAgent aiAgent );
+	List<LinkedMessageMap<String, Object>> compact(ChatContext chatContext,AIAgent agent, List<LinkedMessageMap<String, Object>> sessionMemory);
+    void appendSessionMessageFromParent(AIAgent agent,
+										LinkedMessageMap<String,Object> persistentMessage );
+    void addSessionMessage( LinkedMessageMap<String,Object> systemMessage,String prompt,
+							String agentId,String parentAgentId,String agentNodeType, AIAgent aiAgent );
+	
+	
+	LinkedMessageMap<String, Object> addAssistantSessionMessage(ServerEvent serverEvent);
+	LinkedMessageMap<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder);
 
-    Map<String, Object> addAssistantSessionMessage(ServerEvent serverEvent);
-    Map<String, Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder);
 
+    List<LinkedMessageMap<String, Object>> getSessionMemory();
 
-    List<Map<String, Object>> getSessionMemory();
-
-    List<Map<String, Object>>  getAgentSessionMessage(LastSessionMessage lastSubAgentSessionMessage,String agentId,int agentSessionSize);
+    List<LinkedMessageMap<String, Object>>  getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage,String agentId );
 
     void recordTraceMessage(TraceMessage traceMessage);
     void recordTraceMessage(TraceMessage traceMessage,TokenMetrics tokenMetrics);
     
     LastSessionMessage persistentSessionMessage(PersistentMessage persistentMessage,//Map<String, Object> message,
-                                                String agentId, String parentAgentId,String agentNodeType,String subAgentIdBy, String marks, String metadata, String messageType);
-            
+                                                String agentId, String parentAgentId,String agentNodeType,String subAgentIdBy,
+												String marks, String metadata, String messageType);
+	
+	AgentToolCallRules getAgentToolCallRules(String sessionId, String agentId);
+	
+	void addAgentToolCallRules(AgentToolCallRules agentToolCallRules);
+	
+	void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules);
             //, TokenMetrics tokenMetrics);
     AgentSessionStore getMainAgentSessionStore() ;
 
@@ -106,4 +120,20 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 	String getRequestId();
 	
 	String getUserId();
+	
+	void saveSummeryMessage(PersistentMessage persistentMessage);
+	
+	List<SessionMessage> getSessionMessages(String sessionId, String[] summaryMessageIds);
+	List<SessionMessage> searchSessionMessages(String sessionId, String query);
+	List<SessionMessage>  getAllAgentSessionMessage(String sessionId);
+	
+	/**
+	 * 最多查询用户limit个最近会话的消息记录
+	 * @param userId
+	 * @param limit
+	 * @return
+	 */
+	List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit);
+	
+	PermissionRules getAgentPermissionRules(String sessionId,String agentId);
 }

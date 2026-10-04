@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.model;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
@@ -38,9 +38,8 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
     
 
     @Override
-    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent aiAgent, ChatContext chatContext) {
-        ChatObject chatObject = new ChatObject();
-        chatObject.setChatContext(chatContext);
+    public ChatObject buildChatObject(ClientConfiguration clientConfiguration, AgentAdapter agentAdapter, AIAgent agent, ChatContext chatContext) {
+        ChatObject chatObject = buildChatObject(chatContext,agent);
         SSEHeaderSetFunction sseHeaderSetFunction = null;
         Map parameters = null;
         Boolean stream = false;
@@ -48,7 +47,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
 
-        parameters = agentAdapter.buildVideoVLRequestMap(this,aiAgent,chatContext);
+        parameters = agentAdapter.buildVideoVLRequestMap(this,agent,chatContext);
 //        setVideoVLCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(this));
         if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             parameters.put("stream",false);
@@ -95,7 +94,6 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         chatObject.setCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(clientConfiguration,this));
         chatObject.setAiChatRequestType(aiChatRequestType);
         chatObject.setStreamDataBuilder(streamDataBuilder);
-        chatObject.setAgent(aiAgent);
         return chatObject;
     }
 

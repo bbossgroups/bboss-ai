@@ -52,13 +52,14 @@ public class PlainChecklistCodeViewAgentHitlResisTest {
 //            message = "请依次执行以下命令：\n1.获取OS版本信息\n2.获取CPU信息\n3.打印OS和CPU信息\n4.查找端口808的进程\n5.如果存在对应进程，则关闭进程\n6.输出端口进程信息和关闭核对结果";
 			initDB();
 			initRedis();
+			/** 全局配置
 			AgentSessionService agentSessionService = new AgentSessionServiceImpl();
 			agentSessionService.setDatasource("visualops");
 			
 			HitlTaskHelper.getHitlTaskHelper()
 					.setAgentSessionService(agentSessionService)
 					.setRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)					 
-					.init();
+					.init();*/
 			callMinimaxSimple();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -73,7 +74,7 @@ public class PlainChecklistCodeViewAgentHitlResisTest {
 				.setAuth("ecs123456")
 				//集群节点可以通过逗号分隔，也可以通过\n符分隔
 //          .setServers("101.13.4.15:6359\n101.13.4.15:6369\n101.13.4.15:6379\n101.13.4.15:6389")
-				.setServers("101.13.6.7:6381,101.13.6.7:6382,101.13.6.7:6383,101.13.6.7:6384,101.13.6.7:6385,101.13.6.7:6386")
+				.setServers("101.13.6.7:6381,101.13.6.7:6382,101.13.6.7:6383,101.13.6.7:6384,10.13.6.7:6385,101.13.6.7:6386")
 				
 				.setMaxRedirections(5)
 				.setMode(RedisDB.mode_cluster)
@@ -117,8 +118,15 @@ public class PlainChecklistCodeViewAgentHitlResisTest {
 		chatAgentMessage.setPrompt(message).setSystemPrompt("你是一个 Java 代码审查助手。 长期规则： - 如果用户提交 Java 代码并要求审查，先调用 Skill 工具加载 code-review-skill。 - 加载技能书后，再按照技能书里的审查顺序审查java代码。 - 优先指出 bug、安全风险、边界条件、异常处理和缺失测试。 - 如果信息不足，要说明缺少哪些上下文，不要编造项目背景。 - 不要输出与代码审查无关的泛泛建议。 输出要求： - 用中文回答。 - 使用 Markdown。 - 先给总体结论，再列主要问题，最后给测试建议和下一步。");
 		
 		chatAgentMessage.setStream(true).setThinking(false).setTemperature(0.7);//.addParameter("max_tokens", 2048);
+		
+		AgentSessionService agentSessionService = new AgentSessionServiceImpl();
+		agentSessionService.setDatasource("visualops");
+		
+ 
+		
 		chatAgentMessage.setStoreContext(new StoreContext()
 				.setUserId("user123").setSessionSize(100).setRequestId("request123")
+				.setHitlRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)
 				.setStoreType(StoreContext.STORE_TYPE_DB)
 				.setDataSource("visualops"));
 		

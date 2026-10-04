@@ -15,8 +15,9 @@ package org.frameworkset.spi.ai.adapter;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 
@@ -105,13 +106,21 @@ public class MiniMaxAgentAdapter extends DoubaoAgentAdapter{
 
     @Override
     public StreamData buildErrorStreamData(Map map, TokenMetrics tokenMetrics) {
+		/**
+		 *  {"type":"error","error":{"type":"overloaded_error","message":"当前服务集群负载较高，请稍后重试，感谢您的耐心等待。 (2064)","http_code":"529"},"request_id":"07040c35a1eeb418d30979b0d00f0789"}
+		 */
         Map baseRsp = (Map) map.get("base_resp");
-        String code =String.valueOf(baseRsp.get("status_code"));
-        String message = (String) baseRsp.get("status_msg");
-
-        if(code != null) {
-            return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
-        }
+		if(baseRsp != null) {
+			String code = String.valueOf(baseRsp.get("status_code"));
+			String message = (String) baseRsp.get("status_msg");
+			
+			if (code != null) {
+				return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
+			}
+		}
+		else{
+			return new StreamData(ServerEvent.CONTENT, JsonUtil.object2json(map), "error").setStreamTokenMetrics(tokenMetrics);
+		}
         return null;
     }
 	

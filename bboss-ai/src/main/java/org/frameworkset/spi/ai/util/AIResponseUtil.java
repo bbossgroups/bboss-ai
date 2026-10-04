@@ -22,13 +22,15 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.material.DownFileHttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownImageBase64HttpClientResponseHandler;
 import org.frameworkset.spi.ai.material.DownVideoImageFileHttpClientResponseHandler;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.proxy.BBossEntityUtils;
@@ -131,8 +133,8 @@ public class AIResponseUtil {
         ServerEvent serverEvent = new ServerEvent();
 		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
-        
-        serverEvent.setAgent(chatObject.getAgent());
+		AIAgent agent = chatObject.getAgent();
+        serverEvent.setAgent(agent);
         if(firstEventTag.get()) {
             firstEventTag.set(false);
             serverEvent.setFirst(true);
@@ -146,6 +148,15 @@ public class AIResponseUtil {
         serverEvent.setData(error);
         serverEvent.setType(ServerEvent.TYPE_ERROR);
         sink.next(serverEvent);
+		//记录模型调用异常轨迹消息
+		TraceMessage traceMessage = new TraceMessage();
+		LinkedMessageMap  tracemessage = new LinkedMessageMap();
+		tracemessage.put("error", error);
+//        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
+		tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMCALLERROR_MESSAGE_NAME);
+		traceMessage.setMessage(tracemessage);
+		traceMessage.setStartTime(System.currentTimeMillis());
+		agent.recordTraceMessage(traceMessage);
 
         serverEvent = new ServerEvent();
 		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
@@ -1328,7 +1339,15 @@ public class AIResponseUtil {
         serverEvent.setGenUrl(content.getUrl());
         serverEvent.setFinishReason(content.getFinishReason());
         serverEvent.setType(ServerEvent.TYPE_DATA);
-        serverEvent.setContentType(ServerEvent.CONTENT);
+		if(content.isContent() || content.isMixedData()) {
+			serverEvent.setContentType(ServerEvent.CONTENT);
+		}
+		else if(content.isReasoning()){
+			serverEvent.setContentType(ServerEvent.REASONING_CONTENT);
+		}
+		else{
+			serverEvent.setContentType(ServerEvent.CONTENT);
+		}
         serverEvent.setDone(content.isDone());
 
         serverEvent.setRole(content.getRole());

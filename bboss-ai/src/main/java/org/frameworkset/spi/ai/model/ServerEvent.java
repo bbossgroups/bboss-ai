@@ -118,6 +118,7 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 	 */
 	private Map<String,Object> hitlAssistant;
     
+	@JsonIgnore
     private List<FunctionTool> functionTools;
 
 
@@ -552,6 +553,10 @@ public class ServerEvent extends MultimodalGeneration implements AIEvent{
 	public Map<String, Object> getHitlAssistant() {
 		return hitlAssistant;
 	}
+	
+	public Object hitlAssistant(String key) {
+		return hitlAssistant == null ? null : hitlAssistant.get(key);
+	}	
 	
 	public void setHitlAssistant(Map<String, Object> hitlAssistant) {
 		this.hitlAssistant = hitlAssistant;

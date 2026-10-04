@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.audit.AuditContext;
 import org.frameworkset.spi.ai.audit.AuditResult;
 import org.frameworkset.spi.ai.audit.Auditor;
+import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
@@ -54,6 +55,7 @@ public class ChecklistCodeViewAgentHitlResisTest {
 //            message = "请依次执行以下命令：\n1.获取OS版本信息\n2.获取CPU信息\n3.打印OS和CPU信息\n4.查找端口808的进程\n5.如果存在对应进程，则关闭进程\n6.输出端口进程信息和关闭核对结果";
 			initDB();
 			initRedis();
+			//全局hitl配置
 			AgentSessionService agentSessionService = new AgentSessionServiceImpl();
 			agentSessionService.setDatasource("visualops");
 			
@@ -75,7 +77,7 @@ public class ChecklistCodeViewAgentHitlResisTest {
 				.setAuth("ecs123456")
 				//集群节点可以通过逗号分隔，也可以通过\n符分隔
 //          .setServers("101.13.4.15:6359\n101.13.4.15:6369\n101.13.4.15:6379\n101.13.4.15:6389")
-				.setServers("10.13.6.7:6381,10.13.6.7:6382,10.13.6.7:6383,10.13.6.7:6384,10.13.6.7:6385,10.13.6.7:6386")
+				.setServers("101.13.6.7:6381,101.13.6.7:6382,101.13.6.7:6383,101.13.6.7:6384,101.13.6.7:6385,101.13.6.7:6386")
 				
 				.setMaxRedirections(5)
 				.setMode(RedisDB.mode_cluster)
@@ -129,10 +131,13 @@ public class ChecklistCodeViewAgentHitlResisTest {
 		chatAgentMessage.setStoreContext(new StoreContext()
 				.setUserId("user123").setSessionSize(100).setRequestId("request123")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
+				.setHitlRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)
 				.setDataSource("visualops"));
 		
 		CountDownLatch countDownLatch = new CountDownLatch(1);
-		AIAgent agent = new AIAgent();
+		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
+		agentRuntimeContext.setDebugSSEData(false);
+		AIAgent agent = new AIAgent().setAgentRuntimeContext(agentRuntimeContext);
 		agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
 		agent.setMaxLoopToolCalls(80);
 		agent.registTools(new SkillsToolRegist()

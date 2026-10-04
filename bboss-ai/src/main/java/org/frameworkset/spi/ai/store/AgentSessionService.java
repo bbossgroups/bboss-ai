@@ -31,6 +31,9 @@ import java.util.List;
  * yinbp @version v1.0
  */
 public interface AgentSessionService {
+	int MUTATIONS_SYNC_MODE_0 = 0;
+	int MUTATIONS_SYNC_MODE_1 = 1;
+	int MUTATIONS_SYNC_MODE_2 = 2	;
 	void setClickhouseCluster(String clickhouseCluster);
 	
 	void setHitlDatasource(String hitlDatasource);
@@ -73,8 +76,14 @@ public interface AgentSessionService {
 	 * @param hitlTaskId
 	 */
 	void destroyHitlCallTask(String reason, String hitlTaskId);
-	void deleteAgentSession(String sessionid) throws AgentSessionException
-
+	void deleteAgentSession(String sessionid) throws AgentSessionException;
+	
+	/**
+	 * 重置会话，只保留session记录，message记录全部清除掉
+	 * @param sessionid
+	 * @throws AgentSessionException
+	 */
+	void resetAgentSession(String sessionid) throws AgentSessionException
 	;
 	void deleteBatchAgentSession(String... sessionids) throws AgentSessionException
  
@@ -83,8 +92,16 @@ public interface AgentSessionService {
 	AgentSession getAgentSession(String sessionid) throws AgentSessionException
 
 	;
-
-    /**
+	
+	/**
+	 * 修改会话标题
+	 * @param sessionid
+	 * @param newTitle
+	 * @throws AgentSessionException
+	 */
+	void updateAgentSessionTitle(String sessionid,String newTitle) throws AgentSessionException;
+	
+	/**
      * 判断会话是否存在
      * @param sessionid
      * @return

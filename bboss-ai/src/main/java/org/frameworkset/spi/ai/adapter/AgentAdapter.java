@@ -19,12 +19,25 @@ import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.AgentRuntimeContext;
+import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.hitl.HitlCallResult;
+import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
+import org.frameworkset.spi.ai.hitl.HitlTaskToolInf;
 import org.frameworkset.spi.ai.material.GenFileDownload;
 import org.frameworkset.spi.ai.material.GenMaterialFileDownload;
 import org.frameworkset.spi.ai.mcp.model.MCPToolCallResponse;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.tool.PermissionRules;
+import org.frameworkset.spi.ai.model.tool.ToolCallAsk;
+import org.frameworkset.spi.ai.model.tool.ToolCallAskResult;
+import org.frameworkset.spi.ai.model.tool.ToolCallState;
+import org.frameworkset.spi.ai.permission.*;
+import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
+import org.frameworkset.spi.ai.tool.ToolBase;
+import org.frameworkset.spi.ai.tool.ToolCallContext;
+import org.frameworkset.spi.ai.tools.HitlAssistant;
 import org.frameworkset.spi.ai.util.*;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
@@ -155,7 +168,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		buildincludeUsage(  stream,  agentMessage, requestMap);
         buildTools(chatContext,agentMessage,  aiAgent, requestMap);
     }
-    protected Object handleImageParserMessages(List<Map<String, Object>> messages){
+    protected Object handleImageParserMessages(List<LinkedMessageMap<String, Object>> messages){
         return messages;
     }
 
@@ -168,13 +181,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     public Map buildVideoVLRequestMap(VideoVLAgentMessage videoVLAgentMessage, AIAgent aiAgent,ChatContext chatContext) {
 		// 构建消息历史列表，包含之前的会话记忆
 		
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoVLAgentMessage.getModel());
         List<String > videoUrls = videoVLAgentMessage.getVideoUrls();
-
-        Map<String, Object> userMessage = null;
-        Map<String, Object> systemMessage = null;
+		
+		LinkedMessageMap<String, Object> userMessage = null;
+		LinkedMessageMap<String, Object> systemMessage = null;
         String prompt = getPrompt(  videoVLAgentMessage,   aiAgent);
         if(chatContext != null){
             prompt = chatContext.evalPrompt(prompt);
@@ -187,7 +200,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             userMessage = buildInputVideosMessage(prompt, (String[])null);
         }
       
-        List<Map<String, Object>> messages = null;
+        List<LinkedMessageMap<String, Object>> messages = null;
         if(sessionMemory != null){
             if(sessionMemory.size() == 0){
                 String systemPrompt = getSystemPrompt(videoVLAgentMessage,aiAgent);
@@ -230,13 +243,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		
 		// 构建消息历史列表，包含之前的会话记忆
 		
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",imageAgentMessage.getModel());
         List<String > imageUrls = imageAgentMessage.getImageUrls();
-
-        Map<String, Object> userMessage = null;
-        Map<String, Object> systemMessage = null;
+		
+		LinkedMessageMap<String, Object> userMessage = null;
+		LinkedMessageMap<String, Object> systemMessage = null;
         String prompt = getPrompt(  imageAgentMessage,   aiAgent);
         if(chatContext != null){
             prompt = chatContext.evalPrompt(prompt);
@@ -248,7 +261,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             userMessage = buildInputImagesMessage(prompt, (String[])null);
         }
  
-        List<Map<String, Object>> messages = null;
+        List<LinkedMessageMap<String, Object>> messages = null;
         if(sessionMemory != null){
             if(sessionMemory.size() == 0){
                 String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
@@ -394,53 +407,354 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         return AIConstants.AI_CHAT_REQUEST_BODY_JSON;
 
     }
-    protected Map<String, Object> buildInputVideosMessage(String message,String... videoUrls) {
+    protected LinkedMessageMap<String, Object> buildInputVideosMessage(String message,String... videoUrls) {
         return MessageBuilder.buildInputVideosMessage(message,videoUrls);
     }
     
-    protected Map<String, Object> buildInputImagesMessage(String message,String... imageUrls) {
+    protected LinkedMessageMap<String, Object> buildInputImagesMessage(String message,String... imageUrls) {
         return MessageBuilder.buildInputImagesMessage(message,imageUrls);
     }
-
-    protected List<Map<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent aiAgent,ChatObject chatObject) {
+	
+	/**
+	 * Run every tool call through the permission gate.
+	 *
+	 * <p>When the agent's {link PermissionContextState} is trivial
+	 * (default mode, no rules, no working directories — i.e. the user has not opted into the
+	 * permission system) we fall back to the lightweight pre-2.0 path: the tool's own
+	 * {link ToolBase#checkPermissions} ASK gates a confirmation, anything else is approved.
+	 *
+	 * <p>Otherwise we engage the full {link PermissionEngine} pipeline so deny/ask/allow rules
+	 * and EXPLORE/ACCEPT_EDITS/BYPASS/DONT_ASK modes are honoured before execution. Legacy
+	 * {link AgentTool}s that do not extend {link ToolBase} always pass through approved.
+	 */
+	private PermissionGate evaluatePermissions( List<FunctionTool> toolCalls,ChatObject chatObject) {
+		if (toolCalls == null || toolCalls.isEmpty()) {
+			return null;
+		}
+		AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
+		boolean useEngine = agentRuntimeContext != null && !agentRuntimeContext.isTrivial();
+		PermissionEngine permissionEngine = useEngine?new PermissionEngine(chatObject):null;
+		Map<String,PermissionVerdict> denied = new LinkedHashMap();
+		List<PermissionVerdict> pending = new ArrayList<>();
+		for (FunctionTool toolCall : toolCalls) {
+			PermissionVerdict permissionVerdict = evaluateOne(toolCall, permissionEngine,chatObject.getChatContext());
+			FunctionTool functionTool = permissionVerdict.getFunctionTool();
+			switch (permissionVerdict.getBehavior()) {
+				case DENY: denied.put(functionTool.getId(), permissionVerdict);break;
+				case ASK : pending.add(permissionVerdict);break;
+				case ALLOW:
+				case PASSTHROUGH:
+					// auto-approved; falls through to execution
+				
+			}
+//			
+		}
+		return new PermissionGate(pending, denied,permissionEngine);
+	}
+	
+	private PermissionVerdict evaluateOne(FunctionTool use, PermissionEngine permissionEngine, ChatContext chatContext) {
+		// Tools already promoted to ALLOWED by user confirmation skip the engine entirely.
+		if (use.getToolCallState() == ToolCallState.ALLOWED) {
+			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null);
+		}
+		ToolBase toolBase = use.getToolBase();
+		ToolCallPermissionManager toolCallPermissionManager = null;
+		AgentRuntimeContext context = chatContext.getAgentRuntimeContext();
+		if(context != null ){
+			toolCallPermissionManager = context.getToolCallPermissionManager();
+		}
+		if(toolBase == null && permissionEngine == null && toolCallPermissionManager == null){
+			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null);
+		}
+		 
+//		AgentTool tool = toolkit.getTool(use.getName());
+//		if (!(tool instanceof ToolBase tb)) {
+//			return Mono.just(new PermissionVerdict(use, PermissionBehavior.ALLOW));
+//		}
+		
+		Map<String, Object> input = use.getArguments() == null ? Collections.emptyMap() : use.getArguments	();
+		PermissionDecision permissionDecision = null;
+		PermissionVerdict permissionVerdict = null;
+		if (permissionEngine != null) {			
+			permissionDecision = permissionEngine
+					.checkPermission(use, input);
+			permissionVerdict = new PermissionVerdict(
+					use,
+					permissionDecision == null
+							? PermissionBehavior.ASK
+							: permissionDecision.getBehavior(),permissionDecision);
+			return permissionVerdict;
+//					.map(
+//							decision ->
+//									new PermissionVerdict(
+//											use,
+//											decision == null
+//													? PermissionBehavior.ASK
+//													: decision.getBehavior()));
+		}
+		else if(toolBase != null) {
+			permissionDecision = toolBase.checkPermissions(use, use.getArguments(), chatContext);
+			if (permissionDecision == null) {
+				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision );
+			}
+		}
+		else {
+			permissionDecision = toolCallPermissionManager.checkPermissions(use, use.getArguments(), chatContext);
+			if (permissionDecision == null) {
+				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision );
+			}
+		}
+		// In the legacy lightweight path only an explicit ASK from the tool
+		// gates execution; PASSTHROUGH and ALLOW both run, DENY is
+		// honoured.
+		switch (permissionDecision.getBehavior()) {
+			case ASK: permissionVerdict = new PermissionVerdict(use, PermissionBehavior.ASK,permissionDecision );
+			break;
+			case DENY: permissionVerdict = new PermissionVerdict(use, PermissionBehavior.DENY,permissionDecision );
+			break;
+			default : permissionVerdict = new PermissionVerdict(use, PermissionBehavior.ALLOW,permissionDecision );
+		};
+		return permissionVerdict;
+//				.map(
+//						decision -> {
+//							if (decision == null) {
+//								return new PermissionVerdict(use, PermissionBehavior.ALLOW);
+//							}
+//							// In the legacy lightweight path only an explicit ASK from the tool
+//							// gates execution; PASSTHROUGH and ALLOW both run, DENY is
+//							// honoured.
+//							return switch (decision.getBehavior()) {
+//								case ASK -> new PermissionVerdict(use, PermissionBehavior.ASK);
+//								case DENY ->
+//										new PermissionVerdict(use, PermissionBehavior.DENY);
+//								default -> new PermissionVerdict(use, PermissionBehavior.ALLOW);
+//							};
+//						});
+	}
+	
+//	/**
+//	 * Synthesise DENIED ToolResultBlocks for tools that were rejected by deny rules and append
+//	 * them to context so the conversation reflects the rejection (and resume doesn't see them
+//	 * as pending).
+//	 */
+//	private void writeAutoDeniedResults(List<ToolUseBlock> toolCalls, Set<String> deniedIds) {
+//		for (ToolUseBlock tc : toolCalls) {
+//			if (!deniedIds.contains(tc.getId())) {
+//				continue;
+//			}
+//			ToolResultBlock denied =
+//					ToolResultBlock.text("Permission denied by rules")
+//							.withIdAndName(tc.getId(), tc.getName())
+//							.withState(ToolResultState.DENIED);
+//			Msg deniedMsg = ToolResultMessageBuilder.buildToolResultMsg(denied, tc, getName());
+//			state.contextMutable().add(deniedMsg);
+//		}
+//	}
+	
+	private ToolCallAskResult getToolCallAskResult(String toolId, List<ToolCallAskResult> toolCallAskResults){
+		if(toolCallAskResults == null || toolCallAskResults.size() == 0)
+			return null;	
+		for(ToolCallAskResult toolCallAskResult:toolCallAskResults){
+			if(toolCallAskResult.getToolId().equals(toolId)){
+				return toolCallAskResult;
+			}
+		}
+		return null;	
+	}
+	
+	private List<ToolCallAskResult> toolCallAsk(ChatObject chatObject,AgentRuntimeContext agentRuntimeContext,List<PermissionVerdict> pendingAsk){
+		if(pendingAsk == null || pendingAsk.size() == 0)
+			return null;	
+		List<ToolCallAskResult> toolCallAskResults = null;
+		ToolCallContext toolCallContext = new ToolCallContext();
+		List<ToolCallAsk> askTools = new ArrayList<>();
+		for (PermissionVerdict permissionVerdict : pendingAsk) {
+			FunctionTool tool = permissionVerdict.getFunctionTool();
+			PermissionDecision permissionDecision = permissionVerdict.getPermissionDecision();	
+			ToolCallAsk toolData = new ToolCallAsk();
+			toolData.setToolId(tool.getId());
+			toolData.setToolName(tool.getFunctionName());
+			toolData.setInput(tool.getArguments());
+			toolData.setSuggestedRules(permissionDecision.getSuggestedRules());
+			askTools.add(toolData);
+		}
+		HitlCallResult<List> hitlCallResult = HitlTaskHelper.hitlTaskTool(new HitlTaskToolInf() {
+			@Override
+			public String getTimeoutAction() {
+				return HitlTaskToolInf.TIMEOUT_ACTION_REJECTED;
+			}
+			
+			@Override
+			public long getHitlTaskTimeout() {
+				return agentRuntimeContext.getPermissionHitlTaskTimeout();
+			}
+			
+			
+			
+			@Override
+			public HitlAssistant<?> getHitlAssistant() {
+				return new HitlAssistant<Object>() {
+					@Override
+					public Map<String, Object> getHumanAssistantDatas(ToolCallContext toolCallContext) {
+						Map<String, Object> humanAssistantDatas = new HashMap<>();
+						
+						humanAssistantDatas.put(HitlAssistant.HITL_TASK_PERMISSION_ASK_TOOLS, askTools);
+						humanAssistantDatas.put(HitlAssistant.HITL_TASK_TYPE_KEY, HitlAssistant.HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK);
+						return humanAssistantDatas;
+					}
+					
+					@Override
+					public void handleHumanSubbmitDatas(Object humanSubbmitDatas, ToolCallContext toolCallContext) {
+						
+					}
+				};
+			}
+			
+		},chatObject, "需要用户确认是否执行工具:", toolCallContext,List.class,ToolCallAskResult.class);
+		if(hitlCallResult != null && hitlCallResult.getResult() != null){
+			toolCallAskResults = hitlCallResult.getResult();
+		}
+		return toolCallAskResults;
+	}
+	
+    protected List<LinkedMessageMap<String, Object>> buildInputToolMessages(ToolAgentMessage toolAgentMessage,AIAgent agent,ChatObject chatObject) {
         List<FunctionTool> tools = toolAgentMessage.getFunctionTools();
-        List<Map<String, Object>> toolMessages = new ArrayList<>(tools.size());
+        List<LinkedMessageMap<String, Object>> toolMessages = new ArrayList<>(tools.size());
+		PermissionEngine permissionEngine = null;
+		boolean needStorePermissionEngine = false;
         try {
             AgentTraceHolder.setChatObject(chatObject);
+			AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
+			PermissionGate permissionGate = evaluatePermissions(tools,chatObject);
+		
+			List<PermissionVerdict> pendingAsk = null;
+//			Map<String,PermissionEngine> toolPermissionEngines = new LinkedHashMap<>();
+			Map<String,PermissionVerdict> autoDeniedIds = null;
+			if(permissionGate != null){
+				pendingAsk = permissionGate.getPendingAsk();
+				autoDeniedIds = permissionGate.getAutoDeniedIds();
+				permissionEngine = permissionGate.getPermissionEngine();
+			}
+//			if(pendingAsk != null){
+//				for(PermissionVerdict permissionVerdict : pendingAsk)
+//					if(permissionVerdict.getPermissionEngine() != null) {
+//						toolPermissionEngines.put(permissionVerdict.getFunctionTool().getId(), permissionVerdict.getPermissionEngine());
+//					}
+//			}
+			// Handle pending ask
+			List<ToolCallAskResult> toolCallAskResults = this.toolCallAsk(chatObject,agentRuntimeContext,pendingAsk);	
+			 
             for (FunctionTool tool : tools) {
                 String toolId = tool.getId();
                 String functionName = tool.getFunctionName();
-                FunctionCall functionCall = aiAgent.getFunctionCall(functionName);
+                FunctionCall functionCall = agent.getFunctionCall(functionName);
+//				PermissionEngine permissionEngine = toolPermissionEngines.get(toolId);
+				LinkedMessageMap<String, Object> toolMessage = null;
+				
+				
+				if(autoDeniedIds != null ){
+					PermissionVerdict  denyPermissionVerdict = autoDeniedIds.get(toolId);
+					if(denyPermissionVerdict != null) {
+						toolMessage = MessageBuilder.buildToolMessage("Permission denied by rules", 
+								toolId, tool, ToolCallState.DENIED );
+						toolMessages.add(toolMessage);
+						continue;
+					}
+				}
+				ToolCallAskResult toolCallAskResult = getToolCallAskResult( toolId, toolCallAskResults);
+				ToolCallState toolCallState = null;
+				if(toolCallAskResult != null){
+					if(!toolCallAskResult.isApproved()){
+						toolMessage = MessageBuilder.buildToolMessage("Tool call ask denied", toolId, tool, ToolCallState.DENIED);
+						toolMessages.add(toolMessage);
+						continue;
+					}
+					else{
+						Map<String, Object> updateInput =	 toolCallAskResult.getUpdateInput();
+						if (updateInput != null) {							
+							tool.setArguments(updateInput);	
+						}
+						PermissionRule choosedAlwaysPermissionRule = toolCallAskResult.getChoosedAlwaysPermissionRule();
+						if(choosedAlwaysPermissionRule != null){
+						 
+							if(permissionEngine != null){
+								permissionEngine.addRule(choosedAlwaysPermissionRule);
+								needStorePermissionEngine = true;
+							}
+						}					
+						
+					}					
+				}
+				
+				Object result = null;
                 try {
                     if (functionCall == null) {
-                        throw new FunctionCallException("FunctionCall of " + functionName + " is null.");
+						result = "Function[" + functionName + "]'s function call is undefined.";
+						toolCallState = ToolCallState.FAILED;
                     }
-                    Object result = functionCall.call(tool);
-                    if (result == null) {
-                        throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
-                    }
-                    Map<String, Object> toolMessage = null;
-                    if (result instanceof String)
-                        toolMessage = MessageBuilder.buildToolMessage((String) result, toolId);
-                    else if (result instanceof MCPToolCallResponse) {
-                        result = ((MCPToolCallResponse) result).getResult();
-                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
-                    } else {
-                        toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result), toolId);
-                    }
-                    toolMessages.add(toolMessage);
+					else {
+						result = functionCall.call(tool);
+						toolCallState = ToolCallState.FINISHED;
+						if (result == null) {
+							result = "Call function return null.";
+//							throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
+						}
+					}
+					
+					
 //                return toolMessage;
 
-                } catch (Exception e) {
-                    throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
+                }  catch (Exception e) {
+					logger.error("Call function[" + functionName + "] failed:", e);
+					toolCallState = ToolCallState.FAILED;
+					result = "Call function failed:" + e.getMessage();
+//                    throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
                 }
+			
+				if (result instanceof MCPToolCallResponse) {
+					result = ((MCPToolCallResponse) result).getResult();					 
+				}
+				String _result = null;
+				if (result instanceof String) {
+					_result = (String)result;
+				}
+				else {
+					try {
+						_result = JsonUtil.object2json(result);
+					}
+					catch (Exception e) {
+						logger.error("Convert result to json failed:", e);
+						toolCallState = ToolCallState.FAILED;
+						_result = "Convert result to json failed:"+e.getMessage();
+					}
+				}
+				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool,toolCallState);
+				toolMessages.add(toolMessage);
             }
-        }
+			//记录模型调用异常轨迹消息
+			if(permissionEngine != null && needStorePermissionEngine) {
+				TraceMessage agentToolPermissionRules = new TraceMessage();
+				LinkedMessageMap tracemessage = new LinkedMessageMap();
+				tracemessage.setAgentId(agent.getAgentId());
+				PermissionRules permissionRules = new PermissionRules();
+				permissionRules.setAllowRules(permissionEngine.getAllowRules());
+				permissionRules.setDenyRules(permissionEngine.getDenyRules());
+				permissionRules.setAskRules(permissionEngine.getAskRules());
+				
+				tracemessage.put(PermissionRules.PERMISSION_RULES_KEY, JsonUtil.object2json(permissionRules));
+//        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
+				tracemessage.put("role", SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME);
+				agentToolPermissionRules.setMessage(tracemessage);
+				agent.recordTraceMessage(agentToolPermissionRules);
+			}
+			
+		}
         finally {
             AgentTraceHolder.removeChatObject();
         }
         return toolMessages;
     }
+	/**
     protected Map<String, Object> buildInputToolMessage(ToolAgentMessage toolAgentMessage,AIAgent aiAgent) {
         FunctionTool tool = toolAgentMessage.getFunctionTool();
         String toolId = tool.getId();
@@ -456,19 +770,20 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             }
             Map<String,Object> toolMessage = null;
             if(result instanceof String)
-                toolMessage = MessageBuilder.buildToolMessage((String)result,toolId);
+                toolMessage = MessageBuilder.buildToolMessage((String)result,toolId,tool);
             else if (result instanceof MCPToolCallResponse){
                 result = ((MCPToolCallResponse)result).getResult();
-                toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId);
+                toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId,tool);
             }
 			else {
-				toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId);
+				toolMessage = MessageBuilder.buildToolMessage(JsonUtil.object2json(result),toolId,tool);
 			}
             return toolMessage;
         } catch (Exception e) {
             throw new FunctionCallException("Call tool function["+ functionName +"] failed:",e);
         }
     }
+	 */
     /**
      * 构建智能问答请求参数
      * @param toolAgentMessage
@@ -476,33 +791,42 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      */
     public Map buildOpenAIRequestMapWithTool(ToolAgentMessage toolAgentMessage, AIAgent agent,ChatObject chatObject,ChatContext chatContext){
 //        Map<String, Object> userMessage = buildInputToolMessage(  toolAgentMessage,aiAgent);
-		List<Map<String, Object>> sessionMemory = agent.getSessionMemory(true);
-        List<Map<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,agent,chatObject);
+		List<LinkedMessageMap<String, Object>> sessionMemory = agent.getSessionMemory(true);
+        List<LinkedMessageMap<String, Object>> userMessages = buildInputToolMessages(  toolAgentMessage,agent,chatObject);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", toolAgentMessage.getModel());
 
-        List<Map<String, Object>> messages = null;
+        List<LinkedMessageMap<String, Object>> messages = null;
    
         if(sessionMemory != null){
             // 构建消息历史列表，包含之前的会话记忆           
-            for(Map<String, Object> userMessage : userMessages) {
+            for(LinkedMessageMap<String, Object> userMessage : userMessages) {
 
                 // 添加当前用户消息
                 toolAgentMessage.addSessionMessage(userMessage, agent);
             }
+			agent.compact(chatContext,agent,sessionMemory);
+//			if(compactionManager != null && !persistentMessage.isAgentResultMessage()){
+//				List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(agent,sessionMemory );
+//				if(sessionMemory != compactMessages){
+//					sessionMemory.clear();
+//					sessionMemory.addAll(compactMessages);
+//				}
+//			}
             messages = new ArrayList<>(sessionMemory);
 
 
         }
         else{
             messages = new ArrayList<>();
-            for(Map<String, Object> userMessage : userMessages) {
+            for(LinkedMessageMap<String, Object> userMessage : userMessages) {
                 messages.add(userMessage);
                 // 添加当前用户消息
 //                toolAgentMessage.addSessionMessage(userMessage, aiAgent);
             }
             
         }
+		
         requestMap.put("messages", messages);
 		Boolean stream = chatContext.getStreamable();
 		if(stream == null){
@@ -618,11 +942,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
      * @param chatAgentMessage
      * @return
      */
-    public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent aiAgent,ChatObject chatObject, ChatContext chatContext) {
+    public Map buildOpenAIRequestMap(ChatAgentMessage chatAgentMessage, AIAgent agent,ChatObject chatObject, ChatContext chatContext) {
 		
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
-        String agentId = aiAgent.getAgentId();
-        String message = getPrompt(  chatAgentMessage,   aiAgent);
+		List<LinkedMessageMap<String, Object>> sessionMemory = agent.getSessionMemory(true);
+        String agentId = agent.getAgentId();
+        String message = getPrompt(  chatAgentMessage,   agent);
         if(SimpleStringUtil.isEmpty(message)){
             throw new AIRuntimeException("Prompt message is empty.");
         }
@@ -630,34 +954,39 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(chatContext != null){
             message = chatContext.evalPrompt(message);
         }
-        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
-        Map<String,Object> systemMessage = null;
+		LinkedMessageMap<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
+		LinkedMessageMap<String,Object> systemMessage = null;
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", chatAgentMessage.getModel());
 
-        List<Map<String, Object>> messages = null;
+        List<LinkedMessageMap<String, Object>> messages = null;
         if(sessionMemory != null){
             // 构建消息历史列表，包含之前的会话记忆           
 
             if(sessionMemory.size() == 0){
-                String systemPrompt = getSystemPrompt(chatAgentMessage,aiAgent);
+                String systemPrompt = getSystemPrompt(chatAgentMessage,agent);
                 if(systemPrompt != null){
                     if(chatContext != null){
                         systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                     }
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
-                    chatAgentMessage.addSessionMessage(systemMessage,message,aiAgent);
+                    chatAgentMessage.addSessionMessage(systemMessage,message,agent);
                 }
             }
             // 添加当前用户消息
-            chatAgentMessage.addSessionMessage(userMessage,agentId,aiAgent);
+            chatAgentMessage.addSessionMessage(userMessage,agentId,agent);	
+			if(agent.getAgentId() != null && agent.getAgentId().equals("__summary__")){
+				logger.info("Using summary agent to generate summary.");
+			}
+		
+			agent.compact(chatContext,agent,sessionMemory);
             messages = new ArrayList<>(sessionMemory);
             
             
         }
         else{
             messages = new ArrayList<>();
-            String systemPrompt = getSystemPrompt(chatAgentMessage,aiAgent);
+            String systemPrompt = getSystemPrompt(chatAgentMessage,agent);
             if(systemPrompt != null){
                 if(chatContext != null){
                     systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
@@ -668,8 +997,6 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
             messages.add(userMessage);
         }
         
-        
-
         requestMap.put("messages", messages);
         Map parameters = chatAgentMessage.getParameters();
 		Boolean stream = chatContext.getStreamable();
@@ -706,7 +1033,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		//"stream_options": {"include_usage": true}
 		buildincludeUsage(  stream,  chatAgentMessage, requestMap);
         buildThinking(  chatAgentMessage,chatObject, requestMap);
-        buildTools(chatContext,chatAgentMessage,aiAgent, requestMap);
+        buildTools(chatContext,chatAgentMessage,agent, requestMap);
         return requestMap;
     }
     public abstract ImageEvent buildGenImageResponse(ClientConfiguration config, ImageAgentMessage imageAgentMessage,StoreChatObject storeChatObject,Map imageData);
@@ -830,13 +1157,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", audioSTTAgentMessage.getModel());
-		List<Map<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
         // 构建消息历史列表，包含之前的会话记忆
-        List<Map<String, Object>> messages = sessionMemory !=  null?
+        List<LinkedMessageMap<String, Object>> messages = sessionMemory !=  null?
                 new ArrayList<>(sessionMemory):new ArrayList<>();
         Object audio = audioSTTAgentMessage.getAudio();
         // 添加当前用户消息
-        Map<String, Object> userMessage = null;
+		LinkedMessageMap<String, Object> userMessage = null;
         String prompt = getPrompt(  audioSTTAgentMessage,   aiAgent);
         if(chatContext != null){
             prompt = chatContext.evalPrompt(prompt);
@@ -1001,6 +1328,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         if(code != null) {
             return new StreamData(ServerEvent.CONTENT, message, code).setStreamTokenMetrics(tokenMetrics);
         }
-        return null;
+		else{
+			return new StreamData(ServerEvent.CONTENT, JsonUtil.object2json(map), "error").setStreamTokenMetrics(tokenMetrics);
+		}
     }
 }

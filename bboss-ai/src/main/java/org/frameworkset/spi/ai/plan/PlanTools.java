@@ -19,7 +19,7 @@ import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
-import org.frameworkset.spi.ai.permission.ToolPermissionManager;
+import org.frameworkset.spi.ai.tool.ToolBase;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -29,7 +29,12 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/8/24
  */
-public class PlanTools extends ToolPermissionManager {
+public class PlanTools extends ToolBase {
+	/** Tool names that {@code PlanModeMiddleware} always allows, even in plan mode. */
+	public static final String PLAN_ENTER = "plan_enter";
+	
+	public static final String PLAN_WRITE = "plan_write";
+	public static final String PLAN_EXIT = "plan_exit";
 	private String planPath;
 	@Tool(name = "plan_enter",description = "Enter PLAN mode: a read-only phase for investigating the"
 			+ " codebase and designing an approach before making any"

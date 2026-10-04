@@ -23,7 +23,7 @@ import java.util.Map;
  * @Date 2026/5/23
  */
 public class TraceMessage {
-    private Map<String, Object> message;
+    private LinkedMessageMap<String, Object> message;
     private Long startTime;
     private Long endTime;
     private String sessionId;
@@ -49,14 +49,27 @@ public class TraceMessage {
     private String traceId;
     private Map<String, Object> metaData;
 
-    public Map<String, Object> getMessage() {
+    public LinkedMessageMap<String, Object> getMessage() {
         return message;
     }
 
-    public TraceMessage setMessage(Map<String, Object> message) {
+    public TraceMessage setMessage(LinkedMessageMap<String, Object> message) {
         this.message = message;
         return this;
     }
+
+	public TraceMessage setMessage(Map<String, Object> message) {
+		if(message instanceof LinkedMessageMap) {
+			this.message = (LinkedMessageMap<String, Object>) message;
+		}
+		else{
+			LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
+			linkedMessageMap.putAll(message);
+			this.message = linkedMessageMap;
+		}
+
+		return this;
+	}
 
     public Long getStartTime() {
         return startTime;
@@ -145,7 +158,7 @@ public class TraceMessage {
     }
     public TraceMessage put(String key, Object value){
         if(message == null){
-            message = new LinkedHashMap<>();
+            message = new LinkedMessageMap<>();
         }
         message.put(key,value);
         return this;

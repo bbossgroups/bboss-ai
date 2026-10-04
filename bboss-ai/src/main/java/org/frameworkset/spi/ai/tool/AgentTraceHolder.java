@@ -15,7 +15,7 @@ package org.frameworkset.spi.ai.tool;
  * limitations under the License.
  */
 
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.TokenMetrics;

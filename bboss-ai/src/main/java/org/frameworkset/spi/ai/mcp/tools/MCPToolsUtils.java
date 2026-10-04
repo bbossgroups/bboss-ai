@@ -18,7 +18,7 @@ package org.frameworkset.spi.ai.mcp.tools;
 import org.frameworkset.spi.ai.mcp.model.MCPListToolResponse;
 import org.frameworkset.spi.ai.model.Function;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
-import org.frameworkset.spi.ai.model.Parameters;
+import org.frameworkset.spi.ai.model.tool.Parameters;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

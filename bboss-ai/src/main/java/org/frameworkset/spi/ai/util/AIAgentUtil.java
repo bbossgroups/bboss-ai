@@ -21,7 +21,7 @@ import org.apache.hc.core5.http.ParseException;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
-import org.frameworkset.spi.ai.callback.ChatContext;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
@@ -62,7 +62,7 @@ public class AIAgentUtil {
         return streamChatCompletion((String)null , message,   aiAgent);
     }
     public static Flux<String> streamChatCompletion(String poolName,Object chatMessage, AIAgent aiAgent ){
-        ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
+        ChatContext chatContext = AIAgentUtil.getChatContext(poolName,(AgentMessage)chatMessage, aiAgent);
         return streamChatCompletion(  poolName,  chatMessage,   aiAgent,chatContext);
     }
     /**
@@ -106,7 +106,7 @@ public class AIAgentUtil {
 
     private static void traceLLMInput(Object message,AIAgent agent,String inputMessageTypeName){
         TraceMessage traceMessage = new TraceMessage();
-        Map  tracemessage = new LinkedHashMap();
+		LinkedMessageMap  tracemessage = new LinkedMessageMap();
         tracemessage.put("input", message);
 //        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
         tracemessage.put("role", inputMessageTypeName);
@@ -116,7 +116,7 @@ public class AIAgentUtil {
 
     private static void traceLLMOutput(Object message,AIAgent agent,String outputMessageType){
         TraceMessage traceMessage = new TraceMessage();
-        Map  tracemessage = new LinkedHashMap();
+		LinkedMessageMap  tracemessage = new LinkedMessageMap();
         tracemessage.put("out", message);
 //        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMOUTPUTMESSAGE_NAME);
         tracemessage.put("role", outputMessageType);
@@ -191,7 +191,7 @@ public class AIAgentUtil {
      * @return
      */
     public static AudioEvent multimodalAudioGeneration(String poolName,  AudioAgentMessage message, StoreFilePathFunction storeFilePathFunction,AIAgent aiAgent) {
-        ChatContext chatContext = AIAgentUtil.getChatContext(message, aiAgent);
+        ChatContext chatContext = AIAgentUtil.getChatContext(poolName,message, aiAgent);
         return multimodalAudioGeneration(  poolName,    message,   storeFilePathFunction,  aiAgent,chatContext);
     }
         /**
@@ -412,9 +412,13 @@ public class AIAgentUtil {
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
         }
     }
-	public static ChatContext getChatContextOnly(AgentMessage chatMessage, AIAgent agent) {
+	public static ChatContext getChatContextOnly(String maas,AgentMessage chatMessage, AIAgent agent) {
 		
 		ChatContext chatContext = new ChatContext();
+		ModelInfo modelInfo =  new ModelInfo();
+		modelInfo.setMaas(maas == null?chatMessage.getMaas():maas);
+		modelInfo.setModel(chatMessage.getModel());
+		chatContext.setModelInfo(modelInfo);
 		if(agent.getAgentRuntimeContext() != null){
 			chatContext.setAgentRuntimeContext(agent.getAgentRuntimeContext());
 		}
@@ -430,11 +434,17 @@ public class AIAgentUtil {
 		if (params != null && params.size() > 0) {
 			chatContext.addContextDatas(params);
 		}
+		
 		return chatContext;
 	}
-    public static ChatContext getChatContext(AgentMessage chatMessage, AIAgent agent){
+    public static ChatContext getChatContext(String maas,AgentMessage chatMessage, AIAgent agent){
         
         ChatContext   chatContext = new ChatContext();
+		ModelInfo modelInfo =  new ModelInfo();
+		modelInfo.setModel(maas == null?chatMessage.getMaas():maas);
+		modelInfo.setModel(chatMessage.getModel());
+		chatContext.setModelInfo(modelInfo);
+		
 		if(agent.getAgentRuntimeContext() != null){
 			chatContext.setAgentRuntimeContext(agent.getAgentRuntimeContext());
 		}
@@ -469,7 +479,7 @@ public class AIAgentUtil {
                 outputResult(agent, serverEvent, chatContext);
             }
         });
-     
+		
         return chatContext;
     }
     public static void outputResult(AIAgent agent, ServerEvent serverEvent, ChatContext chatContext){
@@ -500,7 +510,7 @@ public class AIAgentUtil {
         }
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage,  AIAgent agent){
-        ChatContext chatContext = getChatContext( (AgentMessage) chatMessage,   agent);      
+        ChatContext chatContext = getChatContext(poolName, (AgentMessage) chatMessage,   agent);      
      
         
         return  streamChatCompletionEvent(  poolName,  chatMessage,    agent, chatContext);
@@ -509,7 +519,7 @@ public class AIAgentUtil {
         return  streamChatCompletionEvent(poolName,chatMessage,(StoreFilePathFunction) null, aiAgent,chatContext);
     }
     public static Flux<ServerEvent> streamChatCompletionEvent(String poolName,Object chatMessage, StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent) {
-        ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
+        ChatContext chatContext = AIAgentUtil.getChatContext(poolName,(AgentMessage)chatMessage, aiAgent);
         return  streamChatCompletionEvent(poolName,chatMessage,storeFilePathFunction, aiAgent,chatContext);
     }
     /**
@@ -519,6 +529,7 @@ public class AIAgentUtil {
 															  StoreFilePathFunction storeFilePathFunction, AIAgent aiAgent, ChatContext chatContext) {
         long startTime = System.currentTimeMillis();
         chatContext.setStreamable(true);
+		 
         ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
 		if(chatContext.getClientConfiguration() == null) {
 			chatContext.setClientConfiguration(clientConfiguration);
@@ -698,7 +709,7 @@ public class AIAgentUtil {
             if (functionTools != null && functionTools.size() > 0) {
                 chatObject.getChatContext().setToolCallStage(ChatContext.TOOL_CALL_STAGE_EXECUTE_TOOL);
 				//推送步骤消息到客户端，说明有新的步骤开始
-				ServerEvent serverEvent = new ServerEvent();//向客户端推送人工介入消息
+				ServerEvent serverEvent = new ServerEvent();
 				serverEvent.setType(ServerEvent.TYPE_STEP);
 				ServerEventUtil.buildServerEventAgentInfo(serverEvent, chatObject.getAgent());
 				sink.next((T)serverEvent);
@@ -962,9 +973,11 @@ public class AIAgentUtil {
 
     }
     public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent ) {
-        ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
+        ChatContext chatContext = AIAgentUtil.getChatContext(poolName,(AgentMessage)chatMessage, aiAgent);
         return chatCompletionEvent(  poolName,   chatMessage ,   aiAgent,chatContext);
     }
+	
+	
 	public static Map listModels(String maas ){
 		return listModels(  maas, (Map) null);
 	}
@@ -988,7 +1001,7 @@ public class AIAgentUtil {
 			chatContext.setClientConfiguration(config);
         }
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,chatMessage);
-        chatContext.setThinking(false);
+//        chatContext.setThinking(false);
         chatContext.setStreamable(false);
         ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,aiAgent,chatContext);
         chatObject.getStreamDataBuilder().setStartTime(startTime);
@@ -1050,7 +1063,7 @@ public class AIAgentUtil {
                 }
             }
             ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage,functionTools);
-            return chatCompletionEvent(  poolName,toolAgentMessage,aiAgent);
+            return chatCompletionEvent(  poolName,toolAgentMessage,aiAgent,chatContext);
 
         }
         else {
@@ -1066,7 +1079,7 @@ public class AIAgentUtil {
      * 创建流式调用的Flux,在指定的数据源上执行
      */
     public static <T> Flux<T> streamChatCompletion(String poolName,Object chatMessage,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent){
-        ChatContext chatContext = AIAgentUtil.getChatContext((AgentMessage)chatMessage, aiAgent);
+        ChatContext chatContext = AIAgentUtil.getChatContext(poolName,(AgentMessage)chatMessage, aiAgent);
         return streamChatCompletion(poolName,chatMessage,streamDataHandler, aiAgent,chatContext);
     }
 

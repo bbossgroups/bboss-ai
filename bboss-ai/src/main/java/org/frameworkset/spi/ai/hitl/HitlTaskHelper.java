@@ -22,6 +22,7 @@ import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallNotifier;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.TraceMessage;
+import org.frameworkset.spi.ai.model.annotation.ToolParam;
 import org.frameworkset.spi.ai.store.AgentSessionService;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import reactor.core.publisher.FluxSink;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -49,14 +51,19 @@ public class HitlTaskHelper {
 	private HitlTaskCallListener hitlTaskCallListener;
 	
 	
-	
 	private HitlTaskCallNotifier hitlTaskCallNotifier;
 	
 	private static Object lock = new Object();
 	private AgentSessionService agentSessionService;
 	
+	public static void setHitlTaskHelper(HitlTaskHelper hitlTaskHelper) {
+		HitlTaskHelper.hitlTaskHelper = hitlTaskHelper;	
+	}
+	
 	public HitlTaskHelper setAgentSessionService(AgentSessionService agentSessionService) {
-		this.agentSessionService = agentSessionService;
+		if (this.agentSessionService == null) {
+			this.agentSessionService = agentSessionService;
+		}
 		return this;
 	}
 	private   HitlCallObject _getHitlCallObject(String hitlTaskId) {
@@ -104,6 +111,11 @@ public class HitlTaskHelper {
 			this.hitlTaskCallListener.destroy();
 		}
 	}
+	/**
+	 * 获取HitlTaskHelper实例
+	 * 需要全局初始化Hitl
+	 * @return
+	 */
 	public static HitlTaskHelper getHitlTaskHelper() {
 		if(hitlTaskHelper != null){
 			return hitlTaskHelper;
@@ -113,8 +125,28 @@ public class HitlTaskHelper {
 				hitlTaskHelper = new HitlTaskHelper();
 			}
 		}
+		 
 		return hitlTaskHelper;
 	}
+	
+	public static HitlTaskHelper getHitlTaskHelperOnly() {
+//		if(hitlTaskHelper != null){
+//			return hitlTaskHelper;
+//		}
+//		synchronized (lock) {
+//			if (hitlTaskHelper == null) {
+//				hitlTaskHelper = new HitlTaskHelper();
+//			}
+//		}
+ 
+		return hitlTaskHelper;
+	}
+	
+	public static Object getLock() {
+		return lock;
+	}	
+	
+ 
 	/**
 	 * 获取人工任务
 	 * @param hitlTaskId
@@ -139,6 +171,16 @@ public class HitlTaskHelper {
 	public static void handleHitlCallTask(Object  hitlTaskData,Throwable throwable, String hitlTaskId){
 		
 		getHitlTaskHelper()._handleHitlCallTask(false,hitlTaskData, throwable, hitlTaskId);
+	}
+	
+	/**
+	 * 处理人工任务
+	 * @param hitlTaskData
+	 * @param hitlTaskId
+	 */
+	public static void handleHitlCallTask(Object  hitlTaskData, String hitlTaskId){
+		
+		getHitlTaskHelper()._handleHitlCallTask(false,hitlTaskData, null, hitlTaskId);
 	}
 	
 	/**
@@ -168,11 +210,17 @@ public class HitlTaskHelper {
 			String _hitlTaskData = hitlCallTask.getHitlTaskData();
 			String exception = hitlCallTask.getException();
 			Class responseType = hitlCallObject.getResponseType();
+			Class elementType = hitlCallObject.getElementType();
 			Object reponse = null;
 			if(_hitlTaskData != null) {
 				 
 				if(responseType != null) {
-					reponse = JsonUtil.json2Object(_hitlTaskData, responseType);
+					if(elementType == null) {
+						reponse = JsonUtil.json2Object(_hitlTaskData, responseType);
+					}
+					else{
+						reponse = JsonUtil.json2TypeObject(_hitlTaskData, responseType,elementType);
+					}
 				}
 				else
 					reponse = _hitlTaskData;
@@ -214,12 +262,18 @@ public class HitlTaskHelper {
 			try {
 				
 				Class responseType = hitlCallObject.getResponseType();
+				Class elementType = hitlCallObject.getElementType();
 				Object reponse = null;
 				if(_hitlTaskData != null) {
 					if (hitlTaskData instanceof String) {
 						_hitlTaskData = (String) hitlTaskData;
 						if(responseType != null) {
-							reponse = JsonUtil.json2Object(_hitlTaskData, responseType);
+							if(elementType == null) {
+								reponse = JsonUtil.json2Object(_hitlTaskData, responseType);
+							}
+							else{
+								reponse = JsonUtil.json2TypeObject(_hitlTaskData, responseType,elementType);
+							}
 						}
 						else
 							reponse = hitlTaskData;
@@ -259,16 +313,38 @@ public class HitlTaskHelper {
 		// 2. 发送人工介入任务到客户端
 		agentSessionService.persistentHitlCallTask(hitlCallTask);
 	}
-	public static Map<String,Object> createHitlCallTask(HitlTaskToolInf hitlTaskcallTool,String hitlTaskReason , ChatObject chatObject, ToolCallContext toolCallContext){
+	public static <T> HitlCallResult<T> createHitlCallTask(HitlTaskToolInf hitlTaskcallTool,String hitlTaskReason , 
+														   ChatObject chatObject, ToolCallContext toolCallContext,
+														   Class<T> responseType){
 		
-		return getHitlTaskHelper()._createHitlCallTask(  hitlTaskcallTool,hitlTaskReason, chatObject,   toolCallContext);
+		return getHitlTaskHelper()._createHitlCallTask(  hitlTaskcallTool,hitlTaskReason, chatObject,   toolCallContext,  responseType);
 		
 		
 	}
 	
-	private  Map<String,Object> _createHitlCallTask(HitlTaskToolInf hitlTaskcallTool, String hitlTaskReason , ChatObject chatObject, ToolCallContext toolCallContext){
+	public static <C,T> HitlCallResult<C> createHitlCallTask(HitlTaskToolInf hitlTaskcallTool,String hitlTaskReason ,
+														   ChatObject chatObject, ToolCallContext toolCallContext,Class<C> containerType,
+														   Class<T> responseType){
 		
-		HitlCallObject<Map> hitlCallObject = new HitlCallObject<>();
+		return getHitlTaskHelper()._createHitlCallTask(  hitlTaskcallTool,hitlTaskReason, chatObject,   toolCallContext, containerType, responseType);
+		
+		
+	}
+	
+	private <T> HitlCallResult<T>	_createHitlCallTask(HitlTaskToolInf hitlTaskcallTool, String hitlTaskReason , 
+													ChatObject chatObject, ToolCallContext toolCallContext,Class<T> responseType){
+		
+		return _createHitlCallTask(  hitlTaskcallTool,   hitlTaskReason ,
+				  chatObject,   toolCallContext,  responseType,null);
+		
+		
+		
+	}
+	
+	private <C,T> HitlCallResult<C>	_createHitlCallTask(HitlTaskToolInf hitlTaskcallTool, String hitlTaskReason ,
+														 ChatObject chatObject, ToolCallContext toolCallContext,Class<C> containerType,Class<T> elemetType){
+		
+		HitlCallObject<C> hitlCallObject = new HitlCallObject<>();
 		HitlCallTask hitlCallTask = new HitlCallTask();
 		hitlCallTask.setHitlTaskReason(hitlTaskReason);
 		String hitlTaskId = SimpleStringUtil.getUUID();
@@ -283,62 +359,69 @@ public class HitlTaskHelper {
 			timeout = chatObject.getAgent().getHitlTaskTimeout();
 		}
 		hitlCallObject.setTimeout(timeout);
-		hitlCallObject.setResponseType(Map.class);
+		hitlCallObject.setResponseType(containerType);
+		hitlCallObject.setElementType(elemetType);
 		FluxSink<ServerEvent> sink = chatObject.getAgentFluxSink();
-		HitlAssistant hitlAssistant = hitlTaskcallTool.getHitlAssistant();
+		HitlAssistant<C> hitlAssistant = hitlTaskcallTool.getHitlAssistant();
 		try {
 			
 			persistentHitlCallTask( hitlCallTask);
 			this.hitlCallObjects.put(hitlCallObject.getHitlTaskId(), hitlCallObject);
 			long startTime = System.currentTimeMillis();
+			Map<String,Object> humanAssistantDatas = null;
+			if(hitlAssistant != null ){
+				humanAssistantDatas = hitlAssistant.getHumanAssistantDatas(toolCallContext);
+			}
 			if(AgentTraceHolder.isToolTrace()) {
 				TraceMessage traceMessage = new TraceMessage();
 				traceMessage.setStartTime(startTime)
 						.put("hitlTaskReason", hitlTaskReason)
 						.put("hitlTaskId", hitlTaskId)
-						
 						.put("role", SessionMessage.MESSAGE_TYPE_HITL_MESSAGE_NAME);
-				if(hitlAssistant != null && hitlAssistant.getHumanAssistantDatas(toolCallContext) != null){
-					traceMessage.put("hitlAssistant", hitlAssistant.getHumanAssistantDatas(toolCallContext));
-				}
+				
+				if(humanAssistantDatas != null)
+					traceMessage.put("hitlAssistant", humanAssistantDatas);
+				
 				AgentTraceHolder.trace(traceMessage);
 			}
-		
+			
 			if(sink != null) {
 				//推送人工消息到客户端
 				ServerEvent serverEvent = new ServerEvent();//向客户端推送人工介入消息
 				serverEvent.setData(hitlTaskReason);
 				serverEvent.setHitlTaskId(hitlTaskId);
 				serverEvent.setType(ServerEvent.TYPE_HITL);
-				if(hitlAssistant != null && hitlAssistant.getHumanAssistantDatas(toolCallContext) != null) {
-					serverEvent.setHitlAssistant( hitlAssistant.getHumanAssistantDatas(toolCallContext));
+				if(humanAssistantDatas != null){
+					serverEvent.setHitlAssistant( humanAssistantDatas);
 				}
 				ServerEventUtil.buildServerEventAgentInfo(serverEvent, chatObject.getAgent());
-				sink.next(serverEvent);			 
+				sink.next(serverEvent);
 				
 			}
 			hitlCallObject.await();
-			Map<String,Object> result = hitlCallObject.getResponse();
-			
+			C result = hitlCallObject.getResponse();
+			HitlCallResult<C> hitlCallResult = new HitlCallResult<>();
+			hitlCallResult.setResult(result);
 			if(!hitlCallObject.isFromHumanCountDown()){
 				if(!hitlCallObject.isFromDestoryCountDown()) {
 					agentSessionService.timeoutHitlCallTask("任务处理超时,等待超时时间:"+hitlCallObject.getTimeout()+"毫秒", hitlTaskId);
 					if(result == null){
-						result = new LinkedHashMap<>();
+						
 						if(!hitlTaskcallTool.getTimeoutAction().equals(HitlTaskToolInf.TIMEOUT_ACTION_CONTINUE)) {
-							result.put("error", "人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，则忽略或者取消相关操作！");
+							hitlCallResult.setCompleteReason("人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，则忽略或者取消相关操作！");
+//							result.put("error", "人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，则忽略或者取消相关操作！");
 						}
 						else{
-							result.put("warn", "人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，请继续执行完成！");
+//							result.put("warn", "人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，请继续执行完成！");
+							hitlCallResult.setCompleteReason("人工任务处理超时，等待超时时间:" + hitlCallObject.getTimeout() + "毫秒，如任务涉及处理操作，请继续执行完成！");
 						}
 					}
 				}
 				else {
 					logger.info("任务被销毁:hitlTaskId={}",hitlTaskId);
-					if(result == null){
-						result = new LinkedHashMap<>();
-						result.put("error", "任务被销毁,如任务涉及处理操作，则忽略或者取消相关操作！");
-					}
+					hitlCallResult.setCompleteReason("任务被销毁,如任务涉及处理操作，则忽略或者取消相关操作！");
+//						result.put("error", "任务被销毁,如任务涉及处理操作，则忽略或者取消相关操作！");
+
 //					agentSessionService.destroyHitlCallTask("任务被销毁", hitlTaskId);
 				}
 				
@@ -355,7 +438,7 @@ public class HitlTaskHelper {
 				if(AgentTraceHolder.isToolTrace()) {
 					TraceMessage traceMessage = new TraceMessage();
 					traceMessage.setStartTime(startTime).setEndTime(System.currentTimeMillis())
-							.put("hitlTaskHandlerException", hitlCallException)							
+							.put("hitlTaskHandlerException", hitlCallException)
 							.put("hitlTaskId", hitlTaskId)
 							.put("role", SessionMessage.MESSAGE_TYPE_HITL_HANDLE_MESSAGE_NAME);
 					if(result != null){
@@ -378,7 +461,7 @@ public class HitlTaskHelper {
 					AgentTraceHolder.trace(traceMessage);
 				}
 			}
-			return result;
+			return hitlCallResult;
 		}
 		catch (HitlCallException e){
 			throw e;
@@ -400,9 +483,10 @@ public class HitlTaskHelper {
 		
 	}
 	
- 
- 
- 
+	
+	
+	
+	
 	
 	
 	private HitlCallObject removeHitlCallObject(String hitlTaskId){
@@ -413,12 +497,27 @@ public class HitlTaskHelper {
 	}
 	
 	public HitlTaskHelper setRedisChannel(String redis,String channel) {
-		this.hitlTaskCallListener = new RedisHitlTaskCallListener(redis,channel);
-		this.hitlTaskCallNotifier = new RedisHitlTaskCallNotifier(redis,channel);
+		if(initialized){
+			return this;
+		}
+		synchronized (lock) {
+			if(!initialized) {
+				this.hitlTaskCallListener = new RedisHitlTaskCallListener(redis, channel);
+				this.hitlTaskCallNotifier = new RedisHitlTaskCallNotifier(redis, channel);
+			}
+		}
 		return this;
 	}
 	public HitlTaskHelper setHitlTaskCallNotifier(HitlTaskCallNotifier hitlTaskCallNotifier) {
-		this.hitlTaskCallNotifier = hitlTaskCallNotifier;
+		if(initialized){
+			return this;
+		}
+		synchronized (lock) {
+			if(!initialized) {
+				this.hitlTaskCallNotifier = hitlTaskCallNotifier;
+			}
+		}
+		
 		return this;
 	}
 	
@@ -427,7 +526,85 @@ public class HitlTaskHelper {
 	}
 	
 	public HitlTaskHelper setHitlTaskCallListener(HitlTaskCallListener hitlTaskCallListener) {
-		this.hitlTaskCallListener = hitlTaskCallListener;
+		if(initialized){
+			return this;
+		}
+		synchronized (lock) {
+			if(!initialized) {
+				this.hitlTaskCallListener = hitlTaskCallListener;
+			}
+		}	
 		return this;
+	}
+	
+	public static <T> HitlCallResult<T> hitlTaskTool(HitlTaskToolInf hitlTaskToolInf,ChatObject chatObject ,
+													 String hitlTaskReason,ToolCallContext toolCallContext,Class<T> responseType){
+		HitlCallResult<T> hitlCallResult = null;
+		try {
+			HitlTaskHelper helper = HitlTaskHelper.getHitlTaskHelper();
+			
+			hitlCallResult = helper.createHitlCallTask(hitlTaskToolInf,hitlTaskReason, chatObject,toolCallContext, responseType);
+//			T hitlTaskResult = hitlCallResult != null? hitlCallResult.getResult():null;
+//			String completeReason = hitlCallResult != null? hitlCallResult.getCompleteReason():null;
+			
+//			// 返回结果 null 保护
+//			if (hitlCallResult == null) {
+//				if(logger.isDebugEnabled()) {
+//					logger.debug("hitlTaskTool: createHitlCallTask returned null for reason: {}",
+//							hitlTaskReason.length() > 500 ? hitlTaskReason.substring(0, 500) + "..." : hitlTaskReason);
+//				}
+//				return null;
+//			}
+			
+			
+			return hitlCallResult;
+		} catch (Exception e) {
+			if(logger.isErrorEnabled()) {
+				logger.error("hitlTaskTool: failed to create HITL task for reason: {}", hitlTaskReason.length() > 500 ? hitlTaskReason.substring(0, 500) + "..." : hitlTaskReason, e);
+			}
+			String errorMessage = e.getCause() == null?e.getMessage():e.getCause().getMessage();
+			if(errorMessage == null || errorMessage.equals("")){
+				errorMessage = "Exception: failed to create HITL task";
+			}
+			hitlCallResult = new HitlCallResult<>();
+			hitlCallResult.setCompleteReason("hitl failed:"+ errorMessage + ", ignore operation and continue.");
+			return hitlCallResult;
+		} 
+	}
+	
+	
+	public static <C,T> HitlCallResult<C> hitlTaskTool(HitlTaskToolInf hitlTaskToolInf,ChatObject chatObject ,
+													 String hitlTaskReason,ToolCallContext toolCallContext,Class<C> containerType,Class<T> responseType){
+		HitlCallResult<C> hitlCallResult = null;
+		try {
+			HitlTaskHelper helper = HitlTaskHelper.getHitlTaskHelper();
+			
+			hitlCallResult = helper.createHitlCallTask(hitlTaskToolInf,hitlTaskReason, chatObject,toolCallContext,containerType, responseType);
+//			T hitlTaskResult = hitlCallResult != null? hitlCallResult.getResult():null;
+//			String completeReason = hitlCallResult != null? hitlCallResult.getCompleteReason():null;
+
+//			// 返回结果 null 保护
+//			if (hitlCallResult == null) {
+//				if(logger.isDebugEnabled()) {
+//					logger.debug("hitlTaskTool: createHitlCallTask returned null for reason: {}",
+//							hitlTaskReason.length() > 500 ? hitlTaskReason.substring(0, 500) + "..." : hitlTaskReason);
+//				}
+//				return null;
+//			}
+			
+			
+			return hitlCallResult;
+		} catch (Exception e) {
+			if(logger.isErrorEnabled()) {
+				logger.error("hitlTaskTool: failed to create HITL task for reason: {}", hitlTaskReason.length() > 500 ? hitlTaskReason.substring(0, 500) + "..." : hitlTaskReason, e);
+			}
+			String errorMessage = e.getCause() == null?e.getMessage():e.getCause().getMessage();
+			if(errorMessage == null || errorMessage.equals("")){
+				errorMessage = "Exception: failed to create HITL task";
+			}
+			hitlCallResult = new HitlCallResult<>();
+			hitlCallResult.setCompleteReason("hitl failed:"+ errorMessage + ", ignore operation and continue.");
+			return hitlCallResult;
+		}
 	}
 }

@@ -17,6 +17,8 @@ package org.frameworkset.spi.ai.store;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.frameworkset.orm.annotation.Column;
+import com.frameworkset.util.JsonUtil;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.TokenMetrics;
 
 import java.time.LocalDateTime;
@@ -145,6 +147,21 @@ public class SessionMessage {
 	 */
 	public static final String MESSAGE_TYPE_PLAN_MESSAGE = "22";
 	
+	/**
+	 * 智能体摘要消息
+	 */
+	public static final String MESSAGE_TYPE_SUMMARY_MESSAGE = "23";
+	
+	/**
+	 * LLM调用异常消息
+	 */
+	public static final String MESSAGE_TYPE_LLMCALLERROR_MESSAGE = "24";
+	
+	/**
+	 * LLM调用工具权限消息
+	 */
+	public static final String MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE = "25";
+	
 	
 	/**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
@@ -259,6 +276,27 @@ public class SessionMessage {
 	public static final String MESSAGE_TYPE_PLAN_MESSAGE_NAME = "plan";
 	
 	/**
+	 * 智能体摘要消息名称:规范中同样是用user角色名称
+	 */
+	public static final String MESSAGE_TYPE_SUMMARY_MESSAGE_NAME = "user";
+	
+	/**
+	 * LLM调用异常消息
+	 */
+	public static final String MESSAGE_TYPE_LLMCALLERROR_MESSAGE_NAME = "llmcallerror";
+	/**
+	 * LLM调用工具权限消息
+	 */
+	public static final String MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME = "toolpermissionrules";
+	
+	
+	/**
+	 * 消息名称：用于显示特定消息的名称，如果是工具入参和工具结果，则代表工具名称
+	 * 
+	 */
+	private String name;
+	
+	/**
 	 * 当节点直接隶属于并行节点时，会被赋值为自己的节点id，当所在的并行节点也隶属于其他并行节点时，parentGroupId会被赋值为并行节点的groupid信息
 	 * 并行分组展示消息所属并行分支id
 	 * 属于同一组的并行任务消息，独立并行展示
@@ -275,8 +313,9 @@ public class SessionMessage {
 	private String parentGroupId;
 	
     private String msgId;
-
-
+	
+	private String parentMsgId;
+	private String nextMsgId;
 
     private long elapsed;
     /**
@@ -313,16 +352,16 @@ public class SessionMessage {
     private String inputQuery;
     
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.SessionMessageEditor")
-    private Map<String, Object> message;
+    private LinkedMessageMap<String, Object> message;
     @Column(type = "clob",editor = "org.frameworkset.spi.ai.store.db.TokenMetricsEditor")
     private TokenMetrics tokenMetrics;
     private String role;
 
-    public Map<String, Object> getMessage() {
+    public LinkedMessageMap<String, Object> getMessage() {
         return message;
     }
 
-    public void setMessage(Map<String, Object> message) {
+    public void setMessage(LinkedMessageMap<String, Object> message) {
         this.message = message;
     }
 
@@ -467,5 +506,46 @@ public class SessionMessage {
 	
 	public void setParentGroupId(String parentGroupId) {
 		this.parentGroupId = parentGroupId;
+	}
+	
+	public void afterLoad(){
+		if(this.message != null){
+			message.setId(this.getMsgId());
+			message.setMessageType(this.messageType);
+			message.setSeqNo(this.seqNo);
+			message.setName(this.name);
+			message.withTimestamp(this.createTime);
+			message.setNextMsgId(this.nextMsgId);
+			message.setParentMsgId(this.parentMsgId);
+			message.setAgentId(this.agentId);
+			if(metadata != null){
+				Map<String,Object> meta = JsonUtil.json2Object(metadata, Map.class);
+				message.setMeta(meta);
+			}
+			
+		}
+	}
+	public String getName() {
+		return name;
+	}
+	
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	public String getParentMsgId() {
+		return parentMsgId;
+	}
+	
+	public void setParentMsgId(String parentMsgId) {
+		this.parentMsgId = parentMsgId;
+	}
+	
+	public String getNextMsgId() {
+		return nextMsgId;
+	}
+	
+	public void setNextMsgId(String nextMsgId) {
+		this.nextMsgId = nextMsgId;
 	}
 }

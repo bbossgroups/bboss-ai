@@ -25,12 +25,20 @@ import org.frameworkset.spi.ai.tools.HitlAssistant;
 public interface HitlTaskToolInf<T extends HitlTaskToolInf> {
 	 String TIMEOUT_ACTION_CONTINUE = "continue";
 	 String TIMEOUT_ACTION_REJECTED = "rejected";
+	 
+
 	
 	String getTimeoutAction() ;
 	long getHitlTaskTimeout();
-	T setHitlTaskTimeout(long hitlTaskTimeout);
-	T setTimeoutAction(String timeoutAction);
-	HitlAssistant getHitlAssistant() ;
+	default T setHitlTaskTimeout(long hitlTaskTimeout){
+		return (T)this;
+	}
+	default T setTimeoutAction(String timeoutAction){
+		return (T)this;
+	}
+	HitlAssistant<?> getHitlAssistant() ;
 	
-	T setHitlAssistant(HitlAssistant hitlAssistant);
+	default T setHitlAssistant(HitlAssistant<?> hitlAssistant){
+		return (T)this;
+	}
 }

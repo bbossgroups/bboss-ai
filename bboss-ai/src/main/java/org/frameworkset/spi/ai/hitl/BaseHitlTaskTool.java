@@ -93,15 +93,22 @@ public class BaseHitlTaskTool<T extends BaseHitlTaskTool> extends BaseAuditorToo
 		try {
 			HitlTaskHelper helper = HitlTaskHelper.getHitlTaskHelper();
 			
-			Map<String, Object> hitlTaskResult = helper.createHitlCallTask(this,hitlTaskReason, chatObject,toolCallContext);
 			
+			HitlCallResult<Map> hitlCallResult = helper.createHitlCallTask(this,hitlTaskReason, chatObject,toolCallContext,Map.class);
+			Map<String, Object> hitlTaskResult = hitlCallResult != null?hitlCallResult.getResult():null;
+			String completeReason = hitlCallResult != null?hitlCallResult.getCompleteReason():null;
 			// 返回结果 null 保护
 			if (hitlTaskResult == null) {
 				if(logger.isDebugEnabled()) {
 					logger.debug("hitlTaskTool: createHitlCallTask returned null for reason: {}",
 							hitlTaskReason.length() > 500 ? hitlTaskReason.substring(0, 500) + "..." : hitlTaskReason);
 				}
-				return Collections.singletonMap("message", "HITL task completed with null result, please ignore and continue.");
+				if(completeReason == null) {
+					return Collections.singletonMap("message", "HITL task completed with null result, please ignore and continue.");
+				}
+				else{
+					return Collections.singletonMap("completeReason", completeReason);
+				}
 			}
 			
 			

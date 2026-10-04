@@ -20,11 +20,8 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.store.StoreContext;
-import org.frameworkset.spi.ai.tool.KeywordToolSearcher;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import reactor.core.publisher.Flux;
-
-import java.util.concurrent.CountDownLatch;
 
 /**
  * @author biaoping.yin
@@ -74,7 +71,6 @@ public class CliToolLoopPortDBTest {
                 .setStoreType(StoreContext.STORE_TYPE_DB)
                 .setDataSource("visualops"));
 		
-		CountDownLatch countDownLatch = new CountDownLatch(1);
 		
 		String message = "#[loopprompt.txt,type=resource]";
 		AIAgent agent = new AIAgent(message);
@@ -105,12 +101,10 @@ public class CliToolLoopPortDBTest {
 //                    }
 //					
 				}) //打印流式调用返回的问题答案片段
-				.doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
-				.doOnError(error ->{countDownLatch.countDown(); logger.error("错误: " + error.getMessage(),error);})
-				.subscribe();
+				.doOnComplete(() -> { System.out.println();logger.info("\n=== 流完成 ===");})
+				.doOnError(error ->{  logger.error("错误: " + error.getMessage(),error);})
+				.blockLast();
 		
-		// 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-		countDownLatch.await();
        
 	}
     

@@ -32,6 +32,15 @@
   - 采用内置人工介入工具HitlTaskcallTool，实现Hitl功能，亦可以自定义人工介入工具（继承 BaseHitlTaskTool），实现自定义Hitl功能
   - 支持 HitlAssistant 接口，提供人工干预辅助信息和处理人工提交数据
 - 定时调度执行能力
+- 会话记忆压缩（Conversation Compaction），支持基于消息条数/Token 触发的窗口压缩与摘要压缩两种策略，压缩前可将长期记忆 Flush 写入记忆流水账，可剪枝超长工具结果、截断工具入参，保证工具调用与结果配对完整
+- 智能体记忆（Agent Memory），提供用户会话 Memory 流水账记录与长期摘要记录能力，支持 `agent_memory` 表数据库持久化（MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse），启用记忆检索后自动注册会话检索与摘要检索工具（memory 机制与 prompt 机制结合使用）
+- 工具权限管控体系（Permission），基于 `PermissionBehavior`（ALLOW/DENY/ASK/PASSTHROUGH）+ `PermissionMode`（DEFAULT/ACCEPT_EDITS/EXPLORE/BYPASS/DONT_ASK）的规则引擎，支持工具调用前的人工确认（走 HitL）、规则持久化（`agent_tool_call_rules` 表）与外部 `ToolCallPermissionManager` 扩展
+- 联网检索与网页抓取，内置 `web_search`（基于 Tavily API）与 `web_fetch` 两个只读工具，通过 HTTP 连接池服务 `http_websearch_tool` / `http_webfetch_tool` 调用
+- 文件系统抽象（Filesystem），提供面向 Agent 的存储抽象接口 `AbstractFilesystem`，内置本地文件系统实现 `LocalFilesystem`，支持 SANDBOXED/ROOTED/UNRESTRICTED 三种路径策略、命名空间（按会话/用户隔离）与路径穿越防护；`FileFunctionTool` 新增 `glob_files`/`list_files`/`grep_files` 检索方法
+- 自主规划机制（Plan Mode），提供 `plan_enter`/`plan_write`/`plan_exit` 规划工具与 `todo_write` 任务清单工具，支持"规划 → 人工审批 → 执行"的三段式任务流程
+- 混合推理内容流式推送（Mixdata），支持推理内容（reasoning）与答案内容（content）同时出现在同一流式报文中的场景（如九天 deepseek 模型），自动拆分后先推送推理内容再推送答案内容
+- 智能体级全局运行时上下文（`AgentRuntimeContext` + `ChatContext`），向多智能体和工作流各节点传递全局参数配置（调试报文输出、权限规则、记忆检索开关、压缩配置、规划模式状态等）
+- 步骤级事件推送（`ServerEvent.TYPE_STEP`），工具调用新一轮开始时向客户端实时推送步骤信号，前端可感知"智能体开始新一轮工具调用/人工介入已完成"
 
 ### 支持的平台
 - DeepSeek
@@ -55,33 +64,41 @@
 bboss-ai/
 ├── bboss-ai-model/          # 模型定义模块（基础模型和接口）
 │   └── src/main/java/org/frameworkset/spi/ai/
-│       ├── model/           # 核心模型定义（含 annotation/ 注解包）
-│       ├── mcp/model/       # MCP 协议模型
+│       ├── model/           # 核心模型定义（含 annotation/ 注解包、tool/ 工具规则模型包）
+│       ├── mcp/model/       # MCP 协议模型（类型化 JSON-RPC 请求/响应模型）
 │       └── tools/           # 工具注册接口
 │
 ├── bboss-ai/                # 核心实现模块
 │   └── src/main/java/org/frameworkset/spi/
 │       ├── ai/
-│       │   ├── AIAgent.java           # 智能体主入口类
+│       │   ├── AIAgent.java           # 智能体主入口类（implements AgentInfoInf）
 │       │   ├── UserAgent.java         # 用户代理类
 │       │   ├── adapter/               # 平台适配器
 │       │   ├── audit/                 # 工具审计系统（Auditor、AuditContext、AuditResult）
-│       │   ├── callback/              # 回调接口（ChatContext、ChatCallback、AgentOutput）
+│       │   ├── callback/              # 回调接口（ChatCallback、ChatStreamCallback、AgentOutput）
+│       │   ├── compaction/            # 会话记忆压缩（CompactionManager、WindowsCompactionManager、CompactionConfig 等）
+│       │   ├── context/               # 运行时上下文（AgentRuntimeContext、ChatContext）
+│       │   ├── filesystem/            # 文件系统抽象（AbstractFilesystem、LocalFilesystem、PathPolicy 等）
 │       │   ├── hitl/                  # 人工介入功能（BaseHitlTaskTool、HitlTaskHelper、cluster/）
+│       │   ├── interceptor/           # 智能体拦截器（AgentInterceptor、impl/TaskminderAgentInterceptor，预留扩展点）
 │       │   ├── material/              # 素材处理（文件下载等）
-│       │   ├── mcp/                   # MCP 客户端/服务端（sse/、streamable/、feishu/、intercepter/）
-│       │   ├── model/                 # 消息模型
-│       │   ├── skill/                 # 技能加载与管理（SkillUtils、SkillsToolRegist、Skill）
-│       │   ├── store/                 # 会话存储（内存 + DB）
-│       │   ├── tool/                  # 工具注册与搜索（含 permission/）
-│       │   ├── tools/                 # 内置工具实现
-│       │   └── util/                  # 工具类
+│       │   ├── mcp/                   # MCP 客户端/服务端（sse/、streamable/、feishu/、intercepter/、tools/、model/）
+│       │   ├── model/                 # 消息模型（含 tool/ 权限规则模型子包）
+│       │   ├── permission/            # 工具权限管控体系（PermissionEngine、PermissionMode、PermissionRule 等）
+│       │   ├── plan/                  # 自主规划机制（PlanTools）
+│       │   ├── prompt/                # Prompt 变量解析与外部资源加载（PromptEval、PromptResourceCache、PromptVariable 等）
+│       │   ├── skill/                 # 技能加载与管理（SkillUtils、SkillsToolRegist、Skill、SkillFilter）
+│       │   ├── state/                 # 规划/任务状态（PlanModeContextState、Task、TaskContextState）
+│       │   ├── store/                 # 会话存储（内存 + DB + AgentMemoryStore 记忆存储）
+│       │   ├── tool/                  # 工具注册与搜索（BeanToolsRegist、ToolSearcher、ToolCallContext 等）
+│       │   ├── tools/                 # 内置工具实现（含 WebFetchTool/WebSearchTool/TodoTools/检索工具）
+│       │   └── util/                  # 工具类（AIAgentUtil、AIResponseUtil、ServerEventUtil 等）
 │       └── reactor/                   # Reactor 流式处理组件
 │
 ├── bboss-ai-flow/           # 智能体工作流编排模块
 │   └── src/main/java/org/frameworkset/spi/ai/
 │       ├── flow/            # 工作流节点定义（串行/并行/路由/判断/关键词路由/规划等）
-│       ├── prompt/          # Prompt 资源管理与变量解析
+│       ├── prompt/          # FlowPromptEval（流程提示词变量解析，继承核心模块 PromptEval）
 │       └── util/            # 流程工具类
 │
 ├── build.gradle             # 根项目构建配置
@@ -107,17 +124,39 @@ bboss-ai/
 | `FunctionCall` | 函数调用接口，定义工具执行方法 |
 | `MultimodalGeneration` | 多模态生成基础类 |
 | `ToolsRegist` | 工具注册接口，支持动态加载模型工具 |
+| `StreamData` | 流式增量数据载体，支持内容/推理内容/工具调用/混合推理内容（`mixedData`）类型 |
+| `TraceMessage` | Trace 消息载体，携带消息内容、起止时间、agentId、parentAgentId、traceId、metaData 等 |
+| `Memory` | 智能体记忆实体（memoryId、agentId、userId、sessionId、content、memoryDay、memoryType: day/longterm） |
+| `TokenMetrics` | Token 用量指标（totalTokens、promptTokens、completionTokens、reasoningData 等） |
 
-#### MCP 模型
+#### 模型工具规则子包（model/tool）
 
 | 类名 | 作用 |
 |------|------|
-| `McpListToolRequest/Response` | MCP 工具列表请求/响应 |
-| `McpToolRequest/Response` | MCP 工具调用请求/响应 |
-| `McpInitializedToolRequest/Response` | MCP 初始化请求/响应 |
-| `McpClientInfo/McpServerInfo` | MCP 客户端/服务端信息 |
-| `McpCapabilities` | MCP 能力描述 |
-| `RequestId` | 请求 ID 生成器 |
+| `Parameters` | 工具参数 JSON Schema 定义（type=object、properties、required），由 `@Tool`/`@ToolParam` 注解解析产生 |
+| `PermissionRules` | 工具权限规则容器，按工具名分组的 allowRules / denyRules / askRules 三张规则表 |
+| `AgentToolCallRules` | 工具调用规则持久化实体（可存 DB），绑定 userId/sessionId/toolName/agentId 与 permissionRules，支持内存与数据库存储 |
+| `ToolCallAsk` | 工具执行前人工确认询问载荷（toolId、toolName、input、suggestedRules） |
+| `ToolCallAskResult` | 人工确认结果（approved、hitlConfirm、choosedAlwaysPermissionRule、updateInput） |
+| `ToolCallState` | 工具调用状态枚举（PENDING/ASKING/ALLOWED/SUBMITTED/FINISHED/FAILED/DENIED） |
+
+#### MCP 模型（类型化 JSON-RPC 2.0）
+
+`mcp/model` 包演进为类型化的 JSON-RPC 2.0 请求/响应模型，请求侧继承 `McpToolRequest`（含 jsonrpc=2.0、id、method、params），响应侧继承 `MCPToolResponse`（以 result Map 承载协议数据）：
+
+| 类名 | 作用 |
+|------|------|
+| `McpInitializedToolRequest` | initialize 初始化请求（protocolVersion、capabilities、clientInfo） |
+| `MCPInitializedToolResponse` | initialize 初始化响应（protocolVersion、listChanged、resources、serverInfo） |
+| `SSEInitializeResponse` | SSE 服务端/独立使用的初始化响应模型 |
+| `McpListToolRequest` / `MCPListToolResponse` | tools/list 工具列表请求/响应 |
+| `McpToolCallRequest` / `MCPToolCallResponse` | tools/call 工具调用请求/响应，`McpToolRequest`/`McpToolResponse` 为基类 |
+| `McpClientInfo` / `McpServerInfo` | MCP 客户端/服务端信息（name + version） |
+| `McpCapabilities` | MCP 能力描述（elicitation） |
+| `McpCallObject<T>` | 单次 MCP 调用的同步等待载体（requestId、CountDownLatch、timeout=60s、responseType），将 SSE 异步流转化为同步调用语义 |
+| `McpCallException` | MCP 调用异常 |
+| `RequestId` | 线程安全递增的请求 ID 生成器 |
+| `MCPMethods` | 协议方法常量（initialize、tools/list、tools/call、resources/list 等） |
 
 > **说明**：Skill 技能模块的实现位于 `bboss-ai` 模块的 `skill` 包中，不在 `bboss-ai-model` 模块。详见 [3.2.x 技能系统](#技能skill系统) 章节。
 
@@ -154,6 +193,16 @@ bboss-ai/
 - `embedding()` - 向量嵌入
 - `rerank()` - 重排序
 
+**智能体级配置与能力方法：**
+
+- `setEnableLoopToolCall(boolean)` / `setMaxLoopToolCalls(int)` - 循环工具调用开关与次数（默认 80 轮）
+- `setAgentRuntimeContext(AgentRuntimeContext)` - 注入全局运行时上下文（权限规则、调试开关、规划状态、压缩配置等），未设置时继承父智能体
+- `setEnableMemorySearch(boolean)` - 启用记忆检索，自动注册会话检索与摘要检索工具
+- `compact()` - 在组装消息前触发会话记忆压缩（委托主会话存储的压缩管理器）
+- `recordTraceMessage()` - 手动记录 Trace 消息，自动补全 agentId/parentAgentId
+
+**身份信息（`AgentInfoInf` 接口）**：`AIAgent` 实现 `AgentInfoInf` 统一身份抽象，提供 `getAgentId`/`getAgentNodeType`/`getParentAgentId`/`getGroupId`/`getAgentFluxSink` 等，供步骤事件、HitL 任务、Trace 消息携带来源智能体信息。
+
 #### 3.2.2 Adapter 适配器层
 
 采用适配器模式对不同 AI 平台进行适配：
@@ -179,7 +228,7 @@ AgentAdapter (抽象基类)
 - 构建各类请求参数（Chat、Image、Audio、Video、Embedding、Rerank）
 - 解析响应数据
 - 处理流式数据解析
-- 管理端点 URL
+- 管理端点 URL：`AgentAdapter` 实现 `CompletionsUrlInterface` 接口，抽象出各类媒体请求的完成端点 URL 构建方法（`getChatCompletionsUrl`、`getGenImageCompletionsUrl`、`getGenAudioCompletionsUrl`、`getImageVLCompletionsUrl`、`getVideoVLCompletionsUrl`、`getSubmitVideoTaskUrl`、`getVideoTaskResultUrl`、`getEmbeddingUrl`、`getRerankUrl`、`getAudioSTTCompletionsUrl`），各平台适配器按需覆写
 
 #### 3.2.3 Model 消息模型层
 
@@ -202,23 +251,24 @@ AgentAdapter (抽象基类)
 
 #### 3.2.4 MCP 客户端
 
-`MCPClient` 实现了 Model Context Protocol 协议客户端，支持两种传输模式：
+`MCPClient` 实现了 Model Context Protocol 协议客户端，支持两种传输模式。客户端基于 `MCPBaseClient` 抽象基类（持有 `RequestId` 递增 ID 生成器、全链路 Trace 记录模板方法）与 `McpCallObject<T>` 同步等待载体，将 SSE/Streamable HTTP 的异步响应流转化为同步调用语义。
 
 **核心功能：**
-- SSE（Server-Sent Events）连接管理（`MCPSSEClient`）
+- SSE（Server-Sent Events）连接管理（`MCPSSEClient`，经 `SSEMcpCallHelper` 按 requestId 关联请求/响应，支持断开重连 `reconnected()`）
 - Streamable HTTP 连接管理（`MCPStreamableClient`）
 - 会话生命周期管理（initialize、notifications/initialized）
-- 工具列表获取（tools/list）
-- 工具调用（tools/call）
+- 工具列表获取（tools/list）、工具调用（tools/call），调用过程自动记录 MCP 调用 Trace（mcpserver、mcpToolCallRequest、mcpToolCallResponse、mcpToolCallException）
+- 类型化 JSON-RPC 2.0 请求/响应模型（见 [3.1 MCP 模型](#mcp-模型类型化-json-rpc-20)），异常统一抛出 `McpCallException`
+- 连接类型枚举 `ConnectionType`（SSE 为主，STDIO 预留）
 - 飞书 MCP 集成（`FeishuMCPClient`、`FeishuMCPStreamableClient`、`FeishuMcpRegist`）
 - Spring AI MCP 兼容请求拦截器（`SpringAIMcpRequestIntercepter`），配置方式：`{poolName}.http.httpRequestInterceptors=org.frameworkset.spi.ai.mcp.intercepter.SpringAIMcpRequestIntercepter`
 
 **工作流程：**
 1. 通过 SSE 端点或 Streamable HTTP 端点建立连接
 2. 接收 endpoint 事件获取 messagePath 和 sessionId
-3. 发送 initialize 请求进行协议初始化
+3. 发送 `initialize` 请求进行协议初始化（`McpInitializedToolRequest`，protocolVersion 2025-06-18）
 4. 发送 notifications/initialized 通知服务端
-5. 正常进行工具列表查询和调用
+5. 正常进行工具列表查询（`McpListToolRequest`）和调用（`McpToolCallRequest`）；响应线程收到带 id 的消息后反序列化写入 `McpCallObject.setResponse()` 并 `countDown()`，调用线程在超时窗口（默认 60s）内被唤醒
 
 **Spring Boot 客户端集成示例：**
 
@@ -415,8 +465,10 @@ public class MCPServerController {
 | `AgentSessionStoreDBConfig` | 数据库会话存储配置，管理各数据库方言的建表 SQL 和 CRUD SQL |
 | `AgentSessionStoreBuilder` | 会话存储构建器接口 |
 | `DefaultAgentSessionStoreBuilder` | 默认会话存储构建器，根据 `StoreContext.storeType` 创建对应存储实现 |
-| `AgentSessionService` | 会话管理服务接口（查询、删除、判断存在等） |
+| `AgentSessionService` | 会话管理服务接口（查询、删除、判断存在、重置等） |
 | `AgentSessionServiceImpl` | 会话管理服务实现，基于 `ConfigSQLExecutor` |
+| `AgentMemoryStore` | 智能体记忆存储接口（读长期记忆、读某日流水账、写每日流水账） |
+| `AgentMemoryStoreDB` | 记忆数据库存储实现，基于 `agent_memory` 表持久化 |
 | `AgentSession` | 会话实体（sessionId、userId、agentId、domain、title、createTime、lastAccessTime） |
 | `AgentSessionCondition` | 会话查询条件（多 domain、标题模糊、时间范围、排序字段可配置） |
 | `SessionMessage` | 会话消息实体（含 19 种消息类型常量） |
@@ -444,10 +496,13 @@ public class MCPServerController {
 | `deleteBatchAgentSession(sessionids...)` | 批量删除会话 |
 | `getAgentSession(sessionid)` | 获取会话基本信息 |
 | `existAgentSession(sessionid)` | 判断会话是否存在 |
+| `resetAgentSession(sessionid)` | 重置会话：事务内清除该会话的消息、引用关系及 HitL 人工介入任务，仅保留 session 会话记录 |
 | `queryListInfoAgentSessions(conditions, offset, pagesize)` | 分页查询会话列表 |
 | `queryListAgentSessions(conditions)` | 查询会话列表（不分页） |
 | `queryListSessionMessages(sessionid)` | 查询会话所有消息 |
 | `queryListSessionMessages(sessionid, agentId)` | 查询指定智能体的会话消息 |
+
+> **会话重置（resetSession）**：存在两种重置能力。其一为 `StoreContext.setResetSession(true)` 配合 `sessionId`，在每次会话构建时先 `removeSession` 清空旧记忆再开始新对话（内存/DB 均适用）；其二为 `AgentSessionService.resetAgentSession(sessionid)`，在事务内清空 `agent_session_message`、`agent_session_message_ref` 及该会话的 HitL 任务，保留 `agent_session` 会话记录本身。两种方式与 `deleteAgentSession`（整条会话连同消息全部删除，并额外清理 `agent_tool_call_rules` 规则）相互区别。
 
 **会话查询条件（`AgentSessionCondition`）：**
 
@@ -477,6 +532,10 @@ public class MCPServerController {
 | `sessionTableName` | 会话表名，默认 `agent_session` |
 | `sessionMessageTableName` | 会话消息表名，默认 `agent_session_message` |
 | `sessionSize` | 会话记忆窗口大小，默认 20 |
+| `triggerSessionSize` | 会话压缩触发消息条数阈值（仅窗口压缩模式使用，设置后自动创建窗口压缩管理器） |
+| `sessionMemory` | 会话记忆载体（ArrayList），配合窗口压缩记录消息 |
+| `compactModelInfo` | 压缩摘要专用模型信息（maas + model），未设置时使用智能体主模型 |
+| `compactionConfig` | 完整压缩配置（`CompactionConfig`），按 `compactionPolicy` 决定窗口压缩或摘要压缩策略 |
 | `requestId` | 请求 ID |
 | `traceId` | 链路追踪 ID |
 | `resetSession` | 是否重置会话 |
@@ -605,7 +664,8 @@ Flux<ServerEvent> flux = agent.streamChat(message);
 | `BaseBeanToolFunctionCall` | Bean 工具调用抽象基类，封装参数解析和反射调用 |
 | `BeanToolHandle` | Bean 工具解析处理，扫描 `@Tool`/`@ToolParam` 注解构建 `FunctionToolDefine` |
 | `BeanToolFunctionCallBuilder` | Bean 工具函数调用构建器接口 |
-| `PermissionType` | 工具权限类型枚举（ASK/ALLOW/DENY），位于 `tool.permission` 包 |
+| `ToolBase` | 工具权限判定基类，提供 `checkPermissions`/`matchRule`/`generateSuggestions` 供工具自身参与权限评估 |
+| 相关类 | 工具权限管控体系位于 `permission` 包（`PermissionEngine`、`PermissionBehavior`、`PermissionMode`、`PermissionRule` 等），详细见 [3.2.17 工具权限管控](#3217-工具权限管控体系permission) |
 
 ##### 基于注解快速发布工具服务
 
@@ -841,7 +901,7 @@ public class MCPServerController {
 
 #### 3.2.12 内置工具体系
 
-bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools` 包下，覆盖 Shell 执行、多语言代码执行、文件系统操作、操作系统信息查询、文本搜索、人工介入六大场景。所有内置工具均继承 `BaseAuditorTool`，支持通过 `Auditor` 接口实现工具调用前审计拦截。
+bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools` 包下，覆盖 Shell 执行、多语言代码执行、文件系统操作（含检索）、操作系统信息查询、文本搜索、人工介入、联网抓取与检索、任务清单、会话记录检索等场景。其中 `CLIShellFunctionTool`、`CodeExecuteFunctionTool`、`FileFunctionTool`、`GetOSFunctionTool`、`GrepFunctionTool`、`HitlTaskcallTool` 均继承 `BaseAuditorTool`，支持通过 `Auditor` 接口实现工具调用前审计拦截；`WebFetchTool`、`WebSearchTool`、`TodoTools`、`SessionSearchTool`、`CompactSummaryMsgSearchTool` 等为普通 `@Tool` 注解工具，无审计基类依赖。
 
 ##### 工具总览
 
@@ -849,10 +909,15 @@ bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools`
 |--------|--------|------------|----------|
 | `CLIShellFunctionTool` | Shell 执行 | 1 | 跨平台执行 cmd/sh 脚本，超时控制 |
 | `CodeExecuteFunctionTool` | 代码执行 | 3 | 动态编译运行 Java，调用 Python/Node 执行 Python/JavaScript |
-| `FileFunctionTool` | 文件系统 | 9 | 文件读写、拷贝、删除、属性查询、编码识别、目录遍历 |
+| `FileFunctionTool` | 文件系统 | 11 | 文件读写、拷贝、删除、属性查询、编码识别、glob/list/grep 文件检索（后三者委托 `AbstractFilesystem`） |
 | `GetOSFunctionTool` | 系统信息 | 1 | 获取 OS 名称/版本/架构及 CPU 核数/型号 |
 | `GrepFunctionTool` | 文本搜索 | 1 | 跨平台文本搜索（Linux/Mac 用 grep，Windows 用 findstr），支持正则、递归目录、文件扩展名过滤、超时控制 |
 | `HitlTaskcallTool` | 人工介入 | 1 | HITL（Human-in-the-Loop）人工介入工具，继承 `BaseHitlTaskTool`，当 AI 无法独立完成任务时调用 |
+| `WebFetchTool` | 联网抓取 | 1 | 抓取 HTTP(S) 网页正文并返回截断预览（`web_fetch`），经 `http_webfetch_tool` 连接池调用 |
+| `WebSearchTool` | 联网搜索 | 1 | 基于 Tavily API 的网络搜索（`web_search`），经 `http_websearch_tool` 连接池调用 |
+| `TodoTools` | 任务清单 | 1 | 会话任务清单管理（`todo_write`），全量替换式维护任务状态 |
+| `SessionSearchTool` | 会话检索 | 2 | 当前会话/当前用户多会话转写检索（`current_session_search`/`user_sessions_search`），启用记忆检索时自动注册 |
+| `CompactSummaryMsgSearchTool` | 摘要检索 | 1 | 按摘要消息 ID 反查被压缩前的原始消息（`summary_search`），启用记忆检索时自动注册 |
 
 ##### 通用配置约定
 
@@ -887,17 +952,29 @@ bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools`
 
 ##### FileFunctionTool —— 文件系统操作工具
 
-**功能说明**：提供文件与目录的增删改查、内容读写、编码识别、属性获取等 9 个工具方法，支持通过 `baseDirectory` 限制操作范围防止路径穿越攻击。
+**功能说明**：提供文件与目录的增删改查、内容读写、编码识别、属性获取及 glob/list/grep 文件检索等 11 个工具方法，支持通过 `baseDirectory` 限制操作范围防止路径穿越攻击。
 
 **工具方法分类**：
 
 | 类别 | 方法 | 功能 |
 |------|------|------|
+| **文件检索** | `glob_files`、`list_files`、`grep_files` | glob 模式查找、目录列表、文本检索（委托 `AbstractFilesystem`，支持命名空间隔离；readFile 单次最多读取 2MB，超出截断，可用 `setMaxReadSize` 配置） |
 | **文件操作** | `copyFile`、`deleteFile`、`createFile`、`fileExists` | 拷贝、删除、创建、检查存在 |
-| **文件读写** | `readFile`、`writeFile`、`readDirectoryFiles` | 读取、写入、遍历目录读取 |
+| **文件读写** | `readFile`、`writeFile` | 读取（自动识别编码）、写入（支持追加） |
 | **文件信息** | `getFileAttributes`、`detectFileEncoding` | 获取属性、检测编码 |
 
-**路径安全**：设置 `baseDirectory` 后，所有路径经规范化后必须以基目录开头，否则抛出 `IllegalArgumentException`。
+使用示例（注册并检索文件目录）：
+
+```java
+AIAgent agent = new AIAgent();
+agent.registBeanTool(new FileFunctionTool("/data/safe"));  // 限制文件操作基目录
+
+ChatAgentMessage message = new ChatAgentMessage();
+message.setPrompt("列出 /data/safe 目录下所有 Java 文件，并在其中搜索目标关键词");
+Flux<ServerEvent> flux = agent.streamChat(message);
+```
+
+**路径安全**：设置 `baseDirectory` 后，所有路径经规范化后必须以基目录开头，否则抛出 `IllegalArgumentException`；`glob_files`/`list_files`/`grep_files` 进一步受 `LocalFilesystem` 的 `SANDBOXED`/`ROOTED` 路径策略与命名空间约束。
 
 ##### GetOSFunctionTool —— 操作系统信息查询工具
 
@@ -998,6 +1075,54 @@ BaseAuditorTool  →  BaseHitlTaskTool  →  HitlTaskcallTool
 5. **生成调用请求**：如果找到匹配工具，生成 `FunctionTool` 调用对象
 6. **执行工具调用**：`BeanToolFunctionCall.call()` 执行实际的工具方法
 
+##### WebFetchTool —— 网页抓取工具
+
+**功能说明**：基于 HTTP 连接池的只读网页抓取工具，抓取 HTTP(S) 网页正文并返回截断预览，供模型获取实时网页信息。
+
+- **工具方法**：`web_fetch(url, maxChars)` —— `url` 必填（仅允许 http/https），`maxChars` 可选（默认 -1 不截断，上限 100000）
+- **连接池**：默认使用 `http_webfetch_tool` 服务，可通过 `new WebFetchTool("自定义连接池名")` 指定
+- **请求头**：`User-Agent: bboss-Harness-WebFetch/1.0`
+- **返回**：`status=xxx\n\n` + 正文预览；非 200 状态返回错误信息
+
+##### WebSearchTool —— 联网搜索工具
+
+**功能说明**：基于 Tavily API 的只读联网搜索工具，返回标题、URL 和内容片段，适合需要实时信息、事件查询等场景。
+
+- **工具方法**：`web_search(query, maxResults)` —— `query` 必填，`maxResults` 可选（默认 5，上限 10，`search_depth=basic`）
+- **连接池**：默认使用 `http_websearch_tool` 服务（如 `http.websearch.tool.http.hosts = https://api.tavily.com`），可通过构造函数指定自定义连接池
+- **前提**：需要在对应服务配置 Tavily API Key（`apiKeyId`）
+- **返回**：`序号. title\n url\n content` 文本格式
+
+##### TodoTools —— 任务清单工具
+
+**功能说明**：会话级任务清单管理工具，全量列表替换式维护任务状态，与自主规划（Plan Mode）的任务执行阶段联动。任务通过 `TaskContextState` 管理，按 content 匹配保留旧任务的 id/createdAt/metadata，保证跨整表重写时 ID 稳定。
+
+- **工具方法**：`todo_write(todos)` —— `todos` 为 `TodoItem` 列表（content、status：pending/in_progress/completed、priority：high/medium/low）
+- **校验规则**：状态值合法、content 非空、**最多一个 in_progress**
+- **返回**：渲染 `N open todo(s):` + `- [ ] / - [~] / - [x]` 标记（priority 附注）
+
+##### SessionSearchTool —— 会话记录检索工具
+
+**功能说明**：会话记录（转写）检索工具，基于会话存储中的历史消息做关键词子串匹配，帮助模型回顾"当前会话中之前聊过什么"或"该用户其他历史会话中提及过什么"，解决长会话上下文被压缩/裁剪后信息丢失的问题。两个工具方法均由 `@Tool` 注解标注 `readOnly=true`，不会修改会话记录。
+
+- **工具方法**：
+  - `current_session_search(query)` —— 检索**当前会话**的转写文本，范围仅限 `agent.getSessionId()` 标识的当前会话，不检索用户的其他历史会话
+  - `user_sessions_search(query, limit)` —— 检索**当前用户最近 N 个会话**（limit 默认 10，硬上限 100），跨会话查找历史上下文
+- **匹配方式**：大小写不敏感的子串匹配，作用于 `SessionUtils.buildMessageText` 生成的每条消息可搜索文本（role、content 及工具/附件暴露的文本）
+- **返回格式**：纯文本报告，包含匹配数量，以及每条匹配的会话上下文（sessionId / role / 时间戳可用时）+ 命中关键词的摘要片段（约 200 字符）；无匹配或会话为空时返回明确的"无结果"提示
+- **上下文来源**：通过 `AgentTraceHolder.getChatObject().getAgent()` 获取运行中的智能体，调用 `mainSessionStore.getAllAgentSessionMessage(sessionId)`（当前会话）或 `getAllAgentSessionMessageOfUser(userId, limit)`（用户会话）取消息
+- **适用场景**：用户提问"我在这段对话里哪里提到过 X？""当前聊天中关于 Y 的部分在哪里""帮我回顾一下之前会话中聊过的 Z 话题"
+- **自动注册**：设置 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，由 `AIAgent.reactMessage()` 自动注册，无需手动 `registBeanTool`
+
+##### CompactSummaryMsgSearchTool —— 摘要记录检索工具
+
+**功能说明**：摘要记录检索工具，按会话压缩摘要消息中携带的消息 ID 清单反查被压缩前的原始消息，用于在启用会话记忆压缩（见 [3.2.14 会话记忆压缩](#3214-会话记忆压缩compaction)）后，模型仍能读取被压缩掉的历史消息原文。
+
+- **工具方法**：`summary_search(summaryMessageIds)` —— 入参为摘要压缩消息 ID 数组（`String[]`），即 `SummeryUtils.buildSummaryMessage` 在摘要消息 meta.summaryIds 中记录的原始消息清单
+- **检索机制**：调用 `mainSessionStore.getSessionMessages(sessionId, ids)` 批量获取原始消息（内存/DB 存储均有实现），由 `SummeryUtils.formatSessionMessagesForSummary` 格式化输出（TOOL_CALL/TOOL_RESULT 消息转为内联文本便于模型阅读）
+- **长度控制**：返回结果超过 8000 字符自动截断并附截断提示
+- **自动注册**：与 `SessionSearchTool` 一样，启用 `enableMemorySearch` 后自动注册
+
 ##### 通用注册方式
 
 ```java
@@ -1010,7 +1135,12 @@ agent.registBeanTool(new CodeExecuteFunctionTool(60));
 agent.registBeanTool(new FileFunctionTool("/data/safe"));  // 限制文件操作基目录
 agent.registBeanTool(new GrepFunctionTool(60));             // 文本搜索工具
 agent.registBeanTool(new HitlTaskcallTool());              // 人工介入工具
+agent.registBeanTool(new WebFetchTool());                  // 网页抓取工具（http_webfetch_tool 连接池）
+agent.registBeanTool(new WebSearchTool());                 // 联网搜索工具（http_websearch_tool 连接池）
+agent.registBeanTool(new TodoTools());                     // 任务清单工具
 ```
+
+> **记忆检索工具注册**：设置 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，`SessionSearchTool` 与 `CompactSummaryMsgSearchTool` 会在 `AIAgent.reactMessage()` 中自动注册，无需手动 `registBeanTool`。
 
 ##### 工具审计系统（Auditor）
 
@@ -1067,10 +1197,10 @@ bboss-ai 内置了工具审计系统，位于 `org.frameworkset.spi.ai.audit` �
 
 | 类名 | 作用 |
 |------|------|
-| `ChatContext` | 聊天上下文，承载回调和中间状态 |
 | `ChatStreamCallback` | 流式回调接口 |
 | `ChatCallback` | 同步回调接口 |
 | `AgentOutput` | 智能体输出处理 |
+| `ChatContext`（位于 `context` 包） | 单次请求级聊天上下文，承载回调和中间状态，详细见 [3.2.13 智能体运行时上下文](#3213-智能体运行时上下文agentruntimecontext--chatcontext) |
 
 #### 3.2.9 Reactor 流式处理
 
@@ -1087,6 +1217,8 @@ bboss-ai 内置了工具审计系统，位于 `org.frameworkset.spi.ai.audit` �
 | `SSEHeaderSetFunction` | SSE 头设置函数式接口 |
 | `DisposeEventHandler` | 流dispose事件处理 |
 
+**混合推理内容（Mixdata）流式处理**：当模型单报文同时携带推理内容（`reasoning_content`）与答案内容（`content`）时（如九天 deepseek 模型），`StreamData` 以 `mixedData=true` + `MIXED_REASONING_2ND_CONTENT` 类型标记混合包。`BaseStreamDataBuilder` 聚合时同时追加到 `fullReasoningStreamData` 与 `fullStreamData`；对外推送时 `AIResponseUtil.buildServerEvent` 将混合包拆分为两条 `ServerEvent`（先 `REASONING_CONTENT` 再 `CONTENT`），保证推理流与答案流分别渲染、会话存储不丢失，同时支持 `appendToolCallThinkingStreamData` 将工具调用思考过程拆分缓冲。
+
 #### 3.2.10 Util 工具类
 
 | 类名 | 作用 |
@@ -1095,8 +1227,11 @@ bboss-ai 内置了工具审计系统，位于 `org.frameworkset.spi.ai.audit` �
 | `AIResponseUtil` | 响应解析工具，处理流式和同步响应 |
 | `MessageBuilder` | 消息构建工具 |
 | `StreamDataBuilder` | 流数据构建器 |
-| `BaseStreamDataBuilder` | 基础流数据构建器 |
+| `BaseStreamDataBuilder` | 基础流数据构建器（支持混合推理内容聚合与工具调用思考拆分） |
 | `AudioDataBuilder` | 音频数据构建器 |
+| `ServerEventUtil` | ServerEvent 构件工具，批量填充智能体信息、构造步骤事件（`emitterStepEvent` 推送 `TYPE_STEP` 信号） |
+| `ClasspathResourceReader` | classpath 与 URL 资源读取工具 |
+| `BBOSSAIVersion` | 框架版本常量 |
 
 #### 3.2.11 智能体 Trace 可观测性
 
@@ -1132,7 +1267,7 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 
 **消息类型对照表：**
 
-消息类型体系采用 `messageType` 数值编码与 `role` 字符串名称双标识设计，覆盖用户交互、模型调用、工具执行、观测追踪等全链路场景。其中 0–17 为框架内置标准类型，18 为未映射类型的兜底编码；业务如需自定义扩展，建议从 101 开始编码，并在 `AgentMessageTypeConvertor` 中注册映射关系。
+消息类型体系采用 `messageType` 数值编码与 `role` 字符串名称双标识设计，覆盖用户交互、模型调用、工具执行、工具权限、技能调用、人工介入、规划、摘要压缩、观测追踪等全链路场景。其中 0–25 为框架内置标准类型，`MESSAGE_TYPE_OTHER_MESSAGE=18` 为未映射类型的兜底编码；业务如需自定义扩展，建议从 101 开始编码，并在 `AgentMessageTypeConvertor` 中注册映射关系。
 
 | 常量 | 值 | role 名称 | 说明 |
 |------|-----|-----------|------|
@@ -1155,6 +1290,13 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 | `MESSAGE_TYPE_MCPCALL_MESSAGE` | 16 | mcpcall | MCP 服务调用消息 |
 | `MESSAGE_TYPE_TOOLCALL_MESSAGE` | 17 | toolcall | 工具服务调用消息 |
 | `MESSAGE_TYPE_OTHER_MESSAGE` | 18 | 角色名称（实际设置值） | 其他未映射消息类型（需在 AgentMessageTypeConvertor 中建立映射） |
+| `MESSAGE_TYPE_SKILLCALL_MESSAGE` | 19 | skillcall | 技能（Skill）调用消息 |
+| `MESSAGE_TYPE_HITL_MESSAGE` | 20 | hitltask | 人工介入（HitL）任务消息 |
+| `MESSAGE_TYPE_HITL_HANDLE_MESSAGE` | 21 | hitlhandle | 人工介入处理结果消息 |
+| `MESSAGE_TYPE_PLAN_MESSAGE` | 22 | plan | 自主规划（Plan）消息 |
+| `MESSAGE_TYPE_SUMMARY_MESSAGE` | 23 | user | 会话摘要压缩消息（记录被压缩的消息清单到 meta.summaryIds） |
+| `MESSAGE_TYPE_LLMCALLERROR_MESSAGE` | 24 | llmcallerror | 模型调用异常消息（执行轨迹记录模型调用异常） |
+| `MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE` | 25 | toolpermissionrules | 工具权限规则消息（每轮工具调用后将权限引擎的 allow/deny/ask 规则表快照持久化，会话恢复时用于还原"始终允许/拒绝"等规则） |
 
 **自动 Trace 采集：**
 
@@ -1198,6 +1340,234 @@ AgentSessionStore（接口）
 `AgentSessionStoreDB` 自动完成建表，核心字段包括：msgId、createTime、sessionId、parentAgentId、agentId、messageType、seqNo、message（JSON）、role、marks、metadata、requestId、tokenMetrics（JSON）、elapsed、traceId。
 
 Trace 消息与业务消息统一存储在同一张表中，通过 `messageType = 5` 和 `role = trace` 区分，便于按会话维度进行全链路回放和分析。
+
+#### 3.2.13 智能体运行时上下文（AgentRuntimeContext + ChatContext）
+
+框架将运行期上下文拆分为"全局配置"与"单次请求"两层，用于向多智能体与工作流各节点传递全局参数配置：
+
+**`AgentRuntimeContext`（智能体/会话级全局配置载体）**
+
+由 `AIAgent.setAgentRuntimeContext(...)` 或 `ChatAgentMessage.setAgentRuntimeContext(...)` 注入，父级智能体缺省时自动继承 `parentAgent` 的上下文。核心属性：
+
+| 属性 | 说明 |
+|------|------|
+| `debugSSEData` | 调试开关，为 true 时把模型原始 SSE 报文逐行打到日志（默认 false） |
+| `mode` | 权限模式（`PermissionMode.DEFAULT`） |
+| `allowRules` / `denyRules` / `askRules` | 三张权限规则表，`addAllowRule`/`addDenyRule`/`addAskRule` 链式添加 |
+| `toolCallPermissionManager` | 外部权限管理接口 |
+| `permissionHitlTaskTimeout` | 权限人工确认超时（默认 60s） |
+| `enablePlanMode` | 是否启用自主规划（计划）模式 |
+| `planModeContextState` | 计划模式状态（`PlanModeContextState`：planActive + currentPlanFile） |
+| `taskContextState` | 任务列表状态（`TaskContextState`：List\<Task\>） |
+| `enableMemorySearch` | 是否启用记忆检索（为 true 时自动注册会话/摘要检索工具） |
+| `taskListEnabled` | 是否启用任务列表 |
+| `compactionConfig` | 会话压缩配置 |
+| `isTrivial()` | `mode==DEFAULT` 且三张规则表全空时判定未启用完整权限引擎（轻量路径） |
+
+**`ChatContext`（单次请求级上下文，位于 `context` 包）**
+
+一次 `chat()`/`streamChat()` 创建一个，持有 `agentRuntimeContext` 引用并对计划模式、任务状态、调试开关做空安全代理。承载信息包括：会话摘要、`thinking`/`effort`（九天模型思考强度）、模型信息、工具调用阶段（`TOOL_CALL_STAGE_SEARCH_TOOL=1`/`EXECUTE_TOOL=2`/`HANDLE_TOOL_RESPONSE=3`）、循环调用计数、`agentSink`（FluxSink）、`contextData` 业务数据、回调与提示词求值缓存（`evalPrompt`/`evalSystemPrompt`，避免重复计算）。
+
+#### 3.2.14 会话记忆压缩（Compaction）
+
+会话记忆压缩机制解决长会话场景下上下文超限问题，位于 `compaction` 包，支持**窗口压缩**与**摘要压缩**两种策略，在每次 LLM 推理调用前自动触发：
+
+**核心组件：**
+
+| 类名 | 作用 |
+|------|------|
+| `CompactionManagerInf` / `BaseCompactionManager` | 压缩接口与抽象基类；压缩原则：System 消息必须保留，工具入参与工具结果成对出现不能割裂 |
+| `CompactionManager` | 摘要压缩实现（默认），委托 `ConversationCompactor` 完成触发判断、cutoff 计算、剪枝、截断与 LLM 摘要 |
+| `WindowsCompactionManager` | 窗口压缩实现：按消息条数滑动窗口，将窗口外旧消息总结为一条摘要消息（`MESSAGE_TYPE_SUMMARY_MESSAGE=23`）持久化 |
+| `ConversationCompactor` | 摘要压缩核心算法类 |
+| `MemoryManager` | 压缩前用 LLM 从将被压缩的消息中抽取长期记忆，Flush 到每日记忆流水账 |
+| `CompactionConfig` | 压缩配置（见下表） |
+| `PruneConfig` | 工具结果聚合剪枝配置（逆向扫描 TOOL 消息，保护最近 `protectTokens` 的输出，对超长旧结果做"头+尾预览"替换；默认排除 read_file/memory 等结果） |
+| `TruncateArgsConfig` | 工具调用入参截断配置（对窗口外 ASSISTANT 消息中过长 arguments 截断到 `maxArgLength`） |
+| `TokenCounterUtil` | 基于字符数的 token 估算工具 |
+| `SummeryUtils` | 摘要文本格式化、摘要消息构建与摘要 LLM 调用 |
+| `SessionUtils` | 将会话消息格式化为可搜索文本（供会话检索工具使用） |
+
+**CompactionConfig 关键配置项：**
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `compactionPolicy` | `1`（摘要压缩） | `0`=窗口压缩（COMPACTION_POLICY_WINDOWSIZE），`1`=摘要压缩 |
+| `triggerMessages` | 50 | 消息条数触发阈值（0=关闭该条件） |
+| `triggerTokens` | 0 | Token 触发阈值；0=动态模式，按 `model.getContextWindowSize() - reserved` 计算，模型未报告上下文窗口时回退 160000 |
+| `reserved` | 20000 | 动态模式下为压缩过程预留的 token 缓冲 |
+| `keepMessages` | 20 | 保留原文的最近消息条数（keepTokens==0 时生效） |
+| `keepTokens` | -1 | 保留尾部预算；-1=动态计算 `min(keepTokensMax, max(keepTokensMin, usable*keepTokensRatio))` |
+| `flushBeforeCompact` | true | 压缩前是否执行记忆 Flush |
+| `compactModel` | null | 压缩摘要专用模型（可用轻量模型），未设置则用智能体主模型 |
+| `summaryPrompt` | 默认资源模板 | 摘要 Prompt（SESSION INTENT/SUMMARY/ARTIFACTS/NEXT STEPS 四段结构），支持链式总结 |
+
+**压缩流程（摘要压缩）：**
+
+1. **预清理**：按 `TruncateArgsConfig` 截断长工具入参；按 `PruneConfig` 剪枝超长工具结果
+2. **触发判断**：消息条数 >= `triggerMessages` 或估算 token >= `triggerTokens` 任一触发
+3. **确定 cutoff**：`determineCutoffIndex` 二分查找满足保留预算的最小下标，`findSafeCutoffPoint` 保证不切断 ASSISTANT 的 tool_call 与其 TOOL 结果的配对
+4. **记忆 Flush**：`MemoryManager` 把将被压缩的消息交给 LLM 抽取长期记忆，追加写入当天 `memory/YYYY-MM-DD.md` 流水账
+5. **LLM 摘要**：用 `compactModel` 对前缀做摘要，前序摘要保留在输入中形成链式总结
+6. **重建消息列表**：`[summaryUserMsg] + tail`，摘要消息 role=USER、name=`__compaction_summary__`，携带内容稳定 ID 便于去重
+
+**启用方式：**
+
+```java
+// 方式一：窗口压缩（推荐，简单）
+StoreContext storeContext = new StoreContext()
+    .setSessionSize(3)                      // 保留最近 3 条消息
+    .setTriggerSessionSize(6)               // 消息数达到 6 条触发压缩
+    .setCompactModelInfo("deepseek", "deepseek-chat"); // 摘要模型
+
+// 方式二：完整压缩配置
+CompactionConfig config = new CompactionConfig()
+    .setCompactionPolicy(CompactionConfig.COMPACTION_POLICY_SUMMARY)
+    .setTriggerMessages(50)
+    .setTriggerTokens(0);                   // 动态触发
+storeContext.setCompactionConfig(config);
+
+ChatAgentMessage message = new ChatAgentMessage();
+message.setStoreContext(storeContext);
+```
+
+#### 3.2.15 智能体记忆（Memory）
+
+智能体记忆提供"长期摘要记忆 + 按日流水账"两层模型，配合记忆检索工具实现跨会话记忆：
+
+**核心接口与实现：**
+
+| 类名 | 作用 |
+|------|------|
+| `AgentMemoryStore` | 记忆存储接口：`readExistingLongTermMemoryContent`（读长期记忆）、`readExistingDayMemoryContent`（读某日流水账）、`writeDailyMemory`（写每日流水账） |
+| `AgentMemoryStoreDB` | 记忆数据库存储实现，基于 `agent_memory` 表 |
+| `Memory` | 记忆实体：memoryId、agentId、parentAgentId、userId、sessionId、content、memoryDay（day 类型为 yyyy-MM-dd）、memoryType（day/longterm） |
+| `SessionMessage.MESSAGE_TYPE_SUMMARY_MESSAGE` | 摘要压缩消息类型（23），meta.summaryIds 记录被压缩的原始消息清单 |
+
+**`agent_memory` 表**：与 `agent_session` 系列表一样由框架自动建表，覆盖 MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse，字段含 `memoryId`(PK)、`agentId`、`parentAgentId`、`userId`、`sessionId`、`content`、`memoryDay`、`memoryType`。ClickHouse 模式同样创建 `agent_memory_local` 本地表与 `agent_memory` 分布式表（按 `sipHash64(sessionId)` 分片）。
+
+**记忆两层模型（由 `MemoryManager` 维护）：**
+
+- **按日流水账**：`memory/YYYY-MM-DD.md` 文件，`writeDailyMemory` 追加式写入，压缩时 `flushBeforeCompact` 触发 Flush
+- **长期记忆**：`MEMORY.md` 文件，持久化跨会话的关键事实
+
+#### 3.2.16 记忆检索与会话检索工具
+
+启用 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，`AIAgent.reactMessage()` 会自动注册以下工具：
+
+| 工具类 | 工具方法（@Tool name） | 功能 |
+|--------|------------------------|------|
+| `SessionSearchTool` | `current_session_search` / `user_sessions_search` | 检索当前会话转写文本（大小写不敏感子串匹配，输出带 SessionId/RequestId/MsgId 的摘要）；`user_sessions_search` 检索当前用户最近 N 个会话（limit 默认 10，硬上限 100） |
+| `CompactSummaryMsgSearchTool` | `summary_search` | 按压缩摘要消息中携带的 summaryMessageIds 反查被压缩前的原始消息，`SummeryUtils.formatSessionMessagesForSummary` 格式化（TOOL_CALL/TOOL_RESULT 转为内联文本），超过 8000 字符自动截断并附提示 |
+
+启用记忆检索时，`SummeryUtils.buildSummaryMessage` 会在摘要消息内容中内嵌 `<summaryMessageIds>` 列表，供模型后续用 `summary_search` 查原文。`SessionSearchTool` 通过 `AgentTraceHolder.getChatObject().getAgent()` 取运行上下文，调用 `mainSessionStore.getAllAgentSessionMessage(sessionId)` / `getAllAgentSessionMessageOfUser(userId, limit)`。
+
+#### 3.2.17 工具权限管控体系（Permission）
+
+工具权限管控体系位于 `permission` 包，在工具真正执行前（AgentAdapter 层）做规则评估与人工确认，与工具审计（`Auditor`，工具方法内部拦截）形成可叠加的两道前置防线。
+
+**核心类：**
+
+| 类名 | 作用 |
+|------|------|
+| `PermissionBehavior` | 单条裁决行为：`ALLOW` 放行 / `DENY` 拒绝 / `ASK` 需确认 / `PASSTHROUGH` 交由引擎继续评估 |
+| `PermissionMode` | 全局评估模式：`DEFAULT`（需显式 allow）、`ACCEPT_EDITS`（工作目录编辑放行）、`EXPLORE`（只读模式，修改类工具一律拒绝）、`BYPASS`（全放行）、`DONT_ASK`（无人值守，ASK 降级为 DENY） |
+| `PermissionRule` | 绑定工具名的规则：toolName + ruleContent（工具专属匹配模式，null 表示工具名级规则）+ behavior + source |
+| `PermissionEngine` | 核心评估引擎（final），构造时从 AgentRuntimeContext 快照规则表，`addRule` 支持运行时动态追加（"始终允许/拒绝"回填） |
+| `PermissionGate` | 一轮工具调用的汇总：`pendingAsk`（待确认列表）+ `autoDeniedIds`（规则自动拒绝集合） |
+| `ToolCallPermissionManager` | 外部权限管理接口：`checkPermissions` / `matchRule` / `generateSuggestions` |
+| `ToolBase` | 工具侧权限扩展点：`checkPermissions` / `matchRule` / `generateSuggestions`，`FileFunctionTool` 等内置工具支持覆写 |
+
+**评估管线（`PermissionEngine.checkPermission` 六步）：**
+
+1. 工具级 deny 规则（最高优先级）→ DENY
+2. 工具级 ask 规则 → ASK（附带建议规则）
+3. 工具自身检查（bypass-immune）：EXPLORE 模式只读工具 ALLOW、非只读 DENY；有 `ToolBase` 走 `tool.checkPermissions`，否则走 `ToolCallPermissionManager.checkPermissions`
+4. 工具级 allow 规则 → ALLOW（可携带 `updatedInput` 重写入参）
+5. BYPASS 模式回退 → 全部 ALLOW
+6. 默认 ASK；`DONT_ASK` 模式下降级为 DENY
+
+**人工确认流程（ASK）：** `AgentAdapter.buildInputToolMessages` 将 `pendingAsk` 包装为 `ToolCallAsk` 通过 `HitlTaskHelper.hitlTaskTool` 走 HitL 人工介入（任务类型 `HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK`），超时默认 60s。`ToolCallAskResult` 支持 `approved`、`updateInput`（人工修订后的工具入参将覆盖原参数执行）、`choosedAlwaysPermissionRule`（用户选择"始终允许/始终拒绝"时即时回填引擎规则并持久化，此后相同场景不再询问）。被用户确认过（`ToolCallState.ALLOWED`）的工具下轮直接跳过引擎。
+
+**权限规则持久化与还原（会话级）：** 工具权限规则的"始终允许/始终拒绝"状态支持跨轮次、跨会话持久化，保证恢复历史会话时沿用最新的权限决策，用户无需重复确认。
+
+1. **自动持久化（模式 2，当前采用）**：每轮工具调用结束后，`AgentAdapter` 将当前 `PermissionEngine` 的 allow/deny/ask 三张规则表快照封装为 `PermissionRules`，以 role=`toolpermissionrules`（`MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE=25`）的 Trace 消息（meta 的 `permissionRules` 键）写入会话存储（`agent.recordTraceMessage`）。
+2. **会话恢复还原**：会话续问续答时，`AIAgent.restorePermissionRules(chatObject)` 调用 `mainSessionStore.getAgentPermissionRules(sessionId, agentId)`（内存实现从 `AgentSession.getAgentPermissionRules` 取最新一条，DB 实现经 `selectAgentPermissionRulesSQL` 查询）加载该智能体最新的权限规则，还原到 `ChatObject.permissionRules`。
+3. **会话规则优先**：`PermissionEngine` 构造时优先采用会话中还原的权限规则；若 `ChatObject.getPermissionRules()` 为 null 才回退到 `AgentRuntimeContext` 上配置的初始规则。
+4. **"总是允许/拒绝"免确认（含同用户消息内跨轮）**：Ask 审批时用户通过 `ToolCallAskResult.choosedAlwaysPermissionRule` 选中的规则，会立即通过 `permissionEngine.addRule(...)` 追加到引擎内部规则表，同一请求内后续工具调用（包括同一用户消息内的多轮工具循环）直接命中 ALLOW/DENY 不再询问；同时随类型 25 消息持久化，供后续会话还原。
+5. **表持久化（模式 1）**：保留 `agent_tool_call_rules` 表（`AIAgent.addAgentToolCallRules/updateAgentToolCallRules/getAgentToolCallRules`）作为独立的规则持久化通道，支持 MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse（ClickHouse 下同样创建 `agent_tool_call_rules_local` 本地表与分布式表）；`deleteAgentSession` 删除会话时一并清理该表规则。
+
+**配置示例：**
+
+```java
+AgentRuntimeContext context = new AgentRuntimeContext()
+    .setMode(PermissionMode.DEFAULT)
+    .addAllowRule("get_weather", new PermissionRule("get_weather", "city=北京",
+        PermissionBehavior.ALLOW, "userSettings"))
+    .addAskRule("deleteFile", null, PermissionBehavior.ASK, "userSettings")
+    .setPermissionHitlTaskTimeout(60000);   // 人工确认超时 60s
+
+AIAgent agent = new AIAgent();
+agent.setAgentRuntimeContext(context);
+```
+
+#### 3.2.18 自主规划机制（Plan Mode）
+
+自主规划机制支持"规划 → 人工审批 → 执行"的三段式任务流程，通过 `plan` 包规划工具与 `state` 包状态模型实现：
+
+**核心组件：**
+
+| 类名 | 作用 |
+|------|------|
+| `PlanTools` | 规划工具（继承 `ToolBase`），暴露三个 `@Tool`：`plan_enter`（进入只读调查模式）、`plan_write`（将计划写入计划文件）、`plan_exit`（结束规划，等待用户批准） |
+| `PlanModeContextState` | 计划模式状态：`planActive` + `currentPlanFile` |
+| `TaskContextState` | 任务列表状态：`List<Task>` |
+| `Task` | 任务模型：id、subject、description、state（PENDING/IN_PROGRESS/COMPLETED）、blocks/blockedBy（依赖）、metadata |
+| `TodoTools` | 任务清单管理工具（`todo_write`），全量列表替换式维护任务，按 content 保留旧任务 ID，渲染 `- [ ]/- [~]/- [x]` 复选框 |
+
+**状态流转：**
+
+```
+用户任务 → plan_enter（只读调查，权限联动 EXPLORE/ACCEPT_EDITS 约束修改类工具）
+         → plan_write（撰写 plan markdown：goal/steps/risks/verification）
+         → plan_exit（携带 summary 走 HitL 人工审批）
+               ├─ 批准 → BUILD 模式（允许修改文件/执行命令），todo_write 建立任务列表，PENDING→IN_PROGRESS→COMPLETED
+               └─ 拒绝 → 留在 PLAN 模式继续修订
+```
+
+**启用方式：** `AgentRuntimeContext.setEnablePlanMode(true)` + `agent.registTools(new PlanTools())`。
+
+#### 3.2.19 文件系统抽象（Filesystem）
+
+文件系统抽象为 Agent 提供统一的存储操作接口，实现不限于本地磁盘（可扩展为沙箱、KV 存储、远程存储），是 `FileFunctionTool` 中文件检索类方法的新后端：
+
+**核心组件：**
+
+| 类名 | 作用 |
+|------|------|
+| `AbstractFilesystem` | 文件系统抽象接口：ls/read/write/edit/grep/glob/uploadFiles/downloadFiles/delete/move/exists，每个操作均接收 `ChatContext`（按会话/用户隔离作用域），自带 `validatePath` 拒绝 `..` 路径穿越 |
+| `LocalFilesystem` | 本地磁盘实现，兼容旧 `virtualMode` 布尔构造函数 |
+| `LocalFsMode` | 三种路径策略：`SANDBOXED`（路径全部锚定 rootDir，拒绝 `..`/`~`/盘符）、`ROOTED`（绝对路径须位于 PathPolicy 白名单内，Local 模式默认）、`UNRESTRICTED`（绝对路径透传，逃生舱） |
+| `PathPolicy` | 不可变路径白名单（project + workspace + additionalRoots） |
+| `NamespaceFactory` | 命名空间工厂（函数式接口），每次操作动态求值，实现按用户/会话的文件隔离（如 `rc -> List.of("sessions", rc.getSessionId(), "filesystem")`） |
+| `WorkspacePathNormalizer` | 工作区路径归一化器 |
+| `FilesystemUtils` | 通用工具（二进制类型判断、shell 转义等） |
+
+**model 包结果模型**：`ReadResult`（含 `encoding`，二进制自动 Base64）、`WriteResult`、`LsResult`/`GlobResult`（`List<FileInfo>`）、`GrepResult`（`List<GrepMatch>`，1 起始行号）、`EditResult`（精确字符串替换，按路径加锁防并发 lost-update）、`ExecuteResponse`、`FileDownloadResponse`/`FileUploadResponse`。`LocalFilesystem.grep` 先尝试 `rg --json -F` 进程，失败回退纯 Java 实现（带 `maxFileSizeBytes` 过滤，默认 10MB）。
+
+#### 3.2.20 智能体拦截器（AgentInterceptor，预留扩展点）
+
+`interceptor` 包提供洋葱模型风格的中间件接口 `AgentInterceptor`，定义 5 个拦截点：
+
+| 方法 | 拦截阶段 |
+|------|----------|
+| `order()` | 执行顺序，数值越大越靠外层先执行（默认 1） |
+| `onReasoning(AIAgent, ChatContext, ModelInfo)` | 推理阶段（LLM 调用 + 流式输出解析） |
+| `onActing(AIAgent, ChatContext, FunctionTool, FunctionToolDefine, ModelInfo)` | 工具执行阶段 |
+| `onModelCall(AIAgent, ChatContext, ModelInfo)` | 原始模型 API 调用（可对模型文本做归一化） |
+| `onSystemPrompt(AIAgent, ChatContext, String currentPrompt, ModelInfo)` | 系统提示词流水线变换（多个中间件依次变换） |
+
+内置实现 `TaskminderAgentInterceptor`（空实现占位，面向任务提醒场景预留）。当前 `AIAgent` 已声明 `agentInterceptors` 字段与 `AgentInterceptor` 接口，但主执行链路尚未接线，属于演进中的扩展点。
 
 ---
 
@@ -1245,15 +1615,19 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 
 #### 3.3.3 提示词工程与外部资源加载
 
-`bboss-ai-flow` 模块内置了强大的提示词变量解析和外部资源加载能力，支持在提示词中嵌入动态变量和引用外部资源文件。
+`bboss-ai` 核心模块内置了提示词变量解析和外部资源加载能力（`prompt` 包），支持在提示词中嵌入动态变量和引用外部资源文件；`bboss-ai-flow` 模块在其基础上扩展出面向工作流上下文的 `FlowPromptEval`。
 
 **核心组件：**
 
 | 类名 | 作用 |
 |------|------|
-| `PromptEval` | 提示词变量解析与求值引擎 |
-| `PromptResourceCache` | 外部资源缓存管理器（文件、classpath、URL） |
+| `PromptEval`（核心模块 `prompt` 包） | 提示词变量解析与求值引擎，支持递归解析外部资源中引用的变量并防循环嵌套 |
+| `FlowPromptEval`（flow 模块 `prompt` 包） | 流程提示词求值器，继承 `PromptEval`，补充从 `JobFlowNodeExecuteContext` 按 flow/container/node 作用域取值 |
+| `PromptResourceCache` | 外部资源单例缓存管理器（文件、classpath、URL、Service） |
+| `PromptVariable` | 提示词变量模型，解析 scope/type/charset/cache/beanservice/httpproxy 等属性 |
+| `PromptStructionBuiler` | 提示词变量指令解析构建器 |
 | `ClasspathResourceReader` | classpath 和 URL 资源读取工具 |
+| `AgentResouceService` | 智能体外部资源服务 |
 
 **变量语法：**
 
@@ -1271,15 +1645,19 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 | 属性 | 可选值 | 说明 |
 |------|--------|------|
 | `scope` | `flow`（默认）/ `container` / `node` | 变量作用域 |
-| `type` | `text`（默认）/ `file` / `resource` / `url` | 变量类型 |
+| `type` | `text`（默认）/ `file` / `resource` / `url` / `service` | 变量类型 |
 | `charset` | `UTF-8`（默认） | 字符集编码 |
+| `cache` | `true`（默认）/ `false` | 是否缓存资源内容（url/service 类型默认 false） |
+| `beanservice` | Bean 服务名 | service 类型下指定 Bean 服务 |
+| `httpproxy` | 连接池名 | service 类型下指定 HTTP 连接池服务 |
 
 **变量类型说明：**
 
-- **`text`**：普通文本变量，从对应作用域的上下文中获取变量值
+- **`text`**：普通文本变量，从对应作用域的上下文中获取变量值（flow→全局、container→当前容器、node→当前节点），未命中时从 `ChatContext.contextData` 兜底，可设置默认值
 - **`file`**：文件类型，变量名代表文件路径，自动读取文件内容替换
 - **`resource`**：classpath 资源类型，变量名代表 classpath 下的资源路径，自动读取内容替换
-- **`url`**：URL 类型，变量名代表 URL 地址，自动获取远程资源内容替换
+- **`url`**：URL 类型，变量名代表 URL 地址，自动获取远程资源内容替换（不缓存）
+- **`service`**：服务类型，通过 `beanservice` 调用 Bean 服务或经 `httpproxy` 调用 HTTP 服务获取内容（不缓存）
 
 **作用域说明：**
 
@@ -1369,15 +1747,22 @@ planAgent.addDefaultRouteChoiceAgent(new AIAgent("默认处理"));
 │   (AISequence/AIParrel/AIRoute/...)    │
 ├─────────────────────────────────────────┤
 │           AIAgent (入口层)               │
+│     (AgentInterceptor 拦截器/预留)       │
 ├─────────────────────────────────────────┤
 │         AgentAdapter (适配层)            │
 │    (Deepseek/Kimi/Qwen/...)            │
+│  ├─ PermissionEngine (工具权限管控)      │
+│  └─ Mixdata 混合推理内容拆分             │
 ├─────────────────────────────────────────┤
 │         AgentMessage (模型层)            │
 │  (Chat/Image/Audio/Video/Tool)         │
 ├─────────────────────────────────────────┤
 │      AgentSessionStore (会话层)          │
-│    (Memory/DB 持久化)                   │
+│    (Memory/DB 持久化 + Compaction)      │
+│    (AgentMemoryStore 记忆存储)           │
+├─────────────────────────────────────────┤
+│       AgentRuntimeContext (运行时层)     │
+│  (权限规则/调试开关/规划状态/压缩配置)    │
 ├─────────────────────────────────────────┤
 │         AIAgentUtil (工具层)             │
 ├─────────────────────────────────────────┤
@@ -1393,9 +1778,13 @@ planAgent.addDefaultRouteChoiceAgent(new AIAgent("默认处理"));
 1. **适配器模式（Adapter）**：通过 `AgentAdapter` 适配不同 AI 平台的接口差异
 2. **工厂模式（Factory）**：`AgentAdapterFactory` 根据配置创建对应适配器
 3. **构建者模式（Builder）**：`MessageBuilder`、`StreamDataBuilder`、工作流构建器构建复杂对象
-4. **策略模式（Strategy）**：`StreamDataHandler` 处理不同类型的流数据；`ToolSearcher` 提供多种工具搜索策略
+4. **策略模式（Strategy）**：`StreamDataHandler` 处理不同类型的流数据；`ToolSearcher` 提供多种工具搜索策略；压缩策略按 `compactionPolicy` 选择窗口压缩/摘要压缩
 5. **责任链模式（Chain of Responsibility）**：工作流节点按链条顺序执行，条件分支决定流转方向
 6. **组合模式（Composite）**：`AISequenceAgent`、`AIParrelAgent` 作为容器组合多个子智能体
+7. **状态机模式（State Machine）**：`ToolCallState`（PENDING→ASKING→ALLOWED→SUBMITTED→FINISHED/FAILED/DENIED）管理工具调用生命周期；`Task.State` 管理任务状态流转
+8. **模板方法模式（Template Method）**：`MCPBaseClient` 定义初始化/列工具/调用工具的调用骨架，SSE 与 Streamable HTTP 子类实现细节；`BaseCompactionManager` 定义压缩骨架
+9. **洋葱模型中间件（Onion Model）**：`AgentInterceptor` 提供 onReasoning/onActing/onModelCall/onSystemPrompt 分层拦截点
+10. **命令模式（Command）**：MCP 类型化请求/响应模型命令化；`McpCallObject` 以 requestId + CountDownLatch 实现异步命令的同步等待
 
 ### 4.3 负载均衡与容错
 
@@ -1475,10 +1864,13 @@ AgentSessionStore（主存储）
 - 可配置是否引用父智能体历史消息
 - 支持会话大小限制和历史消息裁剪
 - 支持 Token 用量统计和追踪
-- 提供独立的 `AgentSessionService` 会话管理 API（查询、删除、存在判断）
+- 提供独立的 `AgentSessionService` 会话管理 API（查询、删除、判断存在、重置）
 - 支持多领域会话联合查询、标题模糊查询、时间范围查询
 - 查询排序字段和时间条件字段可配置（`createTime` / `lastAccessTime`）
 - ClickHouse 模式下会话续问续答时不更新最后访问时间（避免高频 UPDATE）
+- 支持会话重置：`StoreContext.setResetSession(true)` 每次对话前清空旧记忆；`AgentSessionService.resetAgentSession()` 事务内清空消息并保留会话记录
+- 支持会话记忆压缩：窗口压缩（按消息条数）与摘要压缩（按 Token 预算）两种策略，压缩前 Flush 长期记忆，保证工具调用与结果配对完整
+- 支持智能体记忆存储：`agent_memory` 表持久化按日流水账与长期记忆，启用记忆检索后自动注册会话检索/摘要检索工具
 
 ### 4.7 工具扩展机制
 
@@ -1486,17 +1878,36 @@ AgentSessionStore（主存储）
 - 通过 `ToolsRegist` 动态注册工具
 - 通过 `ToolSearcher` 按 query 过滤工具，减少上下文占用
 - 通过 `@Tool` / `@ToolParam` 注解自动解析 Bean 方法为工具
+- 内置工具体系覆盖 Shell 执行、多语言代码执行、文件系统（含 glob/list/grep 检索）、OS 信息、Grep 搜索、网页抓取（`web_fetch`）、联网搜索（`web_search`）、任务清单（`todo_write`）、会话/摘要检索、人工介入（HitL）等场景
+
+**工具权限管控（Permission）：**
+- `PermissionEngine` 六步评估管线 + `PermissionBehavior`（ALLOW/DENY/ASK/PASSTHROUGH）+ `PermissionMode`（DEFAULT/ACCEPT_EDITS/EXPLORE/BYPASS/DONT_ASK）
+- ASK 类工具走 HitL 人工确认，`ToolCallAskResult` 支持参数修订与"始终允许/拒绝"规则回填
+- 与工具审计（`Auditor`，工具内部拦截）叠加构成"引擎评估 + 人工确认 + 策略审计"三道防线
 
 **MCP 协议工具：**
 - 支持 SSE 和 Streamable HTTP 两种传输模式
+- 类型化 JSON-RPC 2.0 请求/响应模型 + `McpCallObject` 同步等待机制
 - 支持飞书 MCP 集成
 - 支持作为 MCP 服务端对外提供工具
 
 **Skill 技能模块：**
 - 通过 `SKILL.md` 文件 + Front Matter 定义技能
 - `SkillUtils` 加载技能文件，`SkillsToolRegist` 聚合为单个工具暴露给模型
-- `SkillFilter` 支持技能过滤
+- `SkillFilter` 支持技能过滤（设置 filter 后只加载指定技能）
 - 所有技能内容通过提示词传递给模型，由模型自主决策执行步骤
+
+**文件系统抽象（Filesystem）：**
+- `AbstractFilesystem` 统一存储操作接口，`LocalFilesystem` 内置本地实现
+- `LocalFsMode`（SANDBOXED/ROOTED/UNRESTRICTED）+ `PathPolicy` 白名单 + `NamespaceFactory` 按会话/用户隔离，从路径策略层防止路径穿越
+- `FileFunctionTool` 的 `glob_files`/`list_files`/`grep_files` 委托该抽象，实现与存储解耦
+
+**自主规划工具（Plan）：**
+- `PlanTools`（plan_enter/plan_write/plan_exit）+ `TodoTools`（todo_write）支持"规划 → 人工审批 → 执行"三段式流程
+- 规划模式与权限模式（EXPLORE 只读约束）、HitL 审批天然配合
+
+**记忆检索工具：**
+- 启用 `enableMemorySearch` 后自动注册 `SessionSearchTool`（当前/跨会话检索）与 `CompactSummaryMsgSearchTool`（摘要反查原文）
 
 ### 4.8 可观测性机制
 
@@ -1527,16 +1938,17 @@ BaseAgentSessionStore → PersistentMessage
 
 1. **模型调用前**：`traceLLMInput()` 记录完整请求报文（LLM、Embedding、Rerank）
 2. **模型调用后**：`traceLLMOutput()` 记录完整响应报文
-3. **流式响应结束**：`BaseStreamDataBuilder` 汇总 Token 用量并持久化
-4. **路由决策**：`AIRouterNodeBuilder` / `AIKeywordsRouterNodeBuilder` 记录路由选择结果
-5. **工具调用**：`AgentTraceHolder` 在工具执行线程中记录调用轨迹
+3. **模型调用异常**：模型调用失败时记录 `MESSAGE_TYPE_LLMCALLERROR_MESSAGE`（24）异常轨迹（`llmcallerror`）
+4. **流式响应结束**：`BaseStreamDataBuilder` 汇总 Token 用量并持久化
+5. **路由决策**：`AIRouterNodeBuilder` / `AIKeywordsRouterNodeBuilder` 记录路由选择结果
+6. **工具调用**：`AgentTraceHolder` 在工具执行线程中记录调用轨迹
 
 **实时观测：**
 
-流式模式下，Trace 事件通过 `ServerEvent.TYPE_TRACE` 进入 Flux 流，前端可实时接收并展示：
-- 路由匹配过程与重试状态
-- 工具调用中间结果
-- 循环控制与条件分支执行轨迹
+流式模式下，观测事件通过 `ServerEvent` 事件类型进入 Flux 流，前端可实时接收并展示：
+- Trace 事件（`TYPE_TRACE=2`）：路由匹配过程与重试状态、工具调用中间结果、循环控制与条件分支执行轨迹
+- 步骤事件（`TYPE_STEP=6`）：新一轮工具调用开始、人工介入任务完成，由 `ServerEventUtil.emitterStepEvent` 推送，支持按步骤进度展示
+- 混合推理内容（contentType=`MIXED_REASONING_2ND_CONTENT`，拆分为推理/内容两条下发）：推理流与答案流分别渲染
 
 **持久化与查询：**
 
@@ -1557,10 +1969,10 @@ BaseAgentSessionStore → PersistentMessage
 | Apache HttpCore5 | 5.x | HTTP 核心 |
 | Project Reactor | 3.x | 响应式编程 |
 | Jackson | 2.22.1 | JSON 处理 |
-| bboss-http5 | 6.5.5 | 负载均衡 HTTP 组件 |
+| bboss-http5 | 6.5.6 | 负载均衡 HTTP 组件 |
 | bboss-core-entity | 6.3.5 | 基础实体类 |
 | bboss-datatran-jdbc | 7.5.7 | 工作流引擎（JobFlow） |
-| bboss-feishu | 6.5.5 | 飞书集成 |
+| bboss-feishu | 6.5.6 | 飞书集成 |
 | bboss-persistent | 6.3.5 | 数据库持久化 |
 | bboss-data | 6.3.8 | 数据处理 |
 | flexmark | 0.64.8 | Markdown 处理 |
@@ -1900,9 +2312,15 @@ bboss-ai 是一个功能完善的 Java AI 智能体开发框架，具有以下�
 8. **多轮工具调用**：支持智能体自主决策多步骤任务执行，默认最大 80 轮
 9. **人工介入（HitL）**：支持单节点内存共享和集群 Redis 发布/订阅两种模式，内置 `HitlTaskcallTool` 和自定义 Hitl 工具扩展
 10. **工具审计**：内置 `Auditor` 审计系统，支持工具调用前审计拦截，适用于敏感操作审批
-11. **生产级会话存储**：支持 ClickHouse 分布式集群，提供高吞吐会话持久化能力
-12. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路
-13. **内置工具体系**：Shell 执行、代码执行（Java/Python/JavaScript）、文件操作、系统信息查询、文本搜索（Grep）、人工介入
-14. **轻量级设计**：模块化结构，依赖精简
+11. **工具权限管控**：`PermissionEngine` 规则引擎 + 五种评估模式 + HitL 人工确认，"始终允许/拒绝"规则可持久化（`agent_tool_call_rules` 表 + 消息类型 25 会话自动持久化还原，会话规则优先），同一请求内跨轮次免确认
+12. **生产级会话存储**：支持 ClickHouse 分布式集群，提供高吞吐会话持久化能力
+13. **会话记忆压缩**：窗口压缩/摘要压缩两种策略，支持记忆 Flush、工具结果剪枝、入参截断，动态触发阈值适配模型上下文窗口
+14. **智能体记忆**：`agent_memory` 表持久化按日流水账与长期记忆，记忆检索与会话/摘要检索工具联动
+15. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路（含模型调用异常记录），消息类型体系扩展到 25 种
+16. **内置工具体系**：Shell 执行、代码执行（Java/Python/JavaScript）、文件操作（含 glob/list/grep 检索）、系统信息查询、文本搜索（Grep）、网页抓取（`web_fetch`）、联网搜索（`web_search`）、任务清单（`todo_write`）、会话/摘要检索、人工介入
+17. **混合推理内容流式推送**：`mixedData` 报文自动拆分，推理流与答案流分别渲染，适配九天 deepseek 等边推理边输出模型
+18. **步骤级事件**：`ServerEvent.TYPE_STEP` 实时推送"新一轮工具调用开始/人工介入完成"信号，支持按步骤进度展示
+19. **自主规划**：Plan Mode"规划 → 人工审批 → 执行"三段式流程，配合权限只读约束与任务清单管理
+20. **轻量级设计**：模块化结构，依赖精简
 
 该框架适合需要集成多种 AI 能力的 Java 企业级应用使用。
