@@ -621,6 +621,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         List<FunctionTool> tools = toolAgentMessage.getFunctionTools();
         List<LinkedMessageMap<String, Object>> toolMessages = new ArrayList<>(tools.size());
 		PermissionEngine permissionEngine = null;
+		boolean needStorePermissionEngine = false;
         try {
             AgentTraceHolder.setChatObject(chatObject);
 			AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
@@ -678,6 +679,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 						 
 							if(permissionEngine != null){
 								permissionEngine.addRule(choosedAlwaysPermissionRule);
+								needStorePermissionEngine = true;
 							}
 						}					
 						
@@ -730,7 +732,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 				toolMessages.add(toolMessage);
             }
 			//记录模型调用异常轨迹消息
-			if(permissionEngine != null) {
+			if(permissionEngine != null && needStorePermissionEngine) {
 				TraceMessage agentToolPermissionRules = new TraceMessage();
 				LinkedMessageMap tracemessage = new LinkedMessageMap();
 				tracemessage.setAgentId(agent.getAgentId());
