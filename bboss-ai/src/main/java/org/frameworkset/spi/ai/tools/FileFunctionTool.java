@@ -384,6 +384,120 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
         }
         return result;
     }
+	
+	/**
+	 * 查找文件	 
+	 */
+	@Tool(name = "findFile", description = "根据文件名称或者文件相对路径查找文件，当用户明确要求查找文件或者其他文件处理操作反馈文件不存在时，可以调用findFile查找文件，当提供的是java包路径时可以转换为相对文件路径进行查找。")
+	public Map findFile(@ToolParam(name = "fileName", description = "需查找的文件名称或者需查找的文件相对路径", required = true) String fileName) {
+		Map result = new HashMap();
+		try {
+			if(this.baseDirectories == null || this.baseDirectories.size() == 0){
+				result.put("success", false);
+				result.put("message", "文件查找根目录为空，无法查找文件");
+				return result;
+			}
+			//查找条件不能为空
+			if (SimpleStringUtil.isEmpty(fileName)) {
+				result.put("success", false);
+				result.put("message", "查找条件不能为空");
+				return result;
+			}
+			
+			//查找成功标记，true 找到，false 没找到
+			boolean find = false;
+			//查找到的文件绝对路径赋值给filePath
+			String filePath = null;
+			//规范化路径分隔符，便于统一处理包路径转换
+			String path = fileName.replace('\\', '/');
+			//1.优先按文件相对路径/绝对路径在baseDirectories下直接查找
+			File file = findFileByPath(path);
+			//2.如果未找到并且文件名中包含.，视为java包路径，转换为相对文件路径后再查找
+			if (file == null && path.indexOf('.') >= 0) {
+				file = findFileByPath(path.replace('.', '/'));
+			}
+			//3.如果仍未找到，提取文件名称部分在baseDirectories下递归查找
+			if (file == null) {
+				String name = path.substring(path.lastIndexOf('/') + 1);
+				if (!SimpleStringUtil.isEmpty(name)) {
+					file = findFileByName(name);
+				}
+			}
+			if (file != null) {
+				find = true;
+				filePath = file.getAbsolutePath();
+			}
+			if (find) {
+				result.put("success", true);
+				result.put("filePath", filePath);
+				result.put("message", "文件查找成功");
+			} else {
+				result.put("success", false);
+				result.put("message", "文件不存在: " + fileName);
+			}
+		} catch (Exception e) {
+			logger.error("查找文件失败: " + fileName, e);
+			result.put("success", false);
+			result.put("message", "查找文件失败: " + fileName);
+		}
+		return result;
+	}
+	
+	/**
+	 * 在允许的基目录下按文件相对路径/绝对路径查找文件，超出允许范围或未找到时返回null
+	 */
+	private File findFileByPath(String path) {
+		try {
+			 
+			File file = FileToolUtil.validateAndGetFile(baseDirectories, path, true);
+			return file != null && file.exists() ? file : null;
+		} catch (Exception e) {
+			//路径超出允许范围等异常，忽略后继续尝试其他查找策略
+			if (logger.isDebugEnabled()) {
+				logger.debug("按路径查找文件失败: " + path, e);
+			}
+			return null;
+		}
+	}
+	
+	/**
+	 * 在允许的基目录下按文件名称递归查找
+	 */
+	private File findFileByName(String name) {
+		 
+		for (String baseDirectory : baseDirectories) {
+			File base = new File(baseDirectory);
+			if (base.exists() && base.isDirectory()) {
+				File found = searchFile(base, name);
+				if (found != null) {
+					return found;
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * 递归遍历目录查找指定名称的文件或目录
+	 */
+	private File searchFile(File directory, String name) {
+		File[] children = directory.listFiles();
+		if (children == null) {
+			return null;
+		}
+		for (File child : children) {
+			if (child.getName().equals(name)) {
+				return child;
+			}
+			if (child.isDirectory()) {
+				File found = searchFile(child, name);
+				if (found != null) {
+					return found;
+				}
+			}
+		}
+		return null;
+	}
 
    
 
@@ -716,8 +830,8 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     }
 	
 	@Override
-	public PermissionDecision checkPermissions(FunctionTool functionTool, Map<String, Object> toolInput, ChatContext chatContext) {
-		return super.checkPermissions(functionTool, toolInput, chatContext);
+	public PermissionDecision checkPermissions(FunctionTool functionTool, Map<String, Object> toolInput, ChatObject chatObject) {
+		return super.checkPermissions(functionTool, toolInput,   chatObject);
 	}
 	@Override
 	public boolean matchRule(String ruleContent, Map<String, Object> input) {

@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.tool;
  */
 
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.permission.PermissionBehavior;
 import org.frameworkset.spi.ai.permission.PermissionDecision;
@@ -32,7 +33,7 @@ import java.util.Map;
  * @Date 2026/9/19
  */
 public abstract class ToolBase {
-	public PermissionDecision checkPermissions(FunctionTool functionTool, Map<String, Object> toolInput,  ChatContext chatContext){
+	public PermissionDecision checkPermissions(FunctionTool functionTool, Map<String, Object> toolInput,  ChatObject chatObject){
 			return PermissionDecision.passthrough(functionTool.getFunctionName());
 	}
 	

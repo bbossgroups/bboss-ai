@@ -17,8 +17,7 @@ package org.frameworkset.spi.ai.model.tool;
 
 import org.frameworkset.spi.ai.permission.PermissionRule;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -60,5 +59,74 @@ public class PermissionRules {
 	}
 	public void setAskRules(Map<String, List<PermissionRule>> askRules) {
 		this.askRules = askRules;
+	}
+	
+	private boolean containRule(List<PermissionRule> rules, PermissionRule rule){
+		boolean contain = false;
+		for(PermissionRule r:rules){
+			if(r.getRuleContent() == null && rule.getRuleContent() == null){
+				contain = true;
+				break;
+			}
+			if(r.getRuleContent() == null || rule.getRuleContent() == null) {
+				 
+				continue;
+			}
+			if(r.getRuleContent().equals(rule.getRuleContent())) {
+				contain = true;
+				break;
+			}
+		}
+		return contain;
+	}
+	private void addRule(PermissionRule rule,Map<String, List<PermissionRule>> allowRules){
+		List<PermissionRule> rules = allowRules.get(rule.getToolName());
+		if (rules == null) {
+			rules = new ArrayList<>();
+			allowRules.put(rule.getToolName(), rules);
+			rules.add(rule);
+		}
+		else{
+			if(!containRule(  rules,   rule)){
+				rules.add(rule);	
+			}
+			 
+			
+		}
+	}
+	/**
+	 * Adds a rule to the engine's internal rule set.
+	 *
+	 * <p>The rule is routed by its {link PermissionRule#behavior()}: ALLOW/DENY/ASK rules are
+	 * appended to the engine's allow/deny/ask tables; PASSTHROUGH rules are ignored.
+	 *
+	 * @param rule the rule to add; must be non-null
+	 */
+	public void addRule(PermissionRule rule) {
+		Objects.requireNonNull(rule, "rule must not be null");
+		
+		switch (rule.getBehavior()) {
+			case ALLOW:
+				if(allowRules == null){
+					allowRules = new LinkedHashMap<>();					
+				}
+				addRule(rule, allowRules);	
+				break;
+			case DENY:
+				if(denyRules == null){
+					denyRules = new LinkedHashMap<>();
+				}
+				addRule(rule, denyRules);
+				break;
+			case ASK:
+				if(askRules == null){
+					askRules = new LinkedHashMap<>();
+				}
+				addRule(rule, askRules);
+				break;
+			case PASSTHROUGH : {
+				// PASSTHROUGH rules are not stored; they signal "defer to engine".
+			}
+		}
 	}
 }

@@ -433,11 +433,11 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		}
 		AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
 		boolean useEngine = agentRuntimeContext != null && !agentRuntimeContext.isTrivial();
-		PermissionEngine permissionEngine = useEngine?new PermissionEngine(chatObject):null;
+		PermissionEngine permissionEngine =  new PermissionEngine(chatObject);
 		Map<String,PermissionVerdict> denied = new LinkedHashMap();
 		List<PermissionVerdict> pending = new ArrayList<>();
 		for (FunctionTool toolCall : toolCalls) {
-			PermissionVerdict permissionVerdict = evaluateOne(toolCall, permissionEngine,chatObject.getChatContext());
+			PermissionVerdict permissionVerdict = evaluateOne(toolCall,useEngine, permissionEngine,chatObject );
 			FunctionTool functionTool = permissionVerdict.getFunctionTool();
 			switch (permissionVerdict.getBehavior()) {
 				case DENY: denied.put(functionTool.getId(), permissionVerdict);break;
@@ -452,18 +452,25 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		return new PermissionGate(pending, denied,permissionEngine);
 	}
 	
-	private PermissionVerdict evaluateOne(FunctionTool use, PermissionEngine permissionEngine, ChatContext chatContext) {
+	private PermissionVerdict evaluateOne(FunctionTool use, boolean useEngine,PermissionEngine permissionEngine, ChatObject chatObject) {
 		// Tools already promoted to ALLOWED by user confirmation skip the engine entirely.
-		if (use.getToolCallState() == ToolCallState.ALLOWED) {
-			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null);
+//		if (use.getToolCallState() == ToolCallState.ALLOWED) {
+//			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null);
+//		}
+		Map<String, Object> input = use.getArguments() == null ? Collections.emptyMap() : use.getArguments	();
+	 
+		PermissionDecision sessionDecision = permissionEngine.checkSessionAlwaysPermission(use, input);
+		if (sessionDecision != null) {
+			return new PermissionVerdict(use, sessionDecision.getBehavior(),sessionDecision);
 		}
+		
 		ToolBase toolBase = use.getToolBase();
 		ToolCallPermissionManager toolCallPermissionManager = null;
-		AgentRuntimeContext context = chatContext.getAgentRuntimeContext();
+		AgentRuntimeContext context = chatObject.getChatContext().getAgentRuntimeContext();
 		if(context != null ){
 			toolCallPermissionManager = context.getToolCallPermissionManager();
 		}
-		if(toolBase == null && permissionEngine == null && toolCallPermissionManager == null){
+		if(toolBase == null && !useEngine && toolCallPermissionManager == null){
 			return new PermissionVerdict(use, PermissionBehavior.ALLOW,null);
 		}
 		 
@@ -472,10 +479,10 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 //			return Mono.just(new PermissionVerdict(use, PermissionBehavior.ALLOW));
 //		}
 		
-		Map<String, Object> input = use.getArguments() == null ? Collections.emptyMap() : use.getArguments	();
+		
 		PermissionDecision permissionDecision = null;
 		PermissionVerdict permissionVerdict = null;
-		if (permissionEngine != null) {			
+		if (useEngine) {			
 			permissionDecision = permissionEngine
 					.checkPermission(use, input);
 			permissionVerdict = new PermissionVerdict(
@@ -493,13 +500,13 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 //													: decision.getBehavior()));
 		}
 		else if(toolBase != null) {
-			permissionDecision = toolBase.checkPermissions(use, use.getArguments(), chatContext);
+			permissionDecision = toolBase.checkPermissions(use, use.getArguments(), chatObject);
 			if (permissionDecision == null) {
 				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision );
 			}
 		}
 		else {
-			permissionDecision = toolCallPermissionManager.checkPermissions(use, use.getArguments(), chatContext);
+			permissionDecision = toolCallPermissionManager.checkPermissions(use, use.getArguments(), chatObject);
 			if (permissionDecision == null) {
 				return new PermissionVerdict(use, PermissionBehavior.ALLOW, permissionDecision );
 			}
@@ -592,8 +599,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 			
 			
 			@Override
-			public HitlAssistant<?> getHitlAssistant() {
-				return new HitlAssistant<Object>() {
+			public HitlAssistant<Object,List<ToolCallAskResult>> getHitlAssistant() {
+				return new HitlAssistant<Object,List<ToolCallAskResult>>() {
 					@Override
 					public Map<String, Object> getHumanAssistantDatas(ToolCallContext toolCallContext) {
 						Map<String, Object> humanAssistantDatas = new HashMap<>();
@@ -607,10 +614,31 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 					public void handleHumanSubbmitDatas(Object humanSubbmitDatas, ToolCallContext toolCallContext) {
 						
 					}
+					
+					@Override
+					public List<ToolCallAskResult> timeOutHandle(Map<String, Object> humanAssistantDatas) {
+						List<ToolCallAsk> askTools = (List<ToolCallAsk>) humanAssistantDatas.get(HitlAssistant.HITL_TASK_PERMISSION_ASK_TOOLS);
+						
+						List<ToolCallAskResult> toolCallAskResults = new ArrayList<>(askTools.size());
+						for(ToolCallAsk askTool : askTools) {
+							ToolCallAskResult toolCallAskResult = new ToolCallAskResult();
+							toolCallAskResult.setToolId(askTool.getToolId());
+							toolCallAskResult.setToolName(askTool.getToolName());
+							toolCallAskResult.setApproved(false);//审批通过，放行工具操作，如果返回false则拒绝操作
+							toolCallAskResult.setHitlConfirm("超时导致拒绝操作");
+//							List<PermissionRule> suggestedRules = askTool.getSuggestedRules();
+//							if (suggestedRules != null && suggestedRules.size() > 0){
+//								toolCallAskResult.setChoosedAlwaysPermissionRule(suggestedRules.get(0)); //从建议规则列表中选择一个即可，这里选择第一个规则
+//							}
+//							toolCallAskResult.setUpdateInput(askTool.getInput());//模拟修改工具入参，这里不做任何修改直接放回去
+							toolCallAskResults.add(toolCallAskResult);
+						}
+						return toolCallAskResults;
+					}
 				};
 			}
 			
-		},chatObject, "需要用户确认是否执行工具:", toolCallContext,List.class,ToolCallAskResult.class);
+		},chatObject, "需要用户授权是否执行工具", toolCallContext,List.class,ToolCallAskResult.class);
 		if(hitlCallResult != null && hitlCallResult.getResult() != null){
 			toolCallAskResults = hitlCallResult.getResult();
 		}
@@ -622,130 +650,162 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         List<LinkedMessageMap<String, Object>> toolMessages = new ArrayList<>(tools.size());
 		PermissionEngine permissionEngine = null;
 		boolean needStorePermissionEngine = false;
-        try {
-            AgentTraceHolder.setChatObject(chatObject);
-			AgentRuntimeContext agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
-			PermissionGate permissionGate = evaluatePermissions(tools,chatObject);
 		
+		try {
+			PermissionGate permissionGate = null;
+			AgentRuntimeContext agentRuntimeContext = null;
+			List<ToolCallAskResult> toolCallAskResults = null;
+            AgentTraceHolder.setChatObject(chatObject);
 			List<PermissionVerdict> pendingAsk = null;
+			Map<String, PermissionVerdict> autoDeniedIds = null;
+			boolean error = false;
+			String errorMessage = null;
+			long startTime = System.currentTimeMillis();
+			try {
+				
+				agentRuntimeContext = chatObject.getChatContext().getAgentRuntimeContext();
+				permissionGate = evaluatePermissions(tools, chatObject);
+				
+			
 //			Map<String,PermissionEngine> toolPermissionEngines = new LinkedHashMap<>();
-			Map<String,PermissionVerdict> autoDeniedIds = null;
-			if(permissionGate != null){
-				pendingAsk = permissionGate.getPendingAsk();
-				autoDeniedIds = permissionGate.getAutoDeniedIds();
-				permissionEngine = permissionGate.getPermissionEngine();
-			}
+				
+				if (permissionGate != null) {
+					pendingAsk = permissionGate.getPendingAsk();
+					autoDeniedIds = permissionGate.getAutoDeniedIds();
+					permissionEngine = permissionGate.getPermissionEngine();
+				}
 //			if(pendingAsk != null){
 //				for(PermissionVerdict permissionVerdict : pendingAsk)
 //					if(permissionVerdict.getPermissionEngine() != null) {
 //						toolPermissionEngines.put(permissionVerdict.getFunctionTool().getId(), permissionVerdict.getPermissionEngine());
 //					}
 //			}
-			// Handle pending ask
-			List<ToolCallAskResult> toolCallAskResults = this.toolCallAsk(chatObject,agentRuntimeContext,pendingAsk);	
-			 
-            for (FunctionTool tool : tools) {
-                String toolId = tool.getId();
-                String functionName = tool.getFunctionName();
-                FunctionCall functionCall = agent.getFunctionCall(functionName);
-//				PermissionEngine permissionEngine = toolPermissionEngines.get(toolId);
-				LinkedMessageMap<String, Object> toolMessage = null;
-				
-				
-				if(autoDeniedIds != null ){
-					PermissionVerdict  denyPermissionVerdict = autoDeniedIds.get(toolId);
-					if(denyPermissionVerdict != null) {
-						toolMessage = MessageBuilder.buildToolMessage("Permission denied by rules", 
-								toolId, tool, ToolCallState.DENIED );
-						toolMessages.add(toolMessage);
-						continue;
-					}
-				}
-				ToolCallAskResult toolCallAskResult = getToolCallAskResult( toolId, toolCallAskResults);
-				ToolCallState toolCallState = null;
-				if(toolCallAskResult != null){
-					if(!toolCallAskResult.isApproved()){
-						toolMessage = MessageBuilder.buildToolMessage("Tool call ask denied", toolId, tool, ToolCallState.DENIED);
-						toolMessages.add(toolMessage);
-						continue;
-					}
-					else{
-						Map<String, Object> updateInput =	 toolCallAskResult.getUpdateInput();
-						if (updateInput != null) {							
-							tool.setArguments(updateInput);	
-						}
-						PermissionRule choosedAlwaysPermissionRule = toolCallAskResult.getChoosedAlwaysPermissionRule();
-						if(choosedAlwaysPermissionRule != null){
-						 
-							if(permissionEngine != null){
-								permissionEngine.addRule(choosedAlwaysPermissionRule);
-								needStorePermissionEngine = true;
-							}
-						}					
-						
-					}					
-				}
-				
-				Object result = null;
-                try {
-                    if (functionCall == null) {
-						result = "Function[" + functionName + "]'s function call is undefined.";
-						toolCallState = ToolCallState.FAILED;
-                    }
-					else {
-						result = functionCall.call(tool);
-						toolCallState = ToolCallState.FINISHED;
-						if (result == null) {
-							result = "Call function return null.";
-//							throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
-						}
-					}
-					
-					
-//                return toolMessage;
-
-                }  catch (Exception e) {
-					logger.error("Call function[" + functionName + "] failed:", e);
-					toolCallState = ToolCallState.FAILED;
-					result = "Call function failed:" + e.getMessage();
-//                    throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
-                }
-			
-				if (result instanceof MCPToolCallResponse) {
-					result = ((MCPToolCallResponse) result).getResult();					 
-				}
-				String _result = null;
-				if (result instanceof String) {
-					_result = (String)result;
-				}
-				else {
-					try {
-						_result = JsonUtil.object2json(result);
-					}
-					catch (Exception e) {
-						logger.error("Convert result to json failed:", e);
-						toolCallState = ToolCallState.FAILED;
-						_result = "Convert result to json failed:"+e.getMessage();
-					}
-				}
-				toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool,toolCallState);
-				toolMessages.add(toolMessage);
-            }
-			//记录模型调用异常轨迹消息
-			if(permissionEngine != null && needStorePermissionEngine) {
-				TraceMessage agentToolPermissionRules = new TraceMessage();
-				LinkedMessageMap tracemessage = new LinkedMessageMap();
-				tracemessage.setAgentId(agent.getAgentId());
-				PermissionRules permissionRules = new PermissionRules();
-				permissionRules.setAllowRules(permissionEngine.getAllowRules());
-				permissionRules.setDenyRules(permissionEngine.getDenyRules());
-				permissionRules.setAskRules(permissionEngine.getAskRules());
-				
-				tracemessage.put(PermissionRules.PERMISSION_RULES_KEY, JsonUtil.object2json(permissionRules));
+				// Handle pending ask
+				toolCallAskResults = this.toolCallAsk(chatObject, agentRuntimeContext, pendingAsk);
+			}
+			catch (Exception e) {
+				logger.error("Evaluate permissions failed:", e);
+				errorMessage = "HITL Evaluate permissions ask failed:" + e.getMessage();	
+				error = true;
+				//记录模型调用异常轨迹消息
+				TraceMessage traceMessage = new TraceMessage();
+				LinkedMessageMap  message = new LinkedMessageMap();
+				message.put("error", SimpleStringUtil.exceptionToString(e));
 //        tracemessage.put("role", SessionMessage.MESSAGE_TYPE_LLMINPUTMESSAGE_NAME);
-				tracemessage.put("role", SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME);
-				agentToolPermissionRules.setMessage(tracemessage);
-				agent.recordTraceMessage(agentToolPermissionRules);
+				message.put("role", SessionMessage.MESSAGE_TYPE_LLMCALLERROR_MESSAGE_NAME);
+				traceMessage.setMessage(message);
+				traceMessage.setStartTime(startTime);
+				traceMessage.setEndTime(System.currentTimeMillis());
+				agent.recordTraceMessage(traceMessage);
+				
+			}
+			if(!error) {
+				for (FunctionTool tool : tools) {
+					String toolId = tool.getId();
+					String functionName = tool.getFunctionName();
+					FunctionCall functionCall = agent.getFunctionCall(functionName);
+//				PermissionEngine permissionEngine = toolPermissionEngines.get(toolId);
+					LinkedMessageMap<String, Object> toolMessage = null;
+					
+					
+					if (autoDeniedIds != null) {
+						PermissionVerdict denyPermissionVerdict = autoDeniedIds.get(toolId);
+						if (denyPermissionVerdict != null) {
+							toolMessage = MessageBuilder.buildToolMessage("Permission denied by rules",
+									toolId, tool, ToolCallState.DENIED);
+							toolMessages.add(toolMessage);
+							continue;
+						}
+					}
+					ToolCallAskResult toolCallAskResult = getToolCallAskResult(toolId, toolCallAskResults);
+					ToolCallState toolCallState = null;
+					if (toolCallAskResult != null) {
+						if (!toolCallAskResult.isApproved()) {
+							String toolCallAskResultHitlConfirm = toolCallAskResult.getHitlConfirm();
+							String deniedReason = toolCallAskResultHitlConfirm != null ? "Tool call ask denied: " + toolCallAskResultHitlConfirm : "Tool call ask denied";
+							toolMessage = MessageBuilder.buildToolMessage(deniedReason, toolId, tool, ToolCallState.DENIED);
+							toolMessages.add(toolMessage);
+							continue;
+						} else {
+							Map<String, Object> updateInput = toolCallAskResult.getUpdateInput();
+							if (updateInput != null) {
+								tool.setArguments(updateInput);
+							}
+							PermissionRule choosedAlwaysPermissionRule = toolCallAskResult.getChoosedAlwaysPermissionRule();
+							if (choosedAlwaysPermissionRule != null) {
+								
+								if (permissionEngine != null) {
+									permissionEngine.addRule(choosedAlwaysPermissionRule);
+									needStorePermissionEngine = true;
+								}
+							}
+							
+						}
+					}
+					
+					Object result = null;
+					try {
+						if (functionCall == null) {
+							result = "Function[" + functionName + "]'s function call is undefined.";
+							toolCallState = ToolCallState.FAILED;
+						} else {
+							result = functionCall.call(tool);
+							toolCallState = ToolCallState.FINISHED;
+							if (result == null) {
+								result = "Call function return null.";
+//							throw new FunctionCallException("FunctionCall of " + functionName + " return null:" + JsonUtil.object2json(tool));
+							}
+						}
+
+
+//                return toolMessage;
+						
+					} catch (Exception e) {
+						logger.error("Call function[" + functionName + "] failed:", e);
+						toolCallState = ToolCallState.FAILED;
+						result = "Call function failed:" + e.getMessage();
+//                    throw new FunctionCallException("Call tool function[" + functionName + "] failed:", e);
+					}
+					
+					if (result instanceof MCPToolCallResponse) {
+						result = ((MCPToolCallResponse) result).getResult();
+					}
+					String _result = null;
+					if (result instanceof String) {
+						_result = (String) result;
+					} else {
+						try {
+							_result = JsonUtil.object2json(result);
+						} catch (Exception e) {
+							logger.error("Convert result to json failed:", e);
+							toolCallState = ToolCallState.FAILED;
+							_result = "Convert result to json failed:" + e.getMessage();
+						}
+					}
+					toolMessage = MessageBuilder.buildToolMessage(_result, toolId, tool, toolCallState);
+					toolMessages.add(toolMessage);
+				}
+				//记录用户设置的总是允许或拒绝或ask的权限规则，不保存静态规则，避免静态规则变化后不能让最新的静态规则生效
+				if (permissionEngine != null && needStorePermissionEngine) {
+					TraceMessage agentToolPermissionRules = new TraceMessage();
+					LinkedMessageMap tracemessage = new LinkedMessageMap();
+					tracemessage.setAgentId(agent.getAgentId());
+					PermissionRules permissionRules = permissionEngine.getSessionAlwaysPermissionRules();
+					tracemessage.put(PermissionRules.PERMISSION_RULES_KEY, JsonUtil.object2json(permissionRules));
+					tracemessage.put("role", SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME);
+					agentToolPermissionRules.setMessage(tracemessage);
+					agent.recordTraceMessage(agentToolPermissionRules);
+				}
+			}
+			else{
+				LinkedMessageMap<String, Object> toolMessage = null;
+				for (FunctionTool tool : tools) {
+					String toolId = tool.getId();
+					toolMessage = MessageBuilder.buildToolMessage(errorMessage,
+							toolId, tool, ToolCallState.FAILED);
+					toolMessages.add(toolMessage);
+				}
+				 
 			}
 			
 		}

@@ -51,6 +51,14 @@ public final class PermissionEngine {
     private final AgentRuntimeContext context;
 	@JsonIgnore
 	private ChatContext chatContext	;
+	@JsonIgnore 
+	private ChatObject chatObject;
+	/**
+	 * The permission rules from the current session.
+	 * 包含总是工具总是允许、拒绝或总是询问的权限规则。
+	 */
+	@JsonIgnore
+	private PermissionRules sessionAlwaysPermissionRules;
     private Map<String, List<PermissionRule>> allowRules;
     private Map<String, List<PermissionRule>> denyRules;
     private Map<String, List<PermissionRule>> askRules;
@@ -64,23 +72,32 @@ public final class PermissionEngine {
     public PermissionEngine(ChatObject chatObject) {
 		this.chatContext = chatObject.getChatContext();
 		this.context = chatContext.getAgentRuntimeContext();
+		this.chatObject = chatObject;
 		
 		
 //        this.context = Objects.requireNonNull(context, "context must not be null");
 		 
 		PermissionRules permissionRules = chatObject.getPermissionRules();
-		if(permissionRules == null ) {
-			if(context != null) {
-				this.allowRules = copyMutable(context.getAllowRules());
-				this.denyRules = copyMutable(context.getDenyRules());
-				this.askRules = copyMutable(context.getAskRules());
-			}
+		//工具调用总是会话级别权限规则
+		this.sessionAlwaysPermissionRules = permissionRules;
+		//静态权限规则
+		if(context != null) {
+			this.allowRules = copyMutable(context.getAllowRules());
+			this.denyRules = copyMutable(context.getDenyRules());
+			this.askRules = copyMutable(context.getAskRules());
 		}
-		else{//从会话上下文中恢复权限规则
-			this.allowRules = copyMutable(permissionRules.getAllowRules());
-			this.denyRules = copyMutable(permissionRules.getDenyRules());
-			this.askRules = copyMutable(permissionRules.getAskRules());
-		}
+//		if(permissionRules == null ) {
+//			if(context != null) {
+//				this.allowRules = copyMutable(context.getAllowRules());
+//				this.denyRules = copyMutable(context.getDenyRules());
+//				this.askRules = copyMutable(context.getAskRules());
+//			}
+//		}
+//		else{//从会话上下文中恢复权限规则
+//			this.allowRules = copyMutable(permissionRules.getAllowRules());
+//			this.denyRules = copyMutable(permissionRules.getDenyRules());
+//			this.askRules = copyMutable(permissionRules.getAskRules());
+//		}
 		 
     }
 
@@ -103,7 +120,7 @@ public final class PermissionEngine {
     public AgentRuntimeContext getContext() {
         return context;
     }
-
+ 
     /**
      * Adds a rule to the engine's internal rule set.
      *
@@ -114,19 +131,23 @@ public final class PermissionEngine {
      */
     public void addRule(PermissionRule rule) {
         Objects.requireNonNull(rule, "rule must not be null");
-        switch (rule.getBehavior()) {
-			case ALLOW:
-                    allowRules.computeIfAbsent(rule.getToolName(), k -> new ArrayList<>()).add(rule);
-					break;
-			case DENY:
-                    denyRules.computeIfAbsent(rule.getToolName(), k -> new ArrayList<>()).add(rule);
-					break;
-			case ASK: askRules.computeIfAbsent(rule.getToolName(), k -> new ArrayList<>()).add(rule);
-					break;	
-			case PASSTHROUGH : {
-                // PASSTHROUGH rules are not stored; they signal "defer to engine".
-            }
-        }
+		if(sessionAlwaysPermissionRules == null){
+			sessionAlwaysPermissionRules = new PermissionRules();
+		}
+		sessionAlwaysPermissionRules.addRule(rule);
+//        switch (rule.getBehavior()) {
+//			case ALLOW:
+//                    allowRules.computeIfAbsent(rule.getToolName(), k -> new ArrayList<>()).add(rule);
+//					break;
+//			case DENY:
+//                    denyRules.computeIfAbsent(rule.getToolName(), k -> new ArrayList<>()).add(rule);
+//					break;
+//			case ASK: askRules.computeIfAbsent(rule.getToolName(), k -> new ArrayList<>()).add(rule);
+//					break;	
+//			case PASSTHROUGH : {
+//                // PASSTHROUGH rules are not stored; they signal "defer to engine".
+//            }
+//        }
     }
 
     /** Read-only view of the engine's current allow-rule table. */
@@ -152,7 +173,36 @@ public final class PermissionEngine {
         }
         return Collections.unmodifiableMap(snapshot);
     }
-
+	/**
+	 * Resolves a permission decision for the given tool invocation.
+	 *
+	 * @param tool the tool being called
+	 * @param toolInput the input map the tool will receive
+	 * @return a Mono emitting the resolved {@link PermissionDecision}
+	 */
+	public PermissionDecision checkSessionAlwaysPermission(FunctionTool tool, Map<String, Object> toolInput) {
+		if(sessionAlwaysPermissionRules == null){
+			return null;
+		}
+	 
+		Map<String, Object> input = toolInput == null ? Collections.emptyMap() : toolInput;
+		
+		// 1. Deny rules (highest priority)
+		PermissionDecision denyDecision = checkDenyRules(sessionAlwaysPermissionRules.getDenyRules(),tool, input);
+		if (denyDecision != null) {
+			return denyDecision;
+		}
+		
+		// 2. Ask rules
+		PermissionDecision askDecision = checkAskRules(sessionAlwaysPermissionRules.getAskRules(),tool, input);
+		if (askDecision != null) {
+			return askDecision.withSuggestedRules(tool.generateSuggestions(input));
+		}
+		
+		// 3. Allow rules
+		PermissionDecision allowDecision = checkAllowRules(sessionAlwaysPermissionRules.getAllowRules(),tool, input);
+		return allowDecision;
+	}
     /**
      * Resolves a permission decision for the given tool invocation.
      *
@@ -165,13 +215,13 @@ public final class PermissionEngine {
 		Map<String, Object> input = toolInput == null ? Collections.emptyMap() : toolInput;
 		
 		// 1. Deny rules (highest priority)
-		PermissionDecision denyDecision = checkDenyRules(tool, input);
+		PermissionDecision denyDecision = checkDenyRules(this.denyRules,tool, input);
 		if (denyDecision != null) {
 			return denyDecision;
 		}
 		
 		// 2. Ask rules
-		PermissionDecision askDecision = checkAskRules(tool, input);
+		PermissionDecision askDecision = checkAskRules(this.askRules,tool, input);
 		if (askDecision != null) {
 			return askDecision.withSuggestedRules(tool.generateSuggestions(input));
 		}
@@ -224,7 +274,7 @@ public final class PermissionEngine {
     private PermissionDecision continueAfterToolCheck(
 			FunctionTool tool, Map<String, Object> input) {
         // 4. Allow rules
-        PermissionDecision allowDecision = checkAllowRules(tool, input);
+        PermissionDecision allowDecision = checkAllowRules(this.allowRules,tool, input);
         if (allowDecision != null) {
             return allowDecision;
         }
@@ -260,14 +310,14 @@ public final class PermissionEngine {
         }
 		PermissionDecision modeDecision = null;
 		if(tool.getToolBase() != null) {
-			modeDecision = tool.checkPermissions(input, chatContext);
+			modeDecision = tool.checkPermissions(input, chatObject);
 		}
 		else{
 			AgentRuntimeContext agentRuntimeContext = this.chatContext.getAgentRuntimeContext();	
 			if(agentRuntimeContext != null){
 				ToolCallPermissionManager toolCallPermissionManager = agentRuntimeContext.getToolCallPermissionManager();
 				if(toolCallPermissionManager != null){
-					modeDecision = toolCallPermissionManager.checkPermissions(tool, input, chatContext);	
+					modeDecision = toolCallPermissionManager.checkPermissions(tool, input, chatObject);	
 				}
 			}
 		}
@@ -283,8 +333,12 @@ public final class PermissionEngine {
 //                            return Mono.just(decision);
 //                        });
     }
-
-    private PermissionDecision checkExploreMode(FunctionTool tool) {
+	
+	public PermissionRules getSessionAlwaysPermissionRules() {
+		return sessionAlwaysPermissionRules;
+	}
+	
+	private PermissionDecision checkExploreMode(FunctionTool tool) {
         if (context.getMode() == PermissionMode.EXPLORE) {
             if (tool.isReadOnly()) {
 				PermissionDecision permissionDecision = new PermissionDecision();
@@ -320,7 +374,7 @@ public final class PermissionEngine {
         return null;
     }
 
-    private PermissionDecision checkDenyRules(FunctionTool tool, Map<String, Object> input) {
+    private PermissionDecision checkDenyRules(Map<String, List<PermissionRule>> denyRules,FunctionTool tool, Map<String, Object> input) {
         for (PermissionRule rule : rulesFor(denyRules, tool.getFunctionName())) {
             if (ruleMatches(tool, rule, input)) {
 				PermissionDecision permissionDecision = new PermissionDecision();
@@ -334,7 +388,7 @@ public final class PermissionEngine {
         return null;
     }
 
-    private PermissionDecision checkAskRules(FunctionTool tool, Map<String, Object> input) {
+    private PermissionDecision checkAskRules(Map<String, List<PermissionRule>> askRules,FunctionTool tool, Map<String, Object> input) {
         for (PermissionRule rule : rulesFor(askRules, tool.getFunctionName())) {
             if (ruleMatches(tool, rule, input)) {
                 PermissionDecision permissionDecision = new PermissionDecision();
@@ -348,7 +402,7 @@ public final class PermissionEngine {
         return null;
     }
 
-    private PermissionDecision checkAllowRules(FunctionTool tool, Map<String, Object> input) {
+    private PermissionDecision checkAllowRules(Map<String, List<PermissionRule>> allowRules,FunctionTool tool, Map<String, Object> input) {
         for (PermissionRule rule : rulesFor(allowRules, tool.getFunctionName())) {
             if (ruleMatches(tool, rule, input)) {
 				PermissionDecision permissionDecision = new PermissionDecision();
@@ -363,6 +417,8 @@ public final class PermissionEngine {
 
     private static List<PermissionRule> rulesFor(
             Map<String, List<PermissionRule>> table, String toolName) {
+		if(table == null)
+			return Collections.emptyList();	
         List<PermissionRule> rules = table.get(toolName);
         return rules == null ? Collections.emptyList() : rules;
     }

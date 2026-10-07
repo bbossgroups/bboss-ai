@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.permission;
  */
 
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.FunctionTool;
 
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ import java.util.Map;
  * @Date 2026/9/30
  */
 public interface ToolCallPermissionManager {
-	default PermissionDecision checkPermissions(FunctionTool functionTool, Map<String, Object> toolInput, ChatContext chatContext){
+	default PermissionDecision checkPermissions(FunctionTool functionTool, Map<String, Object> toolInput, ChatObject chatObject){
 		return PermissionDecision.passthrough(functionTool.getFunctionName());
 	}
 	

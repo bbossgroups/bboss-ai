@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.hitl;
 
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallNotifier;
 import org.frameworkset.spi.ai.model.ChatObject;
@@ -167,31 +168,101 @@ public class HitlTaskHelper {
 	 * 处理人工任务
 	 * @param hitlTaskData
 	 * @param hitlTaskId
+	 * 
 	 */
-	public static void handleHitlCallTask(Object  hitlTaskData,Throwable throwable, String hitlTaskId){
+	private static void handleHitlCallTask(Object  hitlTaskData,Throwable throwable, String hitlTaskId){
 		
 		getHitlTaskHelper()._handleHitlCallTask(false,hitlTaskData, throwable, hitlTaskId);
 	}
 	
-	/**
-	 * 处理人工任务
-	 * @param hitlTaskData
-	 * @param hitlTaskId
-	 */
-	public static void handleHitlCallTask(Object  hitlTaskData, String hitlTaskId){
-		
-		getHitlTaskHelper()._handleHitlCallTask(false,hitlTaskData, null, hitlTaskId);
-	}
+ 
 	
 	/**
 	 * 拒绝人工任务
 	 * @param hitlTaskData
 	 * @param hitlTaskId
 	 */
-	public static void refuseHitlCallTask(Object  hitlTaskData,Throwable throwable, String hitlTaskId){
+	private static void refuseHitlCallTask(Object  hitlTaskData,Throwable throwable, String hitlTaskId){
 		
 		getHitlTaskHelper()._handleHitlCallTask(true,hitlTaskData, throwable, hitlTaskId);
 	}
+	
+	/**
+	 * 如果人工提交的数据是集合和数组，则在提交数据时需将数据放置到key为hitlTaskHandleData的map结构中提交，例如：
+	 * {"hitlTaskHandleData":[{...},{...}]}	
+	 * hitlTaskHandleData为保留key，如果提交map结构数据时，不要使用该key作为其他用途
+	 * 如果hitlTaskHandleData包含hitlTaskHandleDatakey则将hitlTaskHandleData key对应的值作为人工任务参数提交
+	 * @param hitlTaskHandleData
+	 * @param hitlTaskId
+	 */
+	public static void handleHitlTask(Map<String,Object>  hitlTaskHandleData , String hitlTaskId){
+		
+		handleHitlTask(hitlTaskHandleData, null, hitlTaskId);
+		 
+	}
+	
+	/**
+	 * 如果人工提交的数据是集合和数组，则在提交数据时需将数据放置到key为hitlTaskHandleData的map结构中提交，例如：
+	 * {"hitlTaskHandleData":[{...},{...}]}
+	 * hitlTaskHandleData为保留key，如果提交map结构数据时，不要使用该key作为其他用途
+	 * 如果hitlTaskHandleData包含hitlTaskHandleDatakey则将hitlTaskHandleData key对应的值作为人工任务参数提交
+	 * @param hitlTaskHandleData
+	 * @param hitlTaskId
+	 */
+	public static void handleHitlTask(Map<String,Object>  hitlTaskHandleData ,Throwable throwable, String hitlTaskId){
+		
+		Object taskData = 	hitlTaskHandleData.get("hitlTaskHandleData");
+		if(taskData == null) {
+			//兼容老版本
+			taskData = hitlTaskHandleData;
+			
+		}
+		handleHitlCallTask(taskData, throwable, hitlTaskId);
+		
+	}
+	
+	/**
+	 * 如果人工提交的数据是集合和数组，则在提交数据时需将数据放置到key为hitlTaskHandleData的map结构中提交，例如：
+	 * {"hitlTaskHandleData":[{...},{...}]}
+	 * hitlTaskHandleData为保留key，如果提交map结构数据时，不要使用该key作为其他用途
+	 * @param hitlTaskHandleData  如果hitlTaskHandleData中包含type，且type为ok，则表示接受，调用handleHitlCallTask方法，否则表示拒绝，调用refuseHitlCallTask方法。
+	 *                               如果hitlTaskHandleData包含hitlTaskHandleDatakey则将hitlTaskHandleData key对应的值作为人工任务参数提交，忽略Refuse处理
+	 * @param hitlTaskId
+	 */
+	public static void handle2ndRefuseHitlTask(Map<String,Object>  hitlTaskHandleData,String hitlTaskId){
+		
+		handle2ndRefuseHitlTask(hitlTaskHandleData, null, hitlTaskId);	
+		
+	}
+	/**
+	 * 如果人工提交的数据是集合和数组，则在提交数据时需将数据放置到key为hitlTaskHandleData的map结构中提交，例如：
+	 * {"hitlTaskHandleData":[{...},{...}]}
+	 * hitlTaskHandleData为保留key，如果提交map结构数据时，不要使用该key作为其他用途	 
+	 * @param hitlTaskHandleData  如果hitlTaskHandleData中包含type，且type为ok，则表示接受，调用handleHitlCallTask方法，否则表示拒绝，调用refuseHitlCallTask方法。
+	 *                               如果hitlTaskHandleData包含hitlTaskHandleDatakey则将hitlTaskHandleData key对应的值作为人工任务参数提交，忽略Refuse处理
+	 * @param throwable
+	 * @param hitlTaskId
+	 */
+	public static void handle2ndRefuseHitlTask(Map<String,Object>  hitlTaskHandleData,Throwable throwable, String hitlTaskId){
+		
+		Object taskData = 	hitlTaskHandleData.get("hitlTaskHandleData");
+		Map<String,Object> taskDataMap = null;
+		if(taskData == null) {
+			//兼容老版本
+			taskDataMap = hitlTaskHandleData;
+			String type = (String) taskDataMap.get("type");
+			if (StringUtils.isEmpty(type) || type.equals("ok")) {
+				handleHitlCallTask(taskDataMap, throwable, hitlTaskId);
+			} else {
+				refuseHitlCallTask(taskDataMap, throwable, hitlTaskId);
+			}
+		}
+		else  {
+			handleHitlCallTask(taskData, throwable, hitlTaskId);
+		}
+		
+	}
+
 	
 	/**
 	 * 从消息中间件接收和处理人工任务
@@ -265,24 +336,39 @@ public class HitlTaskHelper {
 				Class elementType = hitlCallObject.getElementType();
 				Object reponse = null;
 				if(_hitlTaskData != null) {
-					if (hitlTaskData instanceof String) {
-						_hitlTaskData = (String) hitlTaskData;
-						if(responseType != null) {
-							if(elementType == null) {
-								reponse = JsonUtil.json2Object(_hitlTaskData, responseType);
-							}
-							else{
-								reponse = JsonUtil.json2TypeObject(_hitlTaskData, responseType,elementType);
-							}
+					
+					if(responseType != null) {
+						if(elementType == null) {
+							reponse = JsonUtil.json2Object(_hitlTaskData, responseType);
 						}
-						else
-							reponse = hitlTaskData;
-						
-					} else {
-						 
-						reponse = hitlTaskData;
+						else{
+							reponse = JsonUtil.json2TypeObject(_hitlTaskData, responseType,elementType);
+						}
 					}
+					else
+						reponse = hitlTaskData;
+					
+					
 				}
+//				if(_hitlTaskData != null) {
+//					if (hitlTaskData instanceof String) {
+//						_hitlTaskData = (String) hitlTaskData;
+//						if(responseType != null) {
+//							if(elementType == null) {
+//								reponse = JsonUtil.json2Object(_hitlTaskData, responseType);
+//							}
+//							else{
+//								reponse = JsonUtil.json2TypeObject(_hitlTaskData, responseType,elementType);
+//							}
+//						}
+//						else
+//							reponse = hitlTaskData;
+//						
+//					} else {
+//						 
+//						reponse = hitlTaskData;
+//					}
+//				}
 				if(throwable != null)
 					hitlCallObject.setHitlCallException(throwable);
 				hitlCallObject.setResponse(reponse);
@@ -362,7 +448,7 @@ public class HitlTaskHelper {
 		hitlCallObject.setResponseType(containerType);
 		hitlCallObject.setElementType(elemetType);
 		FluxSink<ServerEvent> sink = chatObject.getAgentFluxSink();
-		HitlAssistant<C> hitlAssistant = hitlTaskcallTool.getHitlAssistant();
+		HitlAssistant<C,?> hitlAssistant = hitlTaskcallTool.getHitlAssistant();
 		try {
 			
 			persistentHitlCallTask( hitlCallTask);
@@ -405,6 +491,10 @@ public class HitlTaskHelper {
 			if(!hitlCallObject.isFromHumanCountDown()){
 				if(!hitlCallObject.isFromDestoryCountDown()) {
 					agentSessionService.timeoutHitlCallTask("任务处理超时,等待超时时间:"+hitlCallObject.getTimeout()+"毫秒", hitlTaskId);
+					if(hitlAssistant != null) {
+						result = (C) hitlAssistant.timeOutHandle(humanAssistantDatas);
+						hitlCallResult.setResult(result);
+					}
 					if(result == null){
 						
 						if(!hitlTaskcallTool.getTimeoutAction().equals(HitlTaskToolInf.TIMEOUT_ACTION_CONTINUE)) {

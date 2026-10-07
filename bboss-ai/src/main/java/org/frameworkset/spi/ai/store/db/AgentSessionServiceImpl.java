@@ -262,13 +262,8 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 		
 	}
 	
-	/**
-	 *  ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
-	 *         DELETE
-	 *         WHERE hitlTaskStatus = 5
-	 *           AND hitlTaskCompleteTime < #[hitlTaskCompleteTime]    
-	 *         SETTINGS mutations_sync = $mutationsSync
-	 * 归档人工任务
+	/** 
+	 * 删除和归档人工任务
 	 * @param archiveTime
 	 */
 	public void deleteCompleteHitlCallTaskSQLWithCompleteTime(Date archiveTime){

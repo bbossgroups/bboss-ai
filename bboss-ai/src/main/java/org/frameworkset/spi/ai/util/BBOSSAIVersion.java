@@ -5,9 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BBOSSAIVersion {
-	public static final String description="6.5.6";
-    public static final short version=656;
-    public static final String releaseDate = "20260929";
+	public static final String description="6.5.7";
+    public static final short version=657;
+    public static final String releaseDate = "20261004";
     private static Logger logger = LoggerFactory.getLogger(BBOSSVersion.class);
     static {
         logger.info(getVersionDescription());

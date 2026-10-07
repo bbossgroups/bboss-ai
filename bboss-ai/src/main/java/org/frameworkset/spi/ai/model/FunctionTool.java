@@ -173,9 +173,9 @@ public class FunctionTool {
 		this.functionToolDefine = functionToolDefine;
 	}
 	
-	public PermissionDecision checkPermissions( Map<String, Object> toolInput, ChatContext chatContext) {
+	public PermissionDecision checkPermissions( Map<String, Object> toolInput, ChatObject chatObject) {
 		if(toolBase != null) {
-			return toolBase.checkPermissions(this, toolInput, chatContext);
+			return toolBase.checkPermissions(this, toolInput, chatObject);
 		}
 		return PermissionDecision.passthrough(getFunctionName());
 	}

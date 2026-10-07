@@ -1392,19 +1392,47 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
     public AgentOutput getAgentOutput() {
         return agentOutput;
     }
-
+	
+	/**
+	 * 创建或者更新会话
+	 * @param prompt
+	 * @return
+	 */
+	
+	public boolean createOrUpdateSession(String prompt ){
+		String domain = null;
+		if(storeContext != null){
+			domain = storeContext.getDomain();
+		}
+		return createOrUpdateSession(  prompt,domain );
+	}
+	
+	/**
+	 * 创建或者更新会话
+	 * @param prompt
+	 * @param domain
+	 * @return
+	 */
+	
+	public boolean createOrUpdateSession(String prompt ,String domain){
+		this.initSessionStore();
+		if(this.mainSessionStore != null)
+			return this.mainSessionStore.createOrUpdateSession(prompt,domain,this.agentId,this);
+		return false;
+	}
     /**
      * 创建或者更新会话
      * @param prompt
      * @return
+	 * @Deprecated 请使用createOrUpdateSession方法
      */
-    
+    @Deprecated
     public boolean loadSessionMemory(String prompt ){
         String domain = null;
         if(storeContext != null){
             domain = storeContext.getDomain();
         }
-        return loadSessionMemory(  prompt,domain );
+        return createOrUpdateSession(  prompt,domain );
     }
 
 	/**
@@ -1412,13 +1440,12 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf{
      * @param prompt
      * @param domain
      * @return
-     */
-	
+	 * @Deprecated 请使用createOrUpdateSession方法
+	 */
+	@Deprecated
     public boolean loadSessionMemory(String prompt ,String domain){
-        this.initSessionStore();
-        if(this.mainSessionStore != null)
-            return this.mainSessionStore.createOrUpdateSession(prompt,domain,this.agentId,this);
-        return false;
+        
+        return this.createOrUpdateSession(prompt,domain);
     }
     
     public T recordTraceMessage(TraceMessage traceMessage){

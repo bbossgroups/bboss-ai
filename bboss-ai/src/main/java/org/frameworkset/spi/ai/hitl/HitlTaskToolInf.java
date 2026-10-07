@@ -36,9 +36,9 @@ public interface HitlTaskToolInf<T extends HitlTaskToolInf> {
 	default T setTimeoutAction(String timeoutAction){
 		return (T)this;
 	}
-	HitlAssistant<?> getHitlAssistant() ;
+	HitlAssistant<?,?> getHitlAssistant() ;
 	
-	default T setHitlAssistant(HitlAssistant<?> hitlAssistant){
+	default T setHitlAssistant(HitlAssistant<?,?> hitlAssistant){
 		return (T)this;
 	}
 }

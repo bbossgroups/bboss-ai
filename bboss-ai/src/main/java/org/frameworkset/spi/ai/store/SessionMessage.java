@@ -162,7 +162,10 @@ public class SessionMessage {
 	 */
 	public static final String MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE = "25";
 	
-	
+	/**
+	 * 工具权限人工授权失败消息
+	 */
+	public static final String MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_HITLASKFAILED_MESSAGE = "26";
 	/**
      * 智能体用户输入消息:包括用户输入的原始问题、用户上传文件、用户图片描述等
      */
@@ -288,6 +291,12 @@ public class SessionMessage {
 	 * LLM调用工具权限消息
 	 */
 	public static final String MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE_NAME = "toolpermissionrules";
+	
+	/**
+	 * 工具权限人工授权失败消息
+	 */
+	public static final String MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_HITLASKFAILED_MESSAGE_NAME = "toolpermissionrulesHitlAskFailed";
+	
 	
 	
 	/**

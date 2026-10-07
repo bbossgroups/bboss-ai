@@ -24,7 +24,7 @@ import java.util.Map;
  * @author biaoping.yin
  * @Date 2026/8/5
  */
-public interface HitlAssistant<T> {
+public interface HitlAssistant<T,R> {
 	String HITL_TASK_TYPE_KEY = "hitlTaskType";
 	
 	String HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK = "tool_call_permission_ask";
@@ -42,6 +42,8 @@ public interface HitlAssistant<T> {
 	 * @param toolCallContext
 	 */
 	void handleHumanSubbmitDatas(T humanSubbmitDatas,ToolCallContext toolCallContext); 
+	
+	R timeOutHandle(Map<String,Object> humanAssistantDatas);
 	
 	
 }
