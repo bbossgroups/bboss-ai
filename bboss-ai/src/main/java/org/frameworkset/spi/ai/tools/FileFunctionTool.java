@@ -847,6 +847,8 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 	public List<PermissionRule> generateSuggestions(FunctionTool functionTool, Map<String, Object> toolInput) {
 		List<PermissionRule> suggestions = new ArrayList<>();
 		suggestions.add(new PermissionRule(functionTool.getFunctionName(), null, PermissionBehavior.ALLOW, "suggested"));
+		suggestions.add(new PermissionRule(functionTool.getFunctionName(), null, PermissionBehavior.ASK, "suggested"));
+		suggestions.add(new PermissionRule(functionTool.getFunctionName(), null, PermissionBehavior.DENY, "suggested"));
 		return suggestions;
 	}
 }

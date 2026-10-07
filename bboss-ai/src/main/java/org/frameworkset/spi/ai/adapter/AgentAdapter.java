@@ -720,6 +720,14 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 					ToolCallAskResult toolCallAskResult = getToolCallAskResult(toolId, toolCallAskResults);
 					ToolCallState toolCallState = null;
 					if (toolCallAskResult != null) {
+						PermissionRule choosedAlwaysPermissionRule = toolCallAskResult.getChoosedAlwaysPermissionRule();
+						if (choosedAlwaysPermissionRule != null) {
+							
+							if (permissionEngine != null) {
+								permissionEngine.addAlwaysRule(choosedAlwaysPermissionRule);
+								needStorePermissionEngine = true;
+							}
+						}
 						if (!toolCallAskResult.isApproved()) {
 							String toolCallAskResultHitlConfirm = toolCallAskResult.getHitlConfirm();
 							String deniedReason = toolCallAskResultHitlConfirm != null ? "Tool call ask denied: " + toolCallAskResultHitlConfirm : "Tool call ask denied";
@@ -731,14 +739,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 							if (updateInput != null) {
 								tool.setArguments(updateInput);
 							}
-							PermissionRule choosedAlwaysPermissionRule = toolCallAskResult.getChoosedAlwaysPermissionRule();
-							if (choosedAlwaysPermissionRule != null) {
-								
-								if (permissionEngine != null) {
-									permissionEngine.addRule(choosedAlwaysPermissionRule);
-									needStorePermissionEngine = true;
-								}
-							}
+							
 							
 						}
 					}

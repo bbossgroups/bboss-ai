@@ -361,7 +361,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	@Override
 	public List<SessionMessage> getSessionMessages(String sessionId, String[] summaryMessageIds) {
 		try {
-			String sql  = agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndMsgIdsSQL();
+			String sql  = agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndMsgIdsSQL(agentSessionStoreDBConfig.isClickhouse(dataSource))	;
 			int size = summaryMessageIds.length;
 			StringBuilder tmp = new StringBuilder();
 			for(int i = 0; i < size; i++) {
@@ -401,7 +401,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	public PermissionRules getAgentPermissionRules(String sessionId,String agentId){
 		try {
 			List<SessionMessage> permissionRuleMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-					agentSessionStoreDBConfig.getSelectAgentPermissionRulesSQL(),sessionId, agentId);
+					agentSessionStoreDBConfig.getSelectAgentPermissionRulesSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)),sessionId, agentId);
 			if(permissionRuleMessages != null && permissionRuleMessages.size() > 0){
 				SessionMessage permissionRulesMessage = permissionRuleMessages.get(0);
 				return resolvePermissionRules(  permissionRulesMessage);
@@ -417,7 +417,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         try {
 			List<String> agentRefMsgIds = getAgentRefMsgIds(this.getSessionId(),agentId);
             List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-                    agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentRefMsgIds), this.getSessionId(),agentId,agentId);
+						agentSessionStoreDBConfig.getSelectSessionMessageBySessionId2ndAgentIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource),agentRefMsgIds), this.getSessionId(),agentId,agentId);
             
 			return resolve(agent,lastSubAgentSessionMessage,agentId,   agentSessionMessages,true);
            
@@ -436,7 +436,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 		try {
 			 
 			List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-					agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(), sessionId);
+					agentSessionStoreDBConfig.getSelectSessionMessageBySessionIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource))	, sessionId);
 			
 			return agentSessionMessages;
 			
@@ -455,7 +455,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 		try {
 			
 			List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-					agentSessionStoreDBConfig.getSelectSessionMessageByUserIdSQL(), userId,limit);
+					agentSessionStoreDBConfig.getSelectSessionMessageByUserIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)), userId,limit);
 			
 			return agentSessionMessages;
 			

@@ -911,7 +911,12 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	private String selectAgentToolCallRulesSQL;	
 	private String agentToolCallRulesTableName = "agent_tool_call_rules";
     private String deleteCompleteHitlCallTaskSQLWithCompleteTimeSQL;
-
+	private String selectSessionMessageByUserIdSQL_clickhouse;
+	private String selectSessionMessageBySessionIdSQL_clickhouse;
+	private String selectAgentPermissionRulesSQL_clickhouse;
+	private String selectSessionMessageBySessionId2ndMsgIdsSQL_clickhouse;
+	private String selectSessionMessageBySessionId2ndAgentIdSQL1_clickhouse;
+	
 	
 	public String getInsertSessionMessageRerenceSQL() {
         return insertSessionMessageRerenceSQL;
@@ -1238,7 +1243,13 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 					.append(" as ts where ts.userId=? order by ts.createTime desc limit ?) " +
 							"and tm.messageType in ('0','1','2','3','4','23')  and tm.agentNodeType in ('standard','route','judge') "
 							+
-							"order by tm.createTime,tm.seqNo desc").toString();
+							"order by tm.sessionId,tm.createTime,tm.seqNo desc").toString();
+			selectSessionMessageByUserIdSQL_clickhouse = new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" as tm where tm.sessionId in (select sessionId from ").append(sessionTableName)
+					.append(" as ts where ts.userId=? order by ts.createTime desc limit ?) " +
+							"and tm.messageType in ('0','1','2','3','4','23')  and tm.agentNodeType in ('standard','route','judge') "
+							+
+							"order by (tm.sessionId,tm.createTime,tm.seqNo) desc").toString();
 			
 			/**
 			 * 查询最近的消息,恢复到对话中 
@@ -1248,12 +1259,21 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			selectSessionMessageBySessionIdSQL = new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" where sessionId=?   ")
 					.append("and messageType in ('0','1','2','3','4','23') and agentNodeType in ('standard','route','judge') order by createTime,seqNo asc").toString();
+			selectSessionMessageBySessionIdSQL_clickhouse = new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" where sessionId=?   ")
+					.append("and messageType in ('0','1','2','3','4','23') and agentNodeType in ('standard','route','judge') order by (sessionId,createTime,seqNo) asc").toString();
 			
 			selectAgentPermissionRulesSQL =  new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" where sessionId=?   ")
 					.append("and messageType = '25' and agentId= ? order by createTime,seqNo desc").toString();
+			
+			selectAgentPermissionRulesSQL_clickhouse =  new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" where sessionId=?   ")
+					.append("and messageType = '25' and agentId= ? order by (sessionId,createTime,seqNo) desc").toString();
 			selectSessionMessageBySessionId2ndMsgIdsSQL = new StringBuilder().append("select *  from ")
 					.append(sessionMessageTableName).append(" where sessionId=? and msgId in ({ids}) order by createTime,seqNo asc").toString();
+			selectSessionMessageBySessionId2ndMsgIdsSQL_clickhouse = new StringBuilder().append("select *  from ")
+					.append(sessionMessageTableName).append(" where sessionId=? and msgId in ({ids}) order by (sessionId,createTime,seqNo) asc").toString();
 			selectMaxSeqNoBySessionIdSQL = new StringBuilder().append("select max(seqNo) from ")
 					.append(sessionMessageTableName).append(" where sessionId=? ").toString();
 
@@ -1279,6 +1299,9 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			selectSessionMessageBySessionId2ndAgentIdSQL1 = new StringBuilder()
 					.append(" order  by createTime, seqNo asc").toString();
 			
+			selectSessionMessageBySessionId2ndAgentIdSQL1_clickhouse = new StringBuilder()
+					.append(" order  by (sessionId,createTime, seqNo) asc").toString();
+			
 			selectAgentSessionMessageReferenceIdsBySessionIdSQL = new StringBuilder()
 					.append("select msgId from ")
 					.append(sessionMessageReferenceTableName)
@@ -1294,7 +1317,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         return selectMaxSeqNoBySessionIdSQL;
     }
 
-    public String getSelectSessionMessageBySessionId2ndAgentIdSQL(List<String > refMsgIds) {
+    public String getSelectSessionMessageBySessionId2ndAgentIdSQL(boolean isClickhouse,List<String > refMsgIds) {
 		StringBuilder sql = new StringBuilder();		
 		sql.append(selectSessionMessageBySessionId2ndAgentIdSQL0);
 		if(refMsgIds != null && refMsgIds.size() > 0){
@@ -1306,7 +1329,12 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				}				 
 				sql.append(") ");
 		}
-		sql.append(selectSessionMessageBySessionId2ndAgentIdSQL1);		
+		if(!isClickhouse) {
+			sql.append(selectSessionMessageBySessionId2ndAgentIdSQL1);
+		}
+		else{
+			sql.append(selectSessionMessageBySessionId2ndAgentIdSQL1_clickhouse);
+		}
         return sql.toString();
     }
 
@@ -1426,7 +1454,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 	public boolean isClickhouse(String dbName){
 		DB adaptor  = DBUtil.getDBAdapter(dbName);
 		String type = adaptor.getDBTYPE();
-		if("clickhouse".equalsIgnoreCase(type) || "yandex_clickhouse".equalsIgnoreCase(type))
+		if(type != null && type.indexOf("clickhouse") >= 0)
 			return true;
 		return false;
 	}
@@ -1553,12 +1581,22 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
         return deleteSessionMessageBySessionIdSQL;
     }
 
-    public String getSelectSessionMessageByUserIdSQL() {
-        return selectSessionMessageByUserIdSQL;
+    public String getSelectSessionMessageByUserIdSQL(boolean isClickhouse) {
+		if(!isClickhouse) {
+			return selectSessionMessageByUserIdSQL;
+		}
+		else{
+			return selectSessionMessageByUserIdSQL_clickhouse;
+		}	
     }
 
-    public String getSelectSessionMessageBySessionIdSQL() {
-        return selectSessionMessageBySessionIdSQL;
+    public String getSelectSessionMessageBySessionIdSQL(boolean isClickhouse) {
+		if(!isClickhouse) {
+			return selectSessionMessageBySessionIdSQL;
+		}
+		else{
+			return selectSessionMessageBySessionIdSQL_clickhouse;
+		}
     }
 
     public String getExistSQL() {
@@ -1625,8 +1663,12 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 		return timeoutHitlCallTaskSQL;
 	}
 	
-	public String getSelectSessionMessageBySessionId2ndMsgIdsSQL() {
-		return selectSessionMessageBySessionId2ndMsgIdsSQL;
+	public String getSelectSessionMessageBySessionId2ndMsgIdsSQL(boolean isClickhouse) {
+		if(!isClickhouse) {
+			return selectSessionMessageBySessionId2ndMsgIdsSQL;
+		}
+		else
+			return selectSessionMessageBySessionId2ndMsgIdsSQL_clickhouse;
 	}
 	public String getSelectAgentToolCallRulesSQL() {
 		return selectAgentToolCallRulesSQL;
@@ -1640,7 +1682,12 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 		return updateClickhouseAgentToolCallRulesSQL;
 	}
 	
-	public String getSelectAgentPermissionRulesSQL() {
-		return selectAgentPermissionRulesSQL;
+	public String getSelectAgentPermissionRulesSQL(boolean isClickhouse) {
+		if(!isClickhouse) {
+			return selectAgentPermissionRulesSQL;
+		}
+		else{
+			return selectAgentPermissionRulesSQL_clickhouse;	
+		}
 	}
 }

@@ -79,7 +79,7 @@ public class PermissionRules {
 		}
 		return contain;
 	}
-	private void addRule(PermissionRule rule,Map<String, List<PermissionRule>> allowRules){
+	private void addAlwaysRule(PermissionRule rule, Map<String, List<PermissionRule>> allowRules){
 		List<PermissionRule> rules = allowRules.get(rule.getToolName());
 		if (rules == null) {
 			rules = new ArrayList<>();
@@ -102,7 +102,7 @@ public class PermissionRules {
 	 *
 	 * @param rule the rule to add; must be non-null
 	 */
-	public void addRule(PermissionRule rule) {
+	public void addAlwaysRule(PermissionRule rule) {
 		Objects.requireNonNull(rule, "rule must not be null");
 		
 		switch (rule.getBehavior()) {
@@ -110,19 +110,19 @@ public class PermissionRules {
 				if(allowRules == null){
 					allowRules = new LinkedHashMap<>();					
 				}
-				addRule(rule, allowRules);	
+				addAlwaysRule(rule, allowRules);	
 				break;
 			case DENY:
 				if(denyRules == null){
 					denyRules = new LinkedHashMap<>();
 				}
-				addRule(rule, denyRules);
+				addAlwaysRule(rule, denyRules);
 				break;
 			case ASK:
 				if(askRules == null){
 					askRules = new LinkedHashMap<>();
 				}
-				addRule(rule, askRules);
+				addAlwaysRule(rule, askRules);
 				break;
 			case PASSTHROUGH : {
 				// PASSTHROUGH rules are not stored; they signal "defer to engine".

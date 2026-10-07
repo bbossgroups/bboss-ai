@@ -42,7 +42,7 @@ import java.util.*;
  * </ol>
  *
  * <p>The engine snapshots rules from the supplied {link PermissionContextState} into its own mutable
- * tables on construction; the original context is never mutated. Use {@link #addRule} to extend
+ * tables on construction; the original context is never mutated. Use {@link #addAlwaysRule} to extend
  * the engine's rule set at runtime.
  */
 public final class PermissionEngine {
@@ -129,12 +129,12 @@ public final class PermissionEngine {
      *
      * @param rule the rule to add; must be non-null
      */
-    public void addRule(PermissionRule rule) {
+    public void addAlwaysRule(PermissionRule rule) {
         Objects.requireNonNull(rule, "rule must not be null");
 		if(sessionAlwaysPermissionRules == null){
 			sessionAlwaysPermissionRules = new PermissionRules();
 		}
-		sessionAlwaysPermissionRules.addRule(rule);
+		sessionAlwaysPermissionRules.addAlwaysRule(rule);
 //        switch (rule.getBehavior()) {
 //			case ALLOW:
 //                    allowRules.computeIfAbsent(rule.getToolName(), k -> new ArrayList<>()).add(rule);
