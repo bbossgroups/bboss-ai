@@ -144,7 +144,6 @@ public class ChecklistCodeViewClickhouseAgentHitlResisTest {
 				.setHitlRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)
 				.setDataSource("visualops"));
 		
-		CountDownLatch countDownLatch = new CountDownLatch(1);
 		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
 		agentRuntimeContext.setDebugSSEData(false);
 		AIAgent agent = new AIAgent().setAgentRuntimeContext(agentRuntimeContext);
@@ -185,7 +184,7 @@ public class ChecklistCodeViewClickhouseAgentHitlResisTest {
 							Map<String, Object> hitlTaskData = new LinkedHashMap<>();
 							hitlTaskData.put("confirm", "确认修改文件");
 							hitlTaskData.put("otherData", "用户补充意见：各个问题都符合要求,可以整改");
-							HitlTaskHelper.handleHitlCallTask(hitlTaskData, null, hitlTaskId);
+							HitlTaskHelper.handleHitlTask(hitlTaskData,  hitlTaskId);
 //							//模拟人工任务处理:拒绝，并通知智能体拒绝处理
 //							hitlTaskData = new LinkedHashMap<>();
 //							hitlTaskData.put("confirm", "不要修改文件");
@@ -208,17 +207,14 @@ public class ChecklistCodeViewClickhouseAgentHitlResisTest {
 //					
 				}) //打印流式调用返回的问题答案片段
 				.doOnComplete(() -> {
-					countDownLatch.countDown();
 					System.out.println();
 					logger.info("\n=== 流完成 ===");
 				})
 				.doOnError(error -> {
-					countDownLatch.countDown();
 					logger.error("错误: " + error.getMessage(), error);
 				})
-				.subscribe();
+				.blockLast();
 		
-		// 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-		countDownLatch.await();
+	 
 	}
 }

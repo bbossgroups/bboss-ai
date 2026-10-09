@@ -175,7 +175,7 @@ public class ChecklistCodeViewAgentHitlResisTest {
 							Map<String, Object> hitlTaskData = new LinkedHashMap<>();
 							hitlTaskData.put("confirm", "确认修改文件");
 							hitlTaskData.put("otherData", "用户补充意见：各个问题都符合要求,可以整改");
-							HitlTaskHelper.handleHitlCallTask(hitlTaskData, null, hitlTaskId);
+							HitlTaskHelper.handle2ndRefuseHitlTask(hitlTaskData, null, hitlTaskId);
 //							//模拟人工任务处理:拒绝，并通知智能体拒绝处理
 //							hitlTaskData = new LinkedHashMap<>();
 //							hitlTaskData.put("confirm", "不要修改文件");

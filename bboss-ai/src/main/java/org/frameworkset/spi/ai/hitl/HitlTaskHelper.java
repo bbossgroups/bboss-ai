@@ -195,7 +195,7 @@ public class HitlTaskHelper {
 	 * @param hitlTaskHandleData
 	 * @param hitlTaskId
 	 */
-	public static void handleHitlTask(Map<String,Object>  hitlTaskHandleData , String hitlTaskId){
+	public static void handleHitlTask(Object  hitlTaskHandleData , String hitlTaskId){
 		
 		handleHitlTask(hitlTaskHandleData, null, hitlTaskId);
 		 
@@ -209,15 +209,22 @@ public class HitlTaskHelper {
 	 * @param hitlTaskHandleData
 	 * @param hitlTaskId
 	 */
-	public static void handleHitlTask(Map<String,Object>  hitlTaskHandleData ,Throwable throwable, String hitlTaskId){
-		
-		Object taskData = 	hitlTaskHandleData.get("hitlTaskHandleData");
-		if(taskData == null) {
-			//兼容老版本
-			taskData = hitlTaskHandleData;
-			
+	public static void handleHitlTask(Object  hitlTaskHandleData ,Throwable throwable, String hitlTaskId){
+		if(hitlTaskHandleData instanceof Map){
+			Map<String,Object> hitlTaskHandleDataMap = (Map<String,Object>)hitlTaskHandleData;
+			Object taskData = 	hitlTaskHandleDataMap.get("hitlTaskHandleData");
+			if(taskData == null) {
+				//兼容老版本
+				taskData = hitlTaskHandleDataMap;
+				
+			}
+			handleHitlCallTask(taskData, throwable, hitlTaskId);
 		}
-		handleHitlCallTask(taskData, throwable, hitlTaskId);
+		else{
+			handleHitlCallTask(hitlTaskHandleData, throwable, hitlTaskId);
+		}
+		
+		
 		
 	}
 	

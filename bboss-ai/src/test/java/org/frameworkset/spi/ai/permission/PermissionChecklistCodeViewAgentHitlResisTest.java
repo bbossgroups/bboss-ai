@@ -75,7 +75,7 @@ public class PermissionChecklistCodeViewAgentHitlResisTest {
 				.setAuth("ecs123456")
 				//集群节点可以通过逗号分隔，也可以通过\n符分隔
 //          .setServers("101.13.4.15:6359\n101.13.4.15:6369\n101.13.4.15:6379\n101.13.4.15:6389")
-				.setServers("101.13.6.7:6381,101.13.6.7:6382,101.13.6.7:6383,101.13.6.7:6384,101.13.6.7:6385,101.13.6.7:6386")				
+				.setServers("10.13.6.7:6381,10.13.6.7:6382,10.13.6.7:6383,10.13.6.7:6384,10.13.6.7:6385,10.13.6.7:6386")				
 				.setMaxRedirections(5)
 				.setMode(RedisDB.mode_cluster)
 				.setConnectionTimeout(10000)
@@ -183,7 +183,7 @@ public class PermissionChecklistCodeViewAgentHitlResisTest {
 								
 								hitlTaskData.put("confirm", "确认修改文件");
 								hitlTaskData.put("otherData", "用户补充意见：各个问题都符合要求,可以整改");
-								HitlTaskHelper.handleHitlCallTask(hitlTaskData, null, hitlTaskId);
+								HitlTaskHelper.handleHitlTask(hitlTaskData,  hitlTaskId);
 							}
 							//模拟人工授权处理
 							else if(HitlAssistant.HITL_TASK_TYPE_TOOL_CALL_PERMISSION_ASK.equals(hitlTaskType)){
@@ -203,7 +203,7 @@ public class PermissionChecklistCodeViewAgentHitlResisTest {
 									toolCallAskResult.setUpdateInput(askTool.getInput());//模拟修改工具入参，这里不做任何修改直接放回去
 									toolCallAskResults.add(toolCallAskResult);
 								}							
-								HitlTaskHelper.handleHitlCallTask(toolCallAskResults, null, hitlTaskId);
+								HitlTaskHelper.handleHitlTask(toolCallAskResults,  hitlTaskId);
 							}
 							
 //							//模拟人工任务处理:拒绝，并通知智能体拒绝处理

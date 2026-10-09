@@ -135,7 +135,7 @@ public class ChecklistCodeViewAgentHitlTest {
 //							hitlTaskData.put("otherData", "用户补充意见：还有其他问题需要注意，比如变量命名、代码格式等，请继续检查和修复");
 							
 							hitlTaskData.put("otherData", "暂不修复");
-							HitlTaskHelper.refuseHitlCallTask(hitlTaskData, null, hitlTaskId);
+							HitlTaskHelper.handle2ndRefuseHitlTask(hitlTaskData, null, hitlTaskId);
 							
 						}
 					}

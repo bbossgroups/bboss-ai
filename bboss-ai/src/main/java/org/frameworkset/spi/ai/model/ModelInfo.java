@@ -32,7 +32,7 @@ public class ModelInfo {
 	 *
 	 * @return context window size in tokens, or {@code 0} if not available
 	 */
-	private int contextWindowSize;
+	private int contextWindowSize = 200000;
 	/**
 	 * Returns the model's context window size in tokens, or {@code 0} if unknown.
 	 *
