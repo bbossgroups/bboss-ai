@@ -200,25 +200,7 @@
     ]]>
     </property>
 
-
-    <!--deleteHitlCallTaskBySessionId 的ClickHouse方言适配SQL（代码中通过名称 deleteHitlCallTaskBySessionId 访问）：根据会话id删除人工介入任务-->
-    <property name="deleteHitlCallTaskBySessionId-yandex_clickhouse">
-        <![CDATA[
-        ALTER TABLE agent_hitl_calltask_local on cluster $clusterName
-        DELETE
-        WHERE  sessionId in (
-			#foreach($sessionId in $sessionIds) 
-                #if($foreach.index == 0) 
-                    #[sessionIds[$foreach.index]] 
-                #else 
-                    ,#[sessionIds[$foreach.index]] 
-                #end 
-            #end 			 
-			)    
-        SETTINGS mutations_sync = $mutationsSync
-    ]]>
-    </property>
-    <!--deleteHitlCallTaskBySessionId 的ClickHouse方言适配SQL（代码中通过名称 deleteHitlCallTaskBySessionId 访问）：根据会话id删除人工介入任务-->
+    <!--deleteAgentToolCallRulesBySessionId 的ClickHouse方言适配SQL（代码中通过名称 deleteAgentToolCallRulesBySessionId 访问）-->
     <property name="deleteAgentToolCallRulesBySessionId-yandex_clickhouse">
         <![CDATA[
         ALTER TABLE agent_tool_call_rules_local on cluster $clusterName
