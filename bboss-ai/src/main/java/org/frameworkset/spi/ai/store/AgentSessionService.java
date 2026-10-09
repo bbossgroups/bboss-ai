@@ -16,13 +16,13 @@
 
 package org.frameworkset.spi.ai.store;
 
-import com.frameworkset.util.JsonUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.hitl.HitlCallTask;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
 import com.frameworkset.util.ListInfo;
+import org.frameworkset.spi.ai.model.memory.AgentDayMemory;
+import org.frameworkset.spi.ai.model.memory.AgentMemory;
 
-import java.sql.SQLException;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -132,10 +132,43 @@ public interface AgentSessionService {
 
 	;
     List<SessionMessage> queryListSessionMessages(String sessionid) throws AgentSessionException;
+	
     List<SessionMessage> queryListSessionMessages(String sessionid,String agentId) throws AgentSessionException;
+	
+	/**
+	 * 获取用户智能体记忆流水	
+	 * @param agentId
+	 * @param userId
+	 * @param memoryDay
+	 * @return
+	 */
+	AgentDayMemory getDayMemory(String agentId, String userId, String memoryDay);
     void setDatasource(String datasource);
 	
 	void init();
 	
-
+	
+	/**
+	 * 获取用户智能体记忆总账
+	 * @param agentId
+	 * @param userId
+	 * @return
+	 */
+	AgentMemory getMemory(String agentId, String userId) ;
+	
+	/**
+	 * 追加用户消息到总账,如果总账不存在则新增总账
+	 * @param agent
+	 * @param section
+	 */
+	void createOrUpdateMemory(AIAgent agent, String section);
+	
+	/**
+	 * 追加用户消息到日流水账,如果总账不存在则新增日流水账
+	 * @param agent
+	 * @param section
+	 */
+	void createOrUpdateDayMemory(AIAgent agent, String section,String memoryDay);
+	
+	List<AgentDayMemory> listAgentUserDayMemorys(AIAgent agent);
 }

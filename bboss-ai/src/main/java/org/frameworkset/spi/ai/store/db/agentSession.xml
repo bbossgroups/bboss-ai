@@ -463,4 +463,128 @@
 		]]>
     </property>
 
+    <!--查询用户某天的智能体记忆流水-->
+    <property name="getDayMemory">
+        <![CDATA[
+			select * from agent_day_memory where agentId=? and userId=? and memoryDay=?
+
+		]]>
+    </property>
+    <!--查询用户智能体记忆总账-->
+    <property name="getMemory">
+        <![CDATA[
+			select * from agent_memory where agentId=? and userId=?
+		]]>
+    </property>
+
+    <property name="insertMemory">
+        <![CDATA[
+			INSERT INTO agent_memory (
+                memoryId, createTime, updateTime, agentId, parentAgentId,
+                userId, sessionId, content
+            ) VALUES (
+                #[memoryId], #[createTime], #[updateTime], #[agentId], #[parentAgentId],
+                #[userId], #[sessionId], #[content]
+            )
+		]]>
+    </property>
+
+    <property name="updateMemory">
+        <![CDATA[
+			UPDATE agent_memory
+                SET                    
+                    updateTime = #[updateTime],                    
+                    content = #[content]
+                WHERE memoryId = #[memoryId]
+		]]>
+    </property>
+
+    <!--updateMemory 的ClickHouse方言适配SQL（代码中通过名称 updateMemory 访问）：更新智能体记忆总账内容-->
+    <property name="updateMemory-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_memory_local on cluster $clusterName
+        UPDATE
+            updateTime = #[updateTime],
+            content = #[content]
+        WHERE memoryId = #[memoryId]
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+
+    <property name="insertDayMemory">
+        <![CDATA[
+            INSERT INTO agent_day_memory (
+                memoryId, createTime, updateTime, agentId, parentAgentId,
+                userId, sessionId, content, memoryDay
+            ) VALUES (
+                #[memoryId], #[createTime], #[updateTime], #[agentId], #[parentAgentId],
+                #[userId], #[sessionId], #[content], #[memoryDay]
+            )
+		]]>
+    </property>
+
+    <property name="updateDayMemory">
+        <![CDATA[
+			UPDATE agent_day_memory
+            SET                
+                updateTime = #[updateTime], 
+                content = #[content]
+            WHERE memoryId = #[memoryId]
+		]]>
+    </property>
+
+    <!--updateDayMemory 的ClickHouse方言适配SQL（代码中通过名称 updateDayMemory 访问）：更新智能体每日记忆内容-->
+    <property name="updateDayMemory-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_day_memory_local on cluster $clusterName
+        UPDATE
+            updateTime = #[updateTime],
+            content = #[content]
+        WHERE memoryId = #[memoryId]
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <property name="insertAgentConsolidationState">
+        <![CDATA[
+         INSERT INTO agent_consolidation_state (
+            consolidationStateId, createTime, updateTime,
+            agentId, parentAgentId, userId, consolidationState
+        ) VALUES (
+            #[consolidationStateId], #[createTime], #[updateTime],
+            #[agentId], #[parentAgentId], #[userId], #[consolidationState]
+        )
+		]]>
+    </property>
+
+    <property name="updateAgentConsolidationState">
+        <![CDATA[
+			UPDATE agent_consolidation_state
+            SET                 
+                updateTime = #[updateTime],             
+                consolidationState = #[consolidationState]
+            WHERE consolidationStateId = #[consolidationStateId]
+		]]>
+    </property>
+
+    <!--updateAgentConsolidationState 的ClickHouse方言适配SQL（代码中通过名称 updateAgentConsolidationState 访问）：更新智能体总账记忆水位线-->
+    <property name="updateAgentConsolidationState-yandex_clickhouse">
+        <![CDATA[
+        ALTER TABLE agent_consolidation_state_local on cluster $clusterName
+        UPDATE
+            updateTime = #[updateTime],
+            consolidationState = #[consolidationState]
+        WHERE consolidationStateId = #[consolidationStateId]
+        SETTINGS mutations_sync = $mutationsSync
+    ]]>
+    </property>
+
+    <!--查询用户智能体记忆总账水位线-->
+    <property name="getAgentConsolidationState">
+        <![CDATA[
+			select * from agent_consolidation_state where agentId=? and userId=?
+		]]>
+    </property>
+
 </properties>

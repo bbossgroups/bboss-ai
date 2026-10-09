@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.compaction;
 
 import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.memory.MemoryManager;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
@@ -685,6 +685,13 @@ public class ConversationCompactor {
 			
 			LinkedMessageMap<String, Object> pruned = new LinkedMessageMap<>();
 			pruned.setName(msg.getName());
+			pruned.setId(msg.getId());
+			pruned.setAgentId(msg.getAgentId());
+			pruned.setSeqNo(msg.getSeqNo());
+			pruned.setTimestamp(msg.getTimestamp());
+			pruned.setLocalDateTime(msg.getLocalDateTime());
+			pruned.setMeta(msg.getMeta());
+			
 			pruned.putAll(msg);
 			pruned.put("content", preview);
 			pruned.setTimestamp(msg.getTimestamp());

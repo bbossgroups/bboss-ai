@@ -45,6 +45,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
     private final static AgentMessageTypeConvertor DEFAULT_AGENTMESSAGETYPECONVERTOR = new AgentMessageTypeConvertor();
     protected AgentMessageTypeConvertor agentMessageTypeConvertor = DEFAULT_AGENTMESSAGETYPECONVERTOR;
+	protected AgentSessionService agentSessionService;
     /**
      * 在内存中持久化用户消息
      */
@@ -856,4 +857,13 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 		this.agentMemoryStore = agentMemoryStore;
 	}
 	public abstract int getNextSeqNo();
+	
+	public AgentSessionService getAgentSessionService() {
+		return agentSessionService;
+	}
+	
+	@Override
+	public void setAgentSessionService(AgentSessionService agentSessionService) {
+		this.agentSessionService = agentSessionService;
+	}
 }

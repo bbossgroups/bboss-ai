@@ -15,18 +15,19 @@
  */
 package org.frameworkset.spi.ai.compaction;
 
- 
- 
+
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
-import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
+import org.frameworkset.spi.ai.memory.MemoryManager;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
 
 /**
  * Middleware that performs conversation compaction before each LLM reasoning call.
@@ -67,31 +68,40 @@ public class CompactionManager extends BaseCompactionManager {
 		List<LinkedMessageMap<String,Object>> conversation;
 		if (messages != null
 				&& !messages.isEmpty()
-				&& messages.get(0).get("role") == MessageBuilder.ROLE_SYSTEM) {
+				) {
 			systemMsg = messages.get(0);
-			conversation = new ArrayList<>(messages.subList(1, messages.size()));
+			if(!systemMsg.get("role").equals(MessageBuilder.ROLE_SYSTEM)){
+				systemMsg = null;
+				conversation = new ArrayList<>(messages);
+			}
+			else{
+				conversation = new ArrayList<>(messages.subList(1, messages.size()));
+			}
+			
+			
 		} else {
-			conversation = messages != null ? new ArrayList<>(messages) : Collections.emptyList();
+			return messages;
 		}
 
 		String agentId = agent.getAgentId();
 		String sessionId = agent.getSessionId();
 		String userId = agent.getUserId();
-
-		CompactionConfig effectiveConfig = resolveEffectiveConfig(this.config.getCompactModel());
+		ModelInfo model = config.getCompactModel();
+		if(model == null)
+			model = chatContext.getModelInfo();
+		CompactionConfig effectiveConfig = resolveEffectiveConfig(model);
 		
 		MemoryManager flushManager =
-				new MemoryManager(this.config.getCompactModel());
+				new MemoryManager(model);
 		ConversationCompactor compactor =
-				new ConversationCompactor(this.config.getCompactModel(), flushManager);
-		final LinkedMessageMap<String,Object> sys = systemMsg;
+				new ConversationCompactor(model, flushManager);
 
 		// Only compaction may degrade; downstream reasoning errors must propagate.
 		List<LinkedMessageMap<String, Object>> compacted = compactor
 				.compactIfNeeded( agent, conversation, effectiveConfig, agentId, sessionId);
 		List<LinkedMessageMap<String, Object>> newMessages = new ArrayList<>();
-		if (sys != null) {
-			newMessages.add(sys);
+		if (systemMsg != null) {
+			newMessages.add(systemMsg);
 		}
 		newMessages.addAll(compacted);
 		return newMessages;

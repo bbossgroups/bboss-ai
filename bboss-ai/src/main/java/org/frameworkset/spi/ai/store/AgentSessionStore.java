@@ -39,6 +39,8 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     LastSessionMessage getLastSubAgentSessionMessage();
     List<LastSessionMessage> getLastSubAgentSessionMessages();
     AgentSessionStore getSubTaskSessionMemory(String agentId) ;
+	AgentSessionService getAgentSessionService();
+	void setAgentSessionService(AgentSessionService agentSessionService);
 	int getNextSeqNo();
     
     /**

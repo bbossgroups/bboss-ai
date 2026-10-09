@@ -47,15 +47,19 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
         }
         if(agentSessionStore == null)
             throw new AIRuntimeException("Invalid store type: " + storeContext.getStoreType())  ;
+		AgentSessionService agentSessionService = new AgentSessionServiceImpl();
+		agentSessionService.setDatasource(storeContext.getDataSource());
+		agentSessionService.setClickhouseCluster(storeContext.getClickhouseCluster());
+		agentSessionStore.setAgentSessionService(agentSessionService);
+		
         agentSessionStore.init();
 		
         storeContext.setMainSessionStore(agentSessionStore);
 		if(storeContext.isEnableHitl()) {
 			synchronized (HitlTaskHelper.getLock()) {
 				if (storeContext.getDataSource() != null && HitlTaskHelper.getHitlTaskHelperOnly() == null) {
-					AgentSessionService agentSessionService = new AgentSessionServiceImpl();
-					agentSessionService.setDatasource(storeContext.getDataSource());
-					agentSessionService.setClickhouseCluster(storeContext.getClickhouseCluster());
+					
+					
 					HitlTaskHelper hitlTaskHelper = new HitlTaskHelper();
 					hitlTaskHelper.setAgentSessionService(agentSessionService);
 					if (storeContext.getRedisDSName() != null) {

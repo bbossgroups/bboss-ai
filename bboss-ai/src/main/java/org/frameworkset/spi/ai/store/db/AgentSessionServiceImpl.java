@@ -20,13 +20,18 @@ import com.frameworkset.common.poolman.ConfigSQLExecutor;
 import com.frameworkset.orm.transaction.TransactionManager;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.ListInfo;
+import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.hitl.HitlCallTask;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
+import org.frameworkset.spi.ai.model.memory.AgentDayMemory;
+import org.frameworkset.spi.ai.model.memory.AgentMemory;
 import org.frameworkset.spi.ai.store.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -558,5 +563,120 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 	
 	public void setMutationsSync(int mutationsSync) {
 		this.mutationsSync = mutationsSync;
+	}
+	
+	/**
+	 * 获取用户智能体记忆流水	
+	 * @param agentId
+	 * @param userId
+	 * @param memoryDay
+	 * @return
+	 */
+	public AgentDayMemory getDayMemory(String agentId,String userId,String memoryDay) {
+		
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("getDayMemory start::agentId={}, userId={}, memoryDay={}", agentId, userId, memoryDay	);
+		}
+		try {
+			AgentDayMemory agentDayMemory = executor.queryObjectWithDBName(AgentDayMemory.class,datasource,"getDayMemory",agentId,userId,memoryDay);
+			return agentDayMemory;
+		} catch (Exception e) {
+			log.error("getDayMemory failed::agentId={}, userId={}, memoryDay={}", agentId, userId, memoryDay, e);
+			throw new AgentSessionException("getDayMemory failed:", e);
+		}
+	}
+	
+	/**
+	 * 获取用户智能体记忆总账
+	 * @param agentId
+	 * @param userId
+	 * @return
+	 */
+	public AgentMemory getMemory(String agentId, String userId) {
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("getMemory start::agentId={}, userId={} ", agentId, userId 	);
+		}
+		try {
+			AgentMemory agentMemory = executor.queryObjectWithDBName(AgentMemory.class,datasource,"getMemory",agentId,userId);
+			return agentMemory;
+		} catch (Exception e) {
+			log.error("getMemory failed::agentId={}, userId={} ", agentId, userId,  e);
+			throw new AgentSessionException("getMemory failed:", e);
+		}	
+	}
+	
+	/**
+	 * 追加用户消息到总账,如果总账不存在则新增总账
+	 * @param agent
+	 * @param section
+	 */
+	public void createOrUpdateMemory(AIAgent agent, String section) {
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("createOrUpdateMemory start::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId());
+		}
+		try {
+			AgentMemory agentMemory = executor.queryObjectWithDBName(AgentMemory.class, datasource, "getMemory", agent.getAgentId(), agent.getUserId());
+			if (agentMemory == null) {
+				agentMemory = new AgentMemory();
+				agentMemory.setAgentId(agent.getAgentId());
+				agentMemory.setUserId(agent.getUserId());
+				agentMemory.setMemoryId(SimpleStringUtil.getUUID32());
+				agentMemory.setCreateTime(LocalDateTime.now());
+				agentMemory.setUpdateTime(agentMemory.getCreateTime());
+				agentMemory.setContent(section);
+				agentMemory.setParentAgentId(agent.getParentAgentId());
+				agentMemory.setSessionId(agent.getSessionId());
+				executor.insertWithDBName(datasource, "insertMemory", agentMemory);
+			} else {
+				agentMemory.setUpdateTime(LocalDateTime.now());
+				agentMemory.setContent(agentMemory.getContent() + section);
+				executor.updateWithDBName(datasource, "updateMemory", agentMemory);
+			}
+			
+		} catch (Exception e) {
+			log.error("createOrUpdateMemory failed::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId(), e);
+			throw new AgentSessionException("createOrUpdateMemory failed:", e);
+		}
+		
+	}
+	
+	/**
+	 * 追加用户消息到日流水账,如果总账不存在则新增日流水账
+	 * @param agent
+	 * @param section
+	 */
+	public void createOrUpdateDayMemory(AIAgent agent, String section,String memoryDay) {
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("createOrUpdateDayMemory start::agentId={}, userId={}, memoryDay={} ", agent.getAgentId(), agent.getUserId(), memoryDay	);
+		}
+		try {
+			AgentDayMemory agentDayMemory = executor.queryObjectWithDBName(AgentDayMemory.class, datasource, "getDayMemory", agent.getAgentId(), agent.getUserId(), memoryDay	);
+			if (agentDayMemory == null) {
+				agentDayMemory = new AgentDayMemory();
+				agentDayMemory.setAgentId(agent.getAgentId());
+				agentDayMemory.setUserId(agent.getUserId());
+				agentDayMemory.setMemoryId(SimpleStringUtil.getUUID32());
+				agentDayMemory.setCreateTime(LocalDateTime.now());
+				agentDayMemory.setUpdateTime(agentDayMemory.getCreateTime());
+				agentDayMemory.setContent(section);
+				agentDayMemory.setParentAgentId(agent.getParentAgentId());
+				agentDayMemory.setMemoryDay(memoryDay);
+				agentDayMemory.setSessionId(agent.getSessionId());
+				executor.insertWithDBName(datasource, "insertDayMemory", agentDayMemory);
+			} else {
+				agentDayMemory.setUpdateTime(LocalDateTime.now());
+				agentDayMemory.setContent(agentDayMemory.getContent() + section);
+				executor.updateWithDBName(datasource, "updateDayMemory", agentDayMemory);
+			}
+			
+		} catch (Exception e) {
+			log.error("createOrUpdateDayMemory failed::agentId={}, userId={}, memoryDay={} ", agent.getAgentId(), agent.getUserId(), memoryDay, e);
+			throw new AgentSessionException("createOrUpdateDayMemory failed:", e);
+		}
+		
 	}
 }

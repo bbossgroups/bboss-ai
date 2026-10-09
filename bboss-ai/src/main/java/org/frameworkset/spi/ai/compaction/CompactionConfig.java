@@ -244,11 +244,26 @@ public class CompactionConfig {
      * context window. Used by {@code CompactionMiddleware} to resolve dynamic defaults.
      */
     public CompactionConfig withEffective(int effectiveTriggerTokens, int effectiveKeepTokens) {
-       
-        this.triggerTokens = effectiveTriggerTokens;
-       
-        this.keepTokens = effectiveKeepTokens;
-		return this;
+		CompactionConfig  compactionConfig = new CompactionConfig();
+//        this.triggerTokens = effectiveTriggerTokens;
+//       
+//        this.keepTokens = effectiveKeepTokens;
+		
+		compactionConfig.setTriggerMessages(this.triggerMessages)	;
+		compactionConfig.setTriggerTokens(effectiveTriggerTokens);
+		compactionConfig.setReserved(this.reserved);
+		compactionConfig.setKeepMessages(this.keepMessages);
+		compactionConfig.setKeepTokens(effectiveKeepTokens);
+		compactionConfig.setKeepTokensMin(this.keepTokensMin);
+		compactionConfig.setKeepTokensMax(this.keepTokensMax);
+		compactionConfig.setKeepTokensRatio(this.keepTokensRatio);
+		compactionConfig.setSummaryPrompt(this.summaryPrompt);
+		compactionConfig.setFlushBeforeCompact(this.flushBeforeCompact);
+		compactionConfig.setOffloadBeforeCompact(this.offloadBeforeCompact);
+		compactionConfig.setTruncateArgs(this.truncateArgsConfig);
+		compactionConfig.setPruneConfig(this.pruneConfig);
+		compactionConfig.setCompactModel(this.compactModel);
+		return compactionConfig;
         
     }
 
