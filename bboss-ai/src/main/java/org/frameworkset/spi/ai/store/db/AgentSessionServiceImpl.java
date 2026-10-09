@@ -679,4 +679,29 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 		}
 		
 	}
+	
+	/**
+	 * 查找最近180条记录
+	 * @param agent
+	 * @return
+	 */
+	@Override
+	public List<AgentDayMemory> listAgentUserDayMemorys(AIAgent agent) {
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("listAgentUserDayMemorys start::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId()		);
+		}
+		try {
+			
+			List<AgentDayMemory> agentMemory = executor.queryListWithDBName(AgentDayMemory.class,datasource,"listAgentUserDayMemorys",agent.getAgentId(),agent.getUserId(),180);
+			if(agentMemory != null && agentMemory.size() > 0){
+				//反转集合顺序
+				Collections.reverse(agentMemory);
+			}
+			return agentMemory;
+		} catch (Exception e) {
+			log.error("listAgentUserDayMemorys failed::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId(),  e);
+			throw new AgentSessionException("listAgentUserDayMemorys failed:", e);
+		}
+	}
 }

@@ -452,6 +452,20 @@
 
 		]]>
     </property>
+    <!--查询用户180天的智能体记忆流水-->
+    <property name="listAgentUserDayMemorys">
+        <![CDATA[
+			select * from agent_day_memory where agentId=? and userId=? order by agentId,userId,createTime desc limit ?
+
+		]]>
+    </property>
+    <!--查询用户180天的智能体记忆流水-->
+    <property name="listAgentUserDayMemorys-yandex_clickhouse">
+        <![CDATA[
+			select * from agent_day_memory where agentId=? and userId=? order by (agentId,userId,createTime)  desc limit ?
+
+		]]>
+    </property>
     <!--查询用户智能体记忆总账-->
     <property name="getMemory">
         <![CDATA[
