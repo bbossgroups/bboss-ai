@@ -32,9 +32,9 @@
   - 采用内置人工介入工具HitlTaskcallTool，实现Hitl功能，亦可以自定义人工介入工具（继承 BaseHitlTaskTool），实现自定义Hitl功能
   - 支持 HitlAssistant 接口，提供人工干预辅助信息和处理人工提交数据
 - 定时调度执行能力
-- 会话记忆压缩（Conversation Compaction），支持基于消息条数/Token 触发的窗口压缩与摘要压缩两种策略，压缩前可将长期记忆 Flush 写入记忆流水账，可剪枝超长工具结果、截断工具入参，保证工具调用与结果配对完整
-- 智能体记忆（Agent Memory），提供用户会话 Memory 流水账记录与长期摘要记录能力，支持 `agent_memory` 表数据库持久化（MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse），启用记忆检索后自动注册会话检索与摘要检索工具（memory 机制与 prompt 机制结合使用）
-- 工具权限管控体系（Permission），基于 `PermissionBehavior`（ALLOW/DENY/ASK/PASSTHROUGH）+ `PermissionMode`（DEFAULT/ACCEPT_EDITS/EXPLORE/BYPASS/DONT_ASK）的规则引擎，支持工具调用前的人工确认（走 HitL）、规则持久化（`agent_tool_call_rules` 表）与外部 `ToolCallPermissionManager` 扩展
+- 会话记忆压缩（Conversation Compaction），支持窗口压缩与按模型上下文窗口大小（Token 预算）触发的摘要压缩两种策略，压缩前可将长期记忆 Flush 写入记忆流水账，可剪枝超长工具结果、截断工具入参，保证工具调用与结果配对完整
+- 智能体记忆（Agent Memory），提供"日流水账 + 长期总账"两层记忆模型，支持 `agent_day_memory` / `agent_memory` / `agent_consolidation_state` 表数据库持久化（MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse），提供 `memory_save` / `memory_get` / `memory_search` 记忆读写检索工具；启用记忆检索后自动注册会话检索与摘要检索工具
+- 工具权限管控体系（Permission），基于 `PermissionBehavior`（ALLOW/DENY/ASK/PASSTHROUGH）+ `PermissionMode`（DEFAULT/ACCEPT_EDITS/EXPLORE/BYPASS/DONT_ASK）的规则引擎，支持工具调用前的人工确认（走 HitL）、会话级"始终允许/拒绝"规则与静态规则分离评估、规则持久化（`agent_tool_call_rules` 表 + 消息类型 25 会话自动还原）与外部 `ToolCallPermissionManager` 扩展
 - 联网检索与网页抓取，内置 `web_search`（基于 Tavily API）与 `web_fetch` 两个只读工具，通过 HTTP 连接池服务 `http_websearch_tool` / `http_webfetch_tool` 调用
 - 文件系统抽象（Filesystem），提供面向 Agent 的存储抽象接口 `AbstractFilesystem`，内置本地文件系统实现 `LocalFilesystem`，支持 SANDBOXED/ROOTED/UNRESTRICTED 三种路径策略、命名空间（按会话/用户隔离）与路径穿越防护；`FileFunctionTool` 新增 `glob_files`/`list_files`/`grep_files` 检索方法
 - 自主规划机制（Plan Mode），提供 `plan_enter`/`plan_write`/`plan_exit` 规划工具与 `todo_write` 任务清单工具，支持"规划 → 人工审批 → 执行"的三段式任务流程
@@ -83,15 +83,16 @@ bboss-ai/
 │       │   ├── interceptor/           # 智能体拦截器（AgentInterceptor、impl/TaskminderAgentInterceptor，预留扩展点）
 │       │   ├── material/              # 素材处理（文件下载等）
 │       │   ├── mcp/                   # MCP 客户端/服务端（sse/、streamable/、feishu/、intercepter/、tools/、model/）
-│       │   ├── model/                 # 消息模型（含 tool/ 权限规则模型子包）
+│       │   ├── memory/                # 智能体记忆管理（MemoryManager 记忆抽取、MemoryUtil）
+│       │   ├── model/                 # 消息模型（含 tool/ 权限规则模型子包、memory/ 记忆实体子包）
 │       │   ├── permission/            # 工具权限管控体系（PermissionEngine、PermissionMode、PermissionRule 等）
 │       │   ├── plan/                  # 自主规划机制（PlanTools）
 │       │   ├── prompt/                # Prompt 变量解析与外部资源加载（PromptEval、PromptResourceCache、PromptVariable 等）
 │       │   ├── skill/                 # 技能加载与管理（SkillUtils、SkillsToolRegist、Skill、SkillFilter）
 │       │   ├── state/                 # 规划/任务状态（PlanModeContextState、Task、TaskContextState）
-│       │   ├── store/                 # 会话存储（内存 + DB + AgentMemoryStore 记忆存储）
+│       │   ├── store/                 # 会话存储（内存 + DB + 会话管理服务 AgentSessionService）
 │       │   ├── tool/                  # 工具注册与搜索（BeanToolsRegist、ToolSearcher、ToolCallContext 等）
-│       │   ├── tools/                 # 内置工具实现（含 WebFetchTool/WebSearchTool/TodoTools/检索工具）
+│       │   ├── tools/                 # 内置工具实现（含 WebFetchTool/WebSearchTool/TodoTools/记忆与会话检索工具）
 │       │   └── util/                  # 工具类（AIAgentUtil、AIResponseUtil、ServerEventUtil 等）
 │       └── reactor/                   # Reactor 流式处理组件
 │
@@ -126,8 +127,9 @@ bboss-ai/
 | `ToolsRegist` | 工具注册接口，支持动态加载模型工具 |
 | `StreamData` | 流式增量数据载体，支持内容/推理内容/工具调用/混合推理内容（`mixedData`）类型 |
 | `TraceMessage` | Trace 消息载体，携带消息内容、起止时间、agentId、parentAgentId、traceId、metaData 等 |
-| `Memory` | 智能体记忆实体（memoryId、agentId、userId、sessionId、content、memoryDay、memoryType: day/longterm） |
 | `TokenMetrics` | Token 用量指标（totalTokens、promptTokens、completionTokens、reasoningData 等） |
+
+> 智能体记忆实体（`AgentMemory` / `AgentDayMemory` / `AgentConsolidationState`）位于 **bboss-ai 核心模块**的 `org.frameworkset.spi.ai.model.memory` 子包，详见 [3.2.15 智能体记忆（Memory）](#3215-智能体记忆memory)。
 
 #### 模型工具规则子包（model/tool）
 
@@ -465,10 +467,8 @@ public class MCPServerController {
 | `AgentSessionStoreDBConfig` | 数据库会话存储配置，管理各数据库方言的建表 SQL 和 CRUD SQL |
 | `AgentSessionStoreBuilder` | 会话存储构建器接口 |
 | `DefaultAgentSessionStoreBuilder` | 默认会话存储构建器，根据 `StoreContext.storeType` 创建对应存储实现 |
-| `AgentSessionService` | 会话管理服务接口（查询、删除、判断存在、重置等） |
+| `AgentSessionService` | 会话管理服务接口（查询、删除、判断存在、重置、记忆读写检索等） |
 | `AgentSessionServiceImpl` | 会话管理服务实现，基于 `ConfigSQLExecutor` |
-| `AgentMemoryStore` | 智能体记忆存储接口（读长期记忆、读某日流水账、写每日流水账） |
-| `AgentMemoryStoreDB` | 记忆数据库存储实现，基于 `agent_memory` 表持久化 |
 | `AgentSession` | 会话实体（sessionId、userId、agentId、domain、title、createTime、lastAccessTime） |
 | `AgentSessionCondition` | 会话查询条件（多 domain、标题模糊、时间范围、排序字段可配置） |
 | `SessionMessage` | 会话消息实体（含 19 种消息类型常量） |
@@ -480,13 +480,20 @@ public class MCPServerController {
 
 **支持的数据库：**
 
-`AgentSessionStoreDBConfig` 通过 `DBUtil.getDBAdapter(dbName)` 自动识别数据库类型并选用对应方言的建表 SQL，首次使用时自动创建以下三张表：
+`AgentSessionStoreDBConfig` 通过 `DBUtil.getDBAdapter(dbName)` 自动识别数据库类型并选用对应方言的建表 SQL，首次使用时自动创建以下表：
 
 | 表名 | 作用 | 支持数据库 |
 |------|------|-----------|
 | `agent_session` | 会话基本信息（sessionId、userId、agentId、title、domain、createTime、lastAccessTime） | MySQL、Oracle、DM、SQL Server、PostgreSQL、SQLite |
 | `agent_session_message` | 会话消息记录（msgId、message、tokenMetrics、role、messageType、agentNodeType、subAgentIdBy 等） | 同上 |
 | `agent_session_message_ref` | 智能体间消息引用关系（msgId、msgAgentId、refAgentId） | 同上 |
+| `agent_hitl_calltask` | HitL 人工介入任务记录 | 同上 |
+| `agent_tool_call_rules` | 工具调用权限规则持久化（模式 1 通道，userId/sessionId/toolName/agentId + permissionRules） | 同上 |
+| `agent_memory` | 智能体长期记忆总账（一个智能体+用户一条，content 为总账内容） | 同上 |
+| `agent_day_memory` | 智能体记忆日流水账（一个智能体+用户+日一条，memoryDay 形如 `memory/yyyy-MM-dd.md`） | 同上 |
+| `agent_consolidation_state` | 长期总账汇总水位状态（记录总账已合并到哪一天的流水账） | 同上 |
+
+> ClickHouse 模式下上述各表均额外创建 `*_local` 本地表（ReplicatedMergeTree）与同名分布式表（Distributed 引擎）；记忆表按 `sipHash64(memoryId)` / `sipHash64(consolidationStateId)` 分片，建表脚本见 [agentSession.xml](bboss-ai/src/main/java/org/frameworkset/spi/ai/store/db/agentSession.xml) 与 [clickhouse-agent.xml](bboss-ai/src/main/java/org/frameworkset/spi/ai/store/db/clickhouse-agent.xml)。
 
 **会话管理服务 API（`AgentSessionService`）：**
 
@@ -501,6 +508,12 @@ public class MCPServerController {
 | `queryListAgentSessions(conditions)` | 查询会话列表（不分页） |
 | `queryListSessionMessages(sessionid)` | 查询会话所有消息 |
 | `queryListSessionMessages(sessionid, agentId)` | 查询指定智能体的会话消息 |
+| `getMemory(agentId, userId)` | 读取智能体长期记忆总账 |
+| `createOrUpdateMemory(agent, section)` | 追加内容到长期总账（不存在则新建） |
+| `getDayMemory(agentId, userId, memoryDay)` | 读取指定日期的记忆流水账 |
+| `createOrUpdateDayMemory(agent, section, memoryDay)` / `createOrUpdateDayMemory(agent, AgentDayMemory)` | 追加内容到日流水账（不存在则新建） |
+| `listAgentUserDayMemorys(agent)` | 列出该智能体+用户近期日流水账（默认限制最近 180 天） |
+| `getAgentPermissionRules(sessionId, agentId)` | 读取会话中最新持久化的工具权限规则（消息类型 25） |
 
 > **会话重置（resetSession）**：存在两种重置能力。其一为 `StoreContext.setResetSession(true)` 配合 `sessionId`，在每次会话构建时先 `removeSession` 清空旧记忆再开始新对话（内存/DB 均适用）；其二为 `AgentSessionService.resetAgentSession(sessionid)`，在事务内清空 `agent_session_message`、`agent_session_message_ref` 及该会话的 HitL 任务，保留 `agent_session` 会话记录本身。两种方式与 `deleteAgentSession`（整条会话连同消息全部删除，并额外清理 `agent_tool_call_rules` 规则）相互区别。
 
@@ -901,7 +914,7 @@ public class MCPServerController {
 
 #### 3.2.12 内置工具体系
 
-bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools` 包下，覆盖 Shell 执行、多语言代码执行、文件系统操作（含检索）、操作系统信息查询、文本搜索、人工介入、联网抓取与检索、任务清单、会话记录检索等场景。其中 `CLIShellFunctionTool`、`CodeExecuteFunctionTool`、`FileFunctionTool`、`GetOSFunctionTool`、`GrepFunctionTool`、`HitlTaskcallTool` 均继承 `BaseAuditorTool`，支持通过 `Auditor` 接口实现工具调用前审计拦截；`WebFetchTool`、`WebSearchTool`、`TodoTools`、`SessionSearchTool`、`CompactSummaryMsgSearchTool` 等为普通 `@Tool` 注解工具，无审计基类依赖。
+bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools` 包下，覆盖 Shell 执行、多语言代码执行、文件系统操作（含检索）、操作系统信息查询、文本搜索、人工介入、联网抓取与检索、任务清单、会话记录检索、记忆读写检索等场景。其中 `CLIShellFunctionTool`、`CodeExecuteFunctionTool`、`FileFunctionTool`、`GetOSFunctionTool`、`GrepFunctionTool`、`HitlTaskcallTool` 均继承 `BaseAuditorTool`，支持通过 `Auditor` 接口实现工具调用前审计拦截；`WebFetchTool`、`WebSearchTool`、`TodoTools`、`SessionSearchTool`、`CompactSummaryMsgSearchTool`、`MemorySaveTool`、`MemoryGetTool`、`MemorySearchTool` 等为普通 `@Tool` 注解工具，无审计基类依赖。
 
 ##### 工具总览
 
@@ -918,6 +931,9 @@ bboss-ai 内置了完整的工具体系，位于 `org.frameworkset.spi.ai.tools`
 | `TodoTools` | 任务清单 | 1 | 会话任务清单管理（`todo_write`），全量替换式维护任务状态 |
 | `SessionSearchTool` | 会话检索 | 2 | 当前会话/当前用户多会话转写检索（`current_session_search`/`user_sessions_search`），启用记忆检索时自动注册 |
 | `CompactSummaryMsgSearchTool` | 摘要检索 | 1 | 按摘要消息 ID 反查被压缩前的原始消息（`summary_search`），启用记忆检索时自动注册 |
+| `MemorySaveTool` | 记忆保存 | 1 | 主动保存长期记忆到总账与当日流水账（`memory_save`） |
+| `MemoryGetTool` | 记忆读取 | 1 | 按行号读取长期总账/某日流水账（`memory_get`） |
+| `MemorySearchTool` | 记忆检索 | 1 | 关键词检索记忆总账与近期日流水账（`memory_search`，支持 phrase/all/any 匹配模式） |
 
 ##### 通用配置约定
 
@@ -1123,6 +1139,15 @@ BaseAuditorTool  →  BaseHitlTaskTool  →  HitlTaskcallTool
 - **长度控制**：返回结果超过 8000 字符自动截断并附截断提示
 - **自动注册**：与 `SessionSearchTool` 一样，启用 `enableMemorySearch` 后自动注册
 
+##### MemorySaveTool / MemoryGetTool / MemorySearchTool —— 记忆读写检索工具
+
+**功能说明**：智能体长期记忆的读写检索工具，均基于数据库持久化（`agent_memory` 总账与 `agent_day_memory` 流水账），通过 `AgentSessionService` 访问，不依赖工作区文件系统。详细模型见 [3.2.15 智能体记忆（Memory）](#3215-智能体记忆memory)。
+
+- `MemorySaveTool.memory_save(content)` —— 主动保存记忆，同时写入长期总账与当日流水账；是所有长期记忆写入的唯一授权入口
+- `MemoryGetTool.memory_get(path, startLine, endLine)` —— 按行号读取：`MEMORY.md` 读总账，`memory/yyyy-MM-dd.md` 读某日流水账，返回带行号的内容
+- `MemorySearchTool.memory_search(query, matchMode)` —— 关键词检索总账与近期（默认 180 天）流水账，`matchMode` 支持 `phrase`（默认）/`all`/`any`
+- **注册方式**：`agent.registBeanTool(new MemorySaveTool())` 等手动注册（不随 `enableMemorySearch` 自动注册）
+
 ##### 通用注册方式
 
 ```java
@@ -1138,9 +1163,12 @@ agent.registBeanTool(new HitlTaskcallTool());              // 人工介入工具
 agent.registBeanTool(new WebFetchTool());                  // 网页抓取工具（http_webfetch_tool 连接池）
 agent.registBeanTool(new WebSearchTool());                 // 联网搜索工具（http_websearch_tool 连接池）
 agent.registBeanTool(new TodoTools());                     // 任务清单工具
+agent.registBeanTool(new MemorySaveTool());                // 记忆保存工具
+agent.registBeanTool(new MemoryGetTool());                 // 记忆读取工具
+agent.registBeanTool(new MemorySearchTool());              // 记忆检索工具
 ```
 
-> **记忆检索工具注册**：设置 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，`SessionSearchTool` 与 `CompactSummaryMsgSearchTool` 会在 `AIAgent.reactMessage()` 中自动注册，无需手动 `registBeanTool`。
+> **记忆检索工具注册**：设置 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，`SessionSearchTool` 与 `CompactSummaryMsgSearchTool` 会在 `AIAgent.reactMessage()` 中自动注册，无需手动 `registBeanTool`；而 `MemorySaveTool`/`MemoryGetTool`/`MemorySearchTool` 需显式 `registBeanTool`。
 
 ##### 工具审计系统（Auditor）
 
@@ -1370,19 +1398,19 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 
 #### 3.2.14 会话记忆压缩（Compaction）
 
-会话记忆压缩机制解决长会话场景下上下文超限问题，位于 `compaction` 包，支持**窗口压缩**与**摘要压缩**两种策略，在每次 LLM 推理调用前自动触发：
+会话记忆压缩机制解决长会话场景下上下文超限问题，位于 `compaction` 包，支持**窗口压缩**与**摘要（Token）压缩**两种策略，在每次 LLM 推理调用前自动触发：
 
 **核心组件：**
 
 | 类名 | 作用 |
 |------|------|
 | `CompactionManagerInf` / `BaseCompactionManager` | 压缩接口与抽象基类；压缩原则：System 消息必须保留，工具入参与工具结果成对出现不能割裂 |
-| `CompactionManager` | 摘要压缩实现（默认），委托 `ConversationCompactor` 完成触发判断、cutoff 计算、剪枝、截断与 LLM 摘要 |
-| `WindowsCompactionManager` | 窗口压缩实现：按消息条数滑动窗口，将窗口外旧消息总结为一条摘要消息（`MESSAGE_TYPE_SUMMARY_MESSAGE=23`）持久化 |
-| `ConversationCompactor` | 摘要压缩核心算法类 |
-| `MemoryManager` | 压缩前用 LLM 从将被压缩的消息中抽取长期记忆，Flush 到每日记忆流水账 |
+| `CompactionManager` | 摘要压缩实现（默认），委托 `ConversationCompactor` 完成触发判断、cutoff 计算、剪枝、截断与 LLM 摘要；按模型上下文窗口动态解析触发/保留预算 |
+| `WindowsCompactionManager` | 窗口压缩实现：按消息条数滑动窗口，使用 `ConversationCompactor.findSafeCutoffPoint` 保证不切断工具调用配对，可先做记忆 Flush，再将窗口外旧消息总结为一条摘要消息（`MESSAGE_TYPE_SUMMARY_MESSAGE=23`）持久化 |
+| `ConversationCompactor` | 摘要压缩核心算法类；`compactIfNeeded(ChatContext, AIAgent, messages, config)` 为入口，`findSafeCutoffPoint` / `filterSummaryMessages` 为对外静态方法 |
+| `MemoryManager`（位于 `memory` 包） | 压缩前用 LLM 从将被压缩的消息中抽取长期记忆，Flush 追加到当日记忆流水账（DB `agent_day_memory`） |
 | `CompactionConfig` | 压缩配置（见下表） |
-| `PruneConfig` | 工具结果聚合剪枝配置（逆向扫描 TOOL 消息，保护最近 `protectTokens` 的输出，对超长旧结果做"头+尾预览"替换；默认排除 read_file/memory 等结果） |
+| `PruneConfig` | 工具结果聚合剪枝配置（逆向扫描 TOOL 消息，保护最近 `protectTokens` 的输出，对超长旧结果做"头+尾预览"替换；默认排除 `read_file`/`memory`/`session_search` 等结果） |
 | `TruncateArgsConfig` | 工具调用入参截断配置（对窗口外 ASSISTANT 消息中过长 arguments 截断到 `maxArgLength`） |
 | `TokenCounterUtil` | 基于字符数的 token 估算工具 |
 | `SummeryUtils` | 摘要文本格式化、摘要消息构建与摘要 LLM 调用 |
@@ -1392,22 +1420,25 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 
 | 配置项 | 默认值 | 说明 |
 |--------|--------|------|
-| `compactionPolicy` | `1`（摘要压缩） | `0`=窗口压缩（COMPACTION_POLICY_WINDOWSIZE），`1`=摘要压缩 |
+| `compactionPolicy` | `1`（摘要/Token 压缩） | `0`=窗口压缩（`COMPACTION_POLICY_WINDOWSIZE`），`1`=摘要压缩（`COMPACTION_POLICY_TOKENS`） |
 | `triggerMessages` | 50 | 消息条数触发阈值（0=关闭该条件） |
 | `triggerTokens` | 0 | Token 触发阈值；0=动态模式，按 `model.getContextWindowSize() - reserved` 计算，模型未报告上下文窗口时回退 160000 |
 | `reserved` | 20000 | 动态模式下为压缩过程预留的 token 缓冲 |
 | `keepMessages` | 20 | 保留原文的最近消息条数（keepTokens==0 时生效） |
 | `keepTokens` | -1 | 保留尾部预算；-1=动态计算 `min(keepTokensMax, max(keepTokensMin, usable*keepTokensRatio))` |
 | `flushBeforeCompact` | true | 压缩前是否执行记忆 Flush |
+| `offloadBeforeCompact` | true | 压缩前是否将原始消息卸载存档到 session 记录（永不压缩） |
 | `compactModel` | null | 压缩摘要专用模型（可用轻量模型），未设置则用智能体主模型 |
 | `summaryPrompt` | 默认资源模板 | 摘要 Prompt（SESSION INTENT/SUMMARY/ARTIFACTS/NEXT STEPS 四段结构），支持链式总结 |
+
+> **上下文窗口驱动的动态阈值**：`ModelInfo.contextWindowSize` 默认 200000（未显式配置时），`CompactionManager.resolveEffectiveConfig` 据此动态计算触发阈值与保留尾部预算，避免小窗口模型频繁触发或大窗口模型迟迟不触发。
 
 **压缩流程（摘要压缩）：**
 
 1. **预清理**：按 `TruncateArgsConfig` 截断长工具入参；按 `PruneConfig` 剪枝超长工具结果
 2. **触发判断**：消息条数 >= `triggerMessages` 或估算 token >= `triggerTokens` 任一触发
 3. **确定 cutoff**：`determineCutoffIndex` 二分查找满足保留预算的最小下标，`findSafeCutoffPoint` 保证不切断 ASSISTANT 的 tool_call 与其 TOOL 结果的配对
-4. **记忆 Flush**：`MemoryManager` 把将被压缩的消息交给 LLM 抽取长期记忆，追加写入当天 `memory/YYYY-MM-DD.md` 流水账
+4. **记忆 Flush**：`MemoryManager.flushMemories` 把将被压缩的消息（`filterSummaryMessages` 剔除旧摘要）交给 LLM 抽取长期记忆，追加写入当天日流水账（DB）
 5. **LLM 摘要**：用 `compactModel` 对前缀做摘要，前序摘要保留在输入中形成链式总结
 6. **重建消息列表**：`[summaryUserMsg] + tail`，摘要消息 role=USER、name=`__compaction_summary__`，携带内容稳定 ID 便于去重
 
@@ -1422,9 +1453,9 @@ StoreContext storeContext = new StoreContext()
 
 // 方式二：完整压缩配置
 CompactionConfig config = new CompactionConfig()
-    .setCompactionPolicy(CompactionConfig.COMPACTION_POLICY_SUMMARY)
+    .setCompactionPolicy(CompactionConfig.COMPACTION_POLICY_TOKENS) // 摘要/Token 压缩
     .setTriggerMessages(50)
-    .setTriggerTokens(0);                   // 动态触发
+    .setTriggerTokens(0);                   // 动态触发（按模型上下文窗口）
 storeContext.setCompactionConfig(config);
 
 ChatAgentMessage message = new ChatAgentMessage();
@@ -1433,27 +1464,44 @@ message.setStoreContext(storeContext);
 
 #### 3.2.15 智能体记忆（Memory）
 
-智能体记忆提供"长期摘要记忆 + 按日流水账"两层模型，配合记忆检索工具实现跨会话记忆：
+智能体记忆提供"**日流水账 Layer 1 + 长期总账 Layer 2**"两层模型，全部落库持久化（不再使用本地 `.md` 文件），配合记忆读写检索工具实现跨会话事实保全。核心实现位于 `memory` 包与 `model/memory` 子包：
 
-**核心接口与实现：**
+**核心类：**
 
 | 类名 | 作用 |
 |------|------|
-| `AgentMemoryStore` | 记忆存储接口：`readExistingLongTermMemoryContent`（读长期记忆）、`readExistingDayMemoryContent`（读某日流水账）、`writeDailyMemory`（写每日流水账） |
-| `AgentMemoryStoreDB` | 记忆数据库存储实现，基于 `agent_memory` 表 |
-| `Memory` | 记忆实体：memoryId、agentId、parentAgentId、userId、sessionId、content、memoryDay（day 类型为 yyyy-MM-dd）、memoryType（day/longterm） |
+| `MemoryManager`（`memory` 包） | 记忆 Flush 管理器：把将被压缩的对话（USER/ASSISTANT/TOOL，跳过 SYSTEM 与内部上下文/旧摘要消息）交给 LLM 抽取**新**记忆，以 `## Memory Flush — {ISO时间戳}` 段落追加到当日日流水账；工具结果截断 1000 字符、工具入参截断 500 字符，防止 token 爆炸 |
+| `MemoryUtil`（`memory` 包） | 记忆路径判定工具 `isDayMemoryPath(path)`：`MEMORY.md` 为总账，`memory/` 前缀为流水账 |
+| `AgentMemory`（`model/memory` 子包） | 长期记忆总账实体，对应表 `agent_memory`；字段 memoryId、createTime、updateTime、agentId、parentAgentId、userId、sessionId、content（一个智能体+用户一条） |
+| `AgentDayMemory`（`model/memory` 子包） | 日流水账实体，对应表 `agent_day_memory`；在总账字段基础上增加 memoryDay（形如 `memory/yyyy-MM-dd.md`，一个智能体+用户+日一条） |
+| `AgentConsolidationState`（`model/memory` 子包） | 总账汇总水位状态实体，对应表 `agent_consolidation_state`；记录总账已合并到哪一天的流水账（consolidationState 为 ISO 时间戳） |
+| `WorkspaceConstants` | 记忆路径常量（`MEMORY_MD="MEMORY.md"`、`MEMORY_DIR="memory"`） |
 | `SessionMessage.MESSAGE_TYPE_SUMMARY_MESSAGE` | 摘要压缩消息类型（23），meta.summaryIds 记录被压缩的原始消息清单 |
+| `SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE` | 工具权限规则消息类型（25），meta.permissionRules 持久化权限规则 |
 
-**`agent_memory` 表**：与 `agent_session` 系列表一样由框架自动建表，覆盖 MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse，字段含 `memoryId`(PK)、`agentId`、`parentAgentId`、`userId`、`sessionId`、`content`、`memoryDay`、`memoryType`。ClickHouse 模式同样创建 `agent_memory_local` 本地表与 `agent_memory` 分布式表（按 `sipHash64(sessionId)` 分片）。
+**记忆读写 API**（统一由 `AgentSessionService` 提供，内存/DB 两种存储实现一致）：
 
-**记忆两层模型（由 `MemoryManager` 维护）：**
+| 方法 | 说明 |
+|------|------|
+| `getMemory(agentId, userId)` | 读长期总账 |
+| `createOrUpdateMemory(agent, section)` | 追加写长期总账（不存在则新建） |
+| `getDayMemory(agentId, userId, memoryDay)` | 读某日流水账 |
+| `createOrUpdateDayMemory(agent, section, memoryDay)` / `createOrUpdateDayMemory(agent, AgentDayMemory)` | 追加写日流水账（不存在则新建） |
+| `listAgentUserDayMemorys(agent)` | 列出近期日流水账，DB 侧 SQL 默认 `limit` 限制最近 **180 天**（`order by ... createTime desc limit ?`） |
 
-- **按日流水账**：`memory/YYYY-MM-DD.md` 文件，`writeDailyMemory` 追加式写入，压缩时 `flushBeforeCompact` 触发 Flush
-- **长期记忆**：`MEMORY.md` 文件，持久化跨会话的关键事实
+**记忆三层表结构**：与 `agent_session` 系列表一样由框架自动建表，覆盖 MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse：
+
+- `agent_memory`（总账）：`memoryId`(PK)、`createTime`、`updateTime`、`agentId`、`parentAgentId`、`userId`、`sessionId`、`content`
+- `agent_day_memory`（日流水账）：在总账字段基础上增加 `memoryDay`
+- `agent_consolidation_state`（水位）：`consolidationStateId`(PK)、`createTime`、`updateTime`、`agentId`、`parentAgentId`、`userId`、`consolidationState`
+
+ClickHouse 模式下均创建 `*_local` 本地表（ReplicatedMergeTree）与 `*` 分布式表（Distributed 引擎），按 `sipHash64(memoryId)` / `sipHash64(consolidationStateId)` 分片；UPDATE 走 `ALTER TABLE ... UPDATE ... SETTINGS mutations_sync`。
+
+> **与压缩的衔接**：`CompactionConfig.flushBeforeCompact=true` 时，压缩前 `MemoryManager.flushMemories` 先"抢救"出长期记忆写入日流水账；`ConversationCompactor.filterSummaryMessages` 显式剔除旧摘要消息，避免把摘要重复提取为记忆。
 
 #### 3.2.16 记忆检索与会话检索工具
 
-启用 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，`AIAgent.reactMessage()` 会自动注册以下工具：
+**（1）自动注册的检索工具** —— 启用 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，`AIAgent.reactMessage()` 会自动注册以下工具：
 
 | 工具类 | 工具方法（@Tool name） | 功能 |
 |--------|------------------------|------|
@@ -1461,6 +1509,16 @@ message.setStoreContext(storeContext);
 | `CompactSummaryMsgSearchTool` | `summary_search` | 按压缩摘要消息中携带的 summaryMessageIds 反查被压缩前的原始消息，`SummeryUtils.formatSessionMessagesForSummary` 格式化（TOOL_CALL/TOOL_RESULT 转为内联文本），超过 8000 字符自动截断并附提示 |
 
 启用记忆检索时，`SummeryUtils.buildSummaryMessage` 会在摘要消息内容中内嵌 `<summaryMessageIds>` 列表，供模型后续用 `summary_search` 查原文。`SessionSearchTool` 通过 `AgentTraceHolder.getChatObject().getAgent()` 取运行上下文，调用 `mainSessionStore.getAllAgentSessionMessage(sessionId)` / `getAllAgentSessionMessageOfUser(userId, limit)`。
+
+**（2）记忆读写检索工具** —— 位于 `tools` 包，通过 `agent.registBeanTool(...)` 注册（与上一组工具相互独立），底层统一走 `AgentSessionService` 的记忆 API：
+
+| 工具类 | 工具方法（@Tool name） | 功能 |
+|--------|------------------------|------|
+| `MemorySaveTool` | `memory_save(content)` | 主动保存记忆：内容追加到长期总账 `agent_memory`，同时以 `## Memory Save — {时间戳}` 段落追加到当日日流水账；是 Agent 写入长期记忆的**唯一授权入口**（系统提示词禁止用 `write_file`/`edit_file` 直接操作记忆） |
+| `MemoryGetTool` | `memory_get(path, startLine, endLine)` | 按行号读取记忆：`path=MEMORY.md` 读长期总账；`path=memory/yyyy-MM-dd.md` 读对应日期流水账，返回 `行号|内容` |
+| `MemorySearchTool` | `memory_search(query, matchMode)` | 关键词检索记忆总账与近期（默认 180 天）日流水账；`matchMode` 支持 `phrase`（默认，精确子串）/`all`（同一条记忆行包含全部关键词）/`any`（包含任一关键词），大小写不敏感，由 `KeywordMatcher.compile` 编译；返回 `Source: <文件/日期>#行号: 内容` |
+
+> 记忆工具与文件系统抽象（`AbstractFilesystem`）解耦：读写检索直接基于数据库持久化的 `AgentMemory` / `AgentDayMemory`，无需依赖工作区文件。
 
 #### 3.2.17 工具权限管控体系（Permission）
 
@@ -1473,16 +1531,23 @@ message.setStoreContext(storeContext);
 | `PermissionBehavior` | 单条裁决行为：`ALLOW` 放行 / `DENY` 拒绝 / `ASK` 需确认 / `PASSTHROUGH` 交由引擎继续评估 |
 | `PermissionMode` | 全局评估模式：`DEFAULT`（需显式 allow）、`ACCEPT_EDITS`（工作目录编辑放行）、`EXPLORE`（只读模式，修改类工具一律拒绝）、`BYPASS`（全放行）、`DONT_ASK`（无人值守，ASK 降级为 DENY） |
 | `PermissionRule` | 绑定工具名的规则：toolName + ruleContent（工具专属匹配模式，null 表示工具名级规则）+ behavior + source |
-| `PermissionEngine` | 核心评估引擎（final），构造时从 AgentRuntimeContext 快照规则表，`addRule` 支持运行时动态追加（"始终允许/拒绝"回填） |
+| `PermissionDecision` | 单次裁决结果：behavior + message + decisionReason + updatedInput（重写工具入参）+ suggestedRules（建议的"始终允许/拒绝"规则），提供 `withSuggestedRules`/`passthrough` 辅助方法 |
+| `PermissionVerdict` | 裁决包装：functionTool + behavior + PermissionDecision |
+| `PermissionEngine` | 核心评估引擎（final），**会话级 always 规则（`sessionAlwaysPermissionRules`）与静态规则（来自 AgentRuntimeContext）分离持有**；`checkSessionAlwaysPermission` 先评估会话规则，`checkPermission` 再评估静态规则；`addRule` 仅向会话级规则追加（"始终允许/拒绝"回填） |
+| `PermissionRules`（`model/tool` 子包） | 规则容器（allowRules/denyRules/askRules 三张表），`addRule` 按 behavior 路由并按 ruleContent 去重，支持序列化持久化 |
 | `PermissionGate` | 一轮工具调用的汇总：`pendingAsk`（待确认列表）+ `autoDeniedIds`（规则自动拒绝集合） |
-| `ToolCallPermissionManager` | 外部权限管理接口：`checkPermissions` / `matchRule` / `generateSuggestions` |
-| `ToolBase` | 工具侧权限扩展点：`checkPermissions` / `matchRule` / `generateSuggestions`，`FileFunctionTool` 等内置工具支持覆写 |
+| `ToolCallPermissionManager` | 外部权限管理接口：`checkPermissions(tool, input, chatObject)` / `matchRule` / `generateSuggestions` |
+| `ToolBase` | 工具侧权限扩展点：`checkPermissions(input, chatObject)` / `matchRule` / `generateSuggestions`，`FileFunctionTool` 等内置工具支持覆写 |
 
-**评估管线（`PermissionEngine.checkPermission` 六步）：**
+**评估管线（`PermissionEngine` 两阶段）：**
+
+第一阶段 `checkSessionAlwaysPermission`（会话级 always 规则，优先级最高）：deny → ask → allow，命中即返回；未命中进入第二阶段。
+
+第二阶段 `checkPermission`（静态规则 + 工具自检 + 模式回退）：
 
 1. 工具级 deny 规则（最高优先级）→ DENY
 2. 工具级 ask 规则 → ASK（附带建议规则）
-3. 工具自身检查（bypass-immune）：EXPLORE 模式只读工具 ALLOW、非只读 DENY；有 `ToolBase` 走 `tool.checkPermissions`，否则走 `ToolCallPermissionManager.checkPermissions`
+3. 工具自身检查（bypass-immune）：EXPLORE 模式只读工具 ALLOW、非只读 DENY；有 `ToolBase` 走 `tool.checkPermissions(input, chatObject)`，否则走 `ToolCallPermissionManager.checkPermissions(tool, input, chatObject)`
 4. 工具级 allow 规则 → ALLOW（可携带 `updatedInput` 重写入参）
 5. BYPASS 模式回退 → 全部 ALLOW
 6. 默认 ASK；`DONT_ASK` 模式下降级为 DENY
@@ -1493,8 +1558,8 @@ message.setStoreContext(storeContext);
 
 1. **自动持久化（模式 2，当前采用）**：每轮工具调用结束后，`AgentAdapter` 将当前 `PermissionEngine` 的 allow/deny/ask 三张规则表快照封装为 `PermissionRules`，以 role=`toolpermissionrules`（`MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE=25`）的 Trace 消息（meta 的 `permissionRules` 键）写入会话存储（`agent.recordTraceMessage`）。
 2. **会话恢复还原**：会话续问续答时，`AIAgent.restorePermissionRules(chatObject)` 调用 `mainSessionStore.getAgentPermissionRules(sessionId, agentId)`（内存实现从 `AgentSession.getAgentPermissionRules` 取最新一条，DB 实现经 `selectAgentPermissionRulesSQL` 查询）加载该智能体最新的权限规则，还原到 `ChatObject.permissionRules`。
-3. **会话规则优先**：`PermissionEngine` 构造时优先采用会话中还原的权限规则；若 `ChatObject.getPermissionRules()` 为 null 才回退到 `AgentRuntimeContext` 上配置的初始规则。
-4. **"总是允许/拒绝"免确认（含同用户消息内跨轮）**：Ask 审批时用户通过 `ToolCallAskResult.choosedAlwaysPermissionRule` 选中的规则，会立即通过 `permissionEngine.addRule(...)` 追加到引擎内部规则表，同一请求内后续工具调用（包括同一用户消息内的多轮工具循环）直接命中 ALLOW/DENY 不再询问；同时随类型 25 消息持久化，供后续会话还原。
+3. **会话规则优先（两阶段评估）**：`PermissionEngine` 构造时，静态规则（allow/deny/ask 三张表）始终从 `AgentRuntimeContext` 快照；会话中还原的规则单独存入 `sessionAlwaysPermissionRules`。评估时先调用 `checkSessionAlwaysPermission` 判断会话级规则（deny→ask→allow），未命中再走静态规则评估，实现"先会话权限规则、后静态权限规则"。
+4. **"总是允许/拒绝"免确认（含同用户消息内跨轮）**：Ask 审批时用户通过 `ToolCallAskResult.choosedAlwaysPermissionRule` 选中的规则，会立即通过 `PermissionRules.addRule(...)` 追加到**会话级规则表**（按 ruleContent 去重），同一请求内后续工具调用（包括同一用户消息内的多轮工具循环）直接命中 ALLOW/DENY 不再询问；同时随类型 25 消息持久化，供后续会话还原。
 5. **表持久化（模式 1）**：保留 `agent_tool_call_rules` 表（`AIAgent.addAgentToolCallRules/updateAgentToolCallRules/getAgentToolCallRules`）作为独立的规则持久化通道，支持 MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse（ClickHouse 下同样创建 `agent_tool_call_rules_local` 本地表与分布式表）；`deleteAgentSession` 删除会话时一并清理该表规则。
 
 **配置示例：**
@@ -1759,7 +1824,7 @@ planAgent.addDefaultRouteChoiceAgent(new AIAgent("默认处理"));
 ├─────────────────────────────────────────┤
 │      AgentSessionStore (会话层)          │
 │    (Memory/DB 持久化 + Compaction)      │
-│    (AgentMemoryStore 记忆存储)           │
+│  (MemoryManager 记忆管理/AgentSessionService) │
 ├─────────────────────────────────────────┤
 │       AgentRuntimeContext (运行时层)     │
 │  (权限规则/调试开关/规划状态/压缩配置)    │
@@ -1869,8 +1934,8 @@ AgentSessionStore（主存储）
 - 查询排序字段和时间条件字段可配置（`createTime` / `lastAccessTime`）
 - ClickHouse 模式下会话续问续答时不更新最后访问时间（避免高频 UPDATE）
 - 支持会话重置：`StoreContext.setResetSession(true)` 每次对话前清空旧记忆；`AgentSessionService.resetAgentSession()` 事务内清空消息并保留会话记录
-- 支持会话记忆压缩：窗口压缩（按消息条数）与摘要压缩（按 Token 预算）两种策略，压缩前 Flush 长期记忆，保证工具调用与结果配对完整
-- 支持智能体记忆存储：`agent_memory` 表持久化按日流水账与长期记忆，启用记忆检索后自动注册会话检索/摘要检索工具
+- 支持会话记忆压缩：窗口压缩（`COMPACTION_POLICY_WINDOWSIZE`，按消息条数）与摘要/Token 压缩（`COMPACTION_POLICY_TOKENS`，按模型上下文窗口动态 Token 预算）两种策略，压缩前 Flush 长期记忆并可选卸载存档原始消息，保证工具调用与结果配对完整
+- 支持智能体记忆存储：`agent_day_memory`（日流水账）/`agent_memory`（长期总账）/`agent_consolidation_state`（规范化水位）三表持久化，配合 `memory_save`/`memory_get`/`memory_search` 记忆工具；启用记忆检索后自动注册会话检索/摘要检索工具
 
 ### 4.7 工具扩展机制
 
@@ -1906,8 +1971,9 @@ AgentSessionStore（主存储）
 - `PlanTools`（plan_enter/plan_write/plan_exit）+ `TodoTools`（todo_write）支持"规划 → 人工审批 → 执行"三段式流程
 - 规划模式与权限模式（EXPLORE 只读约束）、HitL 审批天然配合
 
-**记忆检索工具：**
+**记忆与检索工具：**
 - 启用 `enableMemorySearch` 后自动注册 `SessionSearchTool`（当前/跨会话检索）与 `CompactSummaryMsgSearchTool`（摘要反查原文）
+- `MemorySaveTool`（`memory_save`）/`MemoryGetTool`（`memory_get`）/`MemorySearchTool`（`memory_search`）提供长期记忆写入、读取与检索，需显式 `registBeanTool`，全部基于 `agent_memory`/`agent_day_memory` 数据库持久化
 
 ### 4.8 可观测性机制
 
@@ -2315,7 +2381,7 @@ bboss-ai 是一个功能完善的 Java AI 智能体开发框架，具有以下�
 11. **工具权限管控**：`PermissionEngine` 规则引擎 + 五种评估模式 + HitL 人工确认，"始终允许/拒绝"规则可持久化（`agent_tool_call_rules` 表 + 消息类型 25 会话自动持久化还原，会话规则优先），同一请求内跨轮次免确认
 12. **生产级会话存储**：支持 ClickHouse 分布式集群，提供高吞吐会话持久化能力
 13. **会话记忆压缩**：窗口压缩/摘要压缩两种策略，支持记忆 Flush、工具结果剪枝、入参截断，动态触发阈值适配模型上下文窗口
-14. **智能体记忆**：`agent_memory` 表持久化按日流水账与长期记忆，记忆检索与会话/摘要检索工具联动
+14. **智能体记忆**：`agent_day_memory`（日流水账）/`agent_memory`（长期总账）/`agent_consolidation_state`（规范化水位）三表持久化两层记忆模型，`memory_save`/`memory_get`/`memory_search` 工具联动会话/摘要检索
 15. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路（含模型调用异常记录），消息类型体系扩展到 25 种
 16. **内置工具体系**：Shell 执行、代码执行（Java/Python/JavaScript）、文件操作（含 glob/list/grep 检索）、系统信息查询、文本搜索（Grep）、网页抓取（`web_fetch`）、联网搜索（`web_search`）、任务清单（`todo_write`）、会话/摘要检索、人工介入
 17. **混合推理内容流式推送**：`mixedData` 报文自动拆分，推理流与答案流分别渲染，适配九天 deepseek 等边推理边输出模型
