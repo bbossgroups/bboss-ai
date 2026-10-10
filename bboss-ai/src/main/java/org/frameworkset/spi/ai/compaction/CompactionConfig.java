@@ -60,14 +60,14 @@ import org.frameworkset.spi.ai.model.ModelInfo;
 public class CompactionConfig {
 	
 	/**
-	 * Compaction policy: window size, according to message window size for trimming.
+	 * Compaction policy: window size, according to message window size for trimming and appending summary to the front.
 	 */
 	public static final int COMPACTION_POLICY_WINDOWSIZE = 0;
 	
 	/**
-	 * Compaction policy: summary, according to message window size for trimming and appending summary to the front.
+	 * Compaction policy: summary,tokens according to message window size for trimming and appending summary to the front.
 	 */
-	public static final int COMPACTION_POLICY_SUMMARY = 1;
+	public static final int COMPACTION_POLICY_TOKENS = 1;
 
     /**
      * Fallback trigger threshold (in tokens) when the model does not report its context window
@@ -126,7 +126,7 @@ public class CompactionConfig {
 //            {messages}
 //            </messages>\
 //            """;
-	private int compactionPolicy = COMPACTION_POLICY_SUMMARY;
+	private int compactionPolicy = COMPACTION_POLICY_TOKENS;
 	private int triggerMessages = 50;
 	private int triggerTokens = 0;
 	private int reserved = 20_000;

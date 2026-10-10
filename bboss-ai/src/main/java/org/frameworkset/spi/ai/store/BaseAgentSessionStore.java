@@ -24,7 +24,6 @@ import org.frameworkset.spi.ai.compaction.CompactionManagerInf;
 import org.frameworkset.spi.ai.compaction.WindowsCompactionManager;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.*;
-import org.frameworkset.spi.ai.store.db.AgentMemoryStoreDB;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.Logger;
@@ -154,7 +153,6 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     }
 
     public BaseAgentSessionStore(StoreContext storeContext,AIAgent agent){
-		this.agentMemoryStore = new AgentMemoryStoreDB(storeContext);
 		 
         this.persistentSessionMemory = true;
         this.storeContext = storeContext;
@@ -206,7 +204,6 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
      * 子任务会话记忆
      */
     private Map<String,AgentSessionStore> subTaskSessionMemorys;
-	private AgentMemoryStore agentMemoryStore;
 
     public BaseAgentSessionStore(String sessionId, String userId, String agentId ) {
         this.sessionId = sessionId;
@@ -845,17 +842,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         this.requestId = requestId;
         return (T) this;
     }
-	
-	@Override
-	public AgentMemoryStore getAgentMemoryStore() {
-		if(agentMemoryStore == null && parentAgentSessionStore != null && parentAgentSessionStore != this)
-			return this.parentAgentSessionStore.getAgentMemoryStore();
-		return agentMemoryStore;
-	}
-	
-	public void setAgentMemoryStore(AgentMemoryStore agentMemoryStore) {
-		this.agentMemoryStore = agentMemoryStore;
-	}
+	 
 	public abstract int getNextSeqNo();
 	
 	public AgentSessionService getAgentSessionService() {

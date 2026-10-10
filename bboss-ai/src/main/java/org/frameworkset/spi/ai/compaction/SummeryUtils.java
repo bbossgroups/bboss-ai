@@ -191,7 +191,7 @@ public class SummeryUtils {
 																	   AIAgent agent, String summary,
 																	   List<LinkedMessageMap<String, Object>> summeryMessages,
 																	   String filePath,
-																	   LinkedMessageMap<String, Object> nextMessage, PermissionRules permissionRules) {
+																	   LinkedMessageMap<String, Object> nextMessage ) {
 		String content;
 		LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
 		Map<String, Object> meta = new LinkedHashMap<>();
@@ -200,9 +200,7 @@ public class SummeryUtils {
 			summaryIds.add(summeryMessage.getId());
 		}
 		meta.put("summaryIds", summaryIds);
-		if(permissionRules != null){
-			meta.put(PermissionRules.PERMISSION_RULES_KEY,permissionRules);
-		}
+		 
 		linkedMessageMap.setMeta(meta);
 		if (filePath != null) {
 			content =

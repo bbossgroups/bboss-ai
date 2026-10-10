@@ -441,7 +441,7 @@ public class AIAgentUtil {
         
         ChatContext   chatContext = new ChatContext();
 		ModelInfo modelInfo =  new ModelInfo();
-		modelInfo.setModel(maas == null?chatMessage.getMaas():maas);
+		modelInfo.setMaas(maas == null?chatMessage.getMaas():maas);
 		modelInfo.setModel(chatMessage.getModel());
 		chatContext.setModelInfo(modelInfo);
 		

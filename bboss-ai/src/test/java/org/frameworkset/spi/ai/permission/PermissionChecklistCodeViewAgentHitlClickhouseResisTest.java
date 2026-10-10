@@ -17,7 +17,6 @@ package org.frameworkset.spi.ai.permission;
 
 import com.frameworkset.common.poolman.util.DBConf;
 import com.frameworkset.common.poolman.util.SQLManager;
-import com.frameworkset.common.poolman.util.SQLUtil;
 import org.frameworkset.nosql.redis.RedisConfig;
 import org.frameworkset.nosql.redis.RedisDB;
 import org.frameworkset.nosql.redis.RedisFactory;
@@ -106,7 +105,7 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTest {
 		tempConf.setMaximumSize(20);
 		tempConf.setUsepool(true);
 		
-		tempConf.setShowsql(true);
+		tempConf.setShowsql(false);
 		SQLManager. startPool(tempConf);
 	}
 	
@@ -144,7 +143,8 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTest {
 //				.setTemperature(1.0);//.addParameter("max_tokens", 2048);
 		chatAgentMessage.setStoreContext(new StoreContext()
 				.setUserId("user123").setSessionSize(100)
-				.setCompactionConfig(new CompactionConfig().setCompactionPolicy(CompactionConfig.COMPACTION_POLICY_SUMMARY))
+				.setCompactionConfig(new CompactionConfig().setTriggerMessages(10).setKeepMessages(6)
+						.setCompactionPolicy(CompactionConfig.COMPACTION_POLICY_TOKENS))
 				.setRequestId("request123").setSessionId("1234570")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
 				.setHitlRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)

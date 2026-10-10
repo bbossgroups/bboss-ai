@@ -52,19 +52,19 @@ public class MemorySaveTool {
     @Tool(
             name = "memory_save",
             description =
-                    "Persist one or more facts to long-term memory. Use whenever the user asks you"
-                        + " to remember something, or when you observe important preferences,"
-                        + " decisions, or context worth keeping across conversations. Do NOT use"
-                        + " write_file or edit_file on MEMORY.md — always use this tool instead.")
+					"Persist one or more facts to long-term memory. Use whenever the user asks you"
+							+ " to remember something, or when you observe important preferences,"
+							+ " decisions, or context worth keeping across conversations. Do NOT use"
+							+ " write_file or edit_file on MEMORY.md — always use this tool instead.")
     public String memorySave(
              
             @ToolParam(
                             name = "content",
                             description =
-                                    "Markdown bullet list of facts to remember. Each bullet should"
-                                            + " be a concise, self-contained fact. Example:\\n"
-                                            + "- User prefers dark mode\\n"
-                                            + "- Project deadline is 2026-07-01")
+									"Markdown bullet list of facts to remember. Each bullet should"
+											+ " be a concise, self-contained fact. Example:\\n"
+											+ "- User prefers dark mode\\n"
+											+ "- Project deadline is 2026-07-01")
                     String content) {
         if (content == null || content.isEmpty()) {
             return "Error: content is required";

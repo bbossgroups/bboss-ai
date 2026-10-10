@@ -17,8 +17,10 @@ package org.frameworkset.spi.ai.compaction;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.memory.MemoryManager;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
+import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 
@@ -76,84 +78,35 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 		if(triggerSessionSize > 0 && compactedMessages.size() >= triggerSessionSize){
 			 
 		 
-			int removePosition = compactedMessages.size() - sessionSize;
+			int cutoffIndex = compactedMessages.size() - sessionSize;
 			
-			if(removePosition == 0){
+			if(cutoffIndex == 0){
 				return messages;
 			}
-			PermissionRules  permissionRules = null;
-			for(int i = 0; i < compactedMessages.size(); i ++){
-				LinkedMessageMap<String, Object> message = compactedMessages.get(i	);
+			
+			cutoffIndex = ConversationCompactor.findSafeCutoffPoint( compactedMessages,  cutoffIndex);
 				
-				PermissionRules  permissionRules_ = (PermissionRules)message.getMetaValue(PermissionRules.PERMISSION_RULES_KEY);
-				if(permissionRules_ != null){
-					permissionRules = permissionRules_;
-				}
-				 
-			}
-			//确保工具调用结果和对应的入参都在keep messages窗口内
-			Map<String, Object> toolCallIds = new LinkedHashMap<>();
-			for(int j = compactedMessages.size() - 1; j >= removePosition; j --){
-				LinkedMessageMap<String, Object> message = compactedMessages.get(j);
-				String role = (String) message.get("role");
-				if(role.equals(MessageBuilder.ROLE_TOOL)) { //处理工具调用结果
-					String id = (String) message.get("tool_call_id");
-					
-					toolCallIds.put(id, 1);
-				}
-				else{
-					//获取工具入参
-					List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) message.get("tool_calls");
-					if(toolCalls != null && !toolCalls.isEmpty()){ //工具入参
-						for(Map toolCall : toolCalls){
-							String toolCallId = (String) toolCall.get("id");
-							if(toolCallIds.containsKey(toolCallId)){ //在keep messages窗口内找到工具入参消息，直接清理掉
-								toolCallIds.remove(toolCallId);
-							}
-							 
-						}
-						 
-					}
-				}
-			}
-			if(!toolCallIds.isEmpty()){ //意味着工具入参消息在窗口之外，需要将这些工具入参消息添加到messages中
-				int k = 0;
-				for(k = removePosition -1 ; k >= 0 ; k --){
-					LinkedMessageMap<String, Object> message = compactedMessages.get(k);
-					String role = (String) message.get("role");
-					if(role.equals(MessageBuilder.ROLE_TOOL)) { //在回溯过程中，又碰到了工具调用结果，还需继续进行回溯
-						String id = (String) message.get("tool_call_id");
-						toolCallIds.put(id, 1);
-					}
-					else {
-						//获取工具入参
-						List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) message.get("tool_calls");
-						if (toolCalls != null && !toolCalls.isEmpty()) { //工具入参
-							for (Map toolCall : toolCalls) {
-								String toolCallId = (String) toolCall.get("id");
-								if (toolCallIds.containsKey(toolCallId)) { //在keep messages窗口内找到工具入参消息，直接清理掉
-									toolCallIds.remove(toolCallId);
-								}								
-							}							
-						}						
-					}
-					if (toolCallIds.isEmpty()) {						
-						break;
-					}
-				}				 
-				removePosition = k < 0 ? 0 : k;
-			}
-					
 			 
 			List<LinkedMessageMap<String, Object>> newMessages = null;
-			if(removePosition > 0 && removePosition < compactedMessages.size()) {
-				newMessages = new ArrayList<>(compactedMessages.subList(removePosition, compactedMessages.size()));
-				List<LinkedMessageMap<String, Object>> summeryMessage = compactedMessages.subList(0, removePosition);
+			if(cutoffIndex > 0 && cutoffIndex < compactedMessages.size()) {
+				newMessages = new ArrayList<>(compactedMessages.subList(cutoffIndex, compactedMessages.size()));
+				List<LinkedMessageMap<String, Object>> summeryMessage = compactedMessages.subList(0, cutoffIndex);
 				if(logger.isInfoEnabled()){
 					logger.info("为卸载压缩的消息生成摘要，卸载记录数：{}",summeryMessage.size());
 				}
+				// Step 2: Flush long-term memories only from newly compacted raw messages (best-effort).
+				if(config.isFlushBeforeCompact()) {
+					List<LinkedMessageMap<String, Object>> flushInput = ConversationCompactor.filterSummaryMessages(summeryMessage);
+					ModelInfo model = config.getCompactModel();
+					if(model == null)
+						model = chatContext.getModelInfo();
+					MemoryManager flushManager =
+							new MemoryManager(model);
+					flushManager
+							.flushMemories(  agent, flushInput);
+				}
 				String summery = SummeryUtils.summarizePrefix(summeryMessage, config,chatContext);
-				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(chatContext,agent,summery,summeryMessage,null,newMessages.get(0),permissionRules);
+				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(chatContext,agent,summery,summeryMessage,null,newMessages.get(0));
 				 
 				agent.saveSummeryMessage(summaryMessage);
 				newMessages.add(0, summaryMessage);
@@ -167,7 +120,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 			if(systemMessage != null) {
 				newMessages.add(0, systemMessage);
 			}
-			logger.info("压缩前消息记录size：{},压缩后消息记录size: {}，cuttoff position: {}",messages.size(), newMessages.size(), removePosition); // Log the size of the compacted messages
+			logger.info("压缩前消息记录size：{},压缩后消息记录size: {}，cuttoff position: {}",messages.size(), newMessages.size(), cutoffIndex); // Log the size of the compacted messages
 			return newMessages;
 		}
 		return messages;

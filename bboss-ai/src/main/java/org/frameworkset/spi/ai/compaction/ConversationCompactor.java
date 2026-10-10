@@ -17,16 +17,14 @@ package org.frameworkset.spi.ai.compaction;
 
 import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.memory.MemoryManager;
-import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
-import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -74,17 +72,14 @@ public class ConversationCompactor {
      *
      * @param conversationMessages non-SYSTEM messages (USER / ASSISTANT / TOOL)
      * @param config               compaction configuration
-     * @param agentId              agent identifier used for the memory offload path
-     * @param sessionId            session identifier used for the memory offload path
      * @return {@code Optional.empty()} when no compaction was needed; otherwise the replacement
      *         message list consisting of {@code [summaryUserMsg] + preservedTail}
      */
-    public List<LinkedMessageMap<String, Object>> compactIfNeeded(
-			  AIAgent agent,
-            List<LinkedMessageMap<String, Object>> conversationMessages,
-			CompactionConfig config,
-			String agentId,
-			String sessionId) {
+    public List<LinkedMessageMap<String, Object>> compactIfNeeded(ChatContext chatContext,
+																  AIAgent agent,
+																  List<LinkedMessageMap<String, Object>> conversationMessages,
+																  CompactionConfig config
+																 ) {
 
         if (conversationMessages == null || conversationMessages.isEmpty()) {
             return Collections.emptyList();
@@ -104,27 +99,32 @@ public class ConversationCompactor {
 
         int cutoff = determineCutoffIndex(messages, totalTokens, config);
         if (cutoff <= 0) {
-            log.debug("Compaction triggered but safe cutoff is 0 — skipping");
+			if (log.isDebugEnabled()) {
+				log.debug("Compaction triggered but safe cutoff is 0 — skipping");
+			}
             return Collections.emptyList();
         }
 
         // Keep prior summaries in the summarization input so each compaction builds on the
         // previous one, but exclude them from memory flushing to avoid duplicate extraction.
         List<LinkedMessageMap<String, Object>> summaryInput = new ArrayList<>(messages.subList(0, cutoff));
-        List<LinkedMessageMap<String, Object>> flushInput = filterSummaryMessages(summaryInput);
+        
         List<LinkedMessageMap<String, Object>> tail = new ArrayList<>(messages.subList(cutoff, messages.size()));
 
-        log.info(
-                "Compaction triggered: total={} msgs / {} tokens, cutoff={}, keeping={} msgs",
-                messages.size(),
-                totalTokens,
-                cutoff,
-                tail.size());
+		if(log.isInfoEnabled()) {
+			log.info(
+					"Compaction triggered: total={} msgs / {} tokens, cutoff={}, keeping={} msgs",
+					messages.size(),
+					totalTokens,
+					cutoff,
+					tail.size());
+		}
 
         // Step 2: Flush long-term memories only from newly compacted raw messages (best-effort).
 		if(config.isFlushBeforeCompact()) {
-				flushManager
-					.flushMemories(  agent, flushInput);
+			List<LinkedMessageMap<String, Object>> flushInput = filterSummaryMessages(summaryInput);
+			flushManager
+				.flushMemories(  agent, flushInput);
 		}
 //        Mono<Void> flushStep =
 //                config.isFlushBeforeCompact()
@@ -177,19 +177,22 @@ public class ConversationCompactor {
 //        }
 
         // Step 4: LLM summarization of prior summaries plus the newly compacted prefix.
-		String summarize = summarizePrefix(summaryInput, config);
+		String summarize = SummeryUtils.summarizePrefix(summaryInput, config,chatContext);
 		
 		List<LinkedMessageMap<String, Object>> compacted = new ArrayList<>();
-		LinkedMessageMap<String, Object> summaryMsg = buildSummaryMessage(agentId,summarize, null);
+		LinkedMessageMap<String, Object> summaryMsg = SummeryUtils.buildSummaryMessage(chatContext,agent,summarize,summaryInput, null,tail.get(0));
+		agent.saveSummeryMessage(summaryMsg);//持久化摘要消息
 		compacted.add(summaryMsg);
 		compacted.addAll(tail);
-		log.info(
-				"Compaction complete: {} msgs → 1"
-						+ " summary + {} tail = {}"
-						+ " total",
-				messages.size(),
-				tail.size(),
-				compacted.size());
+		if(log.isInfoEnabled()) {
+			log.info(
+					"Compaction complete: {} msgs → 1"
+							+ " summary + {} tail = {}"
+							+ " total",
+					messages.size(),
+					tail.size(),
+					compacted.size());
+		}
 		return compacted;
 //		
 //        return flushStep
@@ -225,21 +228,25 @@ public class ConversationCompactor {
 
     private static boolean shouldCompact(
             List<LinkedMessageMap<String, Object>> messages, int totalTokens, CompactionConfig config) {
-        if (config.getTriggerMessages() > 0 && messages.size() >= config.getTriggerMessages()) {
-            log.debug(
-                    "Compaction trigger: message count {} >= {}",
-                    messages.size(),
-                    config.getTriggerMessages());
-            return true;
-        }
-        if (config.getTriggerTokens() > 0 && totalTokens >= config.getTriggerTokens()) {
-            log.debug(
-                    "Compaction trigger: token count {} >= {}",
-                    totalTokens,
-                    config.getTriggerTokens());
-            return true;
-        }
-        return false;
+		if (config.getTriggerMessages() > 0 && messages.size() >= config.getTriggerMessages()) {
+			if(log.isDebugEnabled()) {
+				log.debug(
+						"Compaction trigger: message count {} >= {}",
+						messages.size(),
+						config.getTriggerMessages());
+			}
+			return true;
+		}
+		if (config.getTriggerTokens() > 0 && totalTokens >= config.getTriggerTokens()) {
+			if(log.isDebugEnabled()) {
+				log.debug(
+						"Compaction trigger: token count {} >= {}",
+						totalTokens,
+						config.getTriggerTokens());
+			}
+			return true;
+		}
+		return false;
     }
 
     // -------------------------------------------------------------------------
@@ -251,10 +258,10 @@ public class ConversationCompactor {
      *
      * <p>The cutoff is adjusted so that ASSISTANT/TOOL pairs are never split.
      */
-    private static int determineCutoffIndex(
+    public static int determineCutoffIndex(
             List<LinkedMessageMap<String, Object>> messages, int totalTokens, CompactionConfig config) {
         int rawCutoff;
-        if (config.getKeepTokens() > 0) {
+        if (config.getKeepTokens() > 0 && config.getCompactionPolicy() == CompactionConfig.COMPACTION_POLICY_TOKENS) {
             rawCutoff = findTokenBasedCutoff(messages, totalTokens, config.getKeepTokens());
         } else {
             rawCutoff = findMessageBasedCutoff(messages, config.getKeepMessages());
@@ -302,139 +309,139 @@ public class ConversationCompactor {
      * cutoff to include that ASSISTANT message in the prefix (i.e., cut before it).
      *
      */
-    private static int findSafeCutoffPoint(List<LinkedMessageMap<String, Object>> messages, int cutoffIndex) {
-        if (cutoffIndex <= 0 || cutoffIndex >= messages.size()) {
+    public static int findSafeCutoffPoint(List<LinkedMessageMap<String, Object>> compactedMessages, int cutoffIndex) {
+        if (cutoffIndex <= 0 || cutoffIndex >= compactedMessages.size()) {
             return cutoffIndex;
         }
-
-        LinkedMessageMap<String, Object> atCutoff = messages.get(cutoffIndex);
-        String role = (String) atCutoff.get("role");
-        if (!MessageBuilder.ROLE_TOOL.equals(role)) {
-            return cutoffIndex;
-        }
-
-        // Collect tool-call IDs from consecutive TOOL messages at/after the cutoff
-        List<String> toolCallIds = new ArrayList<>();
-        int idx = cutoffIndex;
-        while (idx < messages.size()  ) {
-			LinkedMessageMap<String, Object> tmp = messages.get(idx);
-			role = (String) tmp.get("role");
-			if(!MessageBuilder.ROLE_TOOL.equals(role)){
-				break;
+		
+		//确保工具调用结果和对应的入参都在keep messages窗口内
+		Map<String, Object> toolCallIds = new LinkedHashMap<>();
+		for(int j = compactedMessages.size() - 1; j >= cutoffIndex; j --){
+			LinkedMessageMap<String, Object> message = compactedMessages.get(j);
+			String role = (String) message.get("role");
+			if(role.equals(MessageBuilder.ROLE_TOOL)) { //处理工具调用结果
+				String id = (String) message.get("tool_call_id");
+				
+				toolCallIds.put(id, 1);
 			}
-			String toolcallid = (String) tmp.get("tool_call_id");
-			toolCallIds.add(toolcallid);
-//            for (ContentBlock block : messages.get(idx).getContent()) {
-//                if (block instanceof ToolResultBlock tr && tr.getId() != null) {
-//                    toolCallIds.add(tr.getId());
-//                }
-//            }
-            idx++;
-        }
-
-        if (toolCallIds.isEmpty()) {
-            // No IDs found — advance past all TOOL messages to avoid orphaned results
-            return idx;
-        }
-
-        // Search backward for the ASSISTANT message that issued those tool calls
-        for (int i = cutoffIndex - 1; i >= 0; i--) {
-			LinkedMessageMap<String, Object> msg = messages.get(i);
-			role = (String) msg.get("role");
-            if (MessageBuilder.ROLE_ASSISTANT.equals(role)) {
-				List<Map<String,Object>> toolCalls = (List<Map<String,Object>>) msg.get("tool_calls");
-				if(toolCalls != null && !toolCalls.isEmpty()){
+			else{
+				//获取工具入参
+				List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) message.get("tool_calls");
+				if(toolCalls != null && !toolCalls.isEmpty()){ //工具入参
 					for(Map toolCall : toolCalls){
 						String toolCallId = (String) toolCall.get("id");
-						if(toolCallIds.contains(toolCallId)){
-							return i;
+						if(toolCallIds.containsKey(toolCallId)){ //在keep messages窗口内找到工具入参消息，直接清理掉
+							toolCallIds.remove(toolCallId);
+						}
+						
+					}
+					
+				}
+			}
+		}
+		if(!toolCallIds.isEmpty()){ //意味着工具入参消息在窗口之外，需要将这些工具入参消息添加到messages中
+			int k = 0;
+			for(k = cutoffIndex -1 ; k >= 0 ; k --){
+				LinkedMessageMap<String, Object> message = compactedMessages.get(k);
+				String role = (String) message.get("role");
+				if(role.equals(MessageBuilder.ROLE_TOOL)) { //在回溯过程中，又碰到了工具调用结果，还需继续进行回溯
+					String id = (String) message.get("tool_call_id");
+					toolCallIds.put(id, 1);
+				}
+				else {
+					//获取工具入参
+					List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) message.get("tool_calls");
+					if (toolCalls != null && !toolCalls.isEmpty()) { //工具入参
+						for (Map toolCall : toolCalls) {
+							String toolCallId = (String) toolCall.get("id");
+							if (toolCallIds.containsKey(toolCallId)) { //在keep messages窗口内找到工具入参消息，直接清理掉
+								toolCallIds.remove(toolCallId);
+							}
 						}
 					}
 				}
-//                for (ContentBlock block : msg.getContent()) {
-//                    if (block instanceof ToolUseBlock tu && toolCallIds.contains(tu.getId())) {
-//                        // Move the cutoff to just before this ASSISTANT message
-//                        return i;
-//                    }
-//                }
-            }
-        }
+				if (toolCallIds.isEmpty()) {
+					break;
+				}
+			}
+			cutoffIndex = k < 0 ? 0 : k;
+		}
 
         // Fallback: advance past all TOOL messages
-        return idx;
+        return cutoffIndex;
     }
 
-    // -------------------------------------------------------------------------
-    // Summarization
-    // -------------------------------------------------------------------------
-
-    private String summarizePrefix(List<LinkedMessageMap<String, Object>> prefix, CompactionConfig config) {
-        if (prefix.isEmpty()) {
-            return "No previous conversation history.";
-        }
-
-        String formatted = formatMessagesForSummary(prefix);
-//        String prompt = config.getSummaryPrompt().replace("{messages}", formatted);
-
-//        List<LinkedMessageMap<String, Object>> summarizationInput = new ArrayList<>();
-//		summarizationInput.add( MessageBuilder.buildUserMessage(prompt) );
-		AIAgent agent = new AIAgent(config.getSummaryPrompt());
-		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-		chatAgentMessage.setModel(model.getModel());
-		chatAgentMessage.setMaas(model.getMaas());
-		agent.addParam("messages",formatted);
-		try {
-			ServerEvent serverEvent = agent.chat(chatAgentMessage);			
-			String summary = serverEvent.getData();
-			if(summary != null && !summary.isEmpty()){
-				return summary;
-			}
-			else{
-				return "(Summary unavailable)";
-			}
-		} catch (Exception e) {
-			log.warn("Summarization LLM call failed: {}", e.getMessage());
-			return "(Summarization failed: " + e.getMessage() + ")";
-		}
+//    // -------------------------------------------------------------------------
+//    // Summarization
+//    // -------------------------------------------------------------------------
 //
-//        return model.stream(summarizationInput, null, null)
-//                .reduce(
-//                        new StringBuilder(),
-//                        (sb, resp) -> {
-//                            if (resp.getContent() != null) {
-//                                for (ContentBlock block : resp.getContent()) {
-//                                    if (block instanceof TextBlock tb && tb.getText() != null) {
-//                                        sb.append(tb.getText());
-//                                    }
-//                                }
-//                            }
-//                            return sb;
-//                        })
-//                .map(StringBuilder::toString)
-//                .map(String::strip)
-//                .filter(s -> !s.isBlank())
-//                .defaultIfEmpty("(Summary unavailable)")
-//                .onErrorResume(
-//                        e -> {
-//                            if (containsInterruptedException(e)) {
-//                                return Mono.error(e);
-//                            }
-//                            log.warn("Summarization LLM call failed: {}", e.getMessage());
-//                            return Mono.just("(Summarization failed: " + e.getMessage() + ")");
-//                        });
-    }
-
-    private static boolean containsInterruptedException(Throwable error) {
-        IdentityHashMap<Throwable, Boolean> visited = new IdentityHashMap<>();
-        Throwable current = error;
-        while (current != null && visited.put(current, Boolean.TRUE) == null) {
-            if (current instanceof InterruptedException) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
-    }
+//    private String summarizePrefix(List<LinkedMessageMap<String, Object>> prefix, CompactionConfig config) {
+//        if (prefix.isEmpty()) {
+//            return "No previous conversation history.";
+//        }
+//
+//        String formatted = formatMessagesForSummary(prefix);
+////        String prompt = config.getSummaryPrompt().replace("{messages}", formatted);
+//
+////        List<LinkedMessageMap<String, Object>> summarizationInput = new ArrayList<>();
+////		summarizationInput.add( MessageBuilder.buildUserMessage(prompt) );
+//		AIAgent agent = new AIAgent(config.getSummaryPrompt());
+//		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+//		chatAgentMessage.setModel(model.getModel());
+//		chatAgentMessage.setMaas(model.getMaas());
+//		agent.addParam("messages",formatted);
+//		try {
+//			ServerEvent serverEvent = agent.chat(chatAgentMessage);			
+//			String summary = serverEvent.getData();
+//			if(summary != null && !summary.isEmpty()){
+//				return summary;
+//			}
+//			else{
+//				return "(Summary unavailable)";
+//			}
+//		} catch (Exception e) {
+//			log.warn("Summarization LLM call failed: {}", e.getMessage());
+//			return "(Summarization failed: " + e.getMessage() + ")";
+//		}
+////
+////        return model.stream(summarizationInput, null, null)
+////                .reduce(
+////                        new StringBuilder(),
+////                        (sb, resp) -> {
+////                            if (resp.getContent() != null) {
+////                                for (ContentBlock block : resp.getContent()) {
+////                                    if (block instanceof TextBlock tb && tb.getText() != null) {
+////                                        sb.append(tb.getText());
+////                                    }
+////                                }
+////                            }
+////                            return sb;
+////                        })
+////                .map(StringBuilder::toString)
+////                .map(String::strip)
+////                .filter(s -> !s.isBlank())
+////                .defaultIfEmpty("(Summary unavailable)")
+////                .onErrorResume(
+////                        e -> {
+////                            if (containsInterruptedException(e)) {
+////                                return Mono.error(e);
+////                            }
+////                            log.warn("Summarization LLM call failed: {}", e.getMessage());
+////                            return Mono.just("(Summarization failed: " + e.getMessage() + ")");
+////                        });
+//    }
+//
+//    private static boolean containsInterruptedException(Throwable error) {
+//        IdentityHashMap<Throwable, Boolean> visited = new IdentityHashMap<>();
+//        Throwable current = error;
+//        while (current != null && visited.put(current, Boolean.TRUE) == null) {
+//            if (current instanceof InterruptedException) {
+//                return true;
+//            }
+//            current = current.getCause();
+//        }
+//        return false;
+//    }
 
     /**
      * Formats a list of messages as a human-readable text block for the summarization LLM.
@@ -556,50 +563,7 @@ public class ConversationCompactor {
     // Summary message construction
     // -------------------------------------------------------------------------
 
-    /**
-     * Builds a USER message carrying the summary.
-     *
-     * <p>When {@code filePath} is non-null, the message includes a reference to where the full
-     * conversation history was offloaded.
-     * When null, falls back to the simple "summary to date" format.
-     *
-     * <p>The message name is set to {@link #SUMMARY_MSG_NAME} so hooks can identify generated
-     * summaries, and the stable content-based ID keeps repeated session offloads idempotent.
-     */
-    private static LinkedMessageMap<String, Object> buildSummaryMessage(String agentId,String summary, String filePath) {
-        String content;
-        if (filePath != null) {
-            content =
-                    "You are in the middle of a conversation that has been summarized.\n\n"
-                            + "The full conversation history has been saved to "
-                            + filePath
-                            + " should you need to refer back to it for details.\n\n"
-                            + "A condensed summary follows:\n\n"
-                            + "<summary>\n"
-                            + summary
-                            + "\n</summary>";
-        } else {
-            content = "Here is a summary of the conversation to date:\n\n" + summary;
-        }
-		LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
-		linkedMessageMap.setId(buildSummaryMessageId(content));
-		linkedMessageMap.setAgentId(agentId);
-		linkedMessageMap.put("role", MessageBuilder.ROLE_USER);
-		linkedMessageMap.setName( SUMMARY_MSG_NAME);
-		linkedMessageMap.put("content", content);
-		return linkedMessageMap;
-//        return Msg.builder()
-//                .id(buildSummaryMessageId(content))
-//                .role(MsgRole.USER)
-//                .name(SUMMARY_MSG_NAME)
-//                .content(TextBlock.builder().text(content).build())
-//                .build();
-    }
-
-    private static String buildSummaryMessageId(String content) {
-        UUID stableId = UUID.nameUUIDFromBytes(content.getBytes(StandardCharsets.UTF_8));
-        return SUMMARY_MSG_NAME + ":" + stableId;
-    }
+      
 
     // -------------------------------------------------------------------------
     // Summary message filtering (chained summarization support)
@@ -611,7 +575,7 @@ public class ConversationCompactor {
      * <p>Prior summaries remain part of the next summarization input, but memory flushing must
      * only process the newly compacted raw messages to avoid duplicate extraction.
      */
-    static List<LinkedMessageMap<String, Object>> filterSummaryMessages(List<LinkedMessageMap<String, Object>> messages) {
+    public static List<LinkedMessageMap<String, Object>> filterSummaryMessages(List<LinkedMessageMap<String, Object>> messages) {
         return messages.stream()
                 .filter(message -> !SUMMARY_MSG_NAME.equals(message.getName()))
                 .collect(Collectors.toList());

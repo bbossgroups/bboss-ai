@@ -21,6 +21,8 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.compaction.ConversationCompactor;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.model.memory.AgentDayMemory;
+import org.frameworkset.spi.ai.model.memory.AgentMemory;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,11 +113,11 @@ public class MemoryManager {
             return ;
         }
 
-		Memory longTermMemory = readExistingLongTermMemoryContent( agent);
+		AgentMemory longTermMemory = readExistingLongTermMemoryContent( agent);
         String existingMemory = longTermMemory != null ? longTermMemory.getContent() : ""	;
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-//        String dailyRelPath = WorkspaceConstants.MEMORY_DIR + "/" + today + ".md";
-		Memory dailyMemory = readExistingDayMemoryContent( agent, today);
+        String dailyRelPath = WorkspaceConstants.MEMORY_DIR + "/" + today + ".md";
+		AgentDayMemory dailyMemory = readExistingDayMemoryContent( agent, dailyRelPath);
         String existingDaily = dailyMemory != null ? dailyMemory.getContent() : ""	;	
 
         StringBuilder userPrompt = new StringBuilder();
@@ -148,11 +150,11 @@ public class MemoryManager {
 //                        .role(MsgRole.USER)
 //                        .content(TextBlock.builder().text(userPrompt.toString()).build())
 //                        .build());
-		AIAgent aiAgent = new AIAgent(userPrompt.toString()).setSystemPrompt(flushPrompt);
+		AIAgent flushAgent = new AIAgent(userPrompt.toString()).setSystemPrompt(flushPrompt);
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
 		chatAgentMessage.setMaas(model.getMaas());
 		chatAgentMessage.setModel(model.getModel());
-		ServerEvent serverEvent = aiAgent.chat(chatAgentMessage);
+		ServerEvent serverEvent = flushAgent.chat(chatAgentMessage);
 		String extracted = serverEvent.getData();
 		if (extracted.isEmpty() || extracted.trim().equals("NO_REPLY")) {
 			if(log.isDebugEnabled()) {
@@ -160,7 +162,7 @@ public class MemoryManager {
 			}
 			return ;
 		}
-		writeMemoryFiles(  dailyMemory,  extracted,agent);
+		writeMemoryFiles(   dailyRelPath,dailyMemory,  extracted,agent);
 //        return model.stream(flushInput, null, null)
 //                .reduce(
 //                        new StringBuilder(),
@@ -229,39 +231,45 @@ public class MemoryManager {
      * {link MemoryConsolidator}, which periodically merges the daily ledgers into a
      * curated, size-bounded MEMORY.md.
      */
-    private void writeMemoryFiles(  Memory	 content,String extracted,AIAgent agent) {
-        String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
+    private void writeMemoryFiles(   String dailyRelPath,AgentDayMemory	 content,String extracted,AIAgent agent) {
+        
 
         String dailyEntry =
                 String.format(
                         "\n## Memory Flush — %s\n%s\n",
                         java.time.Instant.now().toString(), extracted);
 
-//        String dailyRelPath = WorkspaceConstants.MEMORY_DIR + "/" + today + ".md";
-		String oldContent = content.getContent();
-		StringBuilder newContent = new StringBuilder();
-		newContent.append(oldContent).append(dailyEntry);
-		content.setContent(newContent.toString());
-		agent.getMainSessionStore().getAgentMemoryStore().writeDailyMemory(  content);	
+		if(content != null) {
+			String oldContent = content.getContent();
+			StringBuilder newContent = new StringBuilder();
+			newContent.append(oldContent).append(dailyEntry);
+			content.setContent(newContent.toString());
+		}
+		else{
+			content = new AgentDayMemory();
+			content.setContent(dailyEntry);
+			content.setMemoryDay(dailyRelPath);
+		}
+		agent.getMainSessionStore().getAgentSessionService().createOrUpdateDayMemory(  agent,content);	
 //        workspaceManager.appendUtf8WorkspaceRelative(rc, dailyRelPath, dailyEntry);
     }
 
-    private Memory readExistingLongTermMemoryContent( AIAgent agent) {
+    private AgentMemory readExistingLongTermMemoryContent(AIAgent agent) {
         try {
-			Memory content = agent.getMainSessionStore().getAgentMemoryStore().readExistingLongTermMemoryContent(    agent);
+			AgentMemory content = agent.getMainSessionStore().getAgentSessionService().getMemory(agent.getAgentId(), agent.getUserId()	);
             return content;
         } catch (Exception e) {
-            log.debug("Could not read long-term memory for agent {},{}: {}", agent.getAgentId(), agent.getAgentName(),e.getMessage());
+            log.debug("Could not read long-term memory for agent id:{},name:{}, userId:{}", agent.getAgentId(), agent.getAgentName(),agent.getUserId(),e);
             return null;
         }
     }
 	
-	private Memory readExistingDayMemoryContent( AIAgent agent,String day) {
+	private AgentDayMemory readExistingDayMemoryContent(AIAgent agent, String dailyRelPath) {
 		try {
-			Memory content = agent.getMainSessionStore().getAgentMemoryStore().readExistingDayMemoryContent(  agent, day	);
-			return content != null ? content : null;
+			AgentDayMemory content =  agent.getMainSessionStore().getAgentSessionService().getDayMemory(agent.getAgentId(), agent.getUserId(), dailyRelPath	);
+			return content;
 		} catch (Exception e) {
-			log.debug("Could not read daily memory for agent {},{},day {}: {}", agent.getAgentId(), agent.getAgentName(), day, e.getMessage());
+			log.debug("Could not read daily memory for agent id:{},name:{}, userId:{},day:{}", agent.getAgentId(), agent.getAgentName(),agent.getUserId(),dailyRelPath,	e);
 			return null;
 		}
 	}

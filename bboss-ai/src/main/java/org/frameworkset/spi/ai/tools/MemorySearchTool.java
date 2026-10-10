@@ -24,11 +24,13 @@ import org.frameworkset.spi.ai.model.memory.AgentDayMemory;
 import org.frameworkset.spi.ai.model.memory.AgentMemory;
 import org.frameworkset.spi.ai.store.AgentSessionService;
 import org.frameworkset.spi.ai.tool.AgentTraceHolder;
+import org.frameworkset.spi.ai.tools.util.KeywordMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
@@ -51,20 +53,44 @@ public class MemorySearchTool {
             name = "memory_search",
             readOnly = true,
             description =
-                    "Search through long-term memory files (MEMORY.md and memory/*.md) for"
-                            + " relevant information. Use before answering questions about prior"
-                            + " work, decisions, dates, people, preferences, or todos.")
+					"Search through long-term memory files (MEMORY.md and memory/*.md) for"
+							+ " relevant information. Use before answering questions about prior"
+							+ " work, decisions, dates, people, preferences, or todos.")
     public String memorySearch(
-            @ToolParam(name = "query", description = "Keywords to search for in long-term memory")
-                    String query) {
+			@ToolParam(
+					name = "query",
+					description =
+							"Literal phrase, or whitespace-separated keywords when"
+									+ " matchMode is all/any; no automatic Chinese word"
+									+ " segmentation")
+			String query,
+			@ToolParam(
+					name = "matchMode",
+					description =
+							"phrase (default): exact substring; all: every keyword in the"
+									+ " same memory line; any: at least one keyword in that"
+									+ " line. Case-insensitive literal matching.",
+					required = false)
+			String matchMode) {
         if (query == null || query.isEmpty()) {
             return "No query provided";
         }
-		
-        return keywordSearch( query);
+		Predicate<String> matcher;
+		try {
+			matcher =
+					KeywordMatcher.compile(
+							query,
+							matchMode,
+							term ->
+									Pattern.compile(Pattern.quote(term), Pattern.CASE_INSENSITIVE)
+											.asPredicate());
+		} catch (IllegalArgumentException e) {
+			return "Error: " + e.getMessage();
+		}
+        return keywordSearch( query,matcher);
     }
 
-    private String keywordSearch(  String query) {
+    private String keywordSearch(  String query,Predicate<String> matcher) {
 		ChatObject chatObject = AgentTraceHolder.getChatObject();
 		AIAgent agent = chatObject.getAgent();
 		AgentSessionService agentSessionService = agent.getMainSessionStore().getAgentSessionService();
@@ -78,7 +104,7 @@ public class MemorySearchTool {
 			String content = agentMemory.getContent();
 			String[] lines = content.split("\n", -1);
 			for (int i = 0; i < lines.length; i++) {
-				if (pattern.matcher(lines[i]).find()) {
+				if (matcher.test(lines[i])) {
 					results.add(String.format("Source: %s#%d: %s", "MEMORY.md", i + 1, lines[i]));
 					matchCount++;
 				}
@@ -91,10 +117,11 @@ public class MemorySearchTool {
             }
             String[] lines = content.split("\n", -1);
             for (int i = 0; i < lines.length; i++) {
-                if (pattern.matcher(lines[i]).find()) {
-                    results.add(String.format("Source: %s#%d: %s", agentDayMemory.getMemoryDay(), i + 1, lines[i]));
-                    matchCount++;
-                }
+				if (matcher.test(lines[i])) {
+					results.add(String.format("Source: %s#%d: %s", agentDayMemory.getMemoryDay(), i + 1, lines[i]));
+					matchCount++;
+				}
+                 
             }
         }
 

@@ -629,11 +629,11 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 				agentMemory.setContent(section);
 				agentMemory.setParentAgentId(agent.getParentAgentId());
 				agentMemory.setSessionId(agent.getSessionId());
-				executor.insertWithDBName(datasource, "insertMemory", agentMemory);
+				executor.insertBean(datasource, "insertMemory", agentMemory);
 			} else {
 				agentMemory.setUpdateTime(LocalDateTime.now());
 				agentMemory.setContent(agentMemory.getContent() + section);
-				executor.updateWithDBName(datasource, "updateMemory", agentMemory);
+				executor.updateBean(datasource, "updateMemory", agentMemory);
 			}
 			
 		} catch (Exception e) {
@@ -666,15 +666,49 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 				agentDayMemory.setParentAgentId(agent.getParentAgentId());
 				agentDayMemory.setMemoryDay(memoryDay);
 				agentDayMemory.setSessionId(agent.getSessionId());
-				executor.insertWithDBName(datasource, "insertDayMemory", agentDayMemory);
+				executor.insertBean(datasource, "insertDayMemory", agentDayMemory);
 			} else {
 				agentDayMemory.setUpdateTime(LocalDateTime.now());
 				agentDayMemory.setContent(agentDayMemory.getContent() + section);
-				executor.updateWithDBName(datasource, "updateDayMemory", agentDayMemory);
+				executor.updateBean(datasource, "updateDayMemory", agentDayMemory);
 			}
 			
 		} catch (Exception e) {
 			log.error("createOrUpdateDayMemory failed::agentId={}, userId={}, memoryDay={} ", agent.getAgentId(), agent.getUserId(), memoryDay, e);
+			throw new AgentSessionException("createOrUpdateDayMemory failed:", e);
+		}
+		
+	}
+	
+	/**
+	 * 追加用户消息到日流水账,如果总账不存在则新增日流水账
+	 * @param agent
+	 * @param agentDayMemory
+	 */
+	public void createOrUpdateDayMemory(AIAgent agent, AgentDayMemory agentDayMemory) {
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("createOrUpdateDayMemory start::agentId={}, userId={}, memoryDay={} ", agent.getAgentId(), agent.getUserId(), agentDayMemory.getMemoryDay()	);
+		}
+		try {
+			
+			if (agentDayMemory.getMemoryId() == null) {
+				 
+				agentDayMemory.setAgentId(agent.getAgentId());
+				agentDayMemory.setUserId(agent.getUserId());
+				agentDayMemory.setMemoryId(SimpleStringUtil.getUUID32());
+				agentDayMemory.setCreateTime(LocalDateTime.now());
+				agentDayMemory.setUpdateTime(agentDayMemory.getCreateTime());			 
+				agentDayMemory.setParentAgentId(agent.getParentAgentId());			 
+				agentDayMemory.setSessionId(agent.getSessionId());
+				executor.insertBean(datasource, "insertDayMemory", agentDayMemory);
+			} else {
+				agentDayMemory.setUpdateTime(LocalDateTime.now());				 
+				executor.updateBean(datasource, "updateDayMemory", agentDayMemory);
+			}
+			
+		} catch (Exception e) {
+			log.error("createOrUpdateDayMemory failed::agentId={}, userId={}, memoryDay={} ", agent.getAgentId(), agent.getUserId(), agentDayMemory.getMemoryDay(), e);
 			throw new AgentSessionException("createOrUpdateDayMemory failed:", e);
 		}
 		
@@ -694,7 +728,7 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 		try {
 			
 			List<AgentDayMemory> agentMemory = executor.queryListWithDBName(AgentDayMemory.class,datasource,"listAgentUserDayMemorys",agent.getAgentId(),agent.getUserId(),180);
-			if(agentMemory != null && agentMemory.size() > 0){
+			if(agentMemory != null && agentMemory.size() > 1){
 				//反转集合顺序
 				Collections.reverse(agentMemory);
 			}

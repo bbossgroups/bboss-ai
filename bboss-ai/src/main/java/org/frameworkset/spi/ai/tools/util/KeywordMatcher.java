@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.tool;
+package org.frameworkset.spi.ai.tools.util;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /** Combines literal matchers without changing each tool's existing case-matching semantics. */
-final class KeywordMatcher {
+public final class KeywordMatcher {
     private static final Pattern WHITESPACE =
             Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
 
     private KeywordMatcher() {}
 
-    static Predicate<String> compile(
+    public static Predicate<String> compile(
             String query, String matchMode, Function<String, Predicate<String>> literalMatcher) {
         String mode = matchMode == null ? "phrase" : matchMode;
         if (mode.equals("phrase")) {
@@ -42,7 +43,7 @@ final class KeywordMatcher {
                         .filter(term -> !term.isEmpty())
                         .distinct()
                         .map(literalMatcher)
-                        .toList();
+                        .collect(Collectors.toList());
         // Do not let an empty ALL query match every record.
         if (terms.isEmpty()) {
             throw new IllegalArgumentException("query must contain at least one keyword");

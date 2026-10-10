@@ -83,9 +83,7 @@ public class CompactionManager extends BaseCompactionManager {
 			return messages;
 		}
 
-		String agentId = agent.getAgentId();
-		String sessionId = agent.getSessionId();
-		String userId = agent.getUserId();
+ 
 		ModelInfo model = config.getCompactModel();
 		if(model == null)
 			model = chatContext.getModelInfo();
@@ -98,7 +96,10 @@ public class CompactionManager extends BaseCompactionManager {
 
 		// Only compaction may degrade; downstream reasoning errors must propagate.
 		List<LinkedMessageMap<String, Object>> compacted = compactor
-				.compactIfNeeded( agent, conversation, effectiveConfig, agentId, sessionId);
+				.compactIfNeeded( chatContext,agent, conversation, effectiveConfig );
+		if(compacted == null || compacted.size() == 0){
+			return messages;
+		}
 		List<LinkedMessageMap<String, Object>> newMessages = new ArrayList<>();
 		if (systemMsg != null) {
 			newMessages.add(systemMsg);

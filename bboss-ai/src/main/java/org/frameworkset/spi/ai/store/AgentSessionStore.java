@@ -30,7 +30,6 @@ import java.util.List;
  */
 public interface AgentSessionStore<T extends AgentSessionStore> {
     void init();
-	AgentMemoryStore getAgentMemoryStore();
     void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
     StoreContext getStoreContext();
     String getAgentId();

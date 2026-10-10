@@ -170,5 +170,12 @@ public interface AgentSessionService {
 	 */
 	void createOrUpdateDayMemory(AIAgent agent, String section,String memoryDay);
 	
+	/**
+	 * 追加用户消息到日流水账,如果总账不存在则新增日流水账
+	 * @param agent
+	 * @param agentDayMemory
+	 */
+	void createOrUpdateDayMemory(AIAgent agent, AgentDayMemory agentDayMemory);
+	
 	List<AgentDayMemory> listAgentUserDayMemorys(AIAgent agent);
 }

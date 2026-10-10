@@ -41,6 +41,10 @@ public class PruneConfig {
 		excludedTools.add("memory_search");
 		excludedTools.add("memory_get");
 		excludedTools.add("session_search");
+		excludedTools.add("current_session_search");
+		
+		excludedTools.add("user_sessions_search");
+		
 		
 		//"read_file", "memory_search", "memory_get", "session_search"
 	}
