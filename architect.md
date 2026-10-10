@@ -1407,10 +1407,10 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 | `CompactionManagerInf` / `BaseCompactionManager` | 压缩接口与抽象基类；压缩原则：System 消息必须保留，工具入参与工具结果成对出现不能割裂 |
 | `CompactionManager` | 摘要压缩实现（默认），委托 `ConversationCompactor` 完成触发判断、cutoff 计算、剪枝、截断与 LLM 摘要；按模型上下文窗口动态解析触发/保留预算 |
 | `WindowsCompactionManager` | 窗口压缩实现：按消息条数滑动窗口，使用 `ConversationCompactor.findSafeCutoffPoint` 保证不切断工具调用配对，可先做记忆 Flush，再将窗口外旧消息总结为一条摘要消息（`MESSAGE_TYPE_SUMMARY_MESSAGE=23`）持久化 |
-| `ConversationCompactor` | 摘要压缩核心算法类；`compactIfNeeded(ChatContext, AIAgent, messages, config)` 为入口，`findSafeCutoffPoint` / `filterSummaryMessages` 为对外静态方法 |
+| `ConversationCompactor` | 摘要压缩核心算法类；`compactIfNeeded(ChatContext, AIAgent, messages, config)` 为入口，`determineCutoffIndex` / `findSafeCutoffPoint` / `filterSummaryMessages` 为对外静态方法（窗口压缩复用 `findSafeCutoffPoint` 统一防割裂逻辑） |
 | `MemoryManager`（位于 `memory` 包） | 压缩前用 LLM 从将被压缩的消息中抽取长期记忆，Flush 追加到当日记忆流水账（DB `agent_day_memory`） |
 | `CompactionConfig` | 压缩配置（见下表） |
-| `PruneConfig` | 工具结果聚合剪枝配置（逆向扫描 TOOL 消息，保护最近 `protectTokens` 的输出，对超长旧结果做"头+尾预览"替换；默认排除 `read_file`/`memory`/`session_search` 等结果） |
+| `PruneConfig` | 工具结果聚合剪枝配置（逆向扫描 TOOL 消息，保护最近 `protectTokens` 的输出，对超长旧结果做"头+尾预览"替换；默认排除 `read_file`/`memory_search`/`memory_get`/`session_search`/`current_session_search`/`user_sessions_search` 等结果） |
 | `TruncateArgsConfig` | 工具调用入参截断配置（对窗口外 ASSISTANT 消息中过长 arguments 截断到 `maxArgLength`） |
 | `TokenCounterUtil` | 基于字符数的 token 估算工具 |
 | `SummeryUtils` | 摘要文本格式化、摘要消息构建与摘要 LLM 调用 |
@@ -1424,8 +1424,8 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 | `triggerMessages` | 50 | 消息条数触发阈值（0=关闭该条件） |
 | `triggerTokens` | 0 | Token 触发阈值；0=动态模式，按 `model.getContextWindowSize() - reserved` 计算，模型未报告上下文窗口时回退 160000 |
 | `reserved` | 20000 | 动态模式下为压缩过程预留的 token 缓冲 |
-| `keepMessages` | 20 | 保留原文的最近消息条数（keepTokens==0 时生效） |
-| `keepTokens` | -1 | 保留尾部预算；-1=动态计算 `min(keepTokensMax, max(keepTokensMin, usable*keepTokensRatio))` |
+| `keepMessages` | 20 | 保留原文的最近消息条数（窗口策略或 `keepTokens<=0` 时生效） |
+| `keepTokens` | -1 | 保留尾部预算；**仅 `COMPACTION_POLICY_TOKENS` 策略生效**；-1=动态计算 `min(keepTokensMax, max(keepTokensMin, usable*keepTokensRatio))` |
 | `flushBeforeCompact` | true | 压缩前是否执行记忆 Flush |
 | `offloadBeforeCompact` | true | 压缩前是否将原始消息卸载存档到 session 记录（永不压缩） |
 | `compactModel` | null | 压缩摘要专用模型（可用轻量模型），未设置则用智能体主模型 |

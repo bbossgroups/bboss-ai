@@ -1,8 +1,9 @@
 # bboss-ai 框架功能变更报告
 
-> 报告范围：`c4fd0ba`（2026-10-04，architect.md 最后更新点）之后至当前工作区的全部变更
+> 报告范围：`c4fd0ba`（2026-10-04，architect.md 最后更新点）之后至**当前工作区（含未提交改动）**的全部变更
 > 版本：**6.5.7**（`BBOSSAIVersion.version=657`，releaseDate `20261008`）
 > 对应架构文档：[architect.md](architect.md)（本次已同步完善）
+> 说明：本报告为**第二轮核对结果**，在首版基础上补齐了提交 `cde6560` 与工作区未提交的 memory/压缩重构改动。
 
 ## 一、变更概览
 
@@ -15,6 +16,8 @@
 | 5 | `89968be` | 2026-10-09 | 长短期记忆读写检索工具 + 基于上下文窗口的摘要压缩 | 核心/新增 |
 | 6 | `5b9619d` | 2026-10-09 | 整理 SQL 配置文件 | 配置 |
 | 7 | `def80ed` | 2026-10-09 | 记忆检索限制最近 180 天流水 + 新增 MultiModalTool（占位） | 核心/新增 |
+| 8 | `cde6560` | 2026-10-10 | 完善 memory 管理与基于 token 的摘要压缩；生成变更报告；完善架构文档 | 核心/文档 |
+| 9 | 工作区未提交 | 2026-10-10 | memory/压缩重构（ConversationCompactor 去重、统一安全切点、`keepTokens` 策略门控、`AIAgentUtil` 修复等） | 核心 |
 
 ## 二、详细变更
 
@@ -40,9 +43,11 @@
 
 **存储层新增 API**（`AgentSessionService` / `AgentSessionServiceImpl`）：
 
-`getMemory`、`createOrUpdateMemory`、`getDayMemory`、`createOrUpdateDayMemory`、`listAgentUserDayMemorys`、`getAgentPermissionRules`。
+`getMemory`、`createOrUpdateMemory`、`getDayMemory`、`createOrUpdateDayMemory`（含 `(AIAgent, AgentDayMemory)` 新重载）、`listAgentUserDayMemorys`、`getAgentPermissionRules`。记忆读写统一经 `AgentSessionService` 完成，不再经由 `AgentMemoryStore`。
 
-**删除内容**：`agentMemory.xml`、原文件式记忆存储实现 `AgentMemoryStore` / `AgentMemoryStoreDB`。
+**删除内容**：`agentMemory.xml`、原文件式记忆存储实现 `Memory`（`model` 包）、`AgentMemoryStore`（接口）/`AgentMemoryStoreDB`（实现），并移除 `AgentSessionStore.getAgentMemoryStore()` 接口方法及 `BaseAgentSessionStore.agentMemoryStore` 字段。
+
+**记忆检索匹配模式**：`MemorySearchTool.memory_search` 新增 `matchMode` 参数（`phrase` 精确子串 / `all` 同行含全部关键词 / `any` 同行含任一关键词，大小写不敏感），由新增工具类 `org.frameworkset.spi.ai.tools.util.KeywordMatcher` 统一编译匹配器。
 
 **新增数据库表**（详见 [agentSession.xml](bboss-ai/src/main/java/org/frameworkset/spi/ai/store/db/agentSession.xml)）
 
@@ -57,9 +62,23 @@
 ### 2.2 会话记忆压缩：上下文窗口驱动的摘要压缩（核心）
 
 - **压缩策略更名**：`COMPACTION_POLICY_SUMMARY` → **`COMPACTION_POLICY_TOKENS`**（`=1`，摘要/Token 压缩为默认策略）；`COMPACTION_POLICY_WINDOWSIZE`（`=0`）为窗口压缩。
-- **动态阈值**：`CompactionConfig.triggerTokens` 默认 0 表示动态模式，`CompactionManager.resolveEffectiveConfig` 按 `ModelInfo.getContextWindowSize() - reserved` 计算触发阈值与保留尾部预算；模型未报告上下文窗口时回退 160000。`ModelInfo.contextWindowSize` 默认 **200000**。
+- **动态阈值**：`CompactionConfig.triggerTokens` 默认 0 表示动态模式，`CompactionManager.resolveEffectiveConfig` 按 `ModelInfo.getContextWindowSize() - reserved` 计算触发阈值与保留尾部预算；`reserved` 超过上下文窗口时钳制为窗口一半（触发防抖）；模型未报告上下文窗口时回退 `FALLBACK_TRIGGER_TOKENS`（160000）。`ModelInfo.contextWindowSize` 默认 **200000**。
 - **新增配置项** `offloadBeforeCompact`（默认 true）：压缩前将原始消息卸载存档到 session 记录（永不压缩），与会话检索工具联动。
 - **记忆 Flush 迁址**：`MemoryManager` 从 `compaction` 包迁移到 `memory` 包，压缩前将待压缩消息交给 LLM 抽取长期记忆，写入当日日流水账（DB）。
+
+**工作区未提交的压缩重构（`cde6560` 之后，核心）**：
+
+| 变更点 | 说明 |
+| --- | --- |
+| `ConversationCompactor.compactIfNeeded` 签名收敛 | 参数由 `(AIAgent, messages, config, agentId, sessionId)` 简化为 `(ChatContext, AIAgent, messages, config)`，`chatContext` 贯穿摘要与持久化 |
+| `determineCutoffIndex` / `findSafeCutoffPoint` 公开化 | 由 private 提升为 `public static`，供窗口压缩复用 |
+| **`keepTokens` 策略门控** | `determineCutoffIndex` 仅在 `compactionPolicy == COMPACTION_POLICY_TOKENS` 时按 Token 预算裁剪，窗口策略固定按 `keepMessages` 条数 |
+| 窗口压缩统一安全切点 | `WindowsCompactionManager` 删除自研的 tool_call 配对回溯算法，改为调用 `ConversationCompactor.findSafeCutoffPoint`，两策略共用同一套防割裂逻辑 |
+| 窗口压缩补齐记忆 Flush | `WindowsCompactionManager` 在 `flushBeforeCompact` 时调用 `MemoryManager.flushMemories`，与摘要压缩行为对齐 |
+| 摘要构建/持久化去重 | `summarizePrefix` / `buildSummaryMessage` 从 `ConversationCompactor` 私有实现统一收敛到 `SummeryUtils`；压缩后调用 `agent.saveSummeryMessage(summaryMsg)` 持久化摘要消息 |
+| 摘要元数据简化 | `SummeryUtils.buildSummaryMessage` 移除 `PermissionRules` 参数，摘要消息 meta 不再内嵌权限规则 |
+| 剪枝排除工具扩充 | `PruneConfig` 排除工具新增 `current_session_search`、`user_sessions_search`，避免剪掉会话检索结果 |
+| 日志级别收敛 | 大量 `log.info/debug` 包裹 `isXxxEnabled()` 判断，降低无谓字符串拼接开销 |
 
 ### 2.3 工具权限管控：会话级 always 规则与静态规则分离（核心）
 
@@ -79,10 +98,19 @@
 - 修复 `4ebf6a5`：**ClickHouse 会话消息查询排序不生效**问题，涉及 `AgentSessionStoreDB` / `AgentSessionStoreDBConfig`。
 - `5b9619d` / `85c5d04`：整理 SQL 配置文件，`AgentSessionStoreDBConfig`（约 535 行改动）、`clickhouse-agent.xml`（约 162 行改动）完善分布式表与查询配置。
 
-### 2.6 版本与依赖升级
+### 2.6 存储实现与运行期缺陷修复（核心）
 
-- `PROJ_VERSION`：→ **6.5.7**
-- `BBOSS_HTTP5_VERSION`：→ **6.5.6**
+- **`AIAgentUtil` 模型标识修复**：构建运行期 `ModelInfo` 时，误将 `maas` 赋给 `setModel(...)` 的 bug 修正为 `setMaas(...)`，避免模型/平台标识错位。
+- **`AIAgent.restorePermissionRules` 空值保护**：恢复权限规则前增加 `mainSessionStore != null` 判空，避免无会话存储场景 NPE。
+- **`AgentSessionServiceImpl` 持久化 API 切换**：记忆/日流水账的插入与更新由 `insertWithDBName` / `updateWithDBName` 改为 `insertBean` / `updateBean`；`listAgentUserDayMemorys` 仅在结果数 > 1 时反转顺序。
+- **接口瘦身**：`AgentSessionStore` 移除 `getAgentMemoryStore()`，`BaseAgentSessionStore` 移除对应字段与实现，记忆职责完全收敛到 `AgentSessionService`。
+
+### 2.7 版本与依赖升级
+
+- `PROJ_VERSION`：6.5.6 → **6.5.7**
+- `BBOSS_HTTP5_VERSION`：6.5.5 → **6.5.6**
+- `jacksonversion`：2.20.0 → **2.22.1**（`jacksonannotationversion` 2.20 → 2.22，`jacksondatabaindversion` 2.20.0 → 2.22.1）
+- `gradle.properties` 项目元数据由 bboss-http5 切换为 bboss-ai（issue tracker / VCS / SCM / 描述）
 - `BBOSSAIVersion`：`version=657`，`releaseDate=20261008`
 
 ## 三、数据库表结构变更汇总
@@ -104,6 +132,8 @@
 3. **记忆工具需手动注册**：`MemorySaveTool` / `MemoryGetTool` / `MemorySearchTool` 不会自动注册，需 `agent.registBeanTool(...)`；仅 `SessionSearchTool`、`CompactSummaryMsgSearchTool` 在 `enableMemorySearch=true` 时自动注册。
 4. **HitL 自定义实现**：`HitlTaskHelper.handleHitlTask` 参数类型由具体类型改为 `Object`，自定义 `HitlTaskToolInf` 实现需同步核对方法签名。
 5. **权限规则**：会话级 always 规则优先于静态规则评估，若存在静态规则与运行期规则冲突场景，需按新优先级语义验证。
+6. **压缩扩展点变更**：`ConversationCompactor.compactIfNeeded` 签名已变更（新增 `ChatContext`、移除 `agentId/sessionId`），`determineCutoffIndex`/`findSafeCutoffPoint` 转为公开静态方法；若有自定义压缩实现调用需同步适配。
+7. **窗口压缩语义变化**：`keepTokens` 现在仅对 `COMPACTION_POLICY_TOKENS` 生效；使用窗口压缩时请改用 `keepMessages` 控制保留条数。
 
 ## 五、架构文档同步清单（architect.md）
 
@@ -114,7 +144,7 @@
 - 模型核心类：删除旧 `Memory` 行，指向 `model.memory` 子包
 - 会话存储核心类与支持的表：三表扩展至包含记忆三表 + 权限规则表，补充 ClickHouse 本地表说明
 - `AgentSessionService` API：新增记忆/权限规则相关 API
-- 3.2.14 压缩章节：策略更名、动态阈值、`offloadBeforeCompact`、`MemoryManager` 迁址
+- 3.2.14 压缩章节：策略更名、动态阈值、`offloadBeforeCompact`、`MemoryManager` 迁址，并补充第二轮重构（`keepTokens` 策略门控、`determineCutoffIndex` 公开、窗口压缩复用安全切点、剪枝排除工具扩充）
 - 3.2.15 智能体记忆章节：完全重写（实体 + 表结构 + 读写 API）
 - 3.2.17 权限章节：两阶段评估 + `PermissionDecision`/`PermissionVerdict`/`PermissionRules`
 - 内置工具表与注册说明：新增三个记忆工具及其注册要求
@@ -123,4 +153,5 @@
 ## 六、待跟进事项
 
 - `MultiModalTool` 目前为全注释占位，待其启用并注册后补充进内置工具表与工具扩展章节。
-- `KeywordMatcher`（新增，`tools/util/KeywordMatcher.java`）已暂存但尚未接入，待确认用途后补充文档。
+- 工作区 memory/压缩重构改动**尚未提交**，建议提交前回归验证窗口压缩与摘要压缩两条路径的记忆 Flush 与摘要持久化行为。
+- `gradle.properties` 当前 `sonatype_url`/账号密码指向内网 Nexus 地址，提交/发布前请确认是否需还原为 Maven Central 配置。
