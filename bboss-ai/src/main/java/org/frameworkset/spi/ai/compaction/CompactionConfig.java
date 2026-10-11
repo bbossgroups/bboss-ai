@@ -245,6 +245,7 @@ public class CompactionConfig {
 //       
 //        this.keepTokens = effectiveKeepTokens;
 		
+		compactionConfig.setCompactionPolicy(this.compactionPolicy);
 		compactionConfig.setTriggerMessages(this.triggerMessages)	;
 		compactionConfig.setTriggerTokens(effectiveTriggerTokens);
 		compactionConfig.setReserved(this.reserved);
@@ -258,6 +259,7 @@ public class CompactionConfig {
 		compactionConfig.setTruncateArgs(this.truncateArgsConfig);
 		compactionConfig.setPruneConfig(this.pruneConfig);
 		compactionConfig.setCompactModel(this.compactModel);
+		
 		return compactionConfig;
         
     }
