@@ -137,7 +137,6 @@ public class CompactionConfig {
 	private double keepTokensRatio = 0.25;
 	private String summaryPrompt = DEFAULT_SUMMARY_PROMPT;
 	private boolean flushBeforeCompact = true;
-	private boolean offloadBeforeCompact = true;
 	private TruncateArgsConfig truncateArgsConfig = null;
 	private PruneConfig pruneConfig = new PruneConfig();
 	private ModelInfo compactModel = null;
@@ -210,10 +209,7 @@ public class CompactionConfig {
         return flushBeforeCompact;
     }
 
-    /** Whether to offload raw messages to the session JSONL before compaction. */
-    public boolean isOffloadBeforeCompact() {
-        return offloadBeforeCompact;
-    }
+ 
 
     /**
      * Configuration for the lightweight pre-summarization argument truncation pass.
@@ -259,7 +255,6 @@ public class CompactionConfig {
 		compactionConfig.setKeepTokensRatio(this.keepTokensRatio);
 		compactionConfig.setSummaryPrompt(this.summaryPrompt);
 		compactionConfig.setFlushBeforeCompact(this.flushBeforeCompact);
-		compactionConfig.setOffloadBeforeCompact(this.offloadBeforeCompact);
 		compactionConfig.setTruncateArgs(this.truncateArgsConfig);
 		compactionConfig.setPruneConfig(this.pruneConfig);
 		compactionConfig.setCompactModel(this.compactModel);
@@ -336,11 +331,7 @@ public class CompactionConfig {
             return this;
         }
 
-        /** Whether to offload raw messages to session JSONL before compaction (default true). */
-        public CompactionConfig setOffloadBeforeCompact(boolean offloadBeforeCompact) {
-            this.offloadBeforeCompact = offloadBeforeCompact;
-            return this;
-        }
+   
 
         /**
          * Enables lightweight pre-summarization argument truncation.

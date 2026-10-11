@@ -256,12 +256,13 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 		if(compactionManager != null  ){
 			try {
 				List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(  chatContext,agent,sessionMemory );
-				if(sessionMemory != compactMessages){
-					sessionMemory.clear();
-					for(int i = 0; i < compactMessages.size() ; i++ ) {
-						sessionMemory.add(compactMessages.get(i));
-					}
-				}
+//				if(sessionMemory != compactMessages){
+//					sessionMemory.clear();
+//					for(int i = 0; i < compactMessages.size() ; i++ ) {
+//						sessionMemory.add(compactMessages.get(i));
+//					}
+//				}
+				return compactMessages;
 			}
 			catch (Exception e){
 				log.warn("Compact agent["+agent.getAgentId()+"] session memory error: ignore compact.", e);

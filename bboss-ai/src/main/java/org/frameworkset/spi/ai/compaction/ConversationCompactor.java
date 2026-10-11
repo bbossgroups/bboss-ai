@@ -87,14 +87,22 @@ public class ConversationCompactor {
 
         // Step 1a: Lightweight arg truncation (non-LLM).
         // Step 1b: Aggregate tool-result pruning (non-LLM).
-        List<LinkedMessageMap<String, Object>> messages =
-                pruneToolResults(
-                        truncateArgs(conversationMessages, config.getTruncateArgsConfig()),
-                        config.getPruneConfig());
-
+        List<LinkedMessageMap<String, Object>> messages = null;
+		try {
+			messages = pruneToolResults(
+					truncateArgs(conversationMessages, config.getTruncateArgsConfig()),
+					config.getPruneConfig());
+		}
+		catch (Exception e) {
+			log.warn("Lightweight trim failed, using original messages:", e);
+			messages = conversationMessages;
+		}
+        boolean trimmed = (messages != conversationMessages);  
         int totalTokens = TokenCounterUtil.calculateToken(messages);
         if (!shouldCompact(messages, totalTokens, config)) {
-            return Collections.emptyList();
+                  
+            return trimmed ? messages : Collections.emptyList();
+                    
         }
 
         int cutoff = determineCutoffIndex(messages, totalTokens, config);
@@ -102,7 +110,7 @@ public class ConversationCompactor {
 			if (log.isDebugEnabled()) {
 				log.debug("Compaction triggered but safe cutoff is 0 — skipping");
 			}
-            return Collections.emptyList();
+            return trimmed ? messages : Collections.emptyList();   // 同上
         }
 
         // Keep prior summaries in the summarization input so each compaction builds on the
@@ -442,113 +450,7 @@ public class ConversationCompactor {
 //        }
 //        return false;
 //    }
-
-    /**
-     * Formats a list of messages as a human-readable text block for the summarization LLM.
-     *
-     * <p>Renders TEXT blocks verbatim; TOOL_USE and TOOL_RESULT blocks as concise inline
-     * representations so the summarizer understands what actions were taken.
-     */
-    static String formatMessagesForSummary(List<LinkedMessageMap<String, Object>> messages) {
-		StringBuilder sb = new StringBuilder();
-		for(LinkedMessageMap<String, Object> msg : messages){
-			String role = (String) msg.get("role");
-			if(role != null && !role.equals(MessageBuilder.ROLE_SYSTEM)){
-				String s = renderMessageForSummary(msg,role);
-				if(!s.isEmpty()) {
-					if(sb.length() > 0){
-						sb.append("\n\n");
-					}
-					sb.append(s);
-				}
-			}
-		}
-		return sb.toString();
-//        return messages.stream()
-//                .filter(m ->{
-//					String role = (String)m.get("role");
-//					return role != null && !role.equals(MessageBuilder.ROLE_SYSTEM);
-////					m.getRole() != null && m.getRole() != MsgRole.SYSTEM;
-//				} )
-//                .map(ConversationCompactor::renderMessageForSummary)
-//                .filter(s -> !s.isEmpty())
-//                .collect(Collectors.joining("\n\n"));
-    }
-
-    private static String renderMessageForSummary(LinkedMessageMap<String, Object> msg,String role) {
-        String roleLabel = null;
-		if(role.equals(MessageBuilder.ROLE_USER)){
-			roleLabel = "Human";
-		}
-		else if(role.equals(MessageBuilder.ROLE_ASSISTANT)){
-			roleLabel = "AI";
-		}
-		else if(role.equals(MessageBuilder.ROLE_TOOL)){
-			roleLabel = "Tool";
-		}
-		else {
-			roleLabel = role;
-		}
-		
-//                switch (msg.getRole()) {
-//                    case USER -> "Human";
-//                    case ASSISTANT -> "AI";
-//                    case TOOL -> "Tool";
-//                    default -> msg.getRole().name();
-//                };
-
-        StringBuilder sb = new StringBuilder(roleLabel).append(": ");
-		String content = (String) msg.get("content");
-		boolean first = true;
-		if(content != null) {
-			first = false;
-			sb.append(content);
-		}
-		
-		List<Map<String,Object>> toolCalls = (List<Map<String,Object>>) msg.get("tool_calls");
-		if(toolCalls != null && !toolCalls.isEmpty()){
-			// Append tool calls if any
-			for(Map toolCall : toolCalls){
-				if (!first) sb.append(" ");
-				Map<String, Object> function = (Map<String, Object>) toolCall.get("function");
-				String name = (String) function.get("name");
-				sb.append("[tool_call: ").append(name).append("]");
-				first = false;
-//				sb.append(renderToolUse(toolCall));
-			}
-		}
-		else if(role.equals(MessageBuilder.ROLE_TOOL)){
-			sb.append("[tool_result: ")
-					.append(msg.getName() != null ? msg.getName() : "?")
-					.append("] ");
-			if (!content.isEmpty()) {
-				sb.append(content.length() > 500 ? content.substring(0, 500) + "..." : content);
-			}
-		}
-		else{
-			sb.append(content.trim());
-		}
-		
-//			
-//        for (ContentBlock block : msg.getContent()) {
-//            if (!first) sb.append(" ");
-//            first = false;
-//            if (block instanceof TextBlock tb && tb.getText() != null && !tb.getText().isBlank()) {
-//                sb.append(tb.getText().strip());
-//            } else if (block instanceof ToolUseBlock tu) {
-//                sb.append("[tool_call: ").append(tu.getName()).append("]");
-//            } else if (block instanceof ToolResultBlock tr) {
-//                String text = extractToolResultText(tr);
-//                sb.append("[tool_result: ")
-//                        .append(tr.getName() != null ? tr.getName() : "?")
-//                        .append("] ");
-//                if (!text.isBlank()) {
-//                    sb.append(text.length() > 500 ? text.substring(0, 500) + "..." : text);
-//                }
-//            }
-//        }
-        return sb.toString().trim();
-    }
+  
 
 //    private static String extractToolResultText(ToolResultBlock tr) {
 //        if (tr.getOutput() == null) return "";
@@ -591,7 +493,9 @@ public class ConversationCompactor {
      * results with a head+tail preview when the total prunable amount exceeds
      * {@code minimumTokens}.
      *
-     * <p>Non-LLM operation. Returns the original list if no pruning occurred.
+     * <p>Non-LLM operation. Pruned messages are replaced with copies so that shared message
+     * instances (e.g. memory-store session memory reused across agents) are never mutated.
+     * Returns the original list when nothing was pruned.
      */
     List<LinkedMessageMap<String, Object>> pruneToolResults(List<LinkedMessageMap<String, Object>> messages, PruneConfig pruneConfig) {
         if (pruneConfig == null || messages == null || messages.isEmpty()) {
@@ -604,13 +508,16 @@ public class ConversationCompactor {
 
         int protectedTokens = 0;
         int prunableTokens = 0;
-        List<int[]> toPrune = new ArrayList<>();
+        List<Integer> toPrune = new ArrayList<>();
         for (int i = messages.size() - 1; i >= 0; i--) {
 			LinkedMessageMap<String, Object> msg = messages.get(i);
 			String role = (String) msg.get("role");
             if (!role.equals(MessageBuilder.ROLE_TOOL)) {
                 continue;
             }
+			if(msg.isResultTrimmed()){
+				continue;
+			}
 			String content = (String) msg.get("content");
             if (content == null) {
                 continue;
@@ -628,7 +535,7 @@ public class ConversationCompactor {
 			}
 			if (content.length() > maxChars) {
 				prunableTokens += tokens;
-				toPrune.add(new int[] {i, 0});
+				toPrune.add(i);
 			}
             
         }
@@ -637,52 +544,31 @@ public class ConversationCompactor {
             return messages;
         }
 
-        List<LinkedMessageMap<String, Object>> result = new ArrayList<>(messages);
-        for (int[] pos : toPrune) {
-            int msgIdx = pos[0];
-            int blockIdx = pos[1];
-			LinkedMessageMap<String, Object> msg = result.get(msgIdx);			
-			String newContent = (String) msg.get("content");
-			
-			String text  = newContent;
-			String preview = buildPrunePreview(text, maxChars);
-			
-			LinkedMessageMap<String, Object> pruned = new LinkedMessageMap<>();
-			pruned.setName(msg.getName());
-			pruned.setId(msg.getId());
-			pruned.setAgentId(msg.getAgentId());
-			pruned.setSeqNo(msg.getSeqNo());
-			pruned.setTimestamp(msg.getTimestamp());
-			pruned.setLocalDateTime(msg.getLocalDateTime());
-			pruned.setMeta(msg.getMeta());
-			
-			pruned.putAll(msg);
-			pruned.put("content", preview);
-			pruned.setTimestamp(msg.getTimestamp());
-			result.set(msgIdx, pruned);
-//            ToolResultBlock tr = (ToolResultBlock) newBlocks.get(blockIdx);
-//            String text = extractToolResultText(tr);
-//            String preview = buildPrunePreview(text, maxChars);
-//            ToolResultBlock pruned =
-//                    ToolResultBlock.builder()
-//                            .id(tr.getId())
-//                            .name(tr.getName())
-//                            .output(List.of(TextBlock.builder().text(preview).build()))
-//                            .build();
-//            newBlocks.set(blockIdx, pruned);
-//            result.set(
-//                    msgIdx,
-//                    Msg.builder()
-//                            .id(msg.getId())
-//                            .name(msg.getName())
-//                            .role(msg.getRole())
-//                            .content(newBlocks)
-//                            .metadata(msg.getMetadata())
-//                            .timestamp(msg.getTimestamp())
-//                            .build());
+        // Replace pruned results with copies so the original message instances are untouched.
+        List<LinkedMessageMap<String, Object>> result = null;
+        int prunedCount = 0;
+        for (int msgIdx : toPrune) {
+//            int msgIdx = pos[0];
+            LinkedMessageMap<String, Object> msg = messages.get(msgIdx);
+            String text = (String) msg.get("content");
+            String preview = buildPrunePreview(text, maxChars);
+            if (preview == text) {
+                continue;
+            }
+            if (result == null) {
+                result = new ArrayList<>(messages);
+            }
+            LinkedMessageMap<String, Object> pruned = msg.copyMessage();            
+            pruned.put("content", preview);
+			pruned.setResultTrimmed(true);
+            result.set(msgIdx, pruned);
+            prunedCount++;
         }
 
-        log.info("Pruned {} tool results (~{} tokens freed)", toPrune.size(), prunableTokens);
+        if (result == null) {
+            return messages;
+        }
+        log.info("Pruned {} tool results (~{} tokens freed)", prunedCount, prunableTokens);
         return result;
     }
 
@@ -728,6 +614,10 @@ public class ConversationCompactor {
             LinkedMessageMap<String, Object> msg = messages.get(i);
             String role = (String) msg.get("role");
             if (i < cutoff && role.equals(MessageBuilder.ROLE_ASSISTANT)) {
+				if(msg.isInputTrimmed()){
+					result.add(msg);
+					continue;
+				}
                 LinkedMessageMap<String, Object> truncated = truncateToolUseArgs(msg, truncateConfig);
                 result.add(truncated);
                 if (truncated != msg) {
@@ -776,15 +666,6 @@ public class ConversationCompactor {
      * If no argument exceeds the limit, the original message reference is returned unchanged.
      */
     private static LinkedMessageMap<String, Object> truncateToolUseArgs(LinkedMessageMap<String, Object> msg, TruncateArgsConfig cfg) {
-		String content = (String) msg.get("content");
-		if(content == null || content.isEmpty()){
-			return msg;
-		}
-//        List<ContentBlock> blocks = msg.getContent();
-//        if (blocks == null || blocks.isEmpty()) {
-//            return msg;
-//        }
-		
 		List<Map<String,Object>> toolCalls = (List<Map<String,Object>>) msg.get("tool_calls");
 		if(toolCalls == null || toolCalls.isEmpty()){
 			return msg;
@@ -793,11 +674,20 @@ public class ConversationCompactor {
 		List<Map<String,Object>> newToolCalls = new ArrayList<>(toolCalls.size());
 		for(Map<String,Object> toolCall : toolCalls){
 			Map<String,Object> newToolCall = truncateToolUseBlock(toolCall, cfg);
-		 	if(newToolCall != null){
+			if(newToolCall != toolCall){
 				anyModified = true;
 			}
+			newToolCalls.add(newToolCall);
 		}
-		return msg;
+		
+		
+		if(!anyModified){
+			return msg;
+		}
+		LinkedMessageMap<String, Object> processed = msg.copyMessage();
+		processed.setInputTrimmed(true);
+		processed.put("tool_calls", newToolCalls);
+		return processed;
 //        List<ContentBlock> newBlocks = new ArrayList<>(blocks.size());
 //        for (ContentBlock block : blocks) {
 //            if (block instanceof ToolUseBlock tu) {
@@ -823,13 +713,23 @@ public class ConversationCompactor {
      */
     private static Map<String,Object> truncateToolUseBlock(Map<String,Object> toolCall, TruncateArgsConfig cfg) {
 		Map<String, Object> function = (Map<String, Object>) toolCall.get("function");
-		String name = (String) function.get("name");
-		
-		String  input = (String) function.get("arguments");
-		if (input == null || input.isEmpty()) {
-			return null;
+		if (function == null) {
+			return toolCall;
 		}
-		Map<String,Object> arguments = JsonUtil.json2Object(input,Map.class);
+		String input = (String) function.get("arguments");
+		// 整串都没超过单值上限，内部叶子必然不超，无需解析
+		if (input == null || input.isEmpty() || input.length() <= cfg.getMaxArgLength()) {
+			return toolCall;
+		}
+		Map<String,Object> arguments;
+		try {
+			arguments = JsonUtil.json2Object(input, Map.class);
+		} catch (Exception e) {
+			return toolCall;
+		}
+		if (arguments == null || arguments.isEmpty()) {
+			return toolCall;
+		}
       
 
         boolean anyModified = false;
@@ -839,7 +739,7 @@ public class ConversationCompactor {
 			if(value instanceof String){
 				String s =  (String) value;
 				if(s.length() > cfg.getMaxArgLength()){
-					newInput.put(entry.getKey(), s.substring(0, 20) + cfg.getTruncationText());
+					newInput.put(entry.getKey(), s.substring(0, Math.min(20, s.length())) + cfg.getTruncationText());
 					anyModified = true;
 				}
 			}
@@ -850,10 +750,12 @@ public class ConversationCompactor {
         }
 
         if (!anyModified) {
-            return null;
+            return toolCall;
         }
-		input = JsonUtil.object2json(newInput);
-		function.put("arguments", input);
-        return toolCall;
+		Map<String, Object> newFunction = new HashMap<>(function);
+		newFunction.put("arguments", JsonUtil.object2json(newInput));
+		Map<String, Object> newToolCall = new HashMap<>(toolCall);
+		newToolCall.put("function", newFunction);
+        return newToolCall;
     }
 }

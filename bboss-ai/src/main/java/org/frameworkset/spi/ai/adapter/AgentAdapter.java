@@ -866,7 +866,8 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 // 添加当前用户消息
                 toolAgentMessage.addSessionMessage(userMessage, agent);
             }
-			agent.compact(chatContext,agent,sessionMemory);
+			messages = new ArrayList<>(sessionMemory);
+			messages = agent.compact(chatContext,agent,messages);
 //			if(compactionManager != null && !persistentMessage.isAgentResultMessage()){
 //				List<LinkedMessageMap<String,Object>> compactMessages = compactionManager.compact(agent,sessionMemory );
 //				if(sessionMemory != compactMessages){
@@ -874,7 +875,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 //					sessionMemory.addAll(compactMessages);
 //				}
 //			}
-            messages = new ArrayList<>(sessionMemory);
+            
 
 
         }
@@ -1039,9 +1040,9 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 			if(agent.getAgentId() != null && agent.getAgentId().equals("__summary__")){
 				logger.info("Using summary agent to generate summary.");
 			}
-		
-			agent.compact(chatContext,agent,sessionMemory);
-            messages = new ArrayList<>(sessionMemory);
+			messages = new ArrayList<>(sessionMemory);
+			messages = agent.compact(chatContext,agent,messages);
+          
             
             
         }

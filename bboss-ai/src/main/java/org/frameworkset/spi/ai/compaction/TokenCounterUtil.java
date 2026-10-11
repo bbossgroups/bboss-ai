@@ -157,14 +157,18 @@ public class TokenCounterUtil {
     private static int estimateToolUseBlockTokens(Map toolUseBlock) {
         int tokens = TOOL_CALL_OVERHEAD;
 		Map<String, Object> function = (Map<String, Object>) toolUseBlock.get("function");
-		String name = (String) function.get("name");
-	 
-		String  input = (String) function.get("arguments");
+        String name =   null;		
+		String  input =   null;
+        if(function != null){
+            name = (String) function.get("name");
+			input = (String) function.get("arguments");
+		}
+		 
         // Tool name
         if (name != null) {
             tokens += estimateTextTokens(name);
         }
-		String id = (String) function.get("id");
+		String id = (String) toolUseBlock.get("id");
         // Tool ID
         if (id != null) {
             tokens += estimateTextTokens(id);

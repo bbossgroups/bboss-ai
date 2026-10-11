@@ -531,7 +531,6 @@ public class SessionMessage {
 				Map<String,Object> meta = JsonUtil.json2Object(metadata, Map.class);
 				message.setMeta(meta);
 			}
-			
 		}
 	}
 	public String getName() {
