@@ -18,7 +18,7 @@ package org.frameworkset.spi.ai.compaction;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
-import org.frameworkset.spi.ai.memory.MemoryManager;
+import org.frameworkset.spi.ai.memory.MemoryFlushManager;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -89,8 +89,8 @@ public class CompactionManager extends BaseCompactionManager {
 			model = chatContext.getModelInfo();
 		CompactionConfig effectiveConfig = resolveEffectiveConfig(model);
 		
-		MemoryManager flushManager =
-				new MemoryManager(model);
+		MemoryFlushManager flushManager =
+				new MemoryFlushManager(model);
 		ConversationCompactor compactor =
 				new ConversationCompactor(model, flushManager);
 

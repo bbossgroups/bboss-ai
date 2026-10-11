@@ -46,9 +46,9 @@ import java.util.Map;
  *       read-only context here.</li>
  * </ul>
  */
-public class MemoryManager {
+public class MemoryFlushManager {
 
-    private static final Logger log = LoggerFactory.getLogger(MemoryManager.class);
+    private static final Logger log = LoggerFactory.getLogger(MemoryFlushManager.class);
  
 
     /**
@@ -88,7 +88,7 @@ public class MemoryManager {
     private final ModelInfo model;
     private final String flushPrompt;
 
-    public MemoryManager(ModelInfo	 model) {
+    public MemoryFlushManager(ModelInfo	 model) {
         this(model, DEFAULT_FLUSH_PROMPT);
     }
 
@@ -96,7 +96,7 @@ public class MemoryManager {
      * @param flushPrompt SYSTEM prompt for the extraction LLM call. {@code null} falls back to
      *     {@link #DEFAULT_FLUSH_PROMPT}.
      */
-    public MemoryManager(ModelInfo model, String flushPrompt) {
+    public MemoryFlushManager(ModelInfo model, String flushPrompt) {
         this.model = model;
         this.flushPrompt = flushPrompt != null ? flushPrompt : DEFAULT_FLUSH_PROMPT;
     }

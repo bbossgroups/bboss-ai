@@ -17,17 +17,14 @@ package org.frameworkset.spi.ai.compaction;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
-import org.frameworkset.spi.ai.memory.MemoryManager;
+import org.frameworkset.spi.ai.memory.MemoryFlushManager;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
-import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  *
@@ -100,8 +97,8 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 					ModelInfo model = config.getCompactModel();
 					if(model == null)
 						model = chatContext.getModelInfo();
-					MemoryManager flushManager =
-							new MemoryManager(model);
+					MemoryFlushManager flushManager =
+							new MemoryFlushManager(model);
 					flushManager
 							.flushMemories(  agent, flushInput);
 				}

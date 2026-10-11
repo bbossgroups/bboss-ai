@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.permission;
+package org.frameworkset.spi.ai.compact;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -29,6 +29,7 @@ import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.tool.ToolCallAsk;
 import org.frameworkset.spi.ai.model.tool.ToolCallAskResult;
+import org.frameworkset.spi.ai.permission.PermissionRule;
 import org.frameworkset.spi.ai.skill.SkillFilter;
 import org.frameworkset.spi.ai.skill.SkillsToolRegist;
 import org.frameworkset.spi.ai.store.StoreContext;

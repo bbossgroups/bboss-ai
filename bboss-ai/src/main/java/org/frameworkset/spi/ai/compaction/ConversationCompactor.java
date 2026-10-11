@@ -18,7 +18,7 @@ package org.frameworkset.spi.ai.compaction;
 import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
-import org.frameworkset.spi.ai.memory.MemoryManager;
+import org.frameworkset.spi.ai.memory.MemoryFlushManager;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -53,9 +53,9 @@ public class ConversationCompactor {
     public static final String SUMMARY_MSG_NAME = "__compaction_summary__";
 
     private final ModelInfo model;
-    private final MemoryManager flushManager;
+    private final MemoryFlushManager flushManager;
 
-    public ConversationCompactor(ModelInfo model, MemoryManager flushManager) {
+    public ConversationCompactor(ModelInfo model, MemoryFlushManager flushManager) {
         this.model = model;
         this.flushManager = flushManager;
     }
