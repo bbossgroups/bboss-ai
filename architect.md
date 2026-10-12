@@ -83,7 +83,7 @@ bboss-ai/
 │       │   ├── interceptor/           # 智能体拦截器（AgentInterceptor、impl/TaskminderAgentInterceptor，预留扩展点）
 │       │   ├── material/              # 素材处理（文件下载等）
 │       │   ├── mcp/                   # MCP 客户端/服务端（sse/、streamable/、feishu/、intercepter/、tools/、model/）
-│       │   ├── memory/                # 智能体记忆管理（MemoryManager 记忆抽取、MemoryUtil）
+│       │   ├── memory/                # 智能体记忆管理（MemoryFlushManager 记忆抽取、MemoryConsolidator 总账汇总、MemoryConfig、coordination/ 周期闸门、MemoryUtil）
 │       │   ├── model/                 # 消息模型（含 tool/ 权限规则模型子包、memory/ 记忆实体子包）
 │       │   ├── permission/            # 工具权限管控体系（PermissionEngine、PermissionMode、PermissionRule 等）
 │       │   ├── plan/                  # 自主规划机制（PlanTools）
@@ -471,7 +471,7 @@ public class MCPServerController {
 | `AgentSessionServiceImpl` | 会话管理服务实现，基于 `ConfigSQLExecutor` |
 | `AgentSession` | 会话实体（sessionId、userId、agentId、domain、title、createTime、lastAccessTime） |
 | `AgentSessionCondition` | 会话查询条件（多 domain、标题模糊、时间范围、排序字段可配置） |
-| `SessionMessage` | 会话消息实体（含 19 种消息类型常量） |
+| `SessionMessage` | 会话消息实体（含 26 种消息类型常量） |
 | `LastSessionMessage` | 最新会话消息（子智能体输出结果传递载体） |
 | `StoreContext` | 存储上下文（sessionId、userId、dataSource、clickhouseCluster、domain 等） |
 | `AgentMessageTypeConvertor` | 角色（role）到 messageType 的转换器 |
@@ -489,7 +489,7 @@ public class MCPServerController {
 | `agent_session_message_ref` | 智能体间消息引用关系（msgId、msgAgentId、refAgentId） | 同上 |
 | `agent_hitl_calltask` | HitL 人工介入任务记录 | 同上 |
 | `agent_tool_call_rules` | 工具调用权限规则持久化（模式 1 通道，userId/sessionId/toolName/agentId + permissionRules） | 同上 |
-| `agent_memory` | 智能体长期记忆总账（一个智能体+用户一条，content 为总账内容） | 同上 |
+| `agent_memory` | 智能体长期记忆总账（一个智能体+用户一条，content 为总账内容，consolidationState 为总账/日流水账汇总水位） | 同上 |
 | `agent_day_memory` | 智能体记忆日流水账（一个智能体+用户+日一条，memoryDay 形如 `memory/yyyy-MM-dd.md`） | 同上 |
 | `agent_consolidation_state` | 长期总账汇总水位状态（记录总账已合并到哪一天的流水账） | 同上 |
 
@@ -1271,7 +1271,7 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 |------|------|
 | `TraceMessage` | Trace 消息载体，包含消息内容、起止时间、agentId、parentAgentId、traceId、metaData 等 |
 | `TokenMetrics` | Token 用量指标，包含 model、maas、totalTokens、promptTokens、promptCachedTokens、promptCacheHitTokens、promptCacheMissTokens、promptTextTokens、completionTokens、completionReasoningTokens、completionTextTokens、reasoningData、startTime、endTime、elapsed 等 |
-| `SessionMessage` | 会话消息类型体系，定义了 19 种消息类型常量，覆盖用户输入、LLM 输入输出、Embedding、Rerank、工具搜索、MCP 调用、Trace 等 |
+| `SessionMessage` | 会话消息类型体系，定义了 26 种消息类型常量，覆盖用户输入、LLM 输入输出、Embedding、Rerank、工具搜索、MCP 调用、Trace 等 |
 | `AgentMessageTypeConvertor` | 角色（role）到 messageType 的转换器，支持用户自定义扩展（101 起） |
 
 **TokenMetrics 指标说明：**
@@ -1295,7 +1295,7 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 
 **消息类型对照表：**
 
-消息类型体系采用 `messageType` 数值编码与 `role` 字符串名称双标识设计，覆盖用户交互、模型调用、工具执行、工具权限、技能调用、人工介入、规划、摘要压缩、观测追踪等全链路场景。其中 0–25 为框架内置标准类型，`MESSAGE_TYPE_OTHER_MESSAGE=18` 为未映射类型的兜底编码；业务如需自定义扩展，建议从 101 开始编码，并在 `AgentMessageTypeConvertor` 中注册映射关系。
+消息类型体系采用 `messageType` 数值编码与 `role` 字符串名称双标识设计，覆盖用户交互、模型调用、工具执行、工具权限、技能调用、人工介入、规划、摘要压缩、观测追踪等全链路场景。其中 0–26 为框架内置标准类型，`MESSAGE_TYPE_OTHER_MESSAGE=18` 为未映射类型的兜底编码；业务如需自定义扩展，建议从 101 开始编码，并在 `AgentMessageTypeConvertor` 中注册映射关系。
 
 | 常量 | 值 | role 名称 | 说明 |
 |------|-----|-----------|------|
@@ -1325,6 +1325,7 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 | `MESSAGE_TYPE_SUMMARY_MESSAGE` | 23 | user | 会话摘要压缩消息（记录被压缩的消息清单到 meta.summaryIds） |
 | `MESSAGE_TYPE_LLMCALLERROR_MESSAGE` | 24 | llmcallerror | 模型调用异常消息（执行轨迹记录模型调用异常） |
 | `MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE` | 25 | toolpermissionrules | 工具权限规则消息（每轮工具调用后将权限引擎的 allow/deny/ask 规则表快照持久化，会话恢复时用于还原"始终允许/拒绝"等规则） |
+| `MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_HITLASKFAILED_MESSAGE` | 26 | toolpermissionrulesHitlAskFailed | 工具权限人工授权失败消息（ASK 类工具权限的人工确认失败/异常轨迹） |
 
 **自动 Trace 采集：**
 
@@ -1408,7 +1409,7 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 | `CompactionManager` | 摘要压缩实现（默认），委托 `ConversationCompactor` 完成触发判断、cutoff 计算、剪枝、截断与 LLM 摘要；按模型上下文窗口动态解析触发/保留预算 |
 | `WindowsCompactionManager` | 窗口压缩实现：按消息条数滑动窗口，使用 `ConversationCompactor.findSafeCutoffPoint` 保证不切断工具调用配对，可先做记忆 Flush，再将窗口外旧消息总结为一条摘要消息（`MESSAGE_TYPE_SUMMARY_MESSAGE=23`）持久化 |
 | `ConversationCompactor` | 摘要压缩核心算法类；`compactIfNeeded(ChatContext, AIAgent, messages, config)` 为入口，`determineCutoffIndex` / `findSafeCutoffPoint` / `filterSummaryMessages` 为对外静态方法（窗口压缩复用 `findSafeCutoffPoint` 统一防割裂逻辑） |
-| `MemoryManager`（位于 `memory` 包） | 压缩前用 LLM 从将被压缩的消息中抽取长期记忆，Flush 追加到当日记忆流水账（DB `agent_day_memory`） |
+| `MemoryFlushManager`（位于 `memory` 包） | 压缩前用 LLM 从将被压缩的消息中抽取长期记忆，Flush 追加到当日记忆流水账（DB `agent_day_memory`） |
 | `CompactionConfig` | 压缩配置（见下表） |
 | `PruneConfig` | 工具结果聚合剪枝配置（逆向扫描 TOOL 消息，保护最近 `protectTokens` 的输出，对超长旧结果做"头+尾预览"替换；默认排除 `read_file`/`memory_search`/`memory_get`/`session_search`/`current_session_search`/`user_sessions_search` 等结果） |
 | `TruncateArgsConfig` | 工具调用入参截断配置（对窗口外 ASSISTANT 消息中过长 arguments 截断到 `maxArgLength`） |
@@ -1438,7 +1439,7 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 1. **预清理**：按 `TruncateArgsConfig` 截断长工具入参；按 `PruneConfig` 剪枝超长工具结果
 2. **触发判断**：消息条数 >= `triggerMessages` 或估算 token >= `triggerTokens` 任一触发
 3. **确定 cutoff**：`determineCutoffIndex` 二分查找满足保留预算的最小下标，`findSafeCutoffPoint` 保证不切断 ASSISTANT 的 tool_call 与其 TOOL 结果的配对
-4. **记忆 Flush**：`MemoryManager.flushMemories` 把将被压缩的消息（`filterSummaryMessages` 剔除旧摘要）交给 LLM 抽取长期记忆，追加写入当天日流水账（DB）
+4. **记忆 Flush**：`MemoryFlushManager.flushMemories` 把将被压缩的消息（`filterSummaryMessages` 剔除旧摘要）交给 LLM 抽取长期记忆，追加写入当天日流水账（DB）
 5. **LLM 摘要**：用 `compactModel` 对前缀做摘要，前序摘要保留在输入中形成链式总结
 6. **重建消息列表**：`[summaryUserMsg] + tail`，摘要消息 role=USER、name=`__compaction_summary__`，携带内容稳定 ID 便于去重
 
@@ -1464,17 +1465,19 @@ message.setStoreContext(storeContext);
 
 #### 3.2.15 智能体记忆（Memory）
 
-智能体记忆提供"**日流水账 Layer 1 + 长期总账 Layer 2**"两层模型，全部落库持久化（不再使用本地 `.md` 文件），配合记忆读写检索工具实现跨会话事实保全。核心实现位于 `memory` 包与 `model/memory` 子包：
+智能体记忆提供"**日流水账 Layer 1 + 长期总账 Layer 2**"两层模型，全部落库持久化（不再使用本地 `.md` 文件），配合记忆读写检索工具实现跨会话事实保全。记忆流水线由三类 LLM 驱动的操作组成：**Flush**（从对话窗口抽取**新**记忆追加到当日日流水账）、**Consolidation**（周期性把日流水账合并/去重/裁剪进长期总账，并推进汇总水位）、**压缩摘要**（见 [3.2.14 会话记忆压缩](#3214-会话记忆压缩compaction)）。核心实现位于 `memory` 包与 `model/memory` 子包：
 
 **核心类：**
 
 | 类名 | 作用 |
 |------|------|
-| `MemoryManager`（`memory` 包） | 记忆 Flush 管理器：把将被压缩的对话（USER/ASSISTANT/TOOL，跳过 SYSTEM 与内部上下文/旧摘要消息）交给 LLM 抽取**新**记忆，以 `## Memory Flush — {ISO时间戳}` 段落追加到当日日流水账；工具结果截断 1000 字符、工具入参截断 500 字符，防止 token 爆炸 |
+| `MemoryFlushManager`（`memory` 包） | 记忆 Flush 管理器：把将被压缩的对话（USER/ASSISTANT/TOOL，跳过 SYSTEM 与内部上下文/旧摘要消息）交给 LLM 抽取**新**记忆，以 `## Memory Flush — {ISO时间戳}` 段落追加到当日日流水账；工具结果截断 1000 字符、工具入参截断 500 字符，防止 token 爆炸 |
+| `MemoryConsolidator`（`memory` 包） | 长期总账汇总器：读取汇总水位（`AgentMemory.consolidationState`）之后新增的日流水账与当前总账，交 LLM 合并/去重/裁剪后覆写长期总账并推进水位；无新增流水时跳过；默认提示词资源 `prompts/memory/DEFAULT_CONSOLIDATION_PROMPT.md` |
+| `MemoryConfig`（`memory` 包） | 记忆流水线统一配置：Flush 触发策略（`FlushTrigger`：ALWAYS/NEVER/THROTTLED）、记忆专用模型、Flush/Consolidation 提示词、`consolidationMaxTokens`、`consolidationMinGap`（默认 30 分钟）、日流水/会话日志保留天数等；与 `CompactionConfig`（压缩摘要）互补 |
 | `MemoryUtil`（`memory` 包） | 记忆路径判定工具 `isDayMemoryPath(path)`：`MEMORY.md` 为总账，`memory/` 前缀为流水账 |
-| `AgentMemory`（`model/memory` 子包） | 长期记忆总账实体，对应表 `agent_memory`；字段 memoryId、createTime、updateTime、agentId、parentAgentId、userId、sessionId、content（一个智能体+用户一条） |
+| `AgentMemory`（`model/memory` 子包） | 长期记忆总账实体，对应表 `agent_memory`；字段 memoryId、createTime、updateTime、agentId、parentAgentId、userId、sessionId、content、consolidationState（总账/日流水账汇总水位，ISO 时间戳，一个智能体+用户一条） |
 | `AgentDayMemory`（`model/memory` 子包） | 日流水账实体，对应表 `agent_day_memory`；在总账字段基础上增加 memoryDay（形如 `memory/yyyy-MM-dd.md`，一个智能体+用户+日一条） |
-| `AgentConsolidationState`（`model/memory` 子包） | 总账汇总水位状态实体，对应表 `agent_consolidation_state`；记录总账已合并到哪一天的流水账（consolidationState 为 ISO 时间戳） |
+| `AgentConsolidationState`（`model/memory` 子包） | 总账汇总水位状态实体，对应表 `agent_consolidation_state`；记录总账已合并到哪一天的流水账（consolidationState 为 ISO 时间戳），由 `writeWatermark`/`getMemoryWaterMarker` 读写 |
 | `WorkspaceConstants` | 记忆路径常量（`MEMORY_MD="MEMORY.md"`、`MEMORY_DIR="memory"`） |
 | `SessionMessage.MESSAGE_TYPE_SUMMARY_MESSAGE` | 摘要压缩消息类型（23），meta.summaryIds 记录被压缩的原始消息清单 |
 | `SessionMessage.MESSAGE_TYPE_AGENTTOOLPERMISSIONRULES_MESSAGE` | 工具权限规则消息类型（25），meta.permissionRules 持久化权限规则 |
@@ -1485,19 +1488,23 @@ message.setStoreContext(storeContext);
 |------|------|
 | `getMemory(agentId, userId)` | 读长期总账 |
 | `createOrUpdateMemory(agent, section)` | 追加写长期总账（不存在则新建） |
+| `createOrUpdateMemory(agent, AgentMemory)` | 整体保存/覆写长期总账（含 consolidationState 水位），不存在则新建，供总账汇总使用 |
 | `getDayMemory(agentId, userId, memoryDay)` | 读某日流水账 |
 | `createOrUpdateDayMemory(agent, section, memoryDay)` / `createOrUpdateDayMemory(agent, AgentDayMemory)` | 追加写日流水账（不存在则新建） |
 | `listAgentUserDayMemorys(agent)` | 列出近期日流水账，DB 侧 SQL 默认 `limit` 限制最近 **180 天**（`order by ... createTime desc limit ?`） |
+| `listAgentUserDayMemorys(agent, Instant startDay)` | 列出汇总水位之后新增的日流水账（SQL `listAgentUserDayMemorysWaterMarker`，UTC→东八区换算并回退一天，ClickHouse 走 `-yandex_clickhouse` 方言） |
+| `writeWatermark(agent, watermark)` | 写入/更新总账汇总水位（`agent_consolidation_state` 表，不存在则新建） |
+| `getMemoryWaterMarker(agent)` | 读取总账汇总水位状态 |
 
 **记忆三层表结构**：与 `agent_session` 系列表一样由框架自动建表，覆盖 MySQL/Oracle/DM/SQL Server/PostgreSQL/SQLite/ClickHouse：
 
-- `agent_memory`（总账）：`memoryId`(PK)、`createTime`、`updateTime`、`agentId`、`parentAgentId`、`userId`、`sessionId`、`content`
+- `agent_memory`（总账）：`memoryId`(PK)、`createTime`、`updateTime`、`agentId`、`parentAgentId`、`userId`、`sessionId`、`content`、`consolidationState`（总账/日流水账汇总水位，上次总账时间线）
 - `agent_day_memory`（日流水账）：在总账字段基础上增加 `memoryDay`
 - `agent_consolidation_state`（水位）：`consolidationStateId`(PK)、`createTime`、`updateTime`、`agentId`、`parentAgentId`、`userId`、`consolidationState`
 
 ClickHouse 模式下均创建 `*_local` 本地表（ReplicatedMergeTree）与 `*` 分布式表（Distributed 引擎），按 `sipHash64(memoryId)` / `sipHash64(consolidationStateId)` 分片；UPDATE 走 `ALTER TABLE ... UPDATE ... SETTINGS mutations_sync`。
 
-> **与压缩的衔接**：`CompactionConfig.flushBeforeCompact=true` 时，压缩前 `MemoryManager.flushMemories` 先"抢救"出长期记忆写入日流水账；`ConversationCompactor.filterSummaryMessages` 显式剔除旧摘要消息，避免把摘要重复提取为记忆。
+> **与压缩的衔接**：`CompactionConfig.flushBeforeCompact=true` 时，压缩前 `MemoryFlushManager.flushMemories` 先"抢救"出长期记忆写入日流水账；`ConversationCompactor.filterSummaryMessages` 显式剔除旧摘要消息，避免把摘要重复提取为记忆。
 
 #### 3.2.16 记忆检索与会话检索工具
 
@@ -1824,7 +1831,7 @@ planAgent.addDefaultRouteChoiceAgent(new AIAgent("默认处理"));
 ├─────────────────────────────────────────┤
 │      AgentSessionStore (会话层)          │
 │    (Memory/DB 持久化 + Compaction)      │
-│  (MemoryManager 记忆管理/AgentSessionService) │
+│  (MemoryFlushManager 记忆管理/AgentSessionService) │
 ├─────────────────────────────────────────┤
 │       AgentRuntimeContext (运行时层)     │
 │  (权限规则/调试开关/规划状态/压缩配置)    │
@@ -2382,7 +2389,7 @@ bboss-ai 是一个功能完善的 Java AI 智能体开发框架，具有以下�
 12. **生产级会话存储**：支持 ClickHouse 分布式集群，提供高吞吐会话持久化能力
 13. **会话记忆压缩**：窗口压缩/摘要压缩两种策略，支持记忆 Flush、工具结果剪枝、入参截断，动态触发阈值适配模型上下文窗口
 14. **智能体记忆**：`agent_day_memory`（日流水账）/`agent_memory`（长期总账）/`agent_consolidation_state`（规范化水位）三表持久化两层记忆模型，`memory_save`/`memory_get`/`memory_search` 工具联动会话/摘要检索
-15. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路（含模型调用异常记录），消息类型体系扩展到 25 种
+15. **全链路可观测性**：内置 Trace 体系，覆盖 LLM 调用、工具执行、工作流编排全链路（含模型调用异常记录），消息类型体系扩展到 26 种
 16. **内置工具体系**：Shell 执行、代码执行（Java/Python/JavaScript）、文件操作（含 glob/list/grep 检索）、系统信息查询、文本搜索（Grep）、网页抓取（`web_fetch`）、联网搜索（`web_search`）、任务清单（`todo_write`）、会话/摘要检索、人工介入
 17. **混合推理内容流式推送**：`mixedData` 报文自动拆分，推理流与答案流分别渲染，适配九天 deepseek 等边推理边输出模型
 18. **步骤级事件**：`ServerEvent.TYPE_STEP` 实时推送"新一轮工具调用开始/人工介入完成"信号，支持按步骤进度展示
