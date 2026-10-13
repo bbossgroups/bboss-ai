@@ -8,6 +8,15 @@ import java.time.LocalDateTime;
 public class AgentDayMemory {
 	
 	/**
+	 * ClickHouse集群名称
+	 */
+	private String clusterName;
+	
+
+	
+	private int mutationsSync;
+	
+	/**
 	 * 记录id，主键
 	 */
 	private String memoryId;
@@ -140,5 +149,21 @@ public class AgentDayMemory {
 				", content='" + content + '\'' +
 				", memoryDay='" + memoryDay + '\'' +
 				'}';
+	}
+	
+	public String getClusterName() {
+		return clusterName;
+	}
+	
+	public void setClusterName(String clusterName) {
+		this.clusterName = clusterName;
+	}
+	
+	public int getMutationsSync() {
+		return mutationsSync;
+	}
+	
+	public void setMutationsSync(int mutationsSync) {
+		this.mutationsSync = mutationsSync;
 	}
 }

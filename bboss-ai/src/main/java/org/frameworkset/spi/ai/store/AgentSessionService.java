@@ -20,9 +20,12 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.hitl.HitlCallTask;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
 import com.frameworkset.util.ListInfo;
+import org.frameworkset.spi.ai.model.memory.AgentConsolidationState;
 import org.frameworkset.spi.ai.model.memory.AgentDayMemory;
 import org.frameworkset.spi.ai.model.memory.AgentMemory;
 
+import java.sql.SQLException;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -159,6 +162,12 @@ public interface AgentSessionService {
 	/**
 	 * 追加用户消息到总账,如果总账不存在则新增总账
 	 * @param agent
+	 * @param agentMemory
+	 */
+	void createOrUpdateMemory(AIAgent agent, AgentMemory agentMemory);
+	/**
+	 * 追加用户消息到总账,如果总账不存在则新增总账
+	 * @param agent
 	 * @param section
 	 */
 	void createOrUpdateMemory(AIAgent agent, String section);
@@ -178,4 +187,10 @@ public interface AgentSessionService {
 	void createOrUpdateDayMemory(AIAgent agent, AgentDayMemory agentDayMemory);
 	
 	List<AgentDayMemory> listAgentUserDayMemorys(AIAgent agent);
+	
+	List<AgentDayMemory> listAgentUserDayMemorys(AIAgent agent, Instant startDay);
+	
+	void writeWatermark(AIAgent agent, String watermark) throws Exception;
+	
+	AgentConsolidationState getMemoryWaterMarker(AIAgent agent);
 }

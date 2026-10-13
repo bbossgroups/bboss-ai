@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.store;
  */
 
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
+import org.frameworkset.spi.ai.memory.MemoryConfig;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 
@@ -36,6 +37,10 @@ public class StoreContext {
 
 	
 	private CompactionConfig compactionConfig;
+	
+	
+	
+	private MemoryConfig memoryConfig;
     /**
      * 会话id
      */
@@ -297,5 +302,13 @@ public class StoreContext {
 	
 	public boolean isEnableHitl() {
 		return enableHitl;
-	}	
+	}
+	public MemoryConfig getMemoryConfig() {
+		return memoryConfig;
+	}
+	
+	public StoreContext setMemoryConfig(MemoryConfig memoryConfig) {
+		this.memoryConfig = memoryConfig;
+		return this;
+	}
 }

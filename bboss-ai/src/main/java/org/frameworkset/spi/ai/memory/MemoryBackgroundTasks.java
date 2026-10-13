@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.memory;
+package org.frameworkset.spi.ai.memory;
 
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tracks in-flight fire-and-forget memory background tasks (flush, maintenance) so
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>The middleware instances that dispatch these tasks are created per agent call, so they
  * cannot be reached from the agent's {@code close()} method. Like
- * {@link io.agentscope.harness.agent.memory.session.SessionTree#awaitMirrorQuiescence}, the
+ * {link  SessionTree#awaitMirrorQuiescence}, the
  * in-flight count is process-wide: {@code close()} blocks until every background task started
  * before the call has finished, so async workspace writes do not race with resource cleanup
  * (e.g. temp workspace deletion in tests).

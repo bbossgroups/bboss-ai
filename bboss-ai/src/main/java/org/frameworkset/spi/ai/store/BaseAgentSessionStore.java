@@ -23,6 +23,8 @@ import org.frameworkset.spi.ai.compaction.CompactionManager;
 import org.frameworkset.spi.ai.compaction.CompactionManagerInf;
 import org.frameworkset.spi.ai.compaction.WindowsCompactionManager;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.memory.*;
+import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -74,6 +76,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     protected String agentId;
     protected StoreContext storeContext;
 	protected CompactionManagerInf compactionManager;
+	protected MemoryMaintenance memoryMaintenance;
+	protected MemoryFlushMiddleware memoryFlushMiddleware;
     protected AgentSessionStore parentAgentSessionStore;
 
     protected AIAgent agent;
@@ -174,6 +178,40 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(sessionMemory == null){
             this.sessionMemory = new ArrayList<>();
         }
+		MemoryConfig memoryConfig = storeContext.getMemoryConfig();
+		if(memoryConfig != null){
+			ModelInfo memoryModel = memoryConfig.model() != null ? memoryConfig.model() : null;
+//			if (memoryModel != null && !disableMemoryHooks) {
+//				IsolationScope effectiveIsolationScope = fsIsolationScope;
+				
+			String effectiveFlushPrompt =
+					memoryConfig.flushPrompt() != null
+							? memoryConfig.flushPrompt()
+							: MemoryFlushManager.DEFAULT_FLUSH_PROMPT;
+			PeriodicGate periodicGate = memoryConfig.getPeriodicGate();
+			memoryFlushMiddleware =
+						new MemoryFlushMiddleware(
+								memoryModel,
+								effectiveFlushPrompt,
+								memoryConfig.flushTrigger(),
+								periodicGate);
+				
+			String effectiveConsolidationPrompt =
+					memoryConfig.consolidationPrompt() != null
+							? memoryConfig.consolidationPrompt()
+							: MemoryConsolidator.DEFAULT_CONSOLIDATION_PROMPT;
+			MemoryConsolidator consolidator =
+					new MemoryConsolidator(
+							memoryModel,
+							effectiveConsolidationPrompt,
+							memoryConfig.consolidationMaxTokens());
+			memoryMaintenance = 
+						new MemoryMaintenance(
+								consolidator,
+								memoryConfig.consolidationMinGap(),
+								periodicGate);
+//			}
+		}
 		CompactionConfig compactionConfig = storeContext.getCompactionConfig();
 	 	if(compactionConfig != null) {
 			if (compactionConfig.getCompactionPolicy() == CompactionConfig.COMPACTION_POLICY_WINDOWSIZE) {
@@ -430,10 +468,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 			
 		}
 //		agent.restorePermissionRules(     sessionMessagesNew);
-		if(lastSummaryPosition > -1){
-			if(lastSummaryPosition > 0){
-				sessionMessagesNew = sessionMessagesNew.subList(lastSummaryPosition, sessionMessagesNew.size());
-			}
+		if(lastSummaryPosition > 0){
+			 
+			sessionMessagesNew = sessionMessagesNew.subList(lastSummaryPosition, sessionMessagesNew.size());
+			 
 		}
 		if(systemSessionMessage != null){
 			sessionMessagesNew.add(0,systemSessionMessage);
@@ -853,5 +891,14 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 	@Override
 	public void setAgentSessionService(AgentSessionService agentSessionService) {
 		this.agentSessionService = agentSessionService;
+	}
+	@Override
+	public void doOnComplete(AIAgent  agent, ChatObject chatObject){
+		if(this.memoryFlushMiddleware != null){
+			memoryFlushMiddleware.doOnComplete(agent,chatObject);
+		}
+		if(this.memoryMaintenance != null){
+			memoryMaintenance.doOnComplete(agent,chatObject);
+		}
 	}
 }

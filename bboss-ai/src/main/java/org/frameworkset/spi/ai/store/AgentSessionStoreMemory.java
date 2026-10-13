@@ -492,8 +492,8 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 //        return super.getLastMessage(prompt,  agentId);
 //    }
 	
-
 	
+
 	
 	
 }

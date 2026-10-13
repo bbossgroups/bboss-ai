@@ -13,33 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.middleware;
+package org.frameworkset.spi.ai.memory;
 
-import io.agentscope.core.agent.Agent;
-import io.agentscope.core.agent.RuntimeContext;
-import io.agentscope.core.event.AgentEvent;
-import io.agentscope.core.middleware.AgentInput;
-import io.agentscope.harness.agent.IsolationScope;
-import io.agentscope.harness.agent.coordination.LocalPeriodicGate;
-import io.agentscope.harness.agent.coordination.PeriodicGate;
-import io.agentscope.harness.agent.filesystem.AbstractFilesystem;
-import io.agentscope.harness.agent.filesystem.model.FileInfo;
-import io.agentscope.harness.agent.filesystem.model.GlobResult;
-import io.agentscope.harness.agent.memory.MemoryBackgroundTasks;
-import io.agentscope.harness.agent.memory.MemoryConsolidator;
-import io.agentscope.harness.agent.workspace.WorkspaceConstants;
-import io.agentscope.harness.agent.workspace.WorkspaceManager;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.function.Function;
+
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.memory.coordination.LocalPeriodicGate;
+import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
+import org.frameworkset.spi.ai.model.ChatObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.time.Duration;
 
 /**
  * Middleware that performs periodic memory maintenance after each agent call.
@@ -61,241 +47,142 @@ import reactor.core.scheduler.Schedulers;
  * <p>The throttle window is tracked per <em>isolation key</em>, which matches the memory data
  * isolation in use:
  * <ul>
- *   <li>{@link IsolationScope#USER} (default) — one window per {@code userId}.</li>
- *   <li>{@link IsolationScope#SESSION} — one window per {@code sessionId}.</li>
- *   <li>{@link IsolationScope#AGENT} / {@link IsolationScope#GLOBAL} — one shared window for
+ *   <li>{link IsolationScope#USER} (default) — one window per {@code userId}.</li>
+ *   <li>{link IsolationScope#SESSION} — one window per {@code sessionId}.</li>
+ *   <li>{link IsolationScope#AGENT} / {link IsolationScope#GLOBAL} — one shared window for
  *       the whole agent instance (prevents concurrent maintenance races on shared memory files).</li>
  * </ul>
  */
-public class MemoryMaintenanceMiddleware implements HarnessRuntimeMiddleware {
+public class MemoryMaintenance  {
 
-    private static final Logger log = LoggerFactory.getLogger(MemoryMaintenanceMiddleware.class);
+    private static final Logger log = LoggerFactory.getLogger(MemoryMaintenance.class);
 
     /** Default minimum gap between two maintenance runs. */
     public static final Duration DEFAULT_MIN_GAP = Duration.ofMinutes(30);
 
-    private final WorkspaceManager workspaceManager;
-    private final MemoryConsolidator consolidator;
-    private final int dailyFileRetentionDays;
-    private final int sessionRetentionDays;
-    private final Duration minGap;
-    private final IsolationScope isolationScope;
-    private final PeriodicGate periodicGate;
+    private  MemoryConsolidator consolidator;
+    private  Duration minGap;
+    private  PeriodicGate periodicGate;
 
-    public MemoryMaintenanceMiddleware(
-            WorkspaceManager workspaceManager,
+ 
+
+    public MemoryMaintenance(
             MemoryConsolidator consolidator,
-            int dailyFileRetentionDays,
-            int sessionRetentionDays,
             Duration minGap) {
         this(
-                workspaceManager,
                 consolidator,
-                dailyFileRetentionDays,
-                sessionRetentionDays,
                 minGap,
-                IsolationScope.USER,
                 new LocalPeriodicGate());
     }
 
-    public MemoryMaintenanceMiddleware(
-            WorkspaceManager workspaceManager,
+    public MemoryMaintenance(
             MemoryConsolidator consolidator,
-            int dailyFileRetentionDays,
-            int sessionRetentionDays,
             Duration minGap,
-            IsolationScope isolationScope) {
-        this(
-                workspaceManager,
-                consolidator,
-                dailyFileRetentionDays,
-                sessionRetentionDays,
-                minGap,
-                isolationScope,
-                new LocalPeriodicGate());
-    }
-
-    public MemoryMaintenanceMiddleware(
-            WorkspaceManager workspaceManager,
-            MemoryConsolidator consolidator,
-            int dailyFileRetentionDays,
-            int sessionRetentionDays,
-            Duration minGap,
-            IsolationScope isolationScope,
             PeriodicGate periodicGate) {
-        this.workspaceManager = workspaceManager;
         this.consolidator = consolidator;
-        this.dailyFileRetentionDays = dailyFileRetentionDays;
-        this.sessionRetentionDays = sessionRetentionDays;
         this.minGap = minGap != null ? minGap : DEFAULT_MIN_GAP;
-        this.isolationScope = isolationScope != null ? isolationScope : IsolationScope.USER;
         this.periodicGate = periodicGate != null ? periodicGate : new LocalPeriodicGate();
     }
 
-    public MemoryMaintenanceMiddleware(
-            WorkspaceManager workspaceManager, MemoryConsolidator consolidator) {
-        this(workspaceManager, consolidator, 90, 180, DEFAULT_MIN_GAP);
+    public MemoryMaintenance(
+             MemoryConsolidator consolidator) {
+        this(  consolidator,   DEFAULT_MIN_GAP);
     }
 
-    /** Narrow declaration: subclasses overriding more hooks must extend this set. */
-    @Override
-    public Set<ExtensionPoint> activePoints() {
-        return EnumSet.of(ExtensionPoint.ON_AGENT);
-    }
 
-    @Override
-    public Flux<AgentEvent> onAgent(
-            Agent agent,
-            RuntimeContext ctx,
-            AgentInput input,
-            Function<AgentInput, Flux<AgentEvent>> next) {
-        final RuntimeContext rc = ctx != null ? ctx : RuntimeContext.empty();
+    public void doOnComplete(
+            AIAgent agent,
+            ChatObject chatObject
+            ) {
+       
         // The maintenance body — including the gate claim, which is remote I/O under a
         // store-backed gate — runs on the background scheduler. Only the in-flight counter is
         // updated synchronously, so a quiescence check can never observe an empty in-flight
         // set before the task is counted.
-        return next.apply(input)
-                .doOnComplete(
-                        () -> {
-                            MemoryBackgroundTasks.begin();
-                            Mono.defer(() -> doMaintenance(rc))
-                                    .subscribeOn(Schedulers.boundedElastic())
-                                    .doFinally(signal -> MemoryBackgroundTasks.end())
-                                    .subscribe(
-                                            null,
-                                            e ->
-                                                    log.warn(
-                                                            "Memory maintenance failed: {}",
-                                                            e.getMessage()));
-                        });
+       try {
+		   MemoryBackgroundTasks.begin();
+		   doMaintenance(agent, chatObject);
+		  
+	   }
+	   catch (Exception e){
+		   log.warn(
+				   "Memory maintenance failed: {}",
+				   e.getMessage());
+	   }
+	   finally {
+		   MemoryBackgroundTasks.end();
+	   }
+//				.subscribeOn(Schedulers.boundedElastic())
+//				.doFinally(signal -> MemoryBackgroundTasks.end())
+//				.subscribe(
+//						null,
+//						e ->
+//								log.warn(
+//										"Memory maintenance failed: {}",
+//										e.getMessage()));
+                    
     }
 
-    private Mono<Void> doMaintenance(RuntimeContext rc) {
-        if (!periodicGate.tryClaim(compositeTimerKey(rc), minGap)) {
-            // Throttled out; the in-flight slot acquired at dispatch is released when this
-            // Mono completes.
-            return Mono.empty();
-        }
-        return Mono.fromRunnable(() -> runMaintenance(rc));
+    private void doMaintenance( AIAgent agent,
+									  ChatObject chatObject) {
+//        if (!periodicGate.tryClaim(compositeTimerKey(agent,chatObject), minGap)) {
+//            // Throttled out; the in-flight slot acquired at dispatch is released when this
+//            // Mono completes.
+//            return ;
+//        }
+        runMaintenance(agent,chatObject);
     }
 
     /**
-     * Builds a composite key from {@link IsolationScope} name and the per-call identity returned
-     * by {@link #timerKeyFor(RuntimeContext)}. The operation prefix keeps maintenance independent
+     * Builds a composite key from {link IsolationScope} name and the per-call identity returned
+     * by {@link #timerKeyFor(AIAgent, ChatObject)}. The operation prefix keeps maintenance independent
      * of flush when both use the same {@link PeriodicGate}. The scope prefix keeps different
      * isolation dimensions from sharing a slot.
      */
-    private String compositeTimerKey(RuntimeContext rc) {
-        return "memory-maintenance:" + isolationScope.name() + ":" + timerKeyFor(rc);
+    private String compositeTimerKey( AIAgent agent,
+									  ChatObject chatObject) {
+        return "memory-maintenance:user:" + timerKeyFor(agent,chatObject	);
     }
+	static String blankToEmpty(String s) {
+		return (s != null && !s.isEmpty()) ? s : "";
+	}
 
     /**
      * Derives the per-call identity portion of the composite timer key from the configured
-     * {@link IsolationScope} and the {@link RuntimeContext}, mirroring the memory data
-     * namespace. See {@link MemoryFlushMiddleware#timerKeyFor(RuntimeContext)} for the
+     * {link IsolationScope} and the {link RuntimeContext}, mirroring the memory data
+     * namespace. See {link MemoryFlushMiddleware#timerKeyFor(AIAgent, ChatObject	)} for the
      * identical logic.
      */
-    String timerKeyFor(RuntimeContext rc) {
-        return switch (isolationScope) {
-            case USER -> MemoryFlushMiddleware.blankToEmpty(rc != null ? rc.getUserId() : null);
-            case SESSION ->
-                    MemoryFlushMiddleware.blankToEmpty(rc != null ? rc.getSessionId() : null);
-            case AGENT, GLOBAL -> "";
-        };
+    String timerKeyFor( AIAgent agent,
+						ChatObject chatObject) {
+		return blankToEmpty(agent.getUserId() );
+//        return switch (isolationScope) {
+//            case USER -> MemoryFlushMiddleware.blankToEmpty(rc != null ? rc.getUserId() : null);
+//            case SESSION ->
+//                    MemoryFlushMiddleware.blankToEmpty(rc != null ? rc.getSessionId() : null);
+//            case AGENT, GLOBAL -> "";
+//        };
     }
 
-    private void runMaintenance(RuntimeContext rc) {
+    private void runMaintenance(AIAgent agent,
+								ChatObject chatObject) {
         log.debug("Running memory maintenance...");
-        expireDailyFiles(rc);
-        consolidateMemory(rc);
-        pruneOldSessions(rc);
+        consolidateMemory(  agent,
+				  chatObject);
         log.debug("Memory maintenance completed");
     }
-
-    private void expireDailyFiles(RuntimeContext rc) {
-        AbstractFilesystem fs = workspaceManager.getFilesystem();
-        if (fs == null) {
-            return;
-        }
-        GlobResult glob = fs.glob(rc, "*.md", WorkspaceConstants.MEMORY_DIR);
-        if (glob == null || glob.matches() == null) {
-            return;
-        }
-
-        LocalDate cutoff = LocalDate.now().minusDays(dailyFileRetentionDays);
-        for (FileInfo fi : glob.matches()) {
-            if (fi.isDirectory()) {
-                continue;
-            }
-            String fileName = fileName(fi.path());
-            if (fileName.startsWith(".")) {
-                continue;
-            }
-            String baseName =
-                    fileName.endsWith(".md")
-                            ? fileName.substring(0, fileName.length() - 3)
-                            : fileName;
-            try {
-                LocalDate fileDate = LocalDate.parse(baseName);
-                if (fileDate.isBefore(cutoff)) {
-                    String fromPath = WorkspaceConstants.MEMORY_DIR + "/" + fileName;
-                    String toPath = WorkspaceConstants.MEMORY_DIR + "/archive/" + fileName;
-                    fs.move(rc, fromPath, toPath);
-                    log.debug("Archived expired daily file: {}", fileName);
-                }
-            } catch (Exception e) {
-                // not a date-named file, skip
-            }
-        }
-    }
-
-    private void consolidateMemory(RuntimeContext rc) {
+ 
+    private void consolidateMemory(AIAgent agent,
+								   ChatObject chatObject) {
         if (consolidator == null) {
             return;
         }
         try {
-            consolidator.consolidate(rc).block();
+            consolidator.consolidate(  agent,
+					  chatObject) ;
         } catch (Exception e) {
-            log.warn("Memory consolidation failed: {}", e.getMessage());
+            log.warn("Memory consolidation failed: {}", e.getMessage(),e);
         }
     }
-
-    private void pruneOldSessions(RuntimeContext rc) {
-        AbstractFilesystem fs = workspaceManager.getFilesystem();
-        if (fs == null) {
-            return;
-        }
-        GlobResult glob = fs.glob(rc, "*.log.jsonl", WorkspaceConstants.AGENTS_DIR);
-        if (glob == null || glob.matches() == null) {
-            return;
-        }
-
-        Instant cutoff = Instant.now().minus(Duration.ofDays(sessionRetentionDays));
-        for (FileInfo fi : glob.matches()) {
-            if (fi.isDirectory()) {
-                continue;
-            }
-            String modifiedAt = fi.modifiedAt();
-            if (modifiedAt == null || modifiedAt.isEmpty()) {
-                continue;
-            }
-            try {
-                Instant modified = Instant.parse(modifiedAt);
-                if (modified.isBefore(cutoff)) {
-                    fs.delete(rc, fi.path());
-                    log.debug("Pruned old session file: {}", fi.path());
-                }
-            } catch (Exception e) {
-                log.warn("Failed to check/prune {}: {}", fi.path(), e.getMessage());
-            }
-        }
-    }
-
-    private static String fileName(String path) {
-        if (path == null) {
-            return "";
-        }
-        int slash = path.lastIndexOf('/');
-        return slash >= 0 ? path.substring(slash + 1) : path;
-    }
+ 
 }

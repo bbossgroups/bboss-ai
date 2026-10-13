@@ -17,6 +17,8 @@ package org.frameworkset.spi.ai.memory;
 
  
 
+import org.frameworkset.spi.ai.memory.coordination.LocalPeriodicGate;
+import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.ModelInfo;
 
 import java.time.Duration;
@@ -47,7 +49,7 @@ import java.util.Objects;
  * first eligible call immediately; its minimum gap applies only between subsequent runs and is
  * not an initial delay. {@link FlushTrigger#never()} disables only the per-call flush.
  *
- * <p>All fields have sensible defaults; {@link #defaults()} returns a config equivalent
+ * <p>All fields have sensible defaults; new MemoryConfig() returns a config equivalent
  * to the harness's historical behavior so adopting this class is a no-op upgrade.
  */
 public final class MemoryConfig {
@@ -63,8 +65,18 @@ public final class MemoryConfig {
 
     /** Default retention before a session JSONL log is pruned. */
     public static final int DEFAULT_SESSION_RETENTION_DAYS = 180;
-
-    /** Strategy for the per-call flush hook. See {@link FlushTrigger}. */
+	
+	public PeriodicGate getPeriodicGate() {
+		return periodicGate;
+	}
+	
+	public MemoryConfig setPeriodicGate(PeriodicGate periodicGate) {
+		this.periodicGate = periodicGate;
+		return this;
+	}
+	
+	
+	/** Strategy for the per-call flush hook. See {@link FlushTrigger}. */
     public enum FlushMode {
         /** Flush after every agent call. */
         ALWAYS,
@@ -149,24 +161,26 @@ public final class MemoryConfig {
         }
     }
 
-    private final ModelInfo model;
-    private final String flushPrompt;
-    private final String consolidationPrompt;
-    private final int consolidationMaxTokens;
-    private final Duration consolidationMinGap;
-    private final int dailyFileRetentionDays;
-    private final int sessionRetentionDays;
-    private final FlushTrigger flushTrigger;
+//    private final ModelInfo model;
+//    private final String flushPrompt;
+//    private final String consolidationPrompt;
+//    private final int consolidationMaxTokens;
+//    private final Duration consolidationMinGap;
+//    private final int dailyFileRetentionDays;
+//    private final int sessionRetentionDays;
+//    private final FlushTrigger flushTrigger;
+    private  PeriodicGate periodicGate = new LocalPeriodicGate();	
+	private ModelInfo model = null;
+	private String flushPrompt = null;
+	private String consolidationPrompt = null;
+	private int consolidationMaxTokens = DEFAULT_CONSOLIDATION_MAX_TOKENS;
+	private Duration consolidationMinGap = DEFAULT_CONSOLIDATION_MIN_GAP;
+	private int dailyFileRetentionDays = DEFAULT_DAILY_FILE_RETENTION_DAYS;
+	private int sessionRetentionDays = DEFAULT_SESSION_RETENTION_DAYS;
+	private FlushTrigger flushTrigger = FlushTrigger.always();
 
-    private MemoryConfig(Builder b) {
-        this.model = b.model;
-        this.flushPrompt = b.flushPrompt;
-        this.consolidationPrompt = b.consolidationPrompt;
-        this.consolidationMaxTokens = b.consolidationMaxTokens;
-        this.consolidationMinGap = b.consolidationMinGap;
-        this.dailyFileRetentionDays = b.dailyFileRetentionDays;
-        this.sessionRetentionDays = b.sessionRetentionDays;
-        this.flushTrigger = b.flushTrigger;
+    public MemoryConfig( ) {
+        
     }
 
     /**
@@ -220,138 +234,116 @@ public final class MemoryConfig {
     public FlushTrigger flushTrigger() {
         return flushTrigger;
     }
-
-    /** Returns a config equivalent to the harness's historical defaults. */
-    public static MemoryConfig defaults() {
-        return new Builder().build();
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static final class Builder {
-
-        private ModelInfo model = null;
-        private String flushPrompt = null;
-        private String consolidationPrompt = null;
-        private int consolidationMaxTokens = DEFAULT_CONSOLIDATION_MAX_TOKENS;
-        private Duration consolidationMinGap = DEFAULT_CONSOLIDATION_MIN_GAP;
-        private int dailyFileRetentionDays = DEFAULT_DAILY_FILE_RETENTION_DAYS;
-        private int sessionRetentionDays = DEFAULT_SESSION_RETENTION_DAYS;
-        private FlushTrigger flushTrigger = FlushTrigger.always();
-
-        /**
-         * Sets a dedicated model for memory operations (flush + consolidation),
-         * allowing a lighter/cheaper model than the agent's primary reasoning model.
-         * When not set, the agent's primary model is used.
-         */
-        public Builder model(ModelInfo model) {
-            this.model = model;
-            return this;
-        }
-
  
-        /**
-         * Overrides the prompt used by {@link MemoryFlushManager#flushMemories}.
-         * {@code null} restores the default. The text is passed verbatim as a SYSTEM
-         * message — it does not need any placeholders.
-         */
-        public Builder flushPrompt(String flushPrompt) {
-            this.flushPrompt = flushPrompt;
-            return this;
-        }
 
-        /**
-         * Overrides the prompt used by {@link MemoryConsolidator#consolidate}. The prompt
-         * is rendered via {@link String#format} with two {@code int} arguments
-         * (max-tokens, max-chars), so a custom prompt MUST contain exactly two {@code %d}
-         * placeholders. {@code null} restores the default.
-         *
-         * @throws IllegalArgumentException if the prompt does not contain exactly two
-         *     {@code %d} placeholders
-         */
-        public Builder consolidationPrompt(String consolidationPrompt) {
-            if (consolidationPrompt != null) {
-                int count = countOccurrences(consolidationPrompt, "%d");
-                if (count != 2) {
-                    throw new IllegalArgumentException(
-                            "consolidationPrompt must contain exactly two %d placeholders "
-                                    + "(max-tokens, max-chars), found "
-                                    + count);
-                }
-            }
-            this.consolidationPrompt = consolidationPrompt;
-            return this;
-        }
+	/**
+	 * Sets a dedicated model for memory operations (flush + consolidation),
+	 * allowing a lighter/cheaper model than the agent's primary reasoning model.
+	 * When not set, the agent's primary model is used.
+	 */
+	public MemoryConfig setModel(ModelInfo model) {
+		this.model = model;
+		return this;
+	}
 
-        /** Token budget passed to the consolidation prompt. Must be positive. */
-        public Builder consolidationMaxTokens(int consolidationMaxTokens) {
-            if (consolidationMaxTokens <= 0) {
-                throw new IllegalArgumentException(
-                        "consolidationMaxTokens must be positive, got " + consolidationMaxTokens);
-            }
-            this.consolidationMaxTokens = consolidationMaxTokens;
-            return this;
-        }
 
-        /**
-         * Minimum gap between consolidation/maintenance runs. The first eligible call runs
-         * immediately; this duration is not an initial delay and is independent of
-         * {@link MemoryConfig#flushTrigger()}. Must not be null.
-         */
-        public Builder consolidationMinGap(Duration consolidationMinGap) {
-            if (consolidationMinGap == null) {
-                throw new IllegalArgumentException("consolidationMinGap must not be null");
-            }
-            if (consolidationMinGap.isNegative()) {
-                throw new IllegalArgumentException("consolidationMinGap must not be negative");
-            }
-            this.consolidationMinGap = consolidationMinGap;
-            return this;
-        }
+	/**
+	 * Overrides the prompt used by {@link MemoryFlushManager#flushMemories}.
+	 * {@code null} restores the default. The text is passed verbatim as a SYSTEM
+	 * message — it does not need any placeholders.
+	 */
+	public MemoryConfig setFlushPrompt(String flushPrompt) {
+		this.flushPrompt = flushPrompt;
+		return this;
+	}
 
-        /** Days before a daily ledger is moved to {@code memory/archive/}. */
-        public Builder dailyFileRetentionDays(int dailyFileRetentionDays) {
-            if (dailyFileRetentionDays <= 0) {
-                throw new IllegalArgumentException(
-                        "dailyFileRetentionDays must be positive, got " + dailyFileRetentionDays);
-            }
-            this.dailyFileRetentionDays = dailyFileRetentionDays;
-            return this;
-        }
+	/**
+	 * Overrides the prompt used by {@link MemoryConsolidator#consolidate}. The prompt
+	 * is rendered via {@link String#format} with two {@code int} arguments
+	 * (max-tokens, max-chars), so a custom prompt MUST contain exactly two {@code %d}
+	 * placeholders. {@code null} restores the default.
+	 *
+	 * @throws IllegalArgumentException if the prompt does not contain exactly two
+	 *     {@code %d} placeholders
+	 */
+	public MemoryConfig setConsolidationPrompt(String consolidationPrompt) {
+		if (consolidationPrompt != null) {
+			if(consolidationPrompt.indexOf("#[maxMemoryTokens]") < 0 || consolidationPrompt.indexOf("#[maxChars]") < 0)
+			{
+				throw new IllegalArgumentException(
+						"consolidationPrompt must contain exactly two placeholders "
+								+ "(#[maxMemoryTokens], #[maxChars]):"+consolidationPrompt);
+			}
+		}
+		this.consolidationPrompt = consolidationPrompt;
+		return this;
+	}
 
-        /** Days before a session JSONL log is pruned. */
-        public Builder sessionRetentionDays(int sessionRetentionDays) {
-            if (sessionRetentionDays <= 0) {
-                throw new IllegalArgumentException(
-                        "sessionRetentionDays must be positive, got " + sessionRetentionDays);
-            }
-            this.sessionRetentionDays = sessionRetentionDays;
-            return this;
-        }
+	/** Token budget passed to the consolidation prompt. Must be positive. */
+	public MemoryConfig setConsolidationMaxTokens(int consolidationMaxTokens) {
+		if (consolidationMaxTokens <= 0) {
+			throw new IllegalArgumentException(
+					"consolidationMaxTokens must be positive, got " + consolidationMaxTokens);
+		}
+		this.consolidationMaxTokens = consolidationMaxTokens;
+		return this;
+	}
 
-        /** Trigger policy for the per-call flush hook. Must not be null. */
-        public Builder flushTrigger(FlushTrigger flushTrigger) {
-            if (flushTrigger == null) {
-                throw new IllegalArgumentException("flushTrigger must not be null");
-            }
-            this.flushTrigger = flushTrigger;
-            return this;
-        }
+	/**
+	 * Minimum gap between consolidation/maintenance runs. The first eligible call runs
+	 * immediately; this duration is not an initial delay and is independent of
+	 * {@link MemoryConfig#flushTrigger()}. Must not be null.
+	 */
+	public MemoryConfig setConsolidationMinGap(Duration consolidationMinGap) {
+		if (consolidationMinGap == null) {
+			throw new IllegalArgumentException("consolidationMinGap must not be null");
+		}
+		if (consolidationMinGap.isNegative()) {
+			throw new IllegalArgumentException("consolidationMinGap must not be negative");
+		}
+		this.consolidationMinGap = consolidationMinGap;
+		return this;
+	}
 
-        public MemoryConfig build() {
-            return new MemoryConfig(this);
-        }
+	/** Days before a daily ledger is moved to {@code memory/archive/}. */
+	public MemoryConfig dailyFileRetentionDays(int dailyFileRetentionDays) {
+		if (dailyFileRetentionDays <= 0) {
+			throw new IllegalArgumentException(
+					"dailyFileRetentionDays must be positive, got " + dailyFileRetentionDays);
+		}
+		this.dailyFileRetentionDays = dailyFileRetentionDays;
+		return this;
+	}
 
-        private static int countOccurrences(String haystack, String needle) {
-            int count = 0;
-            int idx = 0;
-            while ((idx = haystack.indexOf(needle, idx)) != -1) {
-                count++;
-                idx += needle.length();
-            }
-            return count;
-        }
-    }
+	/** Days before a session JSONL log is pruned. */
+	public MemoryConfig sessionRetentionDays(int sessionRetentionDays) {
+		if (sessionRetentionDays <= 0) {
+			throw new IllegalArgumentException(
+					"sessionRetentionDays must be positive, got " + sessionRetentionDays);
+		}
+		this.sessionRetentionDays = sessionRetentionDays;
+		return this;
+	}
+
+	/** Trigger policy for the per-call flush hook. Must not be null. */
+	public MemoryConfig setFlushTrigger(FlushTrigger flushTrigger) {
+		if (flushTrigger == null) {
+			throw new IllegalArgumentException("flushTrigger must not be null");
+		}
+		this.flushTrigger = flushTrigger;
+		return this;
+	}
+
+
+
+	private int countOccurrences(String haystack, String needle) {
+		int count = 0;
+		int idx = 0;
+		while ((idx = haystack.indexOf(needle, idx)) != -1) {
+			count++;
+			idx += needle.length();
+		}
+		return count;
+	}
+    
 }

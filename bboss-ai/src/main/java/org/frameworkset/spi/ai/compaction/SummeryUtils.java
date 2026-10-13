@@ -286,7 +286,7 @@ public class SummeryUtils {
 				return "(Summary unavailable)";
 			}
 		} catch (Exception e) {
-			log.warn("Summarization LLM call failed: {}", e.getMessage());
+			log.warn("Summarization LLM call failed: {}", e.getMessage(),e);
 			return "(Summarization failed: " + e.getMessage() + ")";
 		}
 //

@@ -750,7 +750,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			.append("parentAgentId varchar(100),")                 // 父智能体id
 			.append("userId varchar(100)   ,")               // 用户id
 			.append("sessionId varchar(100)   ,")            // 会话id
-			.append("content text)")                               // 记忆内容			  
+			.append("content text,")                               // 记忆内容
+			.append("consolidationState varchar(100))") //总账日流水账水位值：上次总账时间线
 			.toString();
 	
 	
@@ -766,6 +767,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			.append("userId varchar(100)   COMMENT '用户id',")
 			.append("sessionId varchar(100)   COMMENT '会话id',")
 			.append("content text COMMENT '记忆内容',")
+			.append("consolidationState varchar(100) COMMENT '总账日流水账水位值：上次总账时间线',")			
 			.append("PRIMARY KEY(memoryId)")
 			 
 			.append(") COMMENT='智能体记忆表' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
@@ -784,7 +786,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			.append("userId varchar2(100)  ,")              // 用户id
 			.append("sessionId varchar2(100)  ,")           // 会话id
 			.append("content clob,")                               // 记忆内容	 
-		 
+			
+			.append("consolidationState varchar2(100),") //总账日流水账水位值：上次总账时间线
 			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
 			.toString();
 	
@@ -811,6 +814,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			.append("userId varchar2(100)  ,")              // 用户id
 			.append("sessionId varchar2(100)  ,")           // 会话id
 			.append("content text,")                               // 记忆内容
+			.append("consolidationState varchar2(100),") //总账日流水账水位值：上次总账时间线
 		 
 			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
 			.toString();
@@ -827,7 +831,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			.append("parentAgentId varchar(100),")                 // 父智能体id
 			.append("userId varchar(100) NOT NULL,")               // 用户id
 			.append("sessionId varchar(100) NOT NULL,")            // 会话id
-			.append("content nvarchar(max),")                      // 记忆内容		
+			.append("content nvarchar(max),")                      // 记忆内容	
+			.append("consolidationState varchar(100),") //总账日流水账水位值：上次总账时间线	
 			.append("CONSTRAINT $memoryTableName_PK PRIMARY KEY(memoryId))")
 			.toString();
 	
@@ -844,6 +849,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			.append("userId varchar(100) NOT NULL,")               // 用户id
 			.append("sessionId varchar(100) NOT NULL,")            // 会话id
 			.append("content text,")                               // 记忆内容
+			.append("consolidationState varchar(100),") //总账日流水账水位值：上次总账时间线
 	
 			.append("PRIMARY KEY(memoryId))")
 			.toString();
@@ -870,7 +876,8 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 			.append("parentAgentId Nullable(String) COMMENT '父智能体id',")
 			.append("userId String COMMENT '用户id',")
 			.append("sessionId Nullable(String) COMMENT '会话id',")
-			.append("content Nullable(String) COMMENT '总账记忆内容，一个智能体+用户一条记录',")		
+			.append("content Nullable(String) COMMENT '总账记忆内容，一个智能体+用户一条记录',")			
+			.append("consolidationState String COMMENT '总账日流水账水位值：上次总账时间线'") //总账日流水账水位值：上次总账时间线
 			.append(")")
 			.append("ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')")
 			.append("ORDER BY (agentId,userId)")

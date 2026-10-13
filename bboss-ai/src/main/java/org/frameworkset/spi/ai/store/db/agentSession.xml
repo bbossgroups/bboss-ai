@@ -452,6 +452,21 @@
 
 		]]>
     </property>
+    
+    <!--查询总账水位线之后的智能体记忆流水-->
+    <property name="listAgentUserDayMemorysWaterMarker">
+        <![CDATA[
+			select * from agent_day_memory where agentId=? and userId=? and createTime> ? order by agentId,userId,createTime desc  
+
+		]]>
+    </property>
+    <!--查询总账水位线之后的智能体记忆流水-->
+    <property name="listAgentUserDayMemorysWaterMarker-yandex_clickhouse">
+        <![CDATA[
+			select * from agent_day_memory where agentId=? and userId=? and createTime> ?  order by (agentId,userId,createTime)  desc  
+
+		]]>
+    </property>
     <!--查询用户180天的智能体记忆流水-->
     <property name="listAgentUserDayMemorys">
         <![CDATA[
@@ -477,10 +492,10 @@
         <![CDATA[
 			INSERT INTO agent_memory (
                 memoryId, createTime, updateTime, agentId, parentAgentId,
-                userId, sessionId, content
+                userId, sessionId, content,consolidationState
             ) VALUES (
                 #[memoryId], #[createTime], #[updateTime], #[agentId], #[parentAgentId],
-                #[userId], #[sessionId], #[content]
+                #[userId], #[sessionId], #[content],#[consolidationState]
             )
 		]]>
     </property>
@@ -490,7 +505,8 @@
 			UPDATE agent_memory
                 SET                    
                     updateTime = #[updateTime],                    
-                    content = #[content]
+                    content = #[content],
+                    consolidationState = #[consolidationState]
                 WHERE memoryId = #[memoryId]
 		]]>
     </property>
@@ -501,7 +517,8 @@
         ALTER TABLE agent_memory_local on cluster $clusterName
         UPDATE
             updateTime = #[updateTime],
-            content = #[content]
+            content = #[content],
+            consolidationState = #[consolidationState]
         WHERE memoryId = #[memoryId]
         SETTINGS mutations_sync = $mutationsSync
     ]]>

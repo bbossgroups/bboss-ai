@@ -25,6 +25,8 @@ import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
+import org.frameworkset.spi.ai.memory.MemoryConfig;
+import org.frameworkset.spi.ai.memory.coordination.RedisStoreBackedPeriodicGate;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.tool.ToolCallAsk;
@@ -144,6 +146,7 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest {
 //				.setTemperature(1.0);//.addParameter("max_tokens", 2048);
 		chatAgentMessage.setStoreContext(new StoreContext()
 				.setUserId("user123")
+				.setMemoryConfig(new MemoryConfig().setPeriodicGate(new RedisStoreBackedPeriodicGate("test")))
 				.setCompactionConfig(new CompactionConfig().setReserved(32_000)          // 代码场景回复+工具输出大
 						.setKeepTokensMax	(16_000)     // 保留更长的最近上下文
 						.setFlushBeforeCompact(true)   // 默认 true：压缩前 flush 关键事实到流水账

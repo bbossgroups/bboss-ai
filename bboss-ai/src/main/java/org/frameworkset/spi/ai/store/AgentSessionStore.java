@@ -137,4 +137,6 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 	List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit);
 	
 	PermissionRules getAgentPermissionRules(String sessionId,String agentId);
+	
+	void doOnComplete(AIAgent  agent, ChatObject chatObject);
 }

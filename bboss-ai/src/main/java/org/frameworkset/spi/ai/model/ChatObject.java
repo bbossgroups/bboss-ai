@@ -34,6 +34,7 @@ import java.util.Map;
  */
 public class ChatObject extends StoreChatObject{
     private boolean stream;
+	private boolean fromWorkflow;
 
 
     private AIAgent agent;
@@ -211,5 +212,13 @@ public class ChatObject extends StoreChatObject{
 			sink = chatContext.getAgentSink();
 		}
 		return sink;
+	}
+	
+	public boolean isFromWorkflow() {
+		return fromWorkflow;
+	}
+	
+	public void setFromWorkflow(boolean fromWorkflow) {
+		this.fromWorkflow = fromWorkflow;
 	}
 }

@@ -25,7 +25,11 @@ import java.time.LocalDateTime;
  * 对应表：agent_memory_local
  */
 public class AgentMemory {
-	
+	/**
+	 * ClickHouse集群名称
+	 */
+	private String clusterName;
+	private int mutationsSync;
 	/**
 	 * 记录id，主键
 	 */
@@ -65,6 +69,12 @@ public class AgentMemory {
 	 * 总账记忆内容，一个智能体+用户一条记录
 	 */
 	private String content;
+	
+	/**
+	 * 水位日期时间，例如：2026-10-08T14:47:45.570362Z
+	 */
+	private String consolidationState;
+	
 	
 	public AgentMemory() {
 	}
@@ -145,5 +155,29 @@ public class AgentMemory {
 				", sessionId='" + sessionId + '\'' +
 				", content='" + content + '\'' +
 				'}';
+	}
+	
+	public String getConsolidationState() {
+		return consolidationState;
+	}
+	
+	public void setConsolidationState(String consolidationState) {
+		this.consolidationState = consolidationState;
+	}
+	
+	public String getClusterName() {
+		return clusterName;
+	}
+	
+	public void setClusterName(String clusterName) {
+		this.clusterName = clusterName;
+	}
+	
+	public int getMutationsSync() {
+		return mutationsSync;
+	}
+	
+	public void setMutationsSync(int mutationsSync) {
+		this.mutationsSync = mutationsSync;
 	}
 }

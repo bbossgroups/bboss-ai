@@ -38,6 +38,7 @@ import org.frameworkset.spi.ai.tools.HitlAssistant;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import reactor.core.publisher.Flux;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,6 +54,7 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTest {
 	
 	public static void main(String[] args) {
 		try {
+			System.out.println(ZoneId.systemDefault());
 			HttpRequestProxy.startHttpPools("application-stream.properties");
 //            String message = "当前OS为windows，生成一段shell脚本，首先查找占用端口808的进程，如果存在对应进程，则关闭进程，输出端口进程信息和关闭核对结果";
 //            message = "请依次执行以下命令：\n1.获取OS版本信息\n2.获取CPU信息\n3.打印OS和CPU信息\n4.查找端口808的进程\n5.如果存在对应进程，则关闭进程\n6.输出端口进程信息和关闭核对结果";

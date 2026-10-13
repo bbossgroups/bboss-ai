@@ -24,6 +24,7 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.hitl.HitlCallTask;
 import org.frameworkset.spi.ai.model.AgentSessionCondition;
+import org.frameworkset.spi.ai.model.memory.AgentConsolidationState;
 import org.frameworkset.spi.ai.model.memory.AgentDayMemory;
 import org.frameworkset.spi.ai.model.memory.AgentMemory;
 import org.frameworkset.spi.ai.store.*;
@@ -31,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.*;
 
 /**
@@ -632,7 +633,45 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 				executor.insertBean(datasource, "insertMemory", agentMemory);
 			} else {
 				agentMemory.setUpdateTime(LocalDateTime.now());
+				agentMemory.setConsolidationState(agentMemory.getConsolidationState());
 				agentMemory.setContent(agentMemory.getContent() + section);
+				agentMemory.setClusterName(this.clickhouseCluster);
+				agentMemory.setMutationsSync(this.mutationsSync);
+				executor.updateBean(datasource, "updateMemory", agentMemory);
+			}
+			
+		} catch (Exception e) {
+			log.error("createOrUpdateMemory failed::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId(), e);
+			throw new AgentSessionException("createOrUpdateMemory failed:", e);
+		}
+		
+	}
+	
+	/**
+	 * 追加用户消息到总账,如果总账不存在则新增总账
+	 * @param agent
+	 * @param agentMemory
+	 */
+	@Override
+	public void createOrUpdateMemory(AIAgent agent, AgentMemory agentMemory) {
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("createOrUpdateMemory start::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId());
+		}
+		try {
+//			AgentMemory agentMemory = executor.queryObjectWithDBName(AgentMemory.class, datasource, "getMemory", agent.getAgentId(), agent.getUserId());
+			if (agentMemory.getMemoryId() == null) {
+				agentMemory.setAgentId(agent.getAgentId());
+				agentMemory.setUserId(agent.getUserId());
+				agentMemory.setMemoryId(SimpleStringUtil.getUUID32());
+				agentMemory.setCreateTime(LocalDateTime.now());
+				agentMemory.setUpdateTime(agentMemory.getCreateTime());
+				agentMemory.setParentAgentId(agent.getParentAgentId());
+				agentMemory.setSessionId(agent.getSessionId());
+				executor.insertBean(datasource, "insertMemory", agentMemory);
+			} else {
+				agentMemory.setClusterName(this.clickhouseCluster);
+				agentMemory.setMutationsSync(this.mutationsSync);
 				executor.updateBean(datasource, "updateMemory", agentMemory);
 			}
 			
@@ -670,6 +709,8 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 			} else {
 				agentDayMemory.setUpdateTime(LocalDateTime.now());
 				agentDayMemory.setContent(agentDayMemory.getContent() + section);
+				agentDayMemory.setClusterName(this.clickhouseCluster);
+				agentDayMemory.setMutationsSync(this.mutationsSync);
 				executor.updateBean(datasource, "updateDayMemory", agentDayMemory);
 			}
 			
@@ -703,7 +744,9 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 				agentDayMemory.setSessionId(agent.getSessionId());
 				executor.insertBean(datasource, "insertDayMemory", agentDayMemory);
 			} else {
-				agentDayMemory.setUpdateTime(LocalDateTime.now());				 
+				agentDayMemory.setUpdateTime(LocalDateTime.now());			
+				agentDayMemory.setClusterName(this.clickhouseCluster);
+				agentDayMemory.setMutationsSync(this.mutationsSync);
 				executor.updateBean(datasource, "updateDayMemory", agentDayMemory);
 			}
 			
@@ -737,5 +780,67 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 			log.error("listAgentUserDayMemorys failed::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId(),  e);
 			throw new AgentSessionException("listAgentUserDayMemorys failed:", e);
 		}
+	}
+	
+	
+	@Override
+	public List<AgentDayMemory> listAgentUserDayMemorys(AIAgent agent, Instant startDay){
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("listAgentUserDayMemorys start::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId()		);
+		}
+		try {
+			ZonedDateTime utcTime = startDay.atZone(ZoneOffset.UTC); // 明确为 UTC
+			ZonedDateTime shanghai = utcTime.withZoneSameInstant(ZoneId.of("Asia/Shanghai"));
+			
+			LocalDateTime ldt = shanghai.toLocalDateTime();          // 东八区本地时间
+			LocalDateTime prev = shanghai.minusDays(1).toLocalDateTime(); // 前一天
+			List<AgentDayMemory> agentMemory = executor.queryListWithDBName(AgentDayMemory.class,datasource,"listAgentUserDayMemorysWaterMarker",agent.getAgentId(),agent.getUserId(),prev);
+			if(agentMemory != null && agentMemory.size() > 1){
+				//反转集合顺序
+				Collections.reverse(agentMemory);
+			}
+			return agentMemory;
+		} catch (Exception e) {
+			log.error("listAgentUserDayMemorys failed::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId(),  e);
+			throw new AgentSessionException("listAgentUserDayMemorys failed:", e);
+		}
+	}
+	@Override
+	public void writeWatermark(AIAgent agent, String watermark) throws Exception {
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("writeWatermark start::agentId={}, userId={}, watermark={}", agent.getAgentId(), agent.getUserId(),watermark		);
+		}
+		AgentConsolidationState agentConsolidationState = getMemoryWaterMarker(  agent);
+		if(agentConsolidationState == null) {
+			agentConsolidationState.setConsolidationStateId(SimpleStringUtil.getUUID32());
+			agentConsolidationState.setAgentId(agent.getAgentId());
+			agentConsolidationState.setParentAgentId(agent.getParentAgentId());
+			agentConsolidationState.setUserId(agent.getUserId());
+			agentConsolidationState.setConsolidationState(watermark);
+			agentConsolidationState.setCreateTime(LocalDateTime.now());
+			agentConsolidationState.setUpdateTime(agentConsolidationState.getCreateTime());
+			executor.insertBean(datasource, "insertAgentConsolidationState", agentConsolidationState);
+		}
+		else{
+			agentConsolidationState.setUpdateTime(LocalDateTime.now());
+			agentConsolidationState.setConsolidationState(watermark);
+			executor.updateBean(datasource, "updateAgentConsolidationState", agentConsolidationState);	
+		}
+	}
+	@Override
+	public AgentConsolidationState getMemoryWaterMarker(AIAgent agent){
+		init();
+		if (log.isDebugEnabled()) {
+			log.debug("getMemoryWaterMarker start::agentId={}, userId={}", agent.getAgentId(), agent.getUserId()		);
+		}
+		try {
+			AgentConsolidationState agentConsolidationState = executor.queryObjectWithDBName(AgentConsolidationState.class,datasource,"getAgentConsolidationState",agent.getAgentId(),agent.getUserId());
+			return agentConsolidationState; 
+		} catch (Exception e) {
+			log.error("getMemoryWaterMarker failed::agentId={}, userId={} ", agent.getAgentId(), agent.getUserId(),  e);
+			throw new AgentSessionException("getMemoryWaterMarker failed:", e);
+		}	
 	}
 }

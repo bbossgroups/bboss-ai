@@ -27,6 +27,7 @@ import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.PromptEval;
+import org.frameworkset.spi.ai.store.AgentSessionStore;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
@@ -45,6 +46,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * AI智能体工具类
@@ -53,6 +57,17 @@ import java.util.Map;
  */
 public class AIAgentUtil {
     private static Logger logger = org.slf4j.LoggerFactory.getLogger(AIAgentUtil.class);
+
+    /**
+     * 会话收尾任务（记忆flush/维护）异步执行线程池。
+     * 采用非守护线程，避免流式响应结束后JVM立即退出导致后台任务被中断。
+     */
+    private static final AtomicInteger COMPLETE_TASK_THREAD_COUNTER = new AtomicInteger(0);
+    private static final ExecutorService COMPLETE_TASK_EXECUTOR = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "agent-complete-task-" + COMPLETE_TASK_THREAD_COUNTER.getAndIncrement());
+        t.setDaemon(false);
+        return t;
+    });
 
     
     /**
@@ -647,6 +662,7 @@ public class AIAgentUtil {
                 public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
                     streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
                     AIResponseUtil.handleStreamResponse(url, response, sink, streamDataHandler,disposeEventHandler);
+					
                     return null;
 
                 }
@@ -720,7 +736,9 @@ public class AIAgentUtil {
 //                    return innerflux;
 
             }
-
+			if(chatObject.isFromWorkflow()){
+				doOnComplete(chatObject.getAgent(),chatObject);
+			}
         } catch (ReactorCallException e) {
 //                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
             streamDataHandler.handleException(data,e,sink,new NoSynBooleanWrapper( true));
@@ -735,20 +753,25 @@ public class AIAgentUtil {
         }
         finally {
             if(!fromAgentFlow) {
-                sink.complete();
+				
+				doOnComplete(chatObject.getAgent() , chatObject);
+				sink.complete();
+                
+				
             }
         }
     }
 
     private static <T> Flux<T> buildFlux(ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler) {
-        AIAgent aiAgent = chatObject.getAgent();
+        AIAgent agent = chatObject.getAgent();
         ChatContext chatContext = chatObject.getChatContext();
-        if(aiAgent != null){
-            FluxSink<ServerEvent> fluxSink = aiAgent.getAgentFluxSink();            
+        if(agent != null){
+            FluxSink<ServerEvent> fluxSink = agent.getAgentFluxSink();            
             if(fluxSink != null){
                 chatContext.setAgentSink(fluxSink);
-                executeSink(aiAgent.getDisposeEventHandler(),(FluxSink<T>)fluxSink,  clientConfiguration,  chatObject ,  streamDataHandler,true);
-                return aiAgent.getFlux();
+				chatObject.setFromWorkflow(true);
+                executeSink(agent.getDisposeEventHandler(),(FluxSink<T>)fluxSink,  clientConfiguration,  chatObject ,  streamDataHandler,true);
+                return agent.getFlux();
             }
             
         }
@@ -994,7 +1017,7 @@ public class AIAgentUtil {
 		String models = HttpRequestProxy.httpGetforString(maas,agentAdapter.getListModelsUrl(config,params));
 		return models;
 	}
-    public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent aiAgent,ChatContext chatContext) {
+    public static ServerEvent chatCompletionEvent(String poolName, Object chatMessage , AIAgent agent,ChatContext chatContext) {
         long startTime = System.currentTimeMillis();
         ClientConfiguration config = ClientConfiguration.getClientConfiguration(poolName);
 		if(chatContext.getClientConfiguration() == null) {
@@ -1003,7 +1026,7 @@ public class AIAgentUtil {
         AgentAdapter agentAdapter = AgentAdapterFactory.getAgentAdapter(config,chatMessage);
 //        chatContext.setThinking(false);
         chatContext.setStreamable(false);
-        ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,aiAgent,chatContext);
+        ChatObject chatObject = agentAdapter.buildOpenAIRequestParameter(config,chatMessage,agent,chatContext);
         chatObject.getStreamDataBuilder().setStartTime(startTime);
         Object message = chatObject.getMessage();
         String data = null;
@@ -1014,7 +1037,7 @@ public class AIAgentUtil {
                 return   AIResponseUtil.handleChatResponse(agentAdapter, chatObject.getCompletionsUrl(), response, chatObject.getStreamDataBuilder());
             }
         };
-        traceLLMInput(message, aiAgent,SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
+        traceLLMInput(message, agent,SessionMessage.MESSAGE_TYPE_LLM_INPUTMESSAGE_NAME);
         
         if (chatObject.getAIChatRequestType() == null || chatObject.getAIChatRequestType().equals(AIConstants.AI_CHAT_REQUEST_BODY_JSON)) {
             
@@ -1056,22 +1079,35 @@ public class AIAgentUtil {
         if(functionTools != null && functionTools.size() > 0){
             chatContext.setToolCallStage(ChatContext.TOOL_CALL_STAGE_EXECUTE_TOOL);
             ChatAgentMessage _chatMessage = (ChatAgentMessage) chatMessage;
-            _chatMessage.addAssistantSessionMessage(serverEvent ,aiAgent);
+            _chatMessage.addAssistantSessionMessage(serverEvent ,agent);
             if(serverEvent.getData() != null && serverEvent.getData().length() > 0) {
                 if(logger.isDebugEnabled()) {
                     logger.debug(serverEvent.getData());
                 }
             }
             ToolAgentMessage toolAgentMessage = new ToolAgentMessage(_chatMessage,functionTools);
-            return chatCompletionEvent(  poolName,toolAgentMessage,aiAgent,chatContext);
+			serverEvent = chatCompletionEvent(  poolName,toolAgentMessage,agent,chatContext);
 
         }
-        else {
-            return serverEvent;
-        }
+		doOnComplete(agent, chatObject);
+        return serverEvent;
+         
 
 
     }
+	//
+	static  void doOnComplete(AIAgent agent,ChatObject chatObject){
+		AgentSessionStore mainSessionStore = agent.getMainSessionStore();
+		if(mainSessionStore != null){
+			COMPLETE_TASK_EXECUTOR.execute(() -> {
+				try {
+					mainSessionStore.doOnComplete(agent, chatObject);
+				} catch (Exception e) {
+					logger.warn("Agent complete background task failed: {}", e.getMessage(), e);
+				}
+			});
+		}
+	}
     public static <T> Flux<T> streamChatCompletion(Object message,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent){
         return streamChatCompletion((String)null ,   message, streamDataHandler,   aiAgent);
     }
