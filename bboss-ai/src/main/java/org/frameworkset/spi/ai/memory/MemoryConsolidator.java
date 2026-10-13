@@ -187,10 +187,8 @@ public class MemoryConsolidator {
 					"MEMORY.md consolidated ({} chars), watermark advanced to {}",
 					consolidated.length(),
 					runStart);
-			return  ;
 		} catch (Exception e) {
 			log.warn("Summarization LLM call failed: {}", e.getMessage(),e);
-			return  ;
 		}
 //		
 //        List<Msg> messages = new ArrayList<>();

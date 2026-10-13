@@ -25,6 +25,7 @@ import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
+import org.frameworkset.spi.ai.memory.MemoryBackgroundTasks;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.PromptEval;
 import org.frameworkset.spi.ai.store.AgentSessionStore;
@@ -35,6 +36,7 @@ import org.frameworkset.util.RetryCallback;
 import org.frameworkset.util.RetryUtil;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
+import org.frameworkset.util.concurrent.ThreadPoolFactory;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -47,7 +49,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -60,14 +64,39 @@ public class AIAgentUtil {
 
     /**
      * 会话收尾任务（记忆flush/维护）异步执行线程池。
-     * 采用非守护线程，避免流式响应结束后JVM立即退出导致后台任务被中断。
+     * <p>采用"有界队列 + 有限线程数 + 非守护线程"策略：
+     * 有界队列避免收尾任务积压时线程无限膨胀（任务内部是阻塞的LLM调用）；
+     * 非守护线程避免流式响应结束后JVM立即退出导致后台任务被中断。
+     * <p>队列满时回退为 CallerRunsPolicy，在提交线程同步执行形成背压，保证任务不丢失。
      */
     private static final AtomicInteger COMPLETE_TASK_THREAD_COUNTER = new AtomicInteger(0);
-    private static final ExecutorService COMPLETE_TASK_EXECUTOR = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "agent-complete-task-" + COMPLETE_TASK_THREAD_COUNTER.getAndIncrement());
-        t.setDaemon(false);
-        return t;
-    });
+    private static final int COMPLETE_TASK_CORE_POOL_SIZE = 100;
+    private static final int COMPLETE_TASK_MAX_POOL_SIZE = 500;
+    private static final int COMPLETE_TASK_QUEUE_CAPACITY = 500;
+    private static final long COMPLETE_TASK_KEEP_ALIVE_SECONDS = 60L;
+    private static final long BLOCKEDWAITTIMEOUT = 60L	;
+    private static final int WARNMULTSREJECTS = 1000;
+    private static final boolean PRESTARTALLCORETHREADS = false;
+    private static final boolean DAEMON = false;	
+//    private static final ExecutorService executor = ThreadPoolFactory.buildThreadPool("agent-memory-task", "agent-memory-task-reject-message",
+//			COMPLETE_TASK_MAX_POOL_SIZE, COMPLETE_TASK_QUEUE_CAPACITY,
+//			BLOCKEDWAITTIMEOUT
+//			, WARNMULTSREJECTS);
+	private static final ExecutorService COMPLETE_TASK_EXECUTOR = ThreadPoolFactory.buildThreadPool("agent-memory-task","agent-memory-task-reject-message" ,
+					COMPLETE_TASK_MAX_POOL_SIZE,COMPLETE_TASK_QUEUE_CAPACITY,COMPLETE_TASK_KEEP_ALIVE_SECONDS,
+					BLOCKEDWAITTIMEOUT,WARNMULTSREJECTS,PRESTARTALLCORETHREADS,DAEMON);
+//    private static final ExecutorService COMPLETE_TASK_EXECUTOR = new ThreadPoolExecutor(
+//            COMPLETE_TASK_CORE_POOL_SIZE,
+//            COMPLETE_TASK_MAX_POOL_SIZE,
+//            COMPLETE_TASK_KEEP_ALIVE_SECONDS,
+//            TimeUnit.SECONDS,
+//            new LinkedBlockingQueue<>(COMPLETE_TASK_QUEUE_CAPACITY),
+//            r -> {
+//                Thread t = new Thread(r, "agent-complete-task-" + COMPLETE_TASK_THREAD_COUNTER.getAndIncrement());
+//                t.setDaemon(false);
+//                return t;
+//            },
+//            new ThreadPoolExecutor.CallerRunsPolicy());
 
     
     /**
@@ -1099,13 +1128,25 @@ public class AIAgentUtil {
 	static  void doOnComplete(AIAgent agent,ChatObject chatObject){
 		AgentSessionStore mainSessionStore = agent.getMainSessionStore();
 		if(mainSessionStore != null){
-			COMPLETE_TASK_EXECUTOR.execute(() -> {
-				try {
-					mainSessionStore.doOnComplete(agent, chatObject);
-				} catch (Exception e) {
-					logger.warn("Agent complete background task failed: {}", e.getMessage(), e);
-				}
-			});
+			// 在派发点(提交线程)就登记in-flight任务：若等到线程池任务真正开始执行才登记，
+			// 从提交到开始执行之间存在空窗，close()/awaitQuiescence 可能观察到 inFlight==0 而提前返回，
+			// 导致后台任务尚未开始就被当作已完成，资源被提前释放。
+			MemoryBackgroundTasks.begin();
+			try {
+				COMPLETE_TASK_EXECUTOR.execute(() -> {
+					try {
+						mainSessionStore.doOnComplete(agent, chatObject);
+					} catch (Exception e) {
+						logger.warn("Agent complete background task failed: {}", e.getMessage(), e);
+					} finally {
+						MemoryBackgroundTasks.end();
+					}
+				});
+			} catch (Throwable e) {
+				// 提交失败时释放已登记的in-flight槽位，避免计数泄漏
+				MemoryBackgroundTasks.end();
+				logger.warn("Agent complete background task submit failed: {}", e.getMessage(), e);
+			}
 		}
 	}
     public static <T> Flux<T> streamChatCompletion(Object message,BaseStreamDataHandler<T> streamDataHandler, AIAgent aiAgent){

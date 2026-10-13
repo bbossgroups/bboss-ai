@@ -25,6 +25,7 @@ import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
+import org.frameworkset.spi.ai.memory.MemoryBackgroundTasks;
 import org.frameworkset.spi.ai.memory.MemoryConfig;
 import org.frameworkset.spi.ai.memory.coordination.RedisStoreBackedPeriodicGate;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
@@ -44,6 +45,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 智能体集群部署场景：基于redis实现人工介入任务和智能体之间的通讯机制，适合于智能体集群部署场景
@@ -251,6 +253,6 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest {
 				})
 				.blockLast();
 		
-		 
+		MemoryBackgroundTasks.awaitQuiescence(60, TimeUnit.SECONDS);
 	}
 }

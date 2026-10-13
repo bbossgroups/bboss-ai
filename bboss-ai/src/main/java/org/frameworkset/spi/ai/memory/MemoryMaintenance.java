@@ -94,42 +94,25 @@ public class MemoryMaintenance  {
             AIAgent agent,
             ChatObject chatObject
             ) {
-       
-        // The maintenance body — including the gate claim, which is remote I/O under a
-        // store-backed gate — runs on the background scheduler. Only the in-flight counter is
-        // updated synchronously, so a quiescence check can never observe an empty in-flight
-        // set before the task is counted.
+        // in-flight槽位由调用方(AIAgentUtil.doOnComplete)在提交线程统一登记，
+        // 这里只负责执行维护逻辑，避免"已提交但尚未开始执行"的空窗期导致静默等待提前返回。
        try {
-		   MemoryBackgroundTasks.begin();
 		   doMaintenance(agent, chatObject);
-		  
 	   }
 	   catch (Exception e){
 		   log.warn(
 				   "Memory maintenance failed: {}",
 				   e.getMessage());
 	   }
-	   finally {
-		   MemoryBackgroundTasks.end();
-	   }
-//				.subscribeOn(Schedulers.boundedElastic())
-//				.doFinally(signal -> MemoryBackgroundTasks.end())
-//				.subscribe(
-//						null,
-//						e ->
-//								log.warn(
-//										"Memory maintenance failed: {}",
-//										e.getMessage()));
-                    
     }
 
     private void doMaintenance( AIAgent agent,
 									  ChatObject chatObject) {
-//        if (!periodicGate.tryClaim(compositeTimerKey(agent,chatObject), minGap)) {
-//            // Throttled out; the in-flight slot acquired at dispatch is released when this
-//            // Mono completes.
-//            return ;
-//        }
+        if (!periodicGate.tryClaim(compositeTimerKey(agent,chatObject), minGap)) {
+            // Throttled out; the in-flight slot acquired at dispatch is released when this
+            // Mono completes.
+            return ;
+        }
         runMaintenance(agent,chatObject);
     }
 

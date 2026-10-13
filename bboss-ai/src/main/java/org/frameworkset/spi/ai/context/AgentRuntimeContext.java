@@ -67,7 +67,7 @@ public class AgentRuntimeContext {
 	/**
 	 * 是否启用计划模式
 	 */
-	private boolean enableMemorySearch;
+	private boolean enableMemorySearch = true;
 	
 
 	private CompactionConfig compactionConfig;

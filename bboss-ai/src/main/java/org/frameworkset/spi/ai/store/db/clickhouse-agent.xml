@@ -170,7 +170,8 @@
                  parentAgentId Nullable(String) COMMENT '父智能体id',
                  userId String COMMENT '用户id',
                  sessionId Nullable(String) COMMENT '会话id',
-                 content Nullable(String) COMMENT '总账记忆内容，一个智能体+用户一条记录'
+                 content Nullable(String) COMMENT '总账记忆内容，一个智能体+用户一条记录',
+                 consolidationState String COMMENT '总账日流水账水位值：上次总账时间线'
 			)
 			ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/{database}/{table}', '{replica}')
 			ORDER BY (agentId,userId)

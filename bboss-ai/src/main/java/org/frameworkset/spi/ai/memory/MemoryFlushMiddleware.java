@@ -24,13 +24,8 @@ import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -83,8 +78,7 @@ public class MemoryFlushMiddleware  {
     private   MemoryConfig.FlushTrigger flushTrigger;
 //    private final IsolationScope isolationScope;
     private   PeriodicGate periodicGate;
-	//定义一个类似Mono执行的线程池
-    private static final Scheduler SCHEDULER = Schedulers.boundedElastic();
+	
 
     public MemoryFlushMiddleware(ModelInfo model) {
         this(
@@ -127,18 +121,13 @@ public class MemoryFlushMiddleware  {
     public void doOnComplete(
             AIAgent agent,
             ChatObject chatObject           ) {
-		//将以下两个方法改造为
-		MemoryBackgroundTasks.begin();
+		// in-flight槽位由调用方(AIAgentUtil.doOnComplete)在提交线程统一登记，
+		// 这里只负责调度任务，避免"已提交但尚未开始执行"的空窗期导致静默等待提前返回。
 		scheduleFlush(agent, chatObject);
-		 
-          
     }
 
     private void scheduleFlush( AIAgent agent,
 								ChatObject chatObject) {
-        // The in-flight slot is acquired at dispatch rather than inside the task: a queued
-        // flush must already be counted, or a quiescence check could observe an empty
-        // in-flight set while work is still pending.
         try {
 			String key = compositeTimerKey(agent);
 			// Coalescing key of the task: the conversation whose state the task reads when it
@@ -149,7 +138,6 @@ public class MemoryFlushMiddleware  {
 							agent, blankToEmpty(agent.getUserId()), blankToEmpty(agent.getSessionId()));
 			Runnable task = () -> runFlush(key, agent, chatObject);
 			Runnable[] starter = new Runnable[1];
-			Runnable[] displaced = new Runnable[1];
 			FLUSH_QUEUES.compute(
 					key,
 					(k, queue) -> {
@@ -159,18 +147,13 @@ public class MemoryFlushMiddleware  {
 							// calls of one conversation are serialised on the agent's
 							// (userId, sessionId) serialization key, so the newest task's state
 							// includes everything the replaced tasks would have read.
-							displaced[0] = q.pending.put(conversationKey, task);
+							q.pending.put(conversationKey, task);
 						} else {
 							q.running = true;
 							starter[0] = task;
 						}
 						return q;
 					});
-			if (displaced[0] != null) {
-				// The replaced task will never execute; release the in-flight slot it acquired at
-				// dispatch. Done outside compute to avoid running under the map's bin lock.
-				MemoryBackgroundTasks.end();
-			}
 			if (starter[0] != null) {
 				starter[0].run();
 			}
@@ -181,7 +164,7 @@ public class MemoryFlushMiddleware  {
 		catch (Throwable e) {
 			log.warn("Memory flush failed: {}", e.getMessage(),e);
 		}
-    }
+	}
 
     private void runFlush(String key, AIAgent agent, ChatObject chatObject) {
 		 try {
@@ -191,17 +174,9 @@ public class MemoryFlushMiddleware  {
 			 log.warn("Memory flush failed: {}", e.getMessage());
 		 }
 		 finally {
-			 MemoryBackgroundTasks.end();
              drainFlushQueue(key);
 		 }
-//                .subscribeOn(Schedulers.boundedElastic())
-//                .doFinally(
-//                        signal -> {
-//                            MemoryBackgroundTasks.end();
-//                            drainFlushQueue(key);
-//                        })
-//                .subscribe(null, e -> log.warn("Memory flush failed: {}", e.getMessage()));
-    }
+	}
 
     private void drainFlushQueue(String key) {
         Runnable[] next = new Runnable[1];
@@ -262,26 +237,23 @@ public class MemoryFlushMiddleware  {
             return ;
         }
 
-		try {
-			ModelInfo model = this.model;
-			if(model == null){
-				model = chatObject.getChatContext().getModelInfo();
-			}
-			MemoryFlushManager flushManager =
-					new MemoryFlushManager(model, flushPrompt);
-			flushManager
-					.flushMemories(agent, messages);
-			log.debug("Memory flush completed");
+		 
+        ModelInfo model = this.model;
+        if(model == null){
+            model = chatObject.getChatContext().getModelInfo();
+        }
+        MemoryFlushManager flushManager =
+                new MemoryFlushManager(model, flushPrompt);
+        flushManager
+                .flushMemories(agent, messages);
+        log.debug("Memory flush completed");
 //					.doOnSuccess(v -> log.debug("Memory flush completed"))
 //					.onErrorResume(
 //							e -> {
 //								log.warn("Memory flush failed: {}", e.getMessage());
 //								return Mono.empty();
 //							});
-		}
-		catch (Exception e) {
-			log.warn("Memory flush failed: {}", e.getMessage());
-		}
+		 
     }
 
     /**
@@ -333,6 +305,34 @@ public class MemoryFlushMiddleware  {
 		public String toString() {
 			return "ConversationKey [agent=" + agent + ", userId=" + userId + ", sessionId=" + sessionId + "]";
 		}
+
+		/**
+		 * 合并/去重的关键：agent 按实例身份(引用)比较，userId/sessionId 按值比较。
+		 * 若缺少 equals/hashCode，每次都会生成新的键，FLUSH_QUEUES 的 pending 无法覆盖旧任务，
+		 * 导致同一会话的多次 flush 无法合并、任务持续堆积。
+		 */
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof ConversationKey)) {
+				return false;
+			}
+			ConversationKey that = (ConversationKey) o;
+			return agent == that.agent
+					&& Objects.equals(userId, that.userId)
+					&& Objects.equals(sessionId, that.sessionId);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = System.identityHashCode(agent);
+			result = 31 * result + (userId != null ? userId.hashCode() : 0);
+			result = 31 * result + (sessionId != null ? sessionId.hashCode() : 0);
+			return result;	
+			// return Objects.hash(agent, userId, sessionId);
+		}
 		
 		public void setAgent(AIAgent agent) {
 			this.agent = agent;
@@ -375,7 +375,7 @@ public class MemoryFlushMiddleware  {
      * </ul>
      */
     String timerKeyFor(AIAgent agent) {
-		return agent.getUserId();
+		return blankToEmpty(agent.getUserId())	;
 //        return switch (isolationScope) {
 //            case USER -> blankToEmpty(rc != null ? rc.getUserId() : null);
 //            case SESSION -> blankToEmpty(rc != null ? rc.getSessionId() : null);
