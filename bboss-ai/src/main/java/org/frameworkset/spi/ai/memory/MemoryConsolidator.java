@@ -190,47 +190,7 @@ public class MemoryConsolidator {
 		} catch (Exception e) {
 			log.warn("Summarization LLM call failed: {}", e.getMessage(),e);
 		}
-//		
-//        List<Msg> messages = new ArrayList<>();
-//        messages.add(
-//                Msg.builder()
-//                        .role(MsgRole.SYSTEM)
-//                        .content(TextBlock.builder().text(systemPrompt).build())
-//                        .build());
-//        messages.add(
-//                Msg.builder()
-//                        .role(MsgRole.USER)
-//                        .content(TextBlock.builder().text(userContent.toString()).build())
-//                        .build());
-//
-//        return model.stream(messages, null, null)
-//                .reduce(
-//                        new StringBuilder(),
-//                        (sb, chatResponse) -> {
-//                            if (chatResponse.getContent() != null) {
-//                                for (var block : chatResponse.getContent()) {
-//                                    if (block instanceof TextBlock tb && tb.getText() != null) {
-//                                        sb.append(tb.getText());
-//                                    }
-//                                }
-//                            }
-//                            return sb;
-//                        })
-//                .flatMap(
-//                        sb -> {
-//                            String consolidated = sb.toString().strip();
-//                            if (consolidated.isBlank()) {
-//                                log.warn("Consolidation produced empty output, skipping");
-//                                return Mono.empty();
-//                            }
-//                            writeConsolidatedMemory(rc, consolidated);
-//                            writeWatermark(rc, runStart);
-//                            log.info(
-//                                    "MEMORY.md consolidated ({} chars), watermark advanced to {}",
-//                                    consolidated.length(),
-//                                    runStart);
-//                            return Mono.empty();
-//                        });
+
     }
 
     /**
@@ -339,7 +299,7 @@ public class MemoryConsolidator {
     Instant readWatermark(AIAgent agent,
 						  ChatObject chatObject,AgentMemory agentMemory) {
 //		AgentConsolidationState memoryWaterMarker = agent.getMainSessionStore().getAgentSessionService().getMemoryWaterMarker(  agent);
-		if (agentMemory == null ) {
+		if (agentMemory == null || agentMemory.getConsolidationState() == null ) {
 			return Instant.EPOCH;
 		}
 		return Instant.parse(agentMemory.getConsolidationState());

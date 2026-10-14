@@ -22,11 +22,13 @@ import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
+import org.frameworkset.util.concurrent.ThreadPoolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Middleware that triggers memory flush and message offload at the end of each agent call.
@@ -78,7 +80,7 @@ public class MemoryFlushMiddleware  {
     private   MemoryConfig.FlushTrigger flushTrigger;
 //    private final IsolationScope isolationScope;
     private   PeriodicGate periodicGate;
-	
+ 
 
     public MemoryFlushMiddleware(ModelInfo model) {
         this(
@@ -126,9 +128,23 @@ public class MemoryFlushMiddleware  {
 		scheduleFlush(agent, chatObject);
     }
 
+	class FlushRunable{
+		ChatObject chatObject;
+		AIAgent agent;
+		String key;
+		public FlushRunable(String key,AIAgent agent,ChatObject chatObject){
+			this.agent = agent;
+			this.chatObject = chatObject;
+			this.key = key;	
+		}
+		public void run(boolean asyn){
+			runFlush(key, agent, chatObject, asyn);
+		}
+	}
     private void scheduleFlush( AIAgent agent,
 								ChatObject chatObject) {
         try {
+			MemoryBackgroundTasks.begin();
 			String key = compositeTimerKey(agent);
 			// Coalescing key of the task: the conversation whose state the task reads when it
 			// executes. The agent reference distinguishes agent instances serving the same user
@@ -136,8 +152,9 @@ public class MemoryFlushMiddleware  {
 			ConversationKey conversationKey =
 					new ConversationKey(
 							agent, blankToEmpty(agent.getUserId()), blankToEmpty(agent.getSessionId()));
-			Runnable task = () -> runFlush(key, agent, chatObject);
-			Runnable[] starter = new Runnable[1];
+			FlushRunable task = new FlushRunable	(key, agent, chatObject);
+			FlushRunable[] starter = new FlushRunable[1];
+			FlushRunable[] replaced = new FlushRunable[1];
 			FLUSH_QUEUES.compute(
 					key,
 					(k, queue) -> {
@@ -147,58 +164,108 @@ public class MemoryFlushMiddleware  {
 							// calls of one conversation are serialised on the agent's
 							// (userId, sessionId) serialization key, so the newest task's state
 							// includes everything the replaced tasks would have read.
-							q.pending.put(conversationKey, task);
+							replaced[0] = q.pending.put(conversationKey, task);
 						} else {
 							q.running = true;
 							starter[0] = task;
 						}
 						return q;
 					});
+			if(replaced[0] != null){
+				MemoryBackgroundTasks.end();
+			}
 			if (starter[0] != null) {
-				starter[0].run();
+				starter[0].run(true);
 			}
 		}
 		catch (Exception e) {
+			MemoryBackgroundTasks.end();
 			log.warn("Memory flush failed: {}", e.getMessage(),e);
 		}
 		catch (Throwable e) {
+			MemoryBackgroundTasks.end();
 			log.warn("Memory flush failed: {}", e.getMessage(),e);
 		}
 	}
 
-    private void runFlush(String key, AIAgent agent, ChatObject chatObject) {
-		 try {
-			 doFlush(agent, chatObject);
-		 }
-		 catch (Exception e) {
-			 log.warn("Memory flush failed: {}", e.getMessage());
-		 }
-		 finally {
-             drainFlushQueue(key);
-		 }
+    private void runFlush(String key, AIAgent agent, ChatObject chatObject,boolean asyn) {
+		if(asyn) {
+			ExecutorService MEMORY_FLUSH_TASK_EXECUTOR = MemoryUtil.getMemoryFlushTaskExecutor();
+			int maxRetry = 3;
+			int retry = 0;
+			do {
+				try {
+					MEMORY_FLUSH_TASK_EXECUTOR.submit(() -> {
+						try {
+							doFlush(agent, chatObject);
+						} catch (Exception e) {
+							log.warn("Memory flush failed: {}", e.getMessage(), e);
+						} finally {
+							MemoryBackgroundTasks.end();
+							drainFlushQueue(key);
+						}
+					});
+					break;
+				} catch (Exception e) {
+					retry++;
+					log.warn("Memory flush failed: {}", e.getMessage(), e);
+					if(retry >= maxRetry){
+						try {
+							doFlush(agent, chatObject);
+						} catch (Exception ex) {
+							log.warn("Memory flush failed: {}", ex.getMessage(), ex);
+						} finally {
+							MemoryBackgroundTasks.end();
+							drainFlushQueue(key);
+						}
+						
+						break;
+					}
+					 
+					
+					 
+				}
+			} while (true);
+		}
+		else{
+			try {
+				doFlush(agent, chatObject);
+			} catch (Exception e) {
+				log.warn("Memory flush failed: {}", e.getMessage(), e);
+			} finally {
+				MemoryBackgroundTasks.end();
+//				drainFlushQueue(key,false);
+			}
+		}
 	}
 
     private void drainFlushQueue(String key) {
-        Runnable[] next = new Runnable[1];
-        FLUSH_QUEUES.compute(
-                key,
-                (k, queue) -> {
-                    if (queue == null) {
-                        return null;
-                    }
-                    Iterator<Runnable> it = queue.pending.values().iterator();
-                    if (it.hasNext()) {
-                        next[0] = it.next();
-                        it.remove();
-                    }
-                    if (next[0] == null) {
-                        return null; // idle: evict so the map holds only active keys
-                    }
-                    return queue; // the dequeued task continues as the running flush
-                });
-        if (next[0] != null) {
-            next[0].run();
-        }
+			do{
+				FlushRunable[] next = new FlushRunable[1];
+				FLUSH_QUEUES.compute(
+						key,
+						(k, queue) -> {
+							if (queue == null) {
+								return null;
+							}
+							Iterator<FlushRunable> it = queue.pending.values().iterator();
+							if (it.hasNext()) {
+								next[0] = it.next();
+								it.remove();
+							}
+							if (next[0] == null) {
+								return null; // idle: evict so the map holds only active keys
+							}
+							return queue; // the dequeued task continues as the running flush
+						});
+				if (next[0] != null) {
+					next[0].run(false);
+				}
+				else{
+					break;
+				}
+			}while(true);
+		 
     }
 
     /**
@@ -208,7 +275,7 @@ public class MemoryFlushMiddleware  {
      * as soon as a key goes idle.
      */
     private static final class FlushQueue {
-        final LinkedHashMap<ConversationKey, Runnable> pending = new LinkedHashMap<>();
+        final LinkedHashMap<ConversationKey, FlushRunable> pending = new LinkedHashMap<>();
         boolean running;
     }
 

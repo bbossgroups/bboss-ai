@@ -22,10 +22,9 @@ import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Middleware that performs periodic memory maintenance after each agent call.
@@ -37,21 +36,14 @@ import java.time.Duration;
  *
  * <p>Maintenance steps executed in order:
  * <ol>
- *   <li>Expire daily memory files older than {@code dailyFileRetentionDays} by moving
- *       them to {@code memory/archive/}.</li>
+ 
  *   <li>Run LLM-based consolidation ({@link MemoryConsolidator#consolidate}) if a
  *       consolidator is configured.</li>
- *   <li>Prune session log files older than {@code sessionRetentionDays}.</li>
+ 
  * </ol>
  *
- * <p>The throttle window is tracked per <em>isolation key</em>, which matches the memory data
- * isolation in use:
- * <ul>
- *   <li>{link IsolationScope#USER} (default) — one window per {@code userId}.</li>
- *   <li>{link IsolationScope#SESSION} — one window per {@code sessionId}.</li>
- *   <li>{link IsolationScope#AGENT} / {link IsolationScope#GLOBAL} — one shared window for
- *       the whole agent instance (prevents concurrent maintenance races on shared memory files).</li>
- * </ul>
+ * <p>The throttle window is tracked per USER, which matches the memory data
+ * isolation in use 
  */
 public class MemoryMaintenance  {
 
@@ -94,27 +86,36 @@ public class MemoryMaintenance  {
             AIAgent agent,
             ChatObject chatObject
             ) {
-        // in-flight槽位由调用方(AIAgentUtil.doOnComplete)在提交线程统一登记，
-        // 这里只负责执行维护逻辑，避免"已提交但尚未开始执行"的空窗期导致静默等待提前返回。
-       try {
-		   doMaintenance(agent, chatObject);
-	   }
-	   catch (Exception e){
-		   log.warn(
-				   "Memory maintenance failed: {}",
-				   e.getMessage());
-	   }
+		if (!periodicGate.tryClaim(compositeTimerKey(agent,chatObject), minGap)) {
+			// 限流失败：不提交任务，也无需登记 in-flight 槽位
+			return ;
+		}
+		ExecutorService MEMORY_MAINTAIN_TASK_EXECUTOR = MemoryUtil.getMemoryMaintainTaskExecutor();
+		MemoryBackgroundTasks.begin();
+		try {
+			MEMORY_MAINTAIN_TASK_EXECUTOR.submit(() -> {
+				try {
+					runMaintenance(agent,chatObject);
+				} catch (Exception e) {
+					log.warn(
+							"Memory maintenance failed: {}",
+							e.getMessage(),e);
+				} finally {
+					MemoryBackgroundTasks.end();
+				}
+			});
+		}
+		catch (Exception e) {
+			MemoryBackgroundTasks.end();
+			log.warn(
+					"Memory maintenance failed: {}",
+					e.getMessage(),e);
+		}
+		
+      
     }
 
-    private void doMaintenance( AIAgent agent,
-									  ChatObject chatObject) {
-        if (!periodicGate.tryClaim(compositeTimerKey(agent,chatObject), minGap)) {
-            // Throttled out; the in-flight slot acquired at dispatch is released when this
-            // Mono completes.
-            return ;
-        }
-        runMaintenance(agent,chatObject);
-    }
+ 
 
     /**
      * Builds a composite key from {link IsolationScope} name and the per-call identity returned

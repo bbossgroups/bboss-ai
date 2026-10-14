@@ -15,12 +15,32 @@ package org.frameworkset.spi.ai.memory;
  * limitations under the License.
  */
 
+import org.frameworkset.util.concurrent.ThreadPoolFactory;
+
+import java.util.concurrent.ExecutorService;
+
 /**
  *
  * @author biaoping.yin
  * @Date 2026/10/9
  */
 public class MemoryUtil {
+	
+//	private static final int MEMORY_FLUSH_TASK_CORE_POOL_SIZE = 100;
+	private static final int MEMORY_FLUSH_TASK_MAX_POOL_SIZE = 500;
+	private static final int MEMORY_FLUSH_TASK_QUEUE_CAPACITY = 500;
+	private static final long MEMORY_FLUSH_TASK_KEEP_ALIVE_SECONDS = 60L;
+	private static final long BLOCKEDWAITTIMEOUT = 50L	;
+	private static final int WARNMULTSREJECTS = 1000;
+	private static final boolean PRESTARTALLCORETHREADS = false;
+	private static final boolean DAEMON = true;
+	private static final ExecutorService MEMORY_FLUSH_TASK_EXECUTOR = ThreadPoolFactory.buildThreadPool("Agent-MemoryFlushMiddleware-task","Agent-MemoryFlushMiddleware-task-reject-message" ,
+			MEMORY_FLUSH_TASK_MAX_POOL_SIZE,MEMORY_FLUSH_TASK_QUEUE_CAPACITY,MEMORY_FLUSH_TASK_KEEP_ALIVE_SECONDS * 1000L,
+			BLOCKEDWAITTIMEOUT,WARNMULTSREJECTS,PRESTARTALLCORETHREADS,DAEMON);
+	
+	private static final ExecutorService MEMORY_MAINTAIN_TASK_EXECUTOR = ThreadPoolFactory.buildThreadPool("Agent-MemoryMaintainMiddleware-task","Agent-MemoryMaintainMiddleware-task-reject-message" ,
+			MEMORY_FLUSH_TASK_MAX_POOL_SIZE,MEMORY_FLUSH_TASK_QUEUE_CAPACITY,MEMORY_FLUSH_TASK_KEEP_ALIVE_SECONDS * 1000L,
+			BLOCKEDWAITTIMEOUT,WARNMULTSREJECTS,PRESTARTALLCORETHREADS,DAEMON);
 	public static boolean isDayMemoryPath(String path){
 		if(path.equals("MEMORY.md"))
 			return false;
@@ -30,4 +50,11 @@ public class MemoryUtil {
 		return false;
 	}
 	
+	public static ExecutorService getMemoryFlushTaskExecutor() {
+		return MEMORY_FLUSH_TASK_EXECUTOR;
+	}
+	
+	public static ExecutorService getMemoryMaintainTaskExecutor() {
+		return MEMORY_MAINTAIN_TASK_EXECUTOR;
+	}
 }

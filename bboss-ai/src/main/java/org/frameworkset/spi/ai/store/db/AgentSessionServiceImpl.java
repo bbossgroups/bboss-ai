@@ -627,6 +627,7 @@ public class AgentSessionServiceImpl implements AgentSessionService {
 				agentMemory.setMemoryId(SimpleStringUtil.getUUID32());
 				agentMemory.setCreateTime(LocalDateTime.now());
 				agentMemory.setUpdateTime(agentMemory.getCreateTime());
+				agentMemory.setConsolidationState(agentMemory.getConsolidationState());
 				agentMemory.setContent(section);
 				agentMemory.setParentAgentId(agent.getParentAgentId());
 				agentMemory.setSessionId(agent.getSessionId());
