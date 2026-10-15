@@ -109,7 +109,7 @@ public class StoreContext {
 	private int triggerSessionSize = 40;
 	
 	
-	private ModelInfo compactModelInfo;
+
 	private boolean enableHitl;
 	private String redisDSName;
 	private	 String channel;
@@ -262,23 +262,7 @@ public class StoreContext {
 		return this;
 	}
 	
-	
-	public ModelInfo getCompactModelInfo() {
-		return compactModelInfo;
-	}
-	
-	public StoreContext setCompactModelInfo(ModelInfo compactModelInfo) {
-		this.compactModelInfo = compactModelInfo;
-		return this;
-	}
-	
-	public StoreContext setCompactModelInfo(String maas,String model) {
-		ModelInfo compactModelInfo = new ModelInfo();
-		compactModelInfo.setMaas(maas);
-		compactModelInfo.setModel(model);
-		this.compactModelInfo = compactModelInfo;
-		return this;
-	}
+	  
 	
 	/**
 	 * 设置人工介入redis通道

@@ -426,6 +426,7 @@ public class AIAgentUtil {
 		ModelInfo modelInfo =  new ModelInfo();
 		modelInfo.setMaas(maas == null?chatMessage.getMaas():maas);
 		modelInfo.setModel(chatMessage.getModel());
+		modelInfo.setContextWindowSize(chatMessage.getContextWindowSize());
 		chatContext.setModelInfo(modelInfo);
 		if(agent.getAgentRuntimeContext() != null){
 			chatContext.setAgentRuntimeContext(agent.getAgentRuntimeContext());
@@ -451,6 +452,7 @@ public class AIAgentUtil {
 		ModelInfo modelInfo =  new ModelInfo();
 		modelInfo.setMaas(maas == null?chatMessage.getMaas():maas);
 		modelInfo.setModel(chatMessage.getModel());
+		modelInfo.setContextWindowSize(chatMessage.getContextWindowSize());
 		chatContext.setModelInfo(modelInfo);
 		
 		if(agent.getAgentRuntimeContext() != null){

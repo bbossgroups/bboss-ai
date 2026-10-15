@@ -121,7 +121,7 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest {
 		
 		//设置模型调用参数，
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3);
+		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3).setContextWindowSize(1024_0000);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwentokenplan").setRetry(3);
 		

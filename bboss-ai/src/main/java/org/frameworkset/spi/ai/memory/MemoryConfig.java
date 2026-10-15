@@ -15,7 +15,6 @@
  */
 package org.frameworkset.spi.ai.memory;
 
- 
 
 import org.frameworkset.spi.ai.memory.coordination.LocalPeriodicGate;
 import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
@@ -244,6 +243,16 @@ public final class MemoryConfig {
 	public MemoryConfig setModel(ModelInfo model) {
 		this.model = model;
 		return this;
+	}
+	
+	public MemoryConfig memoryConfigModel(String maas, String model, int contextWindowSize) {
+		ModelInfo compactModelInfo = new ModelInfo();
+		compactModelInfo.setMaas(maas);
+		compactModelInfo.setModel(model);
+		compactModelInfo.setContextWindowSize(contextWindowSize);
+		this.model = compactModelInfo;
+		return this;
+		
 	}
 
 

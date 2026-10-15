@@ -226,8 +226,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 			if (triggerSessionSize <= keepMessages) {
 				triggerSessionSize = keepMessages * 2;
 			}
-			this.compactionManager = new WindowsCompactionManager(new CompactionConfig()
-					.setCompactModel(storeContext.getCompactModelInfo())
+			this.compactionManager = new WindowsCompactionManager(new CompactionConfig()				 
 					.setKeepMessages(keepMessages)
 					.setTriggerMessages(triggerSessionSize));
 		}

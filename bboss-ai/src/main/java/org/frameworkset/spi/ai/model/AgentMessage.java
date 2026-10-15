@@ -48,6 +48,18 @@ public class AgentMessage<T extends AgentMessage> {
      * 重试时间间隔
      */
     private long retryInterval = 500L;
+	
+	
+	/**
+	 * Returns the model's context window size in tokens, or {@code 0} if unknown.
+	 *
+	 * <p>Used by the compaction middleware to dynamically compute when to trigger
+	 * conversation summarization. Implementations should return the total context
+	 * window (input + output) for the configured model.
+	 *
+	 * @return context window size in tokens, or {@code 0} if not available
+	 */
+	private int contextWindowSize = 200000;
     private Boolean thinking;
 	
 	/**
@@ -378,8 +390,9 @@ public class AgentMessage<T extends AgentMessage> {
 		return agentRuntimeContext;
 	}
 	
-	public void setAgentRuntimeContext(AgentRuntimeContext agentRuntimeContext) {
+	public T setAgentRuntimeContext(AgentRuntimeContext agentRuntimeContext) {
 		this.agentRuntimeContext = agentRuntimeContext;
+		return (T)this;
 	}
 	
 	protected ChatObject buildChatObject(ChatContext chatContext,AIAgent agent){
@@ -388,6 +401,16 @@ public class AgentMessage<T extends AgentMessage> {
 		chatObject.setAgent(agent);
 		agent.restorePermissionRules(chatObject);
 		return chatObject;
+	}
+	
+	
+	public int getContextWindowSize() {
+		return contextWindowSize;
+	}
+	
+	public T setContextWindowSize(int contextWindowSize) {
+		this.contextWindowSize = contextWindowSize;
+		return (T)this;
 	}
 	
 }

@@ -72,11 +72,7 @@ public class AgentRuntimeContext<T extends AgentRuntimeContext> {
 	 * 是否启用计划模式
 	 */
 	private boolean enablePlanMode;
-	
-	/**
-	 * 是否启用计划模式
-	 */
-	private boolean enableMemorySearch = true;
+ 
 	
 	private boolean disableMemoryTools ;
 	private boolean disableMemoryHooks ;
@@ -146,13 +142,7 @@ public class AgentRuntimeContext<T extends AgentRuntimeContext> {
 		return (T)this;
 	}
 	
-	public boolean isEnableMemorySearch() {
-		return enableMemorySearch;
-	}
-	public T setEnableMemorySearch(boolean enableMemorySearch) {
-		this.enableMemorySearch = enableMemorySearch;
-		return (T)this;
-	}
+ 
 	 
 	
 	public Map<String, List<PermissionRule>> getAllowRules() {

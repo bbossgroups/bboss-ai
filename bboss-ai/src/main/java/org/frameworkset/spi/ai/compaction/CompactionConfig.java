@@ -140,7 +140,6 @@ public class CompactionConfig {
 	private TruncateArgsConfig truncateArgsConfig = null;
 	private PruneConfig pruneConfig = new PruneConfig();
 	private ModelInfo compactModel = null;
-
      
 
     /** Message count above which compaction is triggered (0 = disabled). */
@@ -375,8 +374,18 @@ public class CompactionConfig {
     // -------------------------------------------------------------------------
     //  TruncateArgsConfig
     // -------------------------------------------------------------------------
-
-   
+	
+	
+	
+	public CompactionConfig compactModel(String maas,String model,int contextWindowSize) {
+		ModelInfo compactModelInfo = new ModelInfo();
+		compactModelInfo.setMaas(maas);
+		compactModelInfo.setModel(model);
+		compactModelInfo.setContextWindowSize(contextWindowSize);
+		this.compactModel = compactModelInfo;
+		return this;
+	
+	}
 
     
 }

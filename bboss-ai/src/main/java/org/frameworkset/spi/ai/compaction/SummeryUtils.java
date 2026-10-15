@@ -213,7 +213,7 @@ public class SummeryUtils {
 							+ summary
 							+ "\n</summary>";
 		} else {
-			if(chatContext.enableMemorySearch()) {
+			if(agent.getAgentRuntimeContext() != null && !agent.getAgentRuntimeContext().isDisableMemoryTools()) {
 //			content = "Here is a summary of the conversation to date:\n\n" + summary;
 				content =
 						"You are in the middle of a conversation that has been summarized.\n\n"
