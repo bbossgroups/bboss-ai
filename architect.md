@@ -80,7 +80,7 @@ bboss-ai/
 │       │   ├── context/               # 运行时上下文（AgentRuntimeContext、ChatContext）
 │       │   ├── filesystem/            # 文件系统抽象（AbstractFilesystem、LocalFilesystem、PathPolicy 等）
 │       │   ├── hitl/                  # 人工介入功能（BaseHitlTaskTool、HitlTaskHelper、cluster/）
-│       │   ├── interceptor/           # 智能体拦截器（AgentInterceptor、impl/TaskminderAgentInterceptor，预留扩展点）
+│       │   ├── interceptor/           # 智能体拦截器（AgentInterceptor、impl/HarnessAgentInterceptor 系统提示词增强、impl/TaskminderAgentInterceptor）
 │       │   ├── material/              # 素材处理（文件下载等）
 │       │   ├── mcp/                   # MCP 客户端/服务端（sse/、streamable/、feishu/、intercepter/、tools/、model/）
 │       │   ├── memory/                # 智能体记忆管理（MemoryFlushManager 记忆抽取、MemoryConsolidator 总账汇总、MemoryConfig、coordination/ 周期闸门、MemoryUtil）
@@ -198,10 +198,14 @@ bboss-ai/
 **智能体级配置与能力方法：**
 
 - `setEnableLoopToolCall(boolean)` / `setMaxLoopToolCalls(int)` - 循环工具调用开关与次数（默认 80 轮）
-- `setAgentRuntimeContext(AgentRuntimeContext)` - 注入全局运行时上下文（权限规则、调试开关、规划状态、压缩配置等），未设置时继承父智能体
-- `setEnableMemorySearch(boolean)` - 启用记忆检索，自动注册会话检索与摘要检索工具
+- `setAgentRuntimeContext(AgentRuntimeContext)` - 注入全局运行时上下文（权限规则、调试开关、规划状态、压缩配置、拦截器列表、工作空间等），未设置时继承父智能体
+- `initToolKits()` - 初始化工具注册与绑定（由早期版本 `init()` 重命名而来），首次获取工具定义时自动调用；同时触发 `mainSessionStore.initMiddlewares(this)` 完成存储组件（工作区/记忆中间件/压缩管理器）延迟初始化
+- `onSystemPrompt(ChatObject, String)` - 系统提示词拦截器管道入口：依次调用 `AgentRuntimeContext` 中注册的 `AgentInterceptor` 对提示词做流水线变换，由各适配器在构建请求时接入（见 [3.2.20](#3220-智能体拦截器agentinterceptor)）
+- `setEnableMemorySearch(boolean)` - 记忆检索开关（默认开启，见 `AgentRuntimeContext.enableMemorySearch`）
+- `setDisableMemoryTools(boolean)` / `setDisableMemoryHooks(boolean)` - 记忆工具/钩子开关（均默认 false）：仅当 `disableMemoryTools=false` 时，`reactMessage()` 自动注册 5 个记忆/检索工具（`SessionSearchTool`、`CompactSummaryMsgSearchTool`、`MemorySaveTool`、`MemoryGetTool`、`MemorySearchTool`）
 - `compact()` - 在组装消息前触发会话记忆压缩（委托主会话存储的压缩管理器）
 - `recordTraceMessage()` - 手动记录 Trace 消息，自动补全 agentId/parentAgentId
+- `close()` - 关闭智能体前调用 `MemoryBackgroundTasks.awaitQuiescence(5s)` 排空异步记忆任务，保证记忆不丢
 
 **身份信息（`AgentInfoInf` 接口）**：`AIAgent` 实现 `AgentInfoInf` 统一身份抽象，提供 `getAgentId`/`getAgentNodeType`/`getParentAgentId`/`getGroupId`/`getAgentFluxSink` 等，供步骤事件、HitL 任务、Trace 消息携带来源智能体信息。
 
@@ -544,16 +548,20 @@ public class MCPServerController {
 | `clickhouseCluster` | ClickHouse 集群名称（ClickHouse 模式必填） |
 | `sessionTableName` | 会话表名，默认 `agent_session` |
 | `sessionMessageTableName` | 会话消息表名，默认 `agent_session_message` |
-| `sessionSize` | 会话记忆窗口大小，默认 20 |
+| `sessionSize` | 会话记忆窗口大小，默认 20；**窗口压缩配置已从存储构造器下沉到 StoreContext**，由 `initMiddlewares` 据此自动创建窗口压缩管理器（`keepMessages`，触发条数由 `triggerSessionSize` 决定，缺省 `sessionSize*2`） |
 | `triggerSessionSize` | 会话压缩触发消息条数阈值（仅窗口压缩模式使用，设置后自动创建窗口压缩管理器） |
 | `sessionMemory` | 会话记忆载体（ArrayList），配合窗口压缩记录消息 |
 | `compactModelInfo` | 压缩摘要专用模型信息（maas + model），未设置时使用智能体主模型 |
 | `compactionConfig` | 完整压缩配置（`CompactionConfig`），按 `compactionPolicy` 决定窗口压缩或摘要压缩策略 |
+| `filesystem` | 会话级文件系统（`AbstractFilesystem`），工作区资源访问后端；未设置时 `WorkspaceManager` 默认创建 `LocalFilesystem(workspace)` |
+| `additionalContextFiles` | 附加上下文文件相对路径列表，其内容由 `HarnessAgentInterceptor` 注入到系统提示词 `<loaded_context>` 块 |
 | `requestId` | 请求 ID |
 | `traceId` | 链路追踪 ID |
 | `resetSession` | 是否重置会话 |
 | `mainSessionStore` | 主会话存储（用于共享） |
 | `agentMessageTypeConvertor` | 消息类型转换器（支持自定义扩展） |
+
+> **会话存储 = 组件容器**：`BaseAgentSessionStore.initMiddlewares(AIAgent)` 在会话构建时统一初始化并持有三组组件：`WorkspaceManager`（工作区门面，`getWorkspaceManager()` 获取）、记忆中间件（`MemoryFlushMiddleware` + `MemoryMaintenance`，来自 `StoreContext.memoryConfig`）、压缩管理器（`CompactionManager` / `WindowsCompactionManager`，来自 `compactionConfig` 或 sessionSize/triggerSessionSize）。`initSessionStore()` 构建会话存储后显式调用，任何绕过 `AIAgent.initToolKits()` 直接构造存储对象的路径将缺失中间件。
 
 ##### ClickHouse 生产级会话存储
 
@@ -1128,7 +1136,7 @@ BaseAuditorTool  →  BaseHitlTaskTool  →  HitlTaskcallTool
 - **返回格式**：纯文本报告，包含匹配数量，以及每条匹配的会话上下文（sessionId / role / 时间戳可用时）+ 命中关键词的摘要片段（约 200 字符）；无匹配或会话为空时返回明确的"无结果"提示
 - **上下文来源**：通过 `AgentTraceHolder.getChatObject().getAgent()` 获取运行中的智能体，调用 `mainSessionStore.getAllAgentSessionMessage(sessionId)`（当前会话）或 `getAllAgentSessionMessageOfUser(userId, limit)`（用户会话）取消息
 - **适用场景**：用户提问"我在这段对话里哪里提到过 X？""当前聊天中关于 Y 的部分在哪里""帮我回顾一下之前会话中聊过的 Z 话题"
-- **自动注册**：设置 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，由 `AIAgent.reactMessage()` 自动注册，无需手动 `registBeanTool`
+- **自动注册**：`AgentRuntimeContext.disableMemoryTools=false`（默认）时，由 `AIAgent.reactMessage()` 自动注册，无需手动 `registBeanTool`
 
 ##### CompactSummaryMsgSearchTool —— 摘要记录检索工具
 
@@ -1137,7 +1145,7 @@ BaseAuditorTool  →  BaseHitlTaskTool  →  HitlTaskcallTool
 - **工具方法**：`summary_search(summaryMessageIds)` —— 入参为摘要压缩消息 ID 数组（`String[]`），即 `SummeryUtils.buildSummaryMessage` 在摘要消息 meta.summaryIds 中记录的原始消息清单
 - **检索机制**：调用 `mainSessionStore.getSessionMessages(sessionId, ids)` 批量获取原始消息（内存/DB 存储均有实现），由 `SummeryUtils.formatSessionMessagesForSummary` 格式化输出（TOOL_CALL/TOOL_RESULT 消息转为内联文本便于模型阅读）
 - **长度控制**：返回结果超过 8000 字符自动截断并附截断提示
-- **自动注册**：与 `SessionSearchTool` 一样，启用 `enableMemorySearch` 后自动注册
+- **自动注册**：与 `SessionSearchTool` 一样，`disableMemoryTools=false`（默认）时自动注册，与记忆读写工具同批注册
 
 ##### MemorySaveTool / MemoryGetTool / MemorySearchTool —— 记忆读写检索工具
 
@@ -1146,7 +1154,7 @@ BaseAuditorTool  →  BaseHitlTaskTool  →  HitlTaskcallTool
 - `MemorySaveTool.memory_save(content)` —— 主动保存记忆，同时写入长期总账与当日流水账；是所有长期记忆写入的唯一授权入口
 - `MemoryGetTool.memory_get(path, startLine, endLine)` —— 按行号读取：`MEMORY.md` 读总账，`memory/yyyy-MM-dd.md` 读某日流水账，返回带行号的内容
 - `MemorySearchTool.memory_search(query, matchMode)` —— 关键词检索总账与近期（默认 180 天）流水账，`matchMode` 支持 `phrase`（默认）/`all`/`any`
-- **注册方式**：`agent.registBeanTool(new MemorySaveTool())` 等手动注册（不随 `enableMemorySearch` 自动注册）
+- **注册方式**：`disableMemoryTools=false`（默认）时由 `AIAgent.reactMessage()` 自动注册（与 `SessionSearchTool`/`CompactSummaryMsgSearchTool` 同批）；也可手动 `agent.registBeanTool(new MemorySaveTool())` 单独注册
 
 ##### 通用注册方式
 
@@ -1168,7 +1176,7 @@ agent.registBeanTool(new MemoryGetTool());                 // 记忆读取工具
 agent.registBeanTool(new MemorySearchTool());              // 记忆检索工具
 ```
 
-> **记忆检索工具注册**：设置 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，`SessionSearchTool` 与 `CompactSummaryMsgSearchTool` 会在 `AIAgent.reactMessage()` 中自动注册，无需手动 `registBeanTool`；而 `MemorySaveTool`/`MemoryGetTool`/`MemorySearchTool` 需显式 `registBeanTool`。
+> **记忆检索工具注册**：`AgentRuntimeContext.disableMemoryTools=false`（默认）时，`SessionSearchTool`、`CompactSummaryMsgSearchTool` 与 `MemorySaveTool`/`MemoryGetTool`/`MemorySearchTool` 会在 `AIAgent.reactMessage()` 中一次性自动注册，无需手动 `registBeanTool`；如需关闭自动注册，设置 `AgentRuntimeContext.setDisableMemoryTools(true)`。
 
 ##### 工具审计系统（Auditor）
 
@@ -1376,7 +1384,7 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 
 **`AgentRuntimeContext`（智能体/会话级全局配置载体）**
 
-由 `AIAgent.setAgentRuntimeContext(...)` 或 `ChatAgentMessage.setAgentRuntimeContext(...)` 注入，父级智能体缺省时自动继承 `parentAgent` 的上下文。核心属性：
+由 `AIAgent.setAgentRuntimeContext(...)` 或 `ChatAgentMessage.setAgentRuntimeContext(...)` 注入，父级智能体缺省时自动继承 `parentAgent` 的上下文。类已泛型化为 `AgentRuntimeContext<T extends AgentRuntimeContext>`，所有 setter 返回 `T` 实现链式协变返回，可安全地被子类（如 `HarnessAgentRuntimeContext`）继承并继续链式调用。核心属性：
 
 | 属性 | 说明 |
 |------|------|
@@ -1388,10 +1396,17 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 | `enablePlanMode` | 是否启用自主规划（计划）模式 |
 | `planModeContextState` | 计划模式状态（`PlanModeContextState`：planActive + currentPlanFile） |
 | `taskContextState` | 任务列表状态（`TaskContextState`：List\<Task\>） |
-| `enableMemorySearch` | 是否启用记忆检索（为 true 时自动注册会话/摘要检索工具） |
+| `enableMemorySearch` | 记忆检索开关，**默认 true**；影响摘要消息内嵌 `<summaryMessageIds>` 供模型反查原文等行为 |
+| `disableMemoryTools` | 是否禁用记忆工具（默认 false；为 false 时 `reactMessage()` 自动注册 5 个记忆/检索工具） |
+| `disableMemoryHooks` | 是否禁用记忆钩子（默认 false；为 false 时压缩/会话结束自动抽取记忆，`MemoryFlushMiddleware` 生效） |
+| `workspace` | 智能体工作空间目录（默认 `.bboss`），供 `WorkspaceManager` 定位 AGENTS.md/knowledge/记忆等资源 |
+| `agentInterceptors` | 智能体拦截器列表（`AgentInterceptor`），`addAgentInterceptor`/`setAgentInterceptors` 注册，`AIAgent.onSystemPrompt` 管道按顺序依次执行 |
 | `taskListEnabled` | 是否启用任务列表 |
 | `compactionConfig` | 会话压缩配置 |
+| `init(WorkspaceManager)` | 幂等初始化钩子（带 `inited`/`initLock` 双重检查锁），子类可覆写注入默认拦截器等事宜 |
 | `isTrivial()` | `mode==DEFAULT` 且三张规则表全空时判定未启用完整权限引擎（轻量路径） |
+
+> `HarnessAgentRuntimeContext`（`context` 包）是内置的 Harness 运行时上下文子类，覆写 `init(WorkspaceManager)` 在拦截器链最内层（index 0）自动注册 `HarnessAgentInterceptor`，把 AGENTS.md、长期记忆总账、knowledge 目录等结构化注入系统提示词（见 [3.2.20](#3220-智能体拦截器agentinterceptor)）。
 
 **`ChatContext`（单次请求级上下文，位于 `context` 包）**
 
@@ -1409,7 +1424,7 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 | `CompactionManager` | 摘要压缩实现（默认），委托 `ConversationCompactor` 完成触发判断、cutoff 计算、剪枝、截断与 LLM 摘要；按模型上下文窗口动态解析触发/保留预算 |
 | `WindowsCompactionManager` | 窗口压缩实现：按消息条数滑动窗口，使用 `ConversationCompactor.findSafeCutoffPoint` 保证不切断工具调用配对，可先做记忆 Flush，再将窗口外旧消息总结为一条摘要消息（`MESSAGE_TYPE_SUMMARY_MESSAGE=23`）持久化 |
 | `ConversationCompactor` | 摘要压缩核心算法类；`compactIfNeeded(ChatContext, AIAgent, messages, config)` 为入口，`determineCutoffIndex` / `findSafeCutoffPoint` / `filterSummaryMessages` 为对外静态方法（窗口压缩复用 `findSafeCutoffPoint` 统一防割裂逻辑） |
-| `MemoryFlushManager`（位于 `memory` 包） | 压缩前用 LLM 从将被压缩的消息中抽取长期记忆，Flush 追加到当日记忆流水账（DB `agent_day_memory`） |
+| `MemoryFlushManager`（位于 `memory` 包） | 压缩前用 LLM 从将被压缩的消息中抽取长期记忆，Flush 追加到当日记忆流水账（DB `agent_day_memory`）；`flushMemoriesAsync` 异步执行（线程池满载/异常降级同步，保证记忆不丢） |
 | `CompactionConfig` | 压缩配置（见下表） |
 | `PruneConfig` | 工具结果聚合剪枝配置（逆向扫描 TOOL 消息，保护最近 `protectTokens` 的输出，对超长旧结果做"头+尾预览"替换；默认排除 `read_file`/`memory_search`/`memory_get`/`session_search`/`current_session_search`/`user_sessions_search` 等结果） |
 | `TruncateArgsConfig` | 工具调用入参截断配置（对窗口外 ASSISTANT 消息中过长 arguments 截断到 `maxArgLength`） |
@@ -1439,7 +1454,7 @@ Trace 消息与业务消息统一存储在同一张表中，通过 `messageType 
 1. **预清理**：按 `TruncateArgsConfig` 截断长工具入参；按 `PruneConfig` 剪枝超长工具结果
 2. **触发判断**：消息条数 >= `triggerMessages` 或估算 token >= `triggerTokens` 任一触发
 3. **确定 cutoff**：`determineCutoffIndex` 二分查找满足保留预算的最小下标，`findSafeCutoffPoint` 保证不切断 ASSISTANT 的 tool_call 与其 TOOL 结果的配对
-4. **记忆 Flush**：`MemoryFlushManager.flushMemories` 把将被压缩的消息（`filterSummaryMessages` 剔除旧摘要）交给 LLM 抽取长期记忆，追加写入当天日流水账（DB）
+4. **记忆 Flush**：`MemoryFlushManager.flushMemoriesAsync` **异步**把将被压缩的消息（`filterSummaryMessages` 剔除旧摘要）交给 LLM 抽取长期记忆，追加写入当天日流水账（DB）；异步失败或线程池满载时降级为同步执行，保证记忆不丢
 5. **LLM 摘要**：用 `compactModel` 对前缀做摘要，前序摘要保留在输入中形成链式总结
 6. **重建消息列表**：`[summaryUserMsg] + tail`，摘要消息 role=USER、name=`__compaction_summary__`，携带内容稳定 ID 便于去重
 
@@ -1465,13 +1480,13 @@ message.setStoreContext(storeContext);
 
 #### 3.2.15 智能体记忆（Memory）
 
-智能体记忆提供"**日流水账 Layer 1 + 长期总账 Layer 2**"两层模型，全部落库持久化（不再使用本地 `.md` 文件），配合记忆读写检索工具实现跨会话事实保全。记忆流水线由三类 LLM 驱动的操作组成：**Flush**（从对话窗口抽取**新**记忆追加到当日日流水账）、**Consolidation**（周期性把日流水账合并/去重/裁剪进长期总账，并推进汇总水位）、**压缩摘要**（见 [3.2.14 会话记忆压缩](#3214-会话记忆压缩compaction)）。核心实现位于 `memory` 包与 `model/memory` 子包：
+智能体记忆提供"**日流水账 Layer 1 + 长期总账 Layer 2**"两层模型，全部落库持久化（不再使用本地 `.md` 文件），配合记忆读写检索工具实现跨会话事实保全。记忆流水线由三类 LLM 驱动的操作组成：**Flush**（从对话窗口抽取**新**记忆追加到当日日流水账）、**Consolidation**（周期性把日流水账合并/去重/裁剪进长期总账，并推进汇总水位）、**压缩摘要**（见 [3.2.14 会话记忆压缩](#3214-会话记忆压缩compaction)）。其中记忆 Flush 采用**异步执行**机制（`flushMemoriesAsync`）避免阻塞主对话链路，线程池满载或异常时降级同步兜底，`AIAgent.close()` 以 5 秒窗口排空异步任务（`MemoryBackgroundTasks.awaitQuiescence`）保证记忆不丢。核心实现位于 `memory` 包与 `model/memory` 子包：
 
 **核心类：**
 
 | 类名 | 作用 |
 |------|------|
-| `MemoryFlushManager`（`memory` 包） | 记忆 Flush 管理器：把将被压缩的对话（USER/ASSISTANT/TOOL，跳过 SYSTEM 与内部上下文/旧摘要消息）交给 LLM 抽取**新**记忆，以 `## Memory Flush — {ISO时间戳}` 段落追加到当日日流水账；工具结果截断 1000 字符、工具入参截断 500 字符，防止 token 爆炸 |
+| `MemoryFlushManager`（`memory` 包） | 记忆 Flush 管理器：把将被压缩的对话（USER/ASSISTANT/TOOL，跳过 SYSTEM 与内部上下文/旧摘要消息）交给 LLM 抽取**新**记忆，以 `## Memory Flush — {ISO时间戳}` 段落追加到当日日流水账；工具结果截断 1000 字符、工具入参截断 500 字符，防止 token 爆炸。提供 `flushMemoriesAsync` 异步入口（`MemoryUtil` 专用线程池执行，满载/异常降级同步兜底，`MemoryBackgroundTasks` 跟踪任务水位） |
 | `MemoryConsolidator`（`memory` 包） | 长期总账汇总器：读取汇总水位（`AgentMemory.consolidationState`）之后新增的日流水账与当前总账，交 LLM 合并/去重/裁剪后覆写长期总账并推进水位；无新增流水时跳过；默认提示词资源 `prompts/memory/DEFAULT_CONSOLIDATION_PROMPT.md` |
 | `MemoryConfig`（`memory` 包） | 记忆流水线统一配置：Flush 触发策略（`FlushTrigger`：ALWAYS/NEVER/THROTTLED）、记忆专用模型、Flush/Consolidation 提示词、`consolidationMaxTokens`、`consolidationMinGap`（默认 30 分钟）、日流水/会话日志保留天数等；与 `CompactionConfig`（压缩摘要）互补 |
 | `MemoryUtil`（`memory` 包） | 记忆路径判定工具 `isDayMemoryPath(path)`：`MEMORY.md` 为总账，`memory/` 前缀为流水账 |
@@ -1504,26 +1519,21 @@ message.setStoreContext(storeContext);
 
 ClickHouse 模式下均创建 `*_local` 本地表（ReplicatedMergeTree）与 `*` 分布式表（Distributed 引擎），按 `sipHash64(memoryId)` / `sipHash64(consolidationStateId)` 分片；UPDATE 走 `ALTER TABLE ... UPDATE ... SETTINGS mutations_sync`。
 
-> **与压缩的衔接**：`CompactionConfig.flushBeforeCompact=true` 时，压缩前 `MemoryFlushManager.flushMemories` 先"抢救"出长期记忆写入日流水账；`ConversationCompactor.filterSummaryMessages` 显式剔除旧摘要消息，避免把摘要重复提取为记忆。
+> **与压缩的衔接**：`CompactionConfig.flushBeforeCompact=true` 时，压缩前 `MemoryFlushManager.flushMemoriesAsync` 先"抢救"出长期记忆写入日流水账；`ConversationCompactor.filterSummaryMessages` 显式剔除旧摘要消息，避免把摘要重复提取为记忆。
 
 #### 3.2.16 记忆检索与会话检索工具
 
-**（1）自动注册的检索工具** —— 启用 `AgentRuntimeContext.setEnableMemorySearch(true)` 后，`AIAgent.reactMessage()` 会自动注册以下工具：
+**自动注册** —— 只要 `AgentRuntimeContext.disableMemoryTools=false`（默认，语义较旧版 `enableMemorySearch` 反转），`AIAgent.reactMessage()` 即一次性自动注册以下 5 个记忆/检索工具：
 
 | 工具类 | 工具方法（@Tool name） | 功能 |
 |--------|------------------------|------|
 | `SessionSearchTool` | `current_session_search` / `user_sessions_search` | 检索当前会话转写文本（大小写不敏感子串匹配，输出带 SessionId/RequestId/MsgId 的摘要）；`user_sessions_search` 检索当前用户最近 N 个会话（limit 默认 10，硬上限 100） |
 | `CompactSummaryMsgSearchTool` | `summary_search` | 按压缩摘要消息中携带的 summaryMessageIds 反查被压缩前的原始消息，`SummeryUtils.formatSessionMessagesForSummary` 格式化（TOOL_CALL/TOOL_RESULT 转为内联文本），超过 8000 字符自动截断并附提示 |
-
-启用记忆检索时，`SummeryUtils.buildSummaryMessage` 会在摘要消息内容中内嵌 `<summaryMessageIds>` 列表，供模型后续用 `summary_search` 查原文。`SessionSearchTool` 通过 `AgentTraceHolder.getChatObject().getAgent()` 取运行上下文，调用 `mainSessionStore.getAllAgentSessionMessage(sessionId)` / `getAllAgentSessionMessageOfUser(userId, limit)`。
-
-**（2）记忆读写检索工具** —— 位于 `tools` 包，通过 `agent.registBeanTool(...)` 注册（与上一组工具相互独立），底层统一走 `AgentSessionService` 的记忆 API：
-
-| 工具类 | 工具方法（@Tool name） | 功能 |
-|--------|------------------------|------|
 | `MemorySaveTool` | `memory_save(content)` | 主动保存记忆：内容追加到长期总账 `agent_memory`，同时以 `## Memory Save — {时间戳}` 段落追加到当日日流水账；是 Agent 写入长期记忆的**唯一授权入口**（系统提示词禁止用 `write_file`/`edit_file` 直接操作记忆） |
 | `MemoryGetTool` | `memory_get(path, startLine, endLine)` | 按行号读取记忆：`path=MEMORY.md` 读长期总账；`path=memory/yyyy-MM-dd.md` 读对应日期流水账，返回 `行号|内容` |
 | `MemorySearchTool` | `memory_search(query, matchMode)` | 关键词检索记忆总账与近期（默认 180 天）日流水账；`matchMode` 支持 `phrase`（默认，精确子串）/`all`（同一条记忆行包含全部关键词）/`any`（包含任一关键词），大小写不敏感，由 `KeywordMatcher.compile` 编译；返回 `Source: <文件/日期>#行号: 内容` |
+
+`SummeryUtils.buildSummaryMessage` 在启用记忆检索时（`enableMemorySearch`，默认 true）会在摘要消息内容中内嵌 `<summaryMessageIds>` 列表，供模型后续用 `summary_search` 查原文。`SessionSearchTool` 通过 `AgentTraceHolder.getChatObject().getAgent()` 取运行上下文，调用 `mainSessionStore.getAllAgentSessionMessage(sessionId)` / `getAllAgentSessionMessageOfUser(userId, limit)`；其余记忆工具底层统一走 `AgentSessionService` 的记忆 API。
 
 > 记忆工具与文件系统抽象（`AbstractFilesystem`）解耦：读写检索直接基于数据库持久化的 `AgentMemory` / `AgentDayMemory`，无需依赖工作区文件。
 
@@ -1611,7 +1621,7 @@ agent.setAgentRuntimeContext(context);
 
 #### 3.2.19 文件系统抽象（Filesystem）
 
-文件系统抽象为 Agent 提供统一的存储操作接口，实现不限于本地磁盘（可扩展为沙箱、KV 存储、远程存储），是 `FileFunctionTool` 中文件检索类方法的新后端：
+文件系统抽象为 Agent 提供统一的存储操作接口，实现不限于本地磁盘（可扩展为沙箱、KV 存储、远程存储），是 `FileFunctionTool` 中文件检索类方法的新后端，同时也是 Harness 工作区集成（AGENTS.md/knowledge/记忆等资源的读取与注入）的底层底座。
 
 **核心组件：**
 
@@ -1625,21 +1635,45 @@ agent.setAgentRuntimeContext(context);
 | `WorkspacePathNormalizer` | 工作区路径归一化器 |
 | `FilesystemUtils` | 通用工具（二进制类型判断、shell 转义等） |
 
+**Harness 工作区新增组件（`filesystem` 包，Java 8 兼容移植自 AgentScope）：**
+
+| 类名 | 作用 |
+|------|------|
+| `WorkspaceManager` | 工作区资源访问统一门面：`init(StoreContext, AIAgent)` 从 `AgentRuntimeContext.workspace`（默认 `.bboss`）与 `StoreContext.filesystem` 初始化；提供 `readAgentsMd`/`readKnowledgeMd`/`listKnowledgeFiles`/`readManagedWorkspaceFileUtf8`/`getFilesystem`/`getWorkspace` 等；读取采用"文件系统优先、本地磁盘兜底"双层策略；同时透传 `disableMemoryTools`/`disableMemoryHooks`/`additionalContextFiles` 供拦截器使用 |
+| `AbstractSandboxFilesystem` | "具备 shell/sandbox 执行能力"能力标记接口：在 `AbstractFilesystem` 基础上增加 `id()`（沙箱实例 ID）与 `execute(ChatObject, command, timeoutSeconds)`（返回 `ExecuteResponse`：合并输出 + 退出码 + 截断标记） |
+| `LocalFilesystemWithShell` | 本地"文件+shell"一体化实现（继承 `LocalFilesystem` 并实现 `AbstractSandboxFilesystem`）：shell 走 `cmd /c`（Windows）或 `sh -c`（类 Unix），默认超时 120s、输出上限 100KB，stdout/stderr 并发排空防死锁；支持 `shellCwd`（shell 工作目录与文件系统根解耦）、自定义环境变量、`namespaceFactory` 命名空间；功能强大但**无沙箱隔离**，使用前需评估安全风险 |
+| `CompositeFilesystem` | 本地+远端前缀路由融合的统一命名空间文件系统：构造参数 `(defaultBackend, Map<前缀, AbstractFilesystem>)`，路径按前缀（最长匹配优先）路由到对应 store，未命中走默认后端；read/grep/glob 结果自动做路径回映射；**不支持 shell 执行**（跨 store 路由命令有歧义），需要 shell 时用沙箱系列实现 |
+| `OverlayFilesystem` | 上层可写 + 下层共享层的 Copy-on-Write 覆盖文件系统：读操作上层优先、下层兜底；写/编辑一律落上层（编辑下层文件前先复制到上层）；删除仅作用于上层（下层共享文件不可删）；ls/grep/glob 两层并集（上层冲突时覆盖）。工厂方法 `of(upper, lower)` 在上层具备 shell 能力时自动返回 shell-aware 的 `ShellAwareOverlay` |
+| `ProjectAwareOverlay` | 写路由覆盖文件系统（继承 `OverlayFilesystem` 并实现 `AbstractSandboxFilesystem`）：将写操作按路径分类——**工作区元数据**（`MEMORY.md`/`memory`/`AGENTS.md`/`agents`/`skills`/`knowledge`/`rules`/`tools.json`/`subagents`/`plans`/`.index`/`.skills-cache`/`large_tool_results` 等前缀）写上层工作区，其余路径写 `projectFs`（可写项目目录），读仍按 overlay 语义；绝对路径归一化后与相对路径同语义，shell `execute()` 委托上层 |
+
 **model 包结果模型**：`ReadResult`（含 `encoding`，二进制自动 Base64）、`WriteResult`、`LsResult`/`GlobResult`（`List<FileInfo>`）、`GrepResult`（`List<GrepMatch>`，1 起始行号）、`EditResult`（精确字符串替换，按路径加锁防并发 lost-update）、`ExecuteResponse`、`FileDownloadResponse`/`FileUploadResponse`。`LocalFilesystem.grep` 先尝试 `rg --json -F` 进程，失败回退纯 Java 实现（带 `maxFileSizeBytes` 过滤，默认 10MB）。
 
-#### 3.2.20 智能体拦截器（AgentInterceptor，预留扩展点）
+> **组合示例**：Harness 场景常将 `WorkspaceManager.filesystem` 配置为 `ProjectAwareOverlay(LocalFilesystemWithShell(workspace), 项目只读层, projectFs, workspaceRoot, namespaceFactory)`：文件工具写项目代码到项目目录、写 AGENTS.md/knowledge 等到工作区；`HarnessAgentInterceptor` 依据当前文件系统类型（本地 overlay/沙箱/分布式 composite）向模型描述不同的路径访问策略。
 
-`interceptor` 包提供洋葱模型风格的中间件接口 `AgentInterceptor`，定义 5 个拦截点：
+#### 3.2.20 智能体拦截器（AgentInterceptor）
+
+`interceptor` 包提供洋葱模型风格的中间件接口 `AgentInterceptor`，已接入主执行链路，定义 5 个拦截点：
 
 | 方法 | 拦截阶段 |
 |------|----------|
 | `order()` | 执行顺序，数值越大越靠外层先执行（默认 1） |
-| `onReasoning(AIAgent, ChatContext, ModelInfo)` | 推理阶段（LLM 调用 + 流式输出解析） |
-| `onActing(AIAgent, ChatContext, FunctionTool, FunctionToolDefine, ModelInfo)` | 工具执行阶段 |
-| `onModelCall(AIAgent, ChatContext, ModelInfo)` | 原始模型 API 调用（可对模型文本做归一化） |
-| `onSystemPrompt(AIAgent, ChatContext, String currentPrompt, ModelInfo)` | 系统提示词流水线变换（多个中间件依次变换） |
+| `onReasoning(AIAgent, ChatObject, ModelInfo)` | 推理阶段（LLM 调用 + 流式输出解析） |
+| `onActing(AIAgent, ChatObject, FunctionTool, FunctionToolDefine, ModelInfo)` | 工具执行阶段 |
+| `onModelCall(AIAgent, ChatObject, ModelInfo)` | 原始模型 API 调用（可对模型文本做归一化） |
+| `onSystemPrompt(AIAgent, ChatObject, String currentPrompt)` | 系统提示词流水线变换（多个中间件依次变换，前一中间件输出作为后一中间件输入） |
 
-内置实现 `TaskminderAgentInterceptor`（空实现占位，面向任务提醒场景预留）。当前 `AIAgent` 已声明 `agentInterceptors` 字段与 `AgentInterceptor` 接口，但主执行链路尚未接线，属于演进中的扩展点。
+> 接口签名以 `ChatObject`（`model` 包，单次请求级门面，内部持有 `ChatContext`）替代早期版本的 `ChatContext` 作为运行期上下文入参；`onSystemPrompt` 移除 `ModelInfo` 参数，聚焦纯提示词变换。
+
+**接线方式：** 拦截器通过 `AgentRuntimeContext.addAgentInterceptor/setAgentInterceptors` 注册，`AIAgent.onSystemPrompt(ChatObject, String)` 按注册顺序依次调用各拦截器完成提示词流水线变换；该入口已被各适配器在构建 Chat/ImageVL/VideoVL 请求时（`AgentAdapter.buildOpenAIRequestMap`/`buildImageVLRequestMap`/`buildVideoVLRequestMap` 等 6 处）统一接入，系统提示词经所有拦截器变换后才发往模型。
+
+**内置实现：**
+
+| 类 | 说明 |
+|----|------|
+| `TaskminderAgentInterceptor` | 空实现占位，面向任务提醒场景预留（当前为适配性空实现，无逻辑） |
+| `HarnessAgentInterceptor` | Harness 系统提示词增强器（真实实现）：把工作区资源结构化注入系统提示词——`## Agent Runtime Context`（智能体名/日期/OS/工作区/临时目录/SessionId）、`## Workspace`（按文件系统类型自适应描述路径访问策略：本地 overlay 渲染 Project+Workspace+PathPolicy+shell pwd，沙箱渲染容器隔离，composite 渲染分布式 store 且无本地文件系统降级）、`## Workspace Files (Injected)` 的 `<loaded_context>` 块（`<agents_context>`=AGENTS.md、`<memory_context>`=长期记忆总账（DB `agent_memory`）、`<domain_knowledge_context>`=knowledge/KNOWLEDGE.md + 完整知识文件清单、附加上下文文件标签），并内嵌记忆召回/持久化引导（memory_search/memory_get/memory_save 使用指引）与 token 预算截断（默认 8000 tokens） |
+
+**推荐用法：** `HarnessAgentRuntimeContext` 覆写 `init(WorkspaceManager)` 在拦截器链最内层（index 0）自动注册 `HarnessAgentInterceptor`，使用时只需设置运行时上下文为 `HarnessAgentRuntimeContext` 并配置工作区/文件系统，无需手工注册拦截器。
 
 ---
 
@@ -1972,6 +2006,7 @@ AgentSessionStore（主存储）
 **文件系统抽象（Filesystem）：**
 - `AbstractFilesystem` 统一存储操作接口，`LocalFilesystem` 内置本地实现
 - `LocalFsMode`（SANDBOXED/ROOTED/UNRESTRICTED）+ `PathPolicy` 白名单 + `NamespaceFactory` 按会话/用户隔离，从路径策略层防止路径穿越
+- `CompositeFilesystem`（前缀路由）、`OverlayFilesystem`（CoW 覆盖）、`ProjectAwareOverlay`（写路由）、`LocalFilesystemWithShell`/`AbstractSandboxFilesystem`（shell 能力）支持工作区分置、项目可写等 Harness 拓扑；`WorkspaceManager` 统一暴露 AGENTS.md/knowledge/记忆等资源读取
 - `FileFunctionTool` 的 `glob_files`/`list_files`/`grep_files` 委托该抽象，实现与存储解耦
 
 **自主规划工具（Plan）：**
@@ -1979,8 +2014,8 @@ AgentSessionStore（主存储）
 - 规划模式与权限模式（EXPLORE 只读约束）、HitL 审批天然配合
 
 **记忆与检索工具：**
-- 启用 `enableMemorySearch` 后自动注册 `SessionSearchTool`（当前/跨会话检索）与 `CompactSummaryMsgSearchTool`（摘要反查原文）
-- `MemorySaveTool`（`memory_save`）/`MemoryGetTool`（`memory_get`）/`MemorySearchTool`（`memory_search`）提供长期记忆写入、读取与检索，需显式 `registBeanTool`，全部基于 `agent_memory`/`agent_day_memory` 数据库持久化
+- `disableMemoryTools=false`（默认）时自动注册 5 个工具：`SessionSearchTool`（当前/跨会话检索）、`CompactSummaryMsgSearchTool`（摘要反查原文）与 `MemorySaveTool`（`memory_save`）/`MemoryGetTool`（`memory_get`）/`MemorySearchTool`（`memory_search`），无需手工 `registBeanTool`
+- 记忆工具全部基于 `agent_memory`/`agent_day_memory` 数据库持久化，`enableMemorySearch`（默认 true）控制摘要消息内嵌 `<summaryMessageIds>` 供 `summary_search` 反查原文
 
 ### 4.8 可观测性机制
 
