@@ -100,7 +100,7 @@ public class WindowsCompactionManager extends BaseCompactionManager{
 					MemoryFlushManager flushManager =
 							new MemoryFlushManager(model);
 					flushManager
-							.flushMemories(  agent, flushInput);
+							.flushMemoriesAsync(  agent, flushInput);
 				}
 				String summery = SummeryUtils.summarizePrefix(summeryMessage, config,chatContext);
 				LinkedMessageMap<String,Object> summaryMessage = SummeryUtils.buildSummaryMessage(chatContext,agent,summery,summeryMessage,null,newMessages.get(0));

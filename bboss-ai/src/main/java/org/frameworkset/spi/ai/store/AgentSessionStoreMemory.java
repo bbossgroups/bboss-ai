@@ -51,18 +51,12 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
         super(sessionMemory);
     }
 
-    public AgentSessionStoreMemory(List<LinkedMessageMap<String, Object>> sessionMemory, int sessionSize) {
-        super(sessionMemory, sessionSize);
-    }
-
+ 
      
+ 
 
-    public AgentSessionStoreMemory(int sessionSize) {
-        super(sessionSize);
-    }
-
-    public AgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore,int sessionSize) {
-        super(parentAgentSessionStore,sessionSize);
+    public AgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore ) {
+        super(parentAgentSessionStore);
     }
 
     

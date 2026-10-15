@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.store;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
@@ -65,9 +66,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
     String getParantAgentId();
     AIAgent getAgent();
     T setAIAgent(AIAgent aiAgent);
-    T setSessionSize(int sessionSize) ;
     T setAgentId(String agentId) ;
-    int getSessionSize() ;
     String getSessionId(); 
 
     void addSessionMessage(PersistentMessage message);
@@ -139,4 +138,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 	PermissionRules getAgentPermissionRules(String sessionId,String agentId);
 	
 	void doOnComplete(AIAgent  agent, ChatObject chatObject);
+	WorkspaceManager getWorkspaceManager();
+	
+	 void initMiddlewares(AIAgent  agent);
 }

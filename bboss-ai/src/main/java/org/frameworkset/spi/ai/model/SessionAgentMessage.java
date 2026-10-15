@@ -142,17 +142,19 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
  
     
      
-    private void initSessionStore(AIAgent aiAgent){
+    private void initSessionStore(AIAgent agent){
 		
         if(mainSessionStore == null && storeContext != null){
             mainSessionStore = this.agentSessionStoreBuilder.build(storeContext,null);
+			
+			mainSessionStore.initMiddlewares(agent);
             if(storeContext.isResetSession() && storeContext.getSessionId() != null){
                 mainSessionStore.removeSession(storeContext.getSessionId());
             }
 //            mainSessionStore = sessionStore;
         }
-		if(mainSessionStore == null && aiAgent != null){
-			mainSessionStore = aiAgent.getMainSessionStore();
+		if(mainSessionStore == null && agent != null){
+			mainSessionStore = agent.getMainSessionStore();
 		}
     }
     public T setMainSessionStore(AgentSessionStore mainSessionStore){

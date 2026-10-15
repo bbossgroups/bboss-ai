@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Manages memory flush operations: extracting long-term memories from a conversation
@@ -100,7 +101,40 @@ public class MemoryFlushManager {
         this.model = model;
         this.flushPrompt = flushPrompt != null ? flushPrompt : DEFAULT_FLUSH_PROMPT;
     }
-
+	/** 异步、尽力而为地抽取长时记忆，失败仅记录日志，不影响主流程。 */
+	public void flushMemoriesAsync(AIAgent agent, List<LinkedMessageMap<String, Object>> messages) {
+		MemoryBackgroundTasks.begin();
+		try {
+			MemoryUtil.getMemoryFlushTaskExecutor().submit(() -> {
+				try {
+					flushMemories(agent, messages);
+				} catch (Exception e) {
+					log.warn("Async memory flush failed: {}", e.getMessage(), e);
+				} finally {
+					MemoryBackgroundTasks.end();
+				}
+			});
+		} catch (RejectedExecutionException e) {          // 线程池满 → 降级同步，保证记忆不丢
+			
+			log.warn("Async memory flush queue full, running synchronously: {}", e.getMessage());
+			try {
+				flushMemories(agent, messages);
+			} catch (Exception ex) {
+				log.warn("Memory flush failed: {}", ex.getMessage(), ex);
+			}
+			MemoryBackgroundTasks.end();
+		}
+		catch (Exception e) {          // 线程池满 → 降级同步，保证记忆不丢
+			MemoryBackgroundTasks.end();
+			log.warn("Async memory flush queue failed, running synchronously: {}", e.getMessage());
+			try {
+				flushMemories(agent, messages);
+			} catch (Exception ex) {
+				log.warn("Memory flush failed: {}", ex.getMessage(), ex);
+			}
+			
+		}
+	}
     /**
      * Extracts long-term memories from messages using the model and writes them to disk.
      *

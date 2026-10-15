@@ -86,4 +86,19 @@ public final class MemoryBackgroundTasks {
             return true;
         }
     }
+	
+	public static boolean awaitQuiescence( ) {
+		synchronized (MONITOR) {
+			while (inFlight > 0) {
+				try {
+					MONITOR.wait(100);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					log.debug("Memory background tasks await interrupted: {}", e.getMessage());
+					return false;
+				}
+			}
+			return true;
+		}
+	}
 }

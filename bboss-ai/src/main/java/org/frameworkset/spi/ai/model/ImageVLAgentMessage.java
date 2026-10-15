@@ -47,7 +47,7 @@ public class ImageVLAgentMessage extends SessionAgentMessage<ImageVLAgentMessage
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
 
-        parameters = agentAdapter.buildImageVLRequestMap(this,agent,chatContext);
+        parameters = agentAdapter.buildImageVLRequestMap(this,agent,chatObject);
         if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             parameters.put("stream",false);
         }

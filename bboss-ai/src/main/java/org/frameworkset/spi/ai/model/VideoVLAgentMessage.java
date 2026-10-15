@@ -47,7 +47,7 @@ public class VideoVLAgentMessage extends SessionAgentMessage<VideoVLAgentMessage
         Object agentMessage = null;
         StreamDataBuilder streamDataBuilder = null;
 
-        parameters = agentAdapter.buildVideoVLRequestMap(this,agent,chatContext);
+        parameters = agentAdapter.buildVideoVLRequestMap(this,agent,chatObject);
 //        setVideoVLCompletionsUrl(agentAdapter.getVideoVLCompletionsUrl(this));
         if(chatContext.getStreamable() != null && chatContext.getStreamable() == false){
             parameters.put("stream",false);

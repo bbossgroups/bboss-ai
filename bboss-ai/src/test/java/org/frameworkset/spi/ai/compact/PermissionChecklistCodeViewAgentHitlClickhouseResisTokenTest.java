@@ -23,6 +23,7 @@ import org.frameworkset.nosql.redis.RedisFactory;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.context.AgentRuntimeContext;
+import org.frameworkset.spi.ai.context.HarnessAgentRuntimeContext;
 import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
 import org.frameworkset.spi.ai.memory.MemoryBackgroundTasks;
@@ -153,18 +154,20 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest {
 						.setKeepTokensMax	(16_000)     // 保留更长的最近上下文
 						.setFlushBeforeCompact(true)   // 默认 true：压缩前 flush 关键事实到流水账
 						.setCompactionPolicy(CompactionConfig.COMPACTION_POLICY_TOKENS))
-				.setRequestId("request123").setSessionId("1234571")
+				.setRequestId("request123").setSessionId("1234574")
 				.setStoreType(StoreContext.STORE_TYPE_DB)
 				.setHitlRedisChannel("test",RedisHitlTaskCallListener.DEFAULT_CHANNEL)
 				.setDataSource("visualops"));
 		
-		AgentRuntimeContext agentRuntimeContext = new AgentRuntimeContext();
+		AgentRuntimeContext agentRuntimeContext = new HarnessAgentRuntimeContext();
 		agentRuntimeContext.setDebugSSEData(false);
 		agentRuntimeContext.addAllowRule("get_weather", "city=北京","userSettings")
 				.addDenyRule("deleteFile", "userSettings")
 				.addAskRule("writeFile","userSettings")
 				.setPermissionHitlTaskTimeout(60000);   // 人工确认超时 60s
-		AIAgent agent = new AIAgent().setAgentRuntimeContext(agentRuntimeContext);
+		AIAgent agent = new AIAgent()
+				.setAgentId("PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest")
+				.setAgentName("PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest").setAgentRuntimeContext(agentRuntimeContext);
 		agent.setEnableLoopToolCall(true);//启用智能体多次调用工具机制
 		agent.setMaxLoopToolCalls(80);
 		agent.registTools(new SkillsToolRegist()
@@ -253,6 +256,7 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest {
 				})
 				.blockLast();
 		
-		MemoryBackgroundTasks.awaitQuiescence(60, TimeUnit.SECONDS);
+//		MemoryBackgroundTasks.awaitQuiescence(60, TimeUnit.SECONDS);
+		MemoryBackgroundTasks.awaitQuiescence( );
 	}
 }

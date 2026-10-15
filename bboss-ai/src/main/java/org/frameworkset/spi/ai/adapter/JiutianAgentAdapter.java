@@ -179,14 +179,14 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
 	
 
     @Override
-    public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
-		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+    public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent agent, ChatObject chatObject) {
+		List<LinkedMessageMap<String, Object>> sessionMemory = agent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
-        
+		ChatContext chatContext = chatObject.getChatContext();
         requestMap.put("model", imageAgentMessage.getModel());
        
         List<String> imageUrls = imageAgentMessage.getImageUrls();
-        String prompt = getPrompt(  imageAgentMessage,   aiAgent);
+        String prompt = getPrompt(  imageAgentMessage, agent);
         if(chatContext != null)
         {
             prompt = chatContext.evalPrompt(prompt);
@@ -215,26 +215,28 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
             List<LinkedMessageMap<String, Object>> messages = null;
             if (sessionMemory != null) {
                 if (sessionMemory.size() == 0) {
-                    String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
+                    String systemPrompt = getSystemPrompt(imageAgentMessage, agent);
                     if(systemPrompt != null){
                         if(chatContext != null)
                         {
                             systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                         }
+						systemPrompt = agent.onSystemPrompt(chatObject,systemPrompt);
                         systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
-                        imageAgentMessage.addSessionMessage(systemMessage,aiAgent);
+                        imageAgentMessage.addSessionMessage(systemMessage, agent);
                     }
                 }
-                imageAgentMessage.addSessionMessage(userMessage,aiAgent);
+                imageAgentMessage.addSessionMessage(userMessage, agent);
                 messages = new ArrayList<>(sessionMemory);
             } else {
                 messages = new ArrayList<>();
-                String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
+                String systemPrompt = getSystemPrompt(imageAgentMessage, agent);
                 if(systemPrompt != null){
                     if(chatContext != null)
                     {
                         systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                     }
+					systemPrompt = agent.onSystemPrompt(chatObject,systemPrompt);
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     messages.add(systemMessage);
                 }
@@ -245,7 +247,7 @@ public class JiutianAgentAdapter extends QwenAgentAdapter{
             requestMap.put("messages", handleImageParserMessages(messages));
             Map parameters = imageAgentMessage.getParameters();
 
-            filterParameters(chatContext,imageAgentMessage,aiAgent, requestMap, parameters);
+            filterParameters(chatContext,imageAgentMessage, agent, requestMap, parameters);
         }
 
         return requestMap;

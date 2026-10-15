@@ -33,17 +33,10 @@ public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<Seq
     public SequenceAgentSessionStoreMemory(List sessionMemory) {
         super(sessionMemory);
     }
+  
 
-    public SequenceAgentSessionStoreMemory(List sessionMemory, int sessionSize) {
-        super(sessionMemory, sessionSize);
-    }
-
-    public SequenceAgentSessionStoreMemory(int sessionSize) {
-        super(sessionSize);
-    }
-
-    public SequenceAgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore, int sessionSize) {
-        super(parentAgentSessionStore, sessionSize);
+    public SequenceAgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore ) {
+        super(parentAgentSessionStore );
     }
 
     public SequenceAgentSessionStoreMemory() {

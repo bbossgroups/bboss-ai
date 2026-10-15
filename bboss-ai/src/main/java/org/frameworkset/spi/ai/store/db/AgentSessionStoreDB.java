@@ -58,20 +58,9 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         persistentSessionMemory = true;
         init();
     }
+ 
 
-    public AgentSessionStoreDB(List<LinkedMessageMap<String, Object>> sessionMemory, int sessionSize) {
-        super(sessionMemory, sessionSize);
-        agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
-        persistentSessionMemory = true;
-        init();
-    }
-
-    public AgentSessionStoreDB(int sessionSize) {
-        super(sessionSize);
-        agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
-        persistentSessionMemory = true;
-        init();
-    }
+    
     
     public AgentSessionStoreDB(StoreContext storeContext, AIAgent agent) {
         super(storeContext,   agent);

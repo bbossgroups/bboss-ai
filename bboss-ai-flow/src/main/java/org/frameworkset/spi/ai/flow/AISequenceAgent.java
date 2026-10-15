@@ -59,8 +59,8 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     }
 
     @Override
-    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore,int sessionSize){
-        return new SequenceAgentSessionStoreMemory(parentSessionStore,sessionSize);
+    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore ){
+        return new SequenceAgentSessionStoreMemory(parentSessionStore );
     }
 	public  AISequenceAgent setDynamicNodeBuilder(   DynamicNodeBuilder dynamicNodeBuilder){
 		this.dynamicNodeBuilder = dynamicNodeBuilder;

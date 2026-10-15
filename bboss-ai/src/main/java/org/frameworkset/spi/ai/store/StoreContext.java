@@ -16,10 +16,12 @@ package org.frameworkset.spi.ai.store;
  */
 
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
+import org.frameworkset.spi.ai.filesystem.AbstractFilesystem;
 import org.frameworkset.spi.ai.memory.MemoryConfig;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,7 +35,10 @@ public class StoreContext {
 	private String clickhouseCluster = DEFAULT_CLICKHOUSE_CLUSTER;
     private AgentSessionStore mainSessionStore;
     private AgentMessageTypeConvertor agentMessageTypeConvertor;
-	
+	private List<String> additionalContextFiles = Collections.emptyList();
+
+	private AbstractFilesystem filesystem;
+ 
 
 	
 	private CompactionConfig compactionConfig;
@@ -310,5 +315,22 @@ public class StoreContext {
 	public StoreContext setMemoryConfig(MemoryConfig memoryConfig) {
 		this.memoryConfig = memoryConfig;
 		return this;
+	}
+ 
+	
+	public AbstractFilesystem getFilesystem() {
+		return filesystem;
+	}
+	public StoreContext setFilesystem(AbstractFilesystem filesystem) {
+		this.filesystem = filesystem;
+		return this;
+	}
+	
+	public List<String> getAdditionalContextFiles() {
+		return additionalContextFiles;
+	}
+	
+	public void setAdditionalContextFiles(List<String> additionalContextFiles) {
+		this.additionalContextFiles = additionalContextFiles;
 	}
 }

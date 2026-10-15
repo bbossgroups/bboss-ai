@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.interceptor;
 
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.FunctionTool;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.model.ModelInfo;
@@ -62,14 +63,14 @@ public interface AgentInterceptor {
 	 * Intercept the reasoning phase (LLM call + streaming output parsing).
 	 *
 	 * @param agent the agent instance
-	 * @param ctx   per-call runtime context (session, user, attributes)
+	 * @param chatObject   per-call runtime context (session, user, attributes)
 //	 * @param input reasoning input (messages, tools, options)
 //	 * @param next  calls the next middleware or the core reasoning logic
 //	 * @return event stream from reasoning
 	 */
 	default void onReasoning(
 			AIAgent agent,
-			ChatContext ctx, ModelInfo modelInfo
+			ChatObject chatObject, ModelInfo modelInfo
 //			ReasoningInput input,
 //			Function<ReasoningInput, Flux<AgentEvent>> next
 	) {
@@ -80,14 +81,14 @@ public interface AgentInterceptor {
 	 * Intercept the tool-call execution phase.
 	 *
 	 * @param agent the agent instance
-	 * @param ctx   per-call runtime context (session, user, attributes)
+	 * @param chatObject   per-call runtime context (session, user, attributes)
 	 * @param input acting input (the tool calls)
 //	 * @param next  calls the next middleware or the core acting logic
 //	 * @return event stream from acting
 	 */
 	default void onActing(
 			AIAgent agent,
-			ChatContext ctx,
+			ChatObject chatObject,
 			FunctionTool input,
 			FunctionToolDefine functionToolDefine,ModelInfo modelInfo) {
 		 
@@ -101,14 +102,14 @@ public interface AgentInterceptor {
 	 * normalize model text before consumers, including native structured-output parsing, use it.
 	 *
 	 * @param agent the agent instance
-	 * @param ctx   per-call runtime context (session, user, attributes)
+	 * @param chatObject   per-call runtime context (session, user, attributes)
 //	 * @param input model-call input (messages, tools, options, model)
 //	 * @param next  calls the next middleware or the actual model invocation
 //	 * @return event stream from the model call
 	 */
 	default void onModelCall(
 			AIAgent agent,
-			ChatContext ctx,ModelInfo modelInfo) {
+			ChatObject chatObject,ModelInfo modelInfo) {
 //		return next.apply(input);
 	}
 	
@@ -119,12 +120,12 @@ public interface AgentInterceptor {
 	 * output of the previous one.
 	 *
 	 * @param agent         the agent instance
-	 * @param ctx           per-call runtime context (session, user, attributes)
-	 * @param currentPrompt the current system prompt
+	 * @param chatObject           per-call runtime context (session, user, attributes)
+	 * @param currentSystem the current system prompt
 	 * @return the (possibly transformed) system prompt
 	 */
-	default String onSystemPrompt(AIAgent agent, ChatContext  ctx, String currentPrompt,ModelInfo modelInfo) {
-		return currentPrompt;
+	default String onSystemPrompt(AIAgent agent, ChatObject chatObject, String currentSystem) {
+		return currentSystem;
 	}
 	
 }

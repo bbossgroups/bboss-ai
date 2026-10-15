@@ -113,7 +113,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
 		}
 	}
     protected void buildTools(ChatContext chatContext,AgentMessage agentMessage,AIAgent agent,Map<String, Object> requestMap){
-        agent.init();
+        agent.initToolKits();
         List<FunctionToolDefine> tools = agent.getToolsByToolSearch(chatContext,agentMessage);
         if(tools != null && tools.size() > 0){
             chatContext.setAgentTools(tools);
@@ -178,17 +178,17 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
     protected String getPrompt(AgentMessage agentMessage, AIAgent aiAgent){
         return aiAgent.evalPrompt(agentMessage);
     }
-    public Map buildVideoVLRequestMap(VideoVLAgentMessage videoVLAgentMessage, AIAgent aiAgent,ChatContext chatContext) {
+    public Map buildVideoVLRequestMap(VideoVLAgentMessage videoVLAgentMessage, AIAgent agent,ChatObject chatObject) {
 		// 构建消息历史列表，包含之前的会话记忆
-		
-		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		ChatContext chatContext = chatObject.getChatContext();
+		List<LinkedMessageMap<String, Object>> sessionMemory = agent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",videoVLAgentMessage.getModel());
         List<String > videoUrls = videoVLAgentMessage.getVideoUrls();
 		
 		LinkedMessageMap<String, Object> userMessage = null;
 		LinkedMessageMap<String, Object> systemMessage = null;
-        String prompt = getPrompt(  videoVLAgentMessage,   aiAgent);
+        String prompt = getPrompt(  videoVLAgentMessage,   agent);
         if(chatContext != null){
             prompt = chatContext.evalPrompt(prompt);
             
@@ -203,27 +203,29 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         List<LinkedMessageMap<String, Object>> messages = null;
         if(sessionMemory != null){
             if(sessionMemory.size() == 0){
-                String systemPrompt = getSystemPrompt(videoVLAgentMessage,aiAgent);
+                String systemPrompt = getSystemPrompt(videoVLAgentMessage,agent);
                 if(systemPrompt != null){
                     if(chatContext != null){
                         systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
 
                     }
+					systemPrompt = agent.onSystemPrompt(chatObject,systemPrompt);
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
-                    videoVLAgentMessage.addSessionMessage(systemMessage,aiAgent);
+                    videoVLAgentMessage.addSessionMessage(systemMessage,agent);
                 }
             }
-            videoVLAgentMessage.addSessionMessage(userMessage,aiAgent);
+            videoVLAgentMessage.addSessionMessage(userMessage,agent);
             messages = new ArrayList<>(sessionMemory);
         }
         else{
             messages = new ArrayList<>();
-            String systemPrompt = getSystemPrompt(videoVLAgentMessage,aiAgent);
+            String systemPrompt = getSystemPrompt(videoVLAgentMessage,agent);
             if(systemPrompt != null){
                 if(chatContext != null){
                     systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
 
                 }
+				systemPrompt = agent.onSystemPrompt(chatObject,systemPrompt);
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                 messages.add(systemMessage);
             }
@@ -234,23 +236,23 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         requestMap.put("messages", handleImageParserMessages(messages));
         Map parameters = videoVLAgentMessage.getParameters();
 
-        filterParameters(chatContext,videoVLAgentMessage,aiAgent,requestMap,parameters);
+        filterParameters(chatContext,videoVLAgentMessage,agent,requestMap,parameters);
 
         return requestMap;
     }
     
-    public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent aiAgent, ChatContext chatContext) {
+    public Map buildImageVLRequestMap(ImageVLAgentMessage imageAgentMessage, AIAgent agent, ChatObject chatObject) {
 		
 		// 构建消息历史列表，包含之前的会话记忆
-		
-		List<LinkedMessageMap<String, Object>> sessionMemory = aiAgent.getSessionMemory(true);
+		ChatContext chatContext = chatObject.getChatContext();
+		List<LinkedMessageMap<String, Object>> sessionMemory = agent.getSessionMemory(true);
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model",imageAgentMessage.getModel());
         List<String > imageUrls = imageAgentMessage.getImageUrls();
 		
 		LinkedMessageMap<String, Object> userMessage = null;
 		LinkedMessageMap<String, Object> systemMessage = null;
-        String prompt = getPrompt(  imageAgentMessage,   aiAgent);
+        String prompt = getPrompt(  imageAgentMessage,   agent);
         if(chatContext != null){
             prompt = chatContext.evalPrompt(prompt);
         }
@@ -264,25 +266,27 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         List<LinkedMessageMap<String, Object>> messages = null;
         if(sessionMemory != null){
             if(sessionMemory.size() == 0){
-                String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
+                String systemPrompt = getSystemPrompt(imageAgentMessage,agent);
                 if(systemPrompt != null){
                     if(chatContext != null){
                         systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                     }
+					systemPrompt = agent.onSystemPrompt(chatObject,systemPrompt);
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
-                    imageAgentMessage.addSessionMessage(systemMessage,aiAgent);
+                    imageAgentMessage.addSessionMessage(systemMessage,agent);
                 }
             }
-            imageAgentMessage.addSessionMessage(userMessage,aiAgent);
+            imageAgentMessage.addSessionMessage(userMessage,agent);
             messages = new ArrayList<>(sessionMemory);
         }
         else{
             messages = new ArrayList<>();
-            String systemPrompt = getSystemPrompt(imageAgentMessage,aiAgent);
+            String systemPrompt = getSystemPrompt(imageAgentMessage,agent);
             if(systemPrompt != null){
                 if(chatContext != null){
                     systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                 }
+				systemPrompt = agent.onSystemPrompt(chatObject,systemPrompt);
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                 messages.add(systemMessage);
             }
@@ -293,7 +297,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
         requestMap.put("messages", handleImageParserMessages(messages));
         Map parameters = imageAgentMessage.getParameters();
 
-        filterParameters(chatContext,imageAgentMessage,aiAgent,requestMap,parameters);
+        filterParameters(chatContext,imageAgentMessage,agent,requestMap,parameters);
 
         return requestMap;
     }
@@ -1031,6 +1035,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                     if(chatContext != null){
                         systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                     }
+					systemPrompt = agent.onSystemPrompt(chatObject,systemPrompt);
                     systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);
                     chatAgentMessage.addSessionMessage(systemMessage,message,agent);
                 }
@@ -1053,6 +1058,7 @@ public abstract class AgentAdapter implements CompletionsUrlInterface{
                 if(chatContext != null){
                     systemPrompt = chatContext.evalSystemPrompt(systemPrompt);
                 }
+				systemPrompt = agent.onSystemPrompt(chatObject,systemPrompt);
                 systemMessage = MessageBuilder.buildSystemMessage(systemPrompt);                 
                 messages.add(systemMessage);
             }

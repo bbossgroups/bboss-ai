@@ -19,19 +19,23 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.frameworkset.spi.ai.callback.AgentOutput;
+import org.frameworkset.spi.ai.compaction.CompactionConfig;
+import org.frameworkset.spi.ai.compaction.CompactionManager;
+import org.frameworkset.spi.ai.compaction.CompactionManagerInf;
+import org.frameworkset.spi.ai.compaction.WindowsCompactionManager;
 import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
 import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
-import org.frameworkset.spi.ai.memory.MemoryBackgroundTasks;
+import org.frameworkset.spi.ai.memory.*;
+import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.tool.*;
-import org.frameworkset.spi.ai.tools.CompactSummaryMsgSearchTool;
-import org.frameworkset.spi.ai.tools.SessionSearchTool;
-import org.frameworkset.spi.ai.tools.ToolsRegist;
+import org.frameworkset.spi.ai.tools.*;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.slf4j.Logger;
@@ -53,7 +57,7 @@ import java.util.Map;
  */
 public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 	
-	private List<AgentInterceptor> agentInterceptors;
+ 
 
 	
 	private AgentRuntimeContext agentRuntimeContext;
@@ -109,7 +113,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 	
 	/**通用流程节点*/
 	public static final String AGENT_NODE_TYPE_FLOWNODE = "flownode";
-    protected int sessionSize;
+//    protected int sessionSize;
 	
 	/**
 	 * 人工介入任务超时时间，单位毫秒，默认-1毫秒,一直不超时
@@ -185,7 +189,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 				AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
 				AgentSessionStore mainSessionStore = agentSessionStoreBuilder.build(storeContext, this);
 				mainSessionStore.setAIAgent(this);
-				
+				mainSessionStore.initMiddlewares(this);
 				if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
 					((SessionAgentMessage) agentMessage).setMainSessionStore(mainSessionStore);
 				}
@@ -409,9 +413,9 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
         this.prompt = prompt;
         this.toolsRegist = toolsRegist;
 //        this.agentId = SimpleStringUtil.getUUID32();
-        if(sessionSize != null ){
-            this.sessionSize = sessionSize;
-        }
+//        if(sessionSize != null ){
+//            this.sessionSize = sessionSize;
+//        }
 //        this.agentId = SimpleStringUtil.getUUID32();
         this.agentName = this.getClass().getName();
 //            agentSessionStore = new AgentSessionStoreMemory(sessionSize);
@@ -531,9 +535,12 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 			this.agentRuntimeContext = agentMessage.getAgentRuntimeContext();
 		}
 		if(agentRuntimeContext != null){
-			if(agentRuntimeContext.isEnableMemorySearch()){
+			if(!agentRuntimeContext.isDisableMemoryTools()){
 				this.registBeanTool(new CompactSummaryMsgSearchTool());
 				this.registBeanTool(new SessionSearchTool());
+				this.registBeanTool(new MemorySaveTool());
+				this.registBeanTool(new MemoryGetTool());
+				this.registBeanTool(new MemorySearchTool());
 			}
 		}
 		
@@ -560,8 +567,9 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
             }
         }
         if(mainSessionStore != null) {
-             
-			
+			if(agentRuntimeContext != null){
+				agentRuntimeContext.init(mainSessionStore.getWorkspaceManager());
+			}
             String title  = this.evalTitle(agentMessage);
             AIAgent parentAgent = this.getParentAgent();
 			if(title == null) {
@@ -579,9 +587,9 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
             }
             if(agentSessionStore == null){
                 if(parentSessionStore != null)
-                    agentSessionStore = buildAgentSessionStore(parentSessionStore,sessionSize);
+                    agentSessionStore = buildAgentSessionStore(parentSessionStore );
                 else
-                    agentSessionStore = buildAgentSessionStore(mainSessionStore,sessionSize);
+                    agentSessionStore = buildAgentSessionStore(mainSessionStore );
                 agentSessionStore.setAgentId(agentId);
                 agentSessionStore.setAIAgent(this);
                 agentSessionStore.setMainAgentSessionStore(mainSessionStore);
@@ -593,8 +601,8 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
         
     }
     
-    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore,int sessionSize){
-        return new AgentSessionStoreMemory(parentSessionStore,sessionSize);
+    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore ){
+        return new AgentSessionStoreMemory(parentSessionStore );
     }
 
     /**
@@ -1061,7 +1069,13 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
         
         return agent;
     }
-    public void init(){
+	protected CompactionManagerInf compactionManager;
+	protected MemoryMaintenance memoryMaintenance;
+	protected MemoryFlushMiddleware memoryFlushMiddleware;
+	protected AgentSessionStore parentAgentSessionStore;
+	protected WorkspaceManager workspaceManager;
+	 
+    public void initToolKits(){
         if(toolInited)
             return;
         synchronized (initLock) {
@@ -1127,7 +1141,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 //    }
 
     public FunctionCall getFunctionCall(String toolName){
-        init();
+        initToolKits();
         if(toolCalls == null)
             return null;
         return toolCalls.get(toolName);
@@ -1736,5 +1750,18 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 	public void close() throws Exception {
 		MemoryBackgroundTasks.awaitQuiescence(
 				5, java.util.concurrent.TimeUnit.SECONDS);
+	}
+	
+	public String onSystemPrompt(ChatObject chatObject,String currentSystem){
+		if(agentRuntimeContext != null) {
+			
+			List<AgentInterceptor> agentInterceptors = agentRuntimeContext.getAgentInterceptors();
+			if (agentInterceptors != null && agentInterceptors.size() > 0) {
+				for (AgentInterceptor agentInterceptor : agentInterceptors) {
+					currentSystem = agentInterceptor.onSystemPrompt(this, chatObject, currentSystem);
+				}
+			}
+		}
+		return currentSystem;
 	}
 }

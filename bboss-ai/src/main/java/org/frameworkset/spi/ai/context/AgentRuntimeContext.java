@@ -17,6 +17,9 @@ package org.frameworkset.spi.ai.context;
 
 import org.apache.commons.collections.MapUtils;
 import org.frameworkset.spi.ai.compaction.CompactionConfig;
+import org.frameworkset.spi.ai.filesystem.AbstractFilesystem;
+import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
+import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
 import org.frameworkset.spi.ai.permission.PermissionBehavior;
 import org.frameworkset.spi.ai.permission.PermissionMode;
 import org.frameworkset.spi.ai.permission.PermissionRule;
@@ -34,11 +37,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author biaoping.yin
  * @Date 2026/8/25
  */
-public class AgentRuntimeContext {
+public class AgentRuntimeContext<T extends AgentRuntimeContext> {
+	protected List<AgentInterceptor> agentInterceptors;
+	
+	public List<AgentInterceptor> getAgentInterceptors() {
+		return agentInterceptors;
+	}
 	/**
 	 * 是否输出SSE数据到日志文件
 	 */
 	private boolean debugSSEData;
+
 	
 
 
@@ -53,7 +62,7 @@ public class AgentRuntimeContext {
 	private  Map<String, List<PermissionRule>> denyRules;
 	private  Map<String, List<PermissionRule>> askRules;
 	
-
+	
 	/**
 	 * 权限确认超时时间
 	 */
@@ -69,7 +78,12 @@ public class AgentRuntimeContext {
 	 */
 	private boolean enableMemorySearch = true;
 	
-
+	private boolean disableMemoryTools ;
+	private boolean disableMemoryHooks ;
+	/**
+	 * 智能体工作空间目录
+	 */
+	private String workspace;
 	private CompactionConfig compactionConfig;
 	
 	/**
@@ -81,45 +95,45 @@ public class AgentRuntimeContext {
 		return planModeContextState;
 	}
 	
-	public AgentRuntimeContext setPlanModeContextState(PlanModeContextState planModeContextState) {
+	public T setPlanModeContextState(PlanModeContextState planModeContextState) {
 		this.planModeContextState = planModeContextState;
-		return this;
+		return (T)this;
 	}
 	
 	public TaskContextState getTaskContextState() {
 		return taskContextState;
 	}
 	
-	public AgentRuntimeContext setTaskContextState(TaskContextState taskContextState) {
+	public T setTaskContextState(TaskContextState taskContextState) {
 		this.taskContextState = taskContextState;
-		return this;
+		return (T)this;
 	}
 	
 	public boolean isEnablePlanMode() {
 		return enablePlanMode;
 	}
 	
-	public AgentRuntimeContext setEnablePlanMode(boolean enablePlanMode) {
+	public T setEnablePlanMode(boolean enablePlanMode) {
 		this.enablePlanMode = enablePlanMode;
-		return this;
+		return (T)this;
 	}
 	
 	public boolean isTaskListEnabled() {
 		return taskListEnabled;
 	}
 	
-	public AgentRuntimeContext setTaskListEnabled(boolean taskListEnabled) {
+	public T setTaskListEnabled(boolean taskListEnabled) {
 		this.taskListEnabled = taskListEnabled;
-		return this;
+		return (T)this;
 	}
 	
 	public boolean isDebugSSEData() {
 		return debugSSEData;
 	}
 	
-	public AgentRuntimeContext setDebugSSEData(boolean debugSSEData) {
+	public T setDebugSSEData(boolean debugSSEData) {
 		this.debugSSEData = debugSSEData;
-		return this;
+		return (T)this;
 	}
 	
 	
@@ -127,17 +141,17 @@ public class AgentRuntimeContext {
 		return compactionConfig;
 	}
 	
-	public AgentRuntimeContext setCompactionConfig(CompactionConfig compactionConfig) {
+	public T setCompactionConfig(CompactionConfig compactionConfig) {
 		this.compactionConfig = compactionConfig;
-		return this;
+		return (T)this;
 	}
 	
 	public boolean isEnableMemorySearch() {
 		return enableMemorySearch;
 	}
-	public AgentRuntimeContext setEnableMemorySearch(boolean enableMemorySearch) {
+	public T setEnableMemorySearch(boolean enableMemorySearch) {
 		this.enableMemorySearch = enableMemorySearch;
-		return this;
+		return (T)this;
 	}
 	 
 	
@@ -156,9 +170,9 @@ public class AgentRuntimeContext {
 		return askRules;
 	}
 	
-	public AgentRuntimeContext setMode(PermissionMode mode) {
+	public T setMode(PermissionMode mode) {
 		this.mode = mode;
-		return this;
+		return (T)this;
 	}
 	
 	public boolean isTrivial() {
@@ -172,13 +186,13 @@ public class AgentRuntimeContext {
 		return permissionHitlTaskTimeout;
 	}
 	
-	public AgentRuntimeContext setPermissionHitlTaskTimeout(long permissionHitlTaskTimeout) {
+	public T setPermissionHitlTaskTimeout(long permissionHitlTaskTimeout) {
 		this.permissionHitlTaskTimeout = permissionHitlTaskTimeout;
-		return this;
+		return (T)this;
 	}
 	
 	
-	public AgentRuntimeContext addAllowRule(String toolName, PermissionRule permissionRule) {
+	public T addAllowRule(String toolName, PermissionRule permissionRule) {
 		if(permissionRule.getToolName() == null){
 			permissionRule.setToolName(toolName);
 		}
@@ -188,14 +202,14 @@ public class AgentRuntimeContext {
 			allowRules = new ConcurrentHashMap<>();	
 		}
 		allowRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
-		return this;
+		return (T)this;
 	}
 	
 	/**
 	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})	 
 	 * ruleContent optional tool-specific matcher pattern (nullable)
 	 */
-	public AgentRuntimeContext addAllowRule(String toolName, String ruleContent,String source) {
+	public T addAllowRule(String toolName, String ruleContent,String source) {
 		PermissionRule permissionRule = new PermissionRule();
 		permissionRule.setSource(source);
 		permissionRule.setRuleContent(ruleContent);
@@ -208,12 +222,12 @@ public class AgentRuntimeContext {
 	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})
 	 */
 	
-	public AgentRuntimeContext addAllowRule(String toolName, String source) {
+	public T addAllowRule(String toolName, String source) {
 		
 		return addAllowRule(  toolName,  (String) null,  source) ;
 	}
 	
-	public AgentRuntimeContext addDenyRule(String toolName, PermissionRule permissionRule) {
+	public T addDenyRule(String toolName, PermissionRule permissionRule) {
 		if(permissionRule.getToolName() == null){
 			permissionRule.setToolName(toolName);
 		}
@@ -223,14 +237,14 @@ public class AgentRuntimeContext {
 			denyRules = new ConcurrentHashMap<>();
 		}
 		denyRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
-		return this;
+		return (T)this;
 	}
 	
 	/**
 	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})	 
 	 * ruleContent optional tool-specific matcher pattern (nullable)
 	 */ 
-	public AgentRuntimeContext addDenyRule(String toolName, String ruleContent,String source) {
+	public T addDenyRule(String toolName, String ruleContent,String source) {
 		PermissionRule permissionRule = new PermissionRule();
 		permissionRule.setSource(source);
 		permissionRule.setRuleContent(ruleContent);
@@ -243,11 +257,11 @@ public class AgentRuntimeContext {
 	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})
 	 */
 	
-	public AgentRuntimeContext addDenyRule(String toolName, String source) {
+	public T addDenyRule(String toolName, String source) {
 		 
 		return addDenyRule(  toolName,  (String) null,  source) ;
 	}
-	public AgentRuntimeContext addAskRule(String toolName, PermissionRule permissionRule) {
+	public T addAskRule(String toolName, PermissionRule permissionRule) {
 		if(permissionRule.getToolName() == null){
 			permissionRule.setToolName(toolName);
 		}
@@ -257,13 +271,13 @@ public class AgentRuntimeContext {
 			askRules = new ConcurrentHashMap<>();
 		}
 		askRules.computeIfAbsent(toolName, k -> new ArrayList<>()).add(permissionRule);
-		return this;
+		return (T)this;
 	}
 	/**
 	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})	 
 	 * ruleContent optional tool-specific matcher pattern (nullable)
 	 */
-	public AgentRuntimeContext addAskRule(String toolName, String ruleContent,String source) {
+	public T addAskRule(String toolName, String ruleContent,String source) {
 		PermissionRule permissionRule = new PermissionRule();
 		permissionRule.setSource(source);
 		permissionRule.setRuleContent(ruleContent);
@@ -276,7 +290,7 @@ public class AgentRuntimeContext {
 	 * source where the rule originated (e.g. {@code "userSettings"}, {@code "suggested"})
 	 */
 	
-	public AgentRuntimeContext addAskRule(String toolName, String source) {
+	public T addAskRule(String toolName, String source) {
 		
 		return addAskRule(  toolName,  (String) null,  source) ;
 	}
@@ -288,10 +302,65 @@ public class AgentRuntimeContext {
 		return toolCallPermissionManager;
 	}
 	
-	public AgentRuntimeContext setToolCallPermissionManager(ToolCallPermissionManager toolCallPermissionManager) {
+	public T setToolCallPermissionManager(ToolCallPermissionManager toolCallPermissionManager) {
 		this.toolCallPermissionManager = toolCallPermissionManager;
-		return this;
+		return (T)this;
 	}
 	
- 
+	
+	public boolean isDisableMemoryTools() {
+		return disableMemoryTools;
+	}
+	
+	public T setDisableMemoryTools(boolean disableMemoryTools) {
+		this.disableMemoryTools = disableMemoryTools;
+		return (T)this;
+	}
+	
+	public boolean isDisableMemoryHooks() {
+		return disableMemoryHooks;
+	}
+	
+	public T setDisableMemoryHooks(boolean disableMemoryHooks) {
+		this.disableMemoryHooks = disableMemoryHooks;
+		return (T)this;
+	}
+	
+	public String getWorkspace() {
+		return workspace;
+	}
+	
+	public T setWorkspace(String workspace) {
+		this.workspace = workspace;
+		return (T)this;
+	}
+	protected boolean inited;
+	protected Object initLock = new Object();
+	public void init(WorkspaceManager workspaceManager) {
+		if(inited)
+			return;
+		synchronized (initLock) {
+			if (inited)
+				return;
+			inited = true;
+		};
+	}
+	public T setAgentInterceptors(List<AgentInterceptor> agentInterceptors) {
+		this.agentInterceptors = agentInterceptors;
+		return (T)this;
+	}
+	public T addAgentInterceptor(AgentInterceptor agentInterceptor) {
+		if(this.agentInterceptors == null)
+			this.agentInterceptors = new java.util.ArrayList<AgentInterceptor>();
+		this.agentInterceptors.add(agentInterceptor);
+		return (T)this;
+	}
+	public T addAgentInterceptor(int index,AgentInterceptor agentInterceptor) {
+		if(this.agentInterceptors == null)
+			this.agentInterceptors = new java.util.ArrayList<AgentInterceptor>();
+		this.agentInterceptors.add(index,agentInterceptor);
+		return (T)this;
+	}
+	
+
 }

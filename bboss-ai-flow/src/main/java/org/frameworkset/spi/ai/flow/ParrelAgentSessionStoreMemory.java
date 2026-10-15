@@ -37,16 +37,12 @@ public class ParrelAgentSessionStoreMemory extends AgentSessionStoreMemory<Parre
         super(sessionMemory);
     }
 
-    public ParrelAgentSessionStoreMemory(List sessionMemory, int sessionSize) {
-        super(sessionMemory, sessionSize);
-    }
+ 
 
-    public ParrelAgentSessionStoreMemory(int sessionSize) {
-        super(sessionSize);
-    }
+ 
 
-    public ParrelAgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore, int sessionSize) {
-        super(parentAgentSessionStore, sessionSize);
+    public ParrelAgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore ) {
+        super(parentAgentSessionStore );
     }
 
     public ParrelAgentSessionStoreMemory() {

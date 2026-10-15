@@ -132,7 +132,7 @@ public class ConversationCompactor {
 		if(config.isFlushBeforeCompact()) {
 			List<LinkedMessageMap<String, Object>> flushInput = filterSummaryMessages(summaryInput);
 			flushManager
-				.flushMemories(  agent, flushInput);
+				.flushMemoriesAsync(  agent, flushInput);
 		}
 //        Mono<Void> flushStep =
 //                config.isFlushBeforeCompact()

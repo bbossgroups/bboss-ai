@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.compaction.CompactionManager;
 import org.frameworkset.spi.ai.compaction.CompactionManagerInf;
 import org.frameworkset.spi.ai.compaction.WindowsCompactionManager;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
 import org.frameworkset.spi.ai.memory.*;
 import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.*;
@@ -79,6 +80,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 	protected MemoryMaintenance memoryMaintenance;
 	protected MemoryFlushMiddleware memoryFlushMiddleware;
     protected AgentSessionStore parentAgentSessionStore;
+	protected WorkspaceManager workspaceManager;
 
     protected AIAgent agent;
 
@@ -128,20 +130,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return (T) this;
     }
 
-    public BaseAgentSessionStore(List<LinkedMessageMap<String, Object>> sessionMemory, int sessionSize){
-        this.sessionMemory = sessionMemory;
-        this.sessionSize = sessionSize;
-
-    }
-    public BaseAgentSessionStore( int sessionSize){
-        this.sessionMemory = new ArrayList<>();
-        this.sessionSize = sessionSize;
-
-    }
-    public BaseAgentSessionStore( AgentSessionStore parentAgentSessionStore,int sessionSize){
+ 
+ 
+    public BaseAgentSessionStore( AgentSessionStore parentAgentSessionStore ){
         this.parentAgentSessionStore = parentAgentSessionStore;
         this.sessionMemory = new ArrayList<>();
-        this.sessionSize = sessionSize;
+        
 
     }
     public void addSelfSessionMessage(Map<String, Object> message){
@@ -174,28 +168,33 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             this.agentId = "agentId-0";
         }
         this.sessionMemory = storeContext.getSessionMemory();
-        this.sessionSize = storeContext.getSessionSize();
         if(sessionMemory == null){
             this.sessionMemory = new ArrayList<>();
         }
+		
+
+    }
+    public void initMiddlewares(AIAgent agent){
+		workspaceManager = new WorkspaceManager();
+		workspaceManager.init(storeContext,agent);
 		MemoryConfig memoryConfig = storeContext.getMemoryConfig();
 		if(memoryConfig != null){
 			ModelInfo memoryModel = memoryConfig.model() != null ? memoryConfig.model() : null;
 //			if (memoryModel != null && !disableMemoryHooks) {
 //				IsolationScope effectiveIsolationScope = fsIsolationScope;
-				
+			
 			String effectiveFlushPrompt =
 					memoryConfig.flushPrompt() != null
 							? memoryConfig.flushPrompt()
 							: MemoryFlushManager.DEFAULT_FLUSH_PROMPT;
 			PeriodicGate periodicGate = memoryConfig.getPeriodicGate();
 			memoryFlushMiddleware =
-						new MemoryFlushMiddleware(
-								memoryModel,
-								effectiveFlushPrompt,
-								memoryConfig.flushTrigger(),
-								periodicGate);
-				
+					new MemoryFlushMiddleware(
+							memoryModel,
+							effectiveFlushPrompt,
+							memoryConfig.flushTrigger(),
+							periodicGate);
+			
 			String effectiveConsolidationPrompt =
 					memoryConfig.consolidationPrompt() != null
 							? memoryConfig.consolidationPrompt()
@@ -205,36 +204,38 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 							memoryModel,
 							effectiveConsolidationPrompt,
 							memoryConfig.consolidationMaxTokens());
-			memoryMaintenance = 
-						new MemoryMaintenance(
-								consolidator,
-								memoryConfig.consolidationMinGap(),
-								periodicGate);
+			memoryMaintenance =
+					new MemoryMaintenance(
+							consolidator,
+							memoryConfig.consolidationMinGap(),
+							periodicGate);
 //			}
 		}
 		CompactionConfig compactionConfig = storeContext.getCompactionConfig();
-	 	if(compactionConfig != null) {
+		if(compactionConfig != null) {
 			if (compactionConfig.getCompactionPolicy() == CompactionConfig.COMPACTION_POLICY_WINDOWSIZE) {
 				this.compactionManager = new WindowsCompactionManager(compactionConfig);
 			} else {
 				this.compactionManager = new CompactionManager(compactionConfig);
 			}
 		}
-		 else if(sessionSize > 0){
-			 int triggerSessionSize = storeContext.getTriggerSessionSize();
-			 // 如果 triggerSessionSize 小于等于 sessionSize，设置一个合理的默认值：sessionSize * 2
-			 if (triggerSessionSize <= sessionSize) {
-				 triggerSessionSize = sessionSize * 2;
-			 }
+		else if(storeContext.getSessionSize() > 0){
+			int triggerSessionSize = storeContext.getTriggerSessionSize();
+			// 如果 triggerSessionSize 小于等于 sessionSize，设置一个合理的默认值：sessionSize * 2
+			int keepMessages = storeContext.getSessionSize();
+			if (triggerSessionSize <= keepMessages) {
+				triggerSessionSize = keepMessages * 2;
+			}
 			this.compactionManager = new WindowsCompactionManager(new CompactionConfig()
 					.setCompactModel(storeContext.getCompactModelInfo())
-					.setKeepMessages(sessionSize)
+					.setKeepMessages(keepMessages)
 					.setTriggerMessages(triggerSessionSize));
 		}
+	}
+	
 
-    }
-
-    public String getTraceId() {
+	
+	public String getTraceId() {
         return traceId;
     }
 
@@ -798,19 +799,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return lastSessionMessage;
          */
     }
-    /**
-     * 会话窗口大小，默认20
-     */
-    protected int sessionSize = 50;
-    @Override
-    public T setSessionSize(int sessionSize) {
-        this.sessionSize = sessionSize;
-        return (T) this;
-    }
-    @Override
-    public int getSessionSize() {
-        return sessionSize;
-    }
+  
 
     
     public String getSessionId() {
@@ -900,5 +889,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 		if(this.memoryMaintenance != null){
 			memoryMaintenance.doOnComplete(agent,chatObject);
 		}
+	}
+	
+	public WorkspaceManager getWorkspaceManager() {
+		return workspaceManager;
 	}
 }

@@ -64,8 +64,8 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
 
 
     @Override
-    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore,int sessionSize){
-        return new ParrelAgentSessionStoreMemory(parentSessionStore,sessionSize);
+    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore ){
+        return new ParrelAgentSessionStoreMemory(parentSessionStore );
     }
 
     /**

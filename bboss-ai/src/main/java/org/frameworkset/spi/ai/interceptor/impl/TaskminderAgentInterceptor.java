@@ -16,8 +16,8 @@ package org.frameworkset.spi.ai.interceptor.impl;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
+import org.frameworkset.spi.ai.model.ChatObject;
 
 /**
  *
@@ -48,14 +48,14 @@ public class TaskminderAgentInterceptor implements AgentInterceptor {
 	 * Intercept the reasoning phase (LLM call + streaming output parsing).
 	 *
 	 * @param agent the agent instance
-	 * @param ctx   per-call runtime context (session, user, attributes)
+	 * @param chatObject   per-call runtime context (session, user, attributes)
 //	 * @param input reasoning input (messages, tools, options)
 //	 * @param next  calls the next middleware or the core reasoning logic
 //	 * @return event stream from reasoning
 	 */
 	public void onReasoning(
 			AIAgent agent,
-			ChatContext ctx
+			ChatObject chatObject
 //			ReasoningInput input,
 //			Function<ReasoningInput, Flux<AgentEvent>> next
 	) {
@@ -71,11 +71,11 @@ public class TaskminderAgentInterceptor implements AgentInterceptor {
 	 * output of the previous one.
 	 *
 	 * @param agent         the agent instance
-	 * @param ctx           per-call runtime context (session, user, attributes)
+	 * @param chatObject           per-call runtime context (session, user, attributes)
 	 * @param currentPrompt the current system prompt
 	 * @return the (possibly transformed) system prompt
 	 */
-	public String onSystemPrompt(AIAgent agent, ChatContext  ctx, String currentPrompt) {
+	public String onSystemPrompt(AIAgent agent, ChatObject chatObject, String currentPrompt) {
 		return currentPrompt;
 	}
 	
