@@ -19,6 +19,7 @@ import com.frameworkset.common.poolman.util.DBConf;
 import com.frameworkset.common.poolman.util.SQLManager;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.StreamTest;
+import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
 import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
@@ -37,7 +38,7 @@ import java.util.ArrayList;
  * @author biaoping.yin
  * @Date 2026/9/10
  */
-public class WindowsSizeDBBaseCompact {
+public class TokenCompactTest {
 	private static Logger logger = LoggerFactory.getLogger(StreamTest.class);
 	public static void initDB() throws SQLException {
 		DBConf tempConf = new DBConf();
@@ -84,10 +85,7 @@ public class WindowsSizeDBBaseCompact {
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()				
 				.setSystemPrompt("You are a helpful assistant. Keep answers under two sentences.")
 				.setStoreContext(new StoreContext().setStoreType(StoreContext.STORE_TYPE_DB)
-						.setDataSource("visualops")
-						.setSessionMemory(new ArrayList<>())
-						.setSessionSize(3).setTriggerSessionSize(6)
-						.setCompactModelInfo(maas, model)
+						.setDataSource("visualops")						 
 						.setUserId("1234567890")
 						.setSessionId("1234567890").setRequestId("1234567890"))
 //                .setModel("deepseek-chat")

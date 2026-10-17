@@ -76,6 +76,9 @@ public class WorkspaceManager {
 		return readWithOverride(chatObject, normalized);
 	}
 	public void init(StoreContext storeContext,AIAgent agent){
+		if(agent.getAgentRuntimeContext() == null){
+			return;
+		}
 		String workspace = agent.getAgentRuntimeContext().getWorkspace();
 		this.additionalContextFiles = storeContext.getAdditionalContextFiles();
 		if(workspace != null) {

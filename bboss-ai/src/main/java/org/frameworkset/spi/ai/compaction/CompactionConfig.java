@@ -375,9 +375,16 @@ public class CompactionConfig {
     //  TruncateArgsConfig
     // -------------------------------------------------------------------------
 	
+	public CompactionConfig setCompactModel(String maas,String model) {
+		ModelInfo compactModelInfo = new ModelInfo();
+		compactModelInfo.setMaas(maas);
+		compactModelInfo.setModel(model);
+		this.compactModel = compactModelInfo;
+		return this;
+		
+	}
 	
-	
-	public CompactionConfig compactModel(String maas,String model,int contextWindowSize) {
+	public CompactionConfig setCompactModel(String maas,String model,int contextWindowSize) {
 		ModelInfo compactModelInfo = new ModelInfo();
 		compactModelInfo.setMaas(maas);
 		compactModelInfo.setModel(model);

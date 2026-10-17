@@ -38,11 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Date 2026/8/25
  */
 public class AgentRuntimeContext<T extends AgentRuntimeContext> {
-	protected List<AgentInterceptor> agentInterceptors;
-	
-	public List<AgentInterceptor> getAgentInterceptors() {
-		return agentInterceptors;
-	}
+
 	/**
 	 * 是否输出SSE数据到日志文件
 	 */
@@ -76,6 +72,17 @@ public class AgentRuntimeContext<T extends AgentRuntimeContext> {
 	
 	private boolean disableMemoryTools ;
 	private boolean disableMemoryHooks ;
+	
+	private boolean disableFilesystemTools = false;
+	
+
+	
+	/** 允许操作的基目录，为空则不限制 */
+	private List<String> baseDirectories;
+	private boolean disableShellTool = false;
+	private boolean disableWebTools = false;
+	private String httpWebSearchToolProxy = "http_websearch_tool";
+	private String httpWebfetchToolProxy = "http_webfetch_tool";
 	/**
 	 * 智能体工作空间目录
 	 */
@@ -335,22 +342,58 @@ public class AgentRuntimeContext<T extends AgentRuntimeContext> {
 			inited = true;
 		};
 	}
-	public T setAgentInterceptors(List<AgentInterceptor> agentInterceptors) {
-		this.agentInterceptors = agentInterceptors;
-		return (T)this;
+	
+	
+	public boolean isDisableFilesystemTools() {
+		return disableFilesystemTools;
 	}
-	public T addAgentInterceptor(AgentInterceptor agentInterceptor) {
-		if(this.agentInterceptors == null)
-			this.agentInterceptors = new java.util.ArrayList<AgentInterceptor>();
-		this.agentInterceptors.add(agentInterceptor);
-		return (T)this;
-	}
-	public T addAgentInterceptor(int index,AgentInterceptor agentInterceptor) {
-		if(this.agentInterceptors == null)
-			this.agentInterceptors = new java.util.ArrayList<AgentInterceptor>();
-		this.agentInterceptors.add(index,agentInterceptor);
+	
+	public T setDisableFilesystemTools(boolean disableFilesystemTools) {
+		this.disableFilesystemTools = disableFilesystemTools;
 		return (T)this;
 	}
 	
-
+	public boolean isDisableShellTool() {
+		return disableShellTool;
+	}
+	
+	public T setDisableShellTool(boolean disableShellTool) {
+		this.disableShellTool = disableShellTool;
+		return (T)this;
+	}
+	
+	public boolean isDisableWebTools() {
+		return disableWebTools;
+	}
+	
+	public T setDisableWebTools(boolean disableWebTools) {
+		this.disableWebTools = disableWebTools;
+		return (T)this;
+	}
+	public List<String> getBaseDirectories() {
+		return baseDirectories;
+	}
+	
+	public T setBaseDirectories(List<String> baseDirectories) {
+		this.baseDirectories = baseDirectories;
+		return (T)this;
+	}
+	
+	public String getHttpWebSearchToolProxy() {
+		return httpWebSearchToolProxy;
+	}
+	
+	public T setHttpWebSearchToolProxy(String httpWebSearchToolProxy) {
+		this.httpWebSearchToolProxy = httpWebSearchToolProxy;
+		return (T)this;
+	}
+	
+	public String getHttpWebfetchToolProxy() {
+		return httpWebfetchToolProxy;
+	}
+	
+	public T setHttpWebfetchToolProxy(String httpWebfetchToolProxy) {
+		this.httpWebfetchToolProxy = httpWebfetchToolProxy;
+		return (T)this;
+	}
 }

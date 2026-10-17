@@ -23,7 +23,6 @@ import org.frameworkset.spi.ai.filesystem.model.LocalFsMode;
 import org.frameworkset.spi.ai.filesystem.sandbox.AbstractSandboxFilesystem;
 import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
 import org.frameworkset.spi.ai.model.ChatObject;
-import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.model.memory.AgentMemory;
 
 import java.nio.file.Path;
@@ -88,11 +87,26 @@ public class HarnessAgentInterceptor implements AgentInterceptor {
 	private static final String MEMORY_AUTO_EXTRACT_GUIDANCE =
 			"Memory is also automatically extracted at conversation end.\n";
 	
-	private static final String WORKSPACE_FILES_NOTICE_WITH_MEMORY =
-			"## Workspace Files (Injected)\n" +
-					"The following <loaded_context> was loaded in from files in your workspace.\n" +
-					"These files (for example, `AGENTS.md`,  and `knowledge/KNOWLEDGE.md`) contain memory, facts, preferences, guidelines, and user-specific details learned from prior interactions with user.\n";
-	
+//	private static final String WORKSPACE_FILES_NOTICE_WITH_MEMORY =
+//			"## Workspace Files (Injected)\n" +
+//					"The following <loaded_context> was loaded in from files in your workspace.\n" +
+//					"These files (for example, `AGENTS.md`,  and `knowledge/KNOWLEDGE.md`) contain guidelines,user-specific details and domain context for this agent.\n" +
+//					"These datas (for example, `MEMORY.md`,  and `memory/YYYY-MM-DD.md`) contain memory, facts, preferences and guidelines learned from prior interactions with user.\n";
+//	
+private static final String WORKSPACE_FILES_NOTICE_WITH_MEMORY =
+		"## Workspace Files (Injected)\n" +
+				"The following <loaded_context> was loaded in from files in your workspace.\n" +
+				"These files (for example, `AGENTS.md`,  and `knowledge/KNOWLEDGE.md`) contain guidelines,user-specific details and domain context for this agent.\n" +
+				"## Memory Data (Injected)\n" +
+				"The following memory data was injected from a relational database or ClickHouse, NOT from files in your workspace.\n" +
+				"This memory data (for example, `MEMORY.md`,  and `memory/YYYY-MM-DD.md`) contains memory, facts, preferences and guidelines learned from prior interactions with user.\n" +
+				"## Memory Context Tag\n" +
+				"Within <loaded_context>, the <memory_context> tag is reserved exclusively for memory data loaded from the memory store (a relational database or ClickHouse). It does NOT contain workspace files.\n" +
+				"## Session History and Summaries\n" +
+				"Historical session messages and session compression summaries are stored in a relational database or ClickHouse, NOT in your workspace.\n" +
+				"You can retrieve message records within the current session using the `current_session_search` tool.\n" +
+				"You can retrieve historical session message records for the current user using the `user_sessions_search` tool.\n" +
+				"You can retrieve the original message content corresponding to the message ids contained in the <summaryMessageIds> tag of a session summary using the `summary_search` tool.\n";
 	private static final String WORKSPACE_FILES_NOTICE_WITHOUT_MEMORY =
 			"## Workspace Files (Injected)\n" +
 					"The following <loaded_context> was loaded in from files in your workspace.\n" +

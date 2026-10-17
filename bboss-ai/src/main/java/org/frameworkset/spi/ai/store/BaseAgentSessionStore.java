@@ -175,8 +175,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
     }
     public void initMiddlewares(AIAgent agent){
-		workspaceManager = new WorkspaceManager();
-		workspaceManager.init(storeContext,agent);
+		if(agent.getAgentRuntimeContext() != null) {
+			workspaceManager = new WorkspaceManager();
+			workspaceManager.init(storeContext, agent);
+		}
 		MemoryConfig memoryConfig = storeContext.getMemoryConfig();
 		if(memoryConfig != null){
 			ModelInfo memoryModel = memoryConfig.model() != null ? memoryConfig.model() : null;

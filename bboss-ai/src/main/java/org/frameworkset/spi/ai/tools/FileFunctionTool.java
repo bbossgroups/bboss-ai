@@ -20,6 +20,7 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.audit.Auditor;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.filesystem.AbstractFilesystem;
+import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
 import org.frameworkset.spi.ai.filesystem.local.LocalFilesystem;
 import org.frameworkset.spi.ai.filesystem.model.*;
 import org.frameworkset.spi.ai.filesystem.WorkspacePathNormalizer;
@@ -73,19 +74,28 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
     private long maxReadSize = DEFAULT_MAX_READ_SIZE;
 
     public FileFunctionTool() {
-		abstractFilesystem = new LocalFilesystem(".");
-		pathNormalizer =   WorkspacePathNormalizer.of(".");
+		abstractFilesystem = new LocalFilesystem(".");	 
     }
+	public FileFunctionTool(WorkspaceManager workspaceManager,List<String> baseDirectories) {
+		abstractFilesystem = workspaceManager.getFilesystem();
+		
+		this.baseDirectories = new ArrayList<>();
+		if(baseDirectories != null){
+			this.baseDirectories.addAll(baseDirectories);
+		}
+		if(workspaceManager.getWorkspace() != null) {
+			baseDirectories.add(workspaceManager.getWorkspace().toString());
+		}
+	}
 	public FileFunctionTool(Auditor auditor) {
 		super(auditor);
 	}
 	
 	public FileFunctionTool(Auditor auditor,String baseDirectory) {
 		super(auditor);
-		baseDirectories = new ArrayList<>();
+			baseDirectories = new ArrayList<>();
         baseDirectories.add(baseDirectory);
 		abstractFilesystem = new LocalFilesystem(baseDirectory);
-		pathNormalizer =  WorkspacePathNormalizer.of(baseDirectory);
 	}
     public FileFunctionTool(String baseDirectory) {
 		baseDirectories = new ArrayList<>();

@@ -30,17 +30,7 @@ public class HarnessAgentRuntimeContext extends AgentRuntimeContext<HarnessAgent
 		
 	}
 
-	public void init(WorkspaceManager workspaceManager){
-		if(inited)
-			return;
-		synchronized (initLock) {
-			if (inited)
-				return;
-			this.addAgentInterceptor(0,new HarnessAgentInterceptor(workspaceManager))	;
-			inited = true;
-		}
-		
-	}
+
 	
 	
 	

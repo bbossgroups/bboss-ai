@@ -245,11 +245,20 @@ public final class MemoryConfig {
 		return this;
 	}
 	
-	public MemoryConfig memoryConfigModel(String maas, String model, int contextWindowSize) {
+	public MemoryConfig setMemoryConfigModel(String maas, String model, int contextWindowSize) {
 		ModelInfo compactModelInfo = new ModelInfo();
 		compactModelInfo.setMaas(maas);
 		compactModelInfo.setModel(model);
 		compactModelInfo.setContextWindowSize(contextWindowSize);
+		this.model = compactModelInfo;
+		return this;
+		
+	}
+	
+	public MemoryConfig setMemoryConfigModel(String maas, String model ) {
+		ModelInfo compactModelInfo = new ModelInfo();
+		compactModelInfo.setMaas(maas);
+		compactModelInfo.setModel(model);
 		this.model = compactModelInfo;
 		return this;
 		

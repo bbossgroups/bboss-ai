@@ -19,17 +19,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.frameworkset.spi.ai.callback.AgentOutput;
-import org.frameworkset.spi.ai.compaction.CompactionConfig;
-import org.frameworkset.spi.ai.compaction.CompactionManager;
 import org.frameworkset.spi.ai.compaction.CompactionManagerInf;
-import org.frameworkset.spi.ai.compaction.WindowsCompactionManager;
 import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.context.ChatContext;
+import org.frameworkset.spi.ai.context.HarnessAgentRuntimeContext;
 import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
 import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
+import org.frameworkset.spi.ai.interceptor.impl.HarnessAgentInterceptor;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
 import org.frameworkset.spi.ai.memory.*;
-import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
@@ -57,8 +55,12 @@ import java.util.Map;
  */
 public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 	
- 
-
+	
+	protected List<AgentInterceptor> agentInterceptors;
+	
+	public List<AgentInterceptor> getAgentInterceptors() {
+		return agentInterceptors;
+	}
 	
 	private AgentRuntimeContext agentRuntimeContext;
 	/**
@@ -527,22 +529,26 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 			
 		}
     }
-    public void reactMessage(AgentMessage agentMessage){
+	protected boolean inited;
+	private void initIntercetors(WorkspaceManager workspaceManager){
+		if(inited)
+			return;
+		synchronized (initLock) {
+			if (inited)
+				return;
+			this.addAgentInterceptor(0,new HarnessAgentInterceptor(workspaceManager))	;
+			inited = true;
+		}
+		
+	}
+    public void buildAgent(AgentMessage agentMessage){
 //		if(agentMessage.getAgentRuntimeContext() != null){
 //			AgentRuntimeContext agentRuntimeContext1
 //		}
 		if(this.agentRuntimeContext == null){
 			this.agentRuntimeContext = agentMessage.getAgentRuntimeContext();
 		}
-		if(agentRuntimeContext != null){
-			if(!agentRuntimeContext.isDisableMemoryTools()){
-				this.registBeanTool(new CompactSummaryMsgSearchTool());
-				this.registBeanTool(new SessionSearchTool());
-				this.registBeanTool(new MemorySaveTool());
-				this.registBeanTool(new MemoryGetTool());
-				this.registBeanTool(new MemorySearchTool());
-			}
-		}
+		
 		
         AgentSessionStore mainSessionStore = this.getMainSessionStore();
         SessionAgentMessage sessionAgentMessage = null;
@@ -566,10 +572,37 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
                 agentId = mainSessionStore != null?mainSessionStore.genSubAgentId(this.agentIdAssign): SimpleStringUtil.getUUID32();
             }
         }
+	 
         if(mainSessionStore != null) {
 			if(agentRuntimeContext != null){
 				agentRuntimeContext.init(mainSessionStore.getWorkspaceManager());
+				if(agentRuntimeContext instanceof HarnessAgentRuntimeContext){
+					initIntercetors(mainSessionStore.getWorkspaceManager());
+					if(!agentRuntimeContext.isDisableMemoryTools()){
+						this.registBeanTool(new CompactSummaryMsgSearchTool());
+						this.registBeanTool(new SessionSearchTool());
+						this.registBeanTool(new MemorySaveTool());
+						this.registBeanTool(new MemoryGetTool());
+						this.registBeanTool(new MemorySearchTool());
+					}
+					if(!agentRuntimeContext.isDisableFilesystemTools()){
+						
+						this.registBeanTool(new FileFunctionTool(mainSessionStore!= null?mainSessionStore.getWorkspaceManager():null
+								,agentRuntimeContext.getBaseDirectories()));
+					}
+					
+					if(!agentRuntimeContext.isDisableShellTool()){
+						this.registBeanTool(new CLIShellFunctionTool());
+					}
+					if(!agentRuntimeContext.isDisableWebTools()){
+						this.registBeanTool(new WebFetchTool(agentRuntimeContext.getHttpWebfetchToolProxy()));
+						this.registBeanTool(new WebSearchTool(agentRuntimeContext.getHttpWebSearchToolProxy()));
+					}
+				}
+				
 			}
+			
+			
             String title  = this.evalTitle(agentMessage);
             AIAgent parentAgent = this.getParentAgent();
 			if(title == null) {
@@ -621,7 +654,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public ImageEvent genImage(String maasName, ImageAgentMessage imageAgentMessage, StoreFilePathFunction storeFilePathFunction){
-        reactMessage(  imageAgentMessage);
+        buildAgent(  imageAgentMessage);
         return AIAgentUtil.multimodalImageGeneration(maasName, imageAgentMessage,   storeFilePathFunction,this);
     }
     public ImageEvent genImage( ImageAgentMessage imageAgentMessage){
@@ -635,11 +668,11 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public VideoTask submitVideoTask(String maasName,VideoAgentMessage videoAgentMessage){
-        reactMessage(  videoAgentMessage);
+        buildAgent(  videoAgentMessage);
         return AIAgentUtil.submitVideoTask(maasName,videoAgentMessage,this);
     }
     public VideoTask submitVideoTask(VideoAgentMessage videoAgentMessage){
-        reactMessage(  videoAgentMessage);
+        buildAgent(  videoAgentMessage);
         return AIAgentUtil.submitVideoTask(videoAgentMessage.getMaas(),videoAgentMessage,this);
     }
 
@@ -663,7 +696,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public AudioEvent genAudio(  AudioAgentMessage audioAgentMessage){
-        reactMessage(  audioAgentMessage);
+        buildAgent(  audioAgentMessage);
         return AIAgentUtil.multimodalAudioGeneration( audioAgentMessage.getMaas(),audioAgentMessage,(StoreFilePathFunction)null,this);
     }
     public AudioEvent genAudio(  AudioAgentMessage audioAgentMessage, StoreFilePathFunction storeFilePathFunction){
@@ -675,7 +708,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public Flux<ServerEvent> streamAudioGen(AudioAgentMessage audioAgentMessage){
-        reactMessage(  audioAgentMessage);
+        buildAgent(  audioAgentMessage);
         return AIAgentUtil.streamAudioGenerationEvent(audioAgentMessage.getMaas(),audioAgentMessage,(StoreFilePathFunction)null,this);
     }
 
@@ -686,7 +719,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public Flux<ServerEvent> streamAudioGen(String maasName,  AudioAgentMessage audioAgentMessage, StoreFilePathFunction storeFilePathFunction){
-        reactMessage(  audioAgentMessage);
+        buildAgent(  audioAgentMessage);
         return AIAgentUtil.streamAudioGenerationEvent(maasName,audioAgentMessage,storeFilePathFunction,this);
     }
     public Flux<ServerEvent> streamAudioGen(String maasName,  AudioAgentMessage audioAgentMessage ){
@@ -708,7 +741,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public AudioEvent genAudio(String maasName,   AudioAgentMessage audioAgentMessage, StoreFilePathFunction storeFilePathFunction){
-        reactMessage(  audioAgentMessage);
+        buildAgent(  audioAgentMessage);
         return AIAgentUtil.multimodalAudioGeneration(maasName, audioAgentMessage,storeFilePathFunction,this);
     }
 
@@ -719,7 +752,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public Flux<ServerEvent> streamAudioParser(String maasName,  AudioSTTAgentMessage audioSTTAgentMessage){
-        reactMessage(  audioSTTAgentMessage);
+        buildAgent(  audioSTTAgentMessage);
 //        audioSTTAgentMessage.init();
 
         return AIAgentUtil.streamChatCompletionEvent(maasName, audioSTTAgentMessage,this);
@@ -731,7 +764,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public Flux<ServerEvent> streamImageParser(String maasName,   ImageVLAgentMessage imageVLAgentMessage){
-        reactMessage(  imageVLAgentMessage);
+        buildAgent(  imageVLAgentMessage);
 //        imageVLAgentMessage.init();
    
         return AIAgentUtil.streamChatCompletionEvent(maasName, imageVLAgentMessage,this);
@@ -742,7 +775,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public Flux<ServerEvent> streamVideoParser(   VideoVLAgentMessage videoVLAgentMessage){
-        reactMessage(  videoVLAgentMessage);
+        buildAgent(  videoVLAgentMessage);
         return AIAgentUtil.streamChatCompletionEvent(videoVLAgentMessage.getMaas(), videoVLAgentMessage,this);
     }
     
@@ -753,7 +786,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public Flux<ServerEvent> streamVideoParser(String maasName,   VideoVLAgentMessage videoVLAgentMessage){
-        reactMessage(  videoVLAgentMessage);
+        buildAgent(  videoVLAgentMessage);
 
 //        videoVLAgentMessage.init();
 
@@ -765,7 +798,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public Flux<ServerEvent> streamImageParser(   ImageVLAgentMessage imageVLAgentMessage){
-        reactMessage(  imageVLAgentMessage);
+        buildAgent(  imageVLAgentMessage);
         return AIAgentUtil.streamChatCompletionEvent(imageVLAgentMessage.getMaas(), imageVLAgentMessage,this);
     }
 //    /**
@@ -780,7 +813,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage ){
-        reactMessage(  chatAgentMessage);
+        buildAgent(  chatAgentMessage);
 //        chatAgentMessage.init();
 
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this);
@@ -805,7 +838,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat( ChatAgentMessage chatAgentMessage){
-        reactMessage(  chatAgentMessage);
+        buildAgent(  chatAgentMessage);
         return AIAgentUtil.streamChatCompletionEvent(chatAgentMessage.getMaas(), chatAgentMessage,this);
     }
 
@@ -813,7 +846,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * 实现流式智能问答功能,在指定的数据源上执行
      */
     public Flux<ServerEvent> streamChat(String maasName,   ChatAgentMessage chatAgentMessage, ChatContext chatContext ){
-        reactMessage(  chatAgentMessage);
+        buildAgent(  chatAgentMessage);
 //        chatAgentMessage.init();
 		
         return AIAgentUtil.streamChatCompletionEvent(maasName, chatAgentMessage,this,chatContext);
@@ -832,7 +865,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      */
     @Deprecated
     public ServerEvent chatCompletionEvent(String maasName,  ChatAgentMessage chatAgentMessage){
-        reactMessage(  chatAgentMessage);
+        buildAgent(  chatAgentMessage);
         return AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this);
     }
     
@@ -860,7 +893,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * 实现同步智能问答,在指定的数据源上执行
      */
     public ServerEvent chat(String maasName,  ChatAgentMessage chatAgentMessage,ChatContext chatContext){
-        reactMessage(  chatAgentMessage);
+        buildAgent(  chatAgentMessage);
         
         ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent(maasName,chatAgentMessage,this,chatContext);
         if(serverEvent != null && serverEvent.getData() != null){
@@ -911,7 +944,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      */
     @Deprecated
     public ServerEvent chatCompletionEvent(  ChatAgentMessage chatAgentMessage){
-        reactMessage(  chatAgentMessage);
+        buildAgent(  chatAgentMessage);
         return chat(chatAgentMessage.getMaas(),chatAgentMessage);
     }
 
@@ -939,7 +972,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public ServerEvent imageParser(  ImageVLAgentMessage imageVLAgentMessage){
-        reactMessage( imageVLAgentMessage);
+        buildAgent( imageVLAgentMessage);
         return AIAgentUtil.imageParser(imageVLAgentMessage.getMaas(), imageVLAgentMessage,this);
     }
 
@@ -950,7 +983,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public ServerEvent imageParser(String maasName,  ImageVLAgentMessage imageVLAgentMessage){
-        reactMessage( imageVLAgentMessage);
+        buildAgent( imageVLAgentMessage);
         return AIAgentUtil.imageParser(maasName, imageVLAgentMessage,this);
     }
     /**
@@ -960,7 +993,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public ServerEvent audioParser(String maasName, AudioSTTAgentMessage audioSTTAgentMessage){
-        reactMessage( audioSTTAgentMessage);
+        buildAgent( audioSTTAgentMessage);
         return AIAgentUtil.audioParser(maasName,audioSTTAgentMessage,this);
     }
     /**
@@ -969,7 +1002,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public ServerEvent videoParser( VideoVLAgentMessage videoVLAgentMessage){
-        reactMessage( videoVLAgentMessage);
+        buildAgent( videoVLAgentMessage);
         return AIAgentUtil.videoParser(videoVLAgentMessage.getMaas(),videoVLAgentMessage,this);
     }
     /**
@@ -979,7 +1012,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
      * @return
      */
     public ServerEvent videoParser(String maasName, VideoVLAgentMessage videoVLAgentMessage){
-        reactMessage( videoVLAgentMessage);
+        buildAgent( videoVLAgentMessage);
         return AIAgentUtil.videoParser(maasName,videoVLAgentMessage,this);
     }
 
@@ -1753,9 +1786,8 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 	}
 	
 	public String onSystemPrompt(ChatObject chatObject,String currentSystem){
-		if(agentRuntimeContext != null) {
+		if(agentInterceptors != null) {
 			
-			List<AgentInterceptor> agentInterceptors = agentRuntimeContext.getAgentInterceptors();
 			if (agentInterceptors != null && agentInterceptors.size() > 0) {
 				for (AgentInterceptor agentInterceptor : agentInterceptors) {
 					currentSystem = agentInterceptor.onSystemPrompt(this, chatObject, currentSystem);
@@ -1763,5 +1795,22 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 			}
 		}
 		return currentSystem;
+	}
+	
+	public T setAgentInterceptors(List<AgentInterceptor> agentInterceptors) {
+		this.agentInterceptors = agentInterceptors;
+		return (T)this;
+	}
+	public T addAgentInterceptor(AgentInterceptor agentInterceptor) {
+		if(this.agentInterceptors == null)
+			this.agentInterceptors = new java.util.ArrayList<AgentInterceptor>();
+		this.agentInterceptors.add(agentInterceptor);
+		return (T)this;
+	}
+	public T addAgentInterceptor(int index,AgentInterceptor agentInterceptor) {
+		if(this.agentInterceptors == null)
+			this.agentInterceptors = new java.util.ArrayList<AgentInterceptor>();
+		this.agentInterceptors.add(index,agentInterceptor);
+		return (T)this;
 	}
 }

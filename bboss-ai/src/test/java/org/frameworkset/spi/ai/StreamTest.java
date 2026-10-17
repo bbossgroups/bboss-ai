@@ -139,8 +139,8 @@ public class StreamTest {
 //        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
 //        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
 
-        streamChatWithMcpTools("custom1","shuqi","qwen3.7-plus","推荐一部穿越小说",true);
-
+//        streamChatWithMcpTools("custom1","shuqi","qwen3.7-plus","推荐一部穿越小说",true);
+		streamChatWithMcpTools("deepseek","shuqi", "deepseek-v4-pro","推荐一部穿越小说",true);
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出知识库飞书定制开发和应用中的文档",true);
 //        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.7-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
 //        streamDBStoreChatWithMcpTools("deepseek","feishumcp","deepseek-v4-pro","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
