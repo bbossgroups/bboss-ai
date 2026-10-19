@@ -41,6 +41,7 @@
 - 混合推理内容流式推送（Mixdata），支持推理内容（reasoning）与答案内容（content）同时出现在同一流式报文中的场景（如九天 deepseek 模型），自动拆分后先推送推理内容再推送答案内容
 - 智能体级全局运行时上下文（`AgentRuntimeContext` + `ChatContext`），向多智能体和工作流各节点传递全局参数配置（调试报文输出、权限规则、记忆检索开关、压缩配置、规划模式状态等）
 - 步骤级事件推送（`ServerEvent.TYPE_STEP`），工具调用新一轮开始时向客户端实时推送步骤信号，前端可感知"智能体开始新一轮工具调用/人工介入已完成"
+- 多智能体网关（Harness），位于 `harness` 包，提供多智能体注册与路由、跨通道统一接入（`Channel` 适配）、基于 `canonicalKey` 的会话隔离与每会话轮次串行化（Turn Gate）、子智能体声明/创建/暴露为可寻址线程（`subagents`）、消息总线（`MessageBus`）与跨会话唤醒调度（`WakeupDispatcher`）等能力
 
 ### 支持的平台
 - DeepSeek
@@ -78,22 +79,23 @@ bboss-ai/
 │       │   ├── callback/              # 回调接口（ChatCallback、ChatStreamCallback、AgentOutput）
 │       │   ├── compaction/            # 会话记忆压缩（CompactionManager、WindowsCompactionManager、CompactionConfig 等）
 │       │   ├── context/               # 运行时上下文（AgentRuntimeContext、ChatContext）
-│       │   ├── filesystem/            # 文件系统抽象（AbstractFilesystem、LocalFilesystem、PathPolicy 等）
+│       │   ├── filesystem/            # 文件系统抽象（AbstractFilesystem、LocalFilesystem、PathPolicy、WorkspaceManager 等）
+│       │   ├── harness/               # 多智能体网关/Harness 子系统（bus/ 消息总线、gateway/ 网关路由、gateway/channel/ 通道适配、subagents/ 子智能体管理）
 │       │   ├── hitl/                  # 人工介入功能（BaseHitlTaskTool、HitlTaskHelper、cluster/）
 │       │   ├── interceptor/           # 智能体拦截器（AgentInterceptor、impl/HarnessAgentInterceptor 系统提示词增强、impl/TaskminderAgentInterceptor）
 │       │   ├── material/              # 素材处理（文件下载等）
 │       │   ├── mcp/                   # MCP 客户端/服务端（sse/、streamable/、feishu/、intercepter/、tools/、model/）
-│       │   ├── memory/                # 智能体记忆管理（MemoryFlushManager 记忆抽取、MemoryConsolidator 总账汇总、MemoryConfig、coordination/ 周期闸门、MemoryUtil）
-│       │   ├── model/                 # 消息模型（含 tool/ 权限规则模型子包、memory/ 记忆实体子包）
+│       │   ├── memory/                # 智能体记忆管理（MemoryFlushManager 记忆抽取、MemoryConsolidator 总账汇总、MemoryConfig、coordination/ 周期闸门）
+│       │   ├── model/                 # 消息模型（含 tool/ 权限规则模型子包、memory/ 记忆实体子包、StreamOptions 流式选项）
 │       │   ├── permission/            # 工具权限管控体系（PermissionEngine、PermissionMode、PermissionRule 等）
 │       │   ├── plan/                  # 自主规划机制（PlanTools）
 │       │   ├── prompt/                # Prompt 变量解析与外部资源加载（PromptEval、PromptResourceCache、PromptVariable 等）
 │       │   ├── skill/                 # 技能加载与管理（SkillUtils、SkillsToolRegist、Skill、SkillFilter）
 │       │   ├── state/                 # 规划/任务状态（PlanModeContextState、Task、TaskContextState）
-│       │   ├── store/                 # 会话存储（内存 + DB + 会话管理服务 AgentSessionService）
+│       │   ├── store/                 # 会话存储（AgentStore 体系 + DB + 会话管理服务 AgentSessionService）
 │       │   ├── tool/                  # 工具注册与搜索（BeanToolsRegist、ToolSearcher、ToolCallContext 等）
 │       │   ├── tools/                 # 内置工具实现（含 WebFetchTool/WebSearchTool/TodoTools/记忆与会话检索工具）
-│       │   └── util/                  # 工具类（AIAgentUtil、AIResponseUtil、ServerEventUtil 等）
+│       │   └── util/                  # 工具类（AIAgentUtil、AIResponseUtil、ServerEventUtil、MultiThreadUtil 等）
 │       └── reactor/                   # Reactor 流式处理组件
 │
 ├── bboss-ai-flow/           # 智能体工作流编排模块
@@ -253,6 +255,7 @@ AgentAdapter (抽象基类)
 | `RerankMessage` | 重排序消息 |
 | `ToolAgentMessage` | 工具调用消息 |
 | `SessionAgentMessage` | 带会话存储的消息 |
+| `StreamOptions` | 流式选项配置：控制接收的事件类型（`eventTypes`）与流式内容投递方式（`incremental` 增量/累积），并可过滤推理增量（`includeReasoningChunk`）、推理结果（`includeReasoningResult`）、工具执行增量（`includeActingChunk`）、摘要增量/结果（`includeSummaryChunk`/`includeSummaryResult`） |
 | `AgentMessage` | 消息基类，包含通用属性 |
 
 #### 3.2.4 MCP 客户端
@@ -458,16 +461,16 @@ public class MCPServerController {
 
 #### 3.2.6 会话管理（Session Store）
 
-`AgentSessionStore` 体系提供智能体会话的存储和管理能力，支持内存和多种关系型/列式数据库持久化，并提供独立的会话管理服务 API。
+`AgentStore` 体系提供智能体会话的存储和管理能力，支持内存和多种关系型/列式数据库持久化，并提供独立的会话管理服务 API。
 
 **核心类：**
 
 | 类名 | 作用 |
 |------|------|
-| `AgentSessionStore` | 会话存储接口 |
-| `BaseAgentSessionStore` | 会话存储抽象基类，封装公共持久化逻辑 |
-| `AgentSessionStoreMemory` | 内存会话存储 |
-| `AgentSessionStoreDB` | 数据库持久化会话存储（支持 MySQL/Oracle/DM/SQLServer/PostgreSQL/SQLite/ClickHouse） |
+| `AgentStore` | 会话存储接口（`store` 包），泛型 `AgentStore<T extends AgentStore>` |
+| `BaseAgentStore` | 会话存储抽象基类，封装公共持久化逻辑（含中间件初始化 `initMiddlewares`） |
+| `AgentStoreMemory` | 内存会话存储 |
+| `AgentStoreDB` | 数据库持久化会话存储（`store/db` 包，支持 MySQL/Oracle/DM/SQLServer/PostgreSQL/SQLite/ClickHouse） |
 | `AgentSessionStoreDBConfig` | 数据库会话存储配置，管理各数据库方言的建表 SQL 和 CRUD SQL |
 | `AgentSessionStoreBuilder` | 会话存储构建器接口 |
 | `DefaultAgentSessionStoreBuilder` | 默认会话存储构建器，根据 `StoreContext.storeType` 创建对应存储实现 |
@@ -561,7 +564,7 @@ public class MCPServerController {
 | `mainSessionStore` | 主会话存储（用于共享） |
 | `agentMessageTypeConvertor` | 消息类型转换器（支持自定义扩展） |
 
-> **会话存储 = 组件容器**：`BaseAgentSessionStore.initMiddlewares(AIAgent)` 在会话构建时统一初始化并持有三组组件：`WorkspaceManager`（工作区门面，`getWorkspaceManager()` 获取）、记忆中间件（`MemoryFlushMiddleware` + `MemoryMaintenance`，来自 `StoreContext.memoryConfig`）、压缩管理器（`CompactionManager` / `WindowsCompactionManager`，来自 `compactionConfig` 或 sessionSize/triggerSessionSize）。`initSessionStore()` 构建会话存储后显式调用，任何绕过 `AIAgent.initToolKits()` 直接构造存储对象的路径将缺失中间件。
+> **会话存储 = 组件容器**：`BaseAgentStore.initMiddlewares(AIAgent)` 在会话构建时统一初始化并持有三组组件：`WorkspaceManager`（工作区门面，`getWorkspaceManager()` 获取）、记忆中间件（`MemoryFlushMiddleware` + `MemoryMaintenance`，来自 `StoreContext.memoryConfig`）、压缩管理器（`CompactionManager` / `WindowsCompactionManager`，来自 `compactionConfig` 或 sessionSize/triggerSessionSize）。`initSessionStore()` 构建会话存储后显式调用，任何绕过 `AIAgent.initToolKits()` 直接构造存储对象的路径将缺失中间件。
 
 ##### ClickHouse 生产级会话存储
 
@@ -1368,13 +1371,13 @@ bboss-ai 内置了一套全链路、多维度的智能体 Trace 可观测性体�
 **存储与持久化：**
 
 ```
-AgentSessionStore（接口）
-  ├── AgentSessionStoreMemory（内存存储）
-  └── AgentSessionStoreDB（数据库存储）
+AgentStore（接口）
+  ├── AgentStoreMemory（内存存储）
+  └── AgentStoreDB（数据库存储）
        └── agent_session_message 表
 ```
 
-`AgentSessionStoreDB` 自动完成建表，核心字段包括：msgId、createTime、sessionId、parentAgentId、agentId、messageType、seqNo、message（JSON）、role、marks、metadata、requestId、tokenMetrics（JSON）、elapsed、traceId。
+`AgentStoreDB` 自动完成建表，核心字段包括：msgId、createTime、sessionId、parentAgentId、agentId、messageType、seqNo、message（JSON）、role、marks、metadata、requestId、tokenMetrics（JSON）、elapsed、traceId。
 
 Trace 消息与业务消息统一存储在同一张表中，通过 `messageType = 5` 和 `role = trace` 区分，便于按会话维度进行全链路回放和分析。
 
@@ -1486,10 +1489,10 @@ message.setStoreContext(storeContext);
 
 | 类名 | 作用 |
 |------|------|
-| `MemoryFlushManager`（`memory` 包） | 记忆 Flush 管理器：把将被压缩的对话（USER/ASSISTANT/TOOL，跳过 SYSTEM 与内部上下文/旧摘要消息）交给 LLM 抽取**新**记忆，以 `## Memory Flush — {ISO时间戳}` 段落追加到当日日流水账；工具结果截断 1000 字符、工具入参截断 500 字符，防止 token 爆炸。提供 `flushMemoriesAsync` 异步入口（`MemoryUtil` 专用线程池执行，满载/异常降级同步兜底，`MemoryBackgroundTasks` 跟踪任务水位） |
+| `MemoryFlushManager`（`memory` 包） | 记忆 Flush 管理器：把将被压缩的对话（USER/ASSISTANT/TOOL，跳过 SYSTEM 与内部上下文/旧摘要消息）交给 LLM 抽取**新**记忆，以 `## Memory Flush — {ISO时间戳}` 段落追加到当日日流水账；工具结果截断 1000 字符、工具入参截断 500 字符，防止 token 爆炸。提供 `flushMemoriesAsync` 异步入口（`MultiThreadUtil` 专用线程池执行，满载/异常降级同步兜底，`MemoryBackgroundTasks` 跟踪任务水位） |
 | `MemoryConsolidator`（`memory` 包） | 长期总账汇总器：读取汇总水位（`AgentMemory.consolidationState`）之后新增的日流水账与当前总账，交 LLM 合并/去重/裁剪后覆写长期总账并推进水位；无新增流水时跳过；默认提示词资源 `prompts/memory/DEFAULT_CONSOLIDATION_PROMPT.md` |
 | `MemoryConfig`（`memory` 包） | 记忆流水线统一配置：Flush 触发策略（`FlushTrigger`：ALWAYS/NEVER/THROTTLED）、记忆专用模型、Flush/Consolidation 提示词、`consolidationMaxTokens`、`consolidationMinGap`（默认 30 分钟）、日流水/会话日志保留天数等；与 `CompactionConfig`（压缩摘要）互补 |
-| `MemoryUtil`（`memory` 包） | 记忆路径判定工具 `isDayMemoryPath(path)`：`MEMORY.md` 为总账，`memory/` 前缀为流水账 |
+| `MultiThreadUtil`（`util` 包） | 线程池与记忆路径工具：`isDayMemoryPath(path)` 判定记忆路径（`MEMORY.md` 为总账、`memory/` 前缀为流水账）；提供记忆 Flush / 记忆维护 / 消息总线三组专用线程池（`getMemoryFlushTaskExecutor`/`getMemoryMaintainTaskExecutor`/`getMessageBusTaskExecutor`） |
 | `AgentMemory`（`model/memory` 子包） | 长期记忆总账实体，对应表 `agent_memory`；字段 memoryId、createTime、updateTime、agentId、parentAgentId、userId、sessionId、content、consolidationState（总账/日流水账汇总水位，ISO 时间戳，一个智能体+用户一条） |
 | `AgentDayMemory`（`model/memory` 子包） | 日流水账实体，对应表 `agent_day_memory`；在总账字段基础上增加 memoryDay（形如 `memory/yyyy-MM-dd.md`，一个智能体+用户+日一条） |
 | `AgentConsolidationState`（`model/memory` 子包） | 总账汇总水位状态实体，对应表 `agent_consolidation_state`；记录总账已合并到哪一天的流水账（consolidationState 为 ISO 时间戳），由 `writeWatermark`/`getMemoryWaterMarker` 读写 |
@@ -1675,6 +1678,89 @@ agent.setAgentRuntimeContext(context);
 
 **推荐用法：** `HarnessAgentRuntimeContext` 覆写 `init(WorkspaceManager)` 在拦截器链最内层（index 0）自动注册 `HarnessAgentInterceptor`，使用时只需设置运行时上下文为 `HarnessAgentRuntimeContext` 并配置工作区/文件系统，无需手工注册拦截器。
 
+#### 3.2.21 多智能体网关（Harness）
+
+`harness` 包是多智能体网关/Harness 子系统，位于用户/外部消息平台与底层 `AIAgent` 之间，负责多智能体编排与路由、跨通道统一接入、会话隔离与并发串行化、子智能体生命周期管理以及跨会话唤醒。目录分四层：`bus`（消息传输底座）→ `gateway`（网关/路由调度）→ `gateway/channel`（通道适配层）→ `subagents`（子智能体管理）。
+
+##### 3.2.21.1 消息总线（bus 包）
+
+| 类名 | 作用 |
+|------|------|
+| `MessageBus` | 多会话/多进程实时消息传输抽象（`AutoCloseable`）。提供三种消费模式：**Mode A 排空队列**（`queuePush`/`queueDrain`/`queueDelete`/`queuePeek`，单消费者读即确认）、**Mode C 重放日志**（`logAppend`/`logRead`/`logTrim`，多消费者各自游标）、**Mode D 瞬态广播**（`publish`/`subscribe`，返回 `Flux<Map>`）；并提供领域辅助方法：Inbox（`inboxPush`/`inboxDrain`/`inboxHasMessages`，key `agentscope:inbox:{sessionId}`）、Wakeup（`enqueueWakeup`/`subscribeWakeup`，key `agentscope:wakeups` + 信号 `agentscope:wakeup_signal`）、会话事件（`sessionPublishEvent`/`sessionReadEvents`/`sessionSubscribeEvents`/`sessionTrimEvents`，key 前缀 `agentscope:session:events:`，重放上限 1000） |
+| `BusEntry` | 不可变值对象，表示从队列/日志读出的一条记录：`entryId`（传输层 id，如 Redis Stream entry id）+ `payload`（可 JSON 序列化的 Map） |
+
+> 单进程实现为 `WorkspaceMessageBus`（无外部依赖）。
+
+##### 3.2.21.2 网关核心（gateway 包）
+
+| 类名 | 作用 |
+|------|------|
+| `Gateway` | 网关接口：按 `MsgContext` 路由入站轮次，并绑定主 `AIAgent` 用于主动投递。提供 `bindMainAgent`/`registerAgent`、一组同步 `run(...)` 重载、流式 `runStream(...)`，以及绕过正常绑定直接命中子智能体的 `runSubagent`/`runSubagentStream`。约定实现须按逻辑会话串行化轮次 |
+| `GatewayBootstrap` | 多智能体 + 通道路由装配入口（final 门面类），链式 Builder：`agent(id, AIAgent)`/`agent(id, Consumer)`、`mainAgent(id)`、`channel(Channel...)`、`configureAllAgents(...)`、`distributedStore(AgentStore)`、`runtimeContextResolver(...)`；`build()` 创建 `ChannelManager` + `HarnessGateway`，装配子智能体恢复（`DefaultAgentManager` 组合为 `subagentMaterializer`，有分布式 store 时注入 `StoreBackedSubagentRegistry`）；运行时提供 `gateway()`/`channelManager()`/`agents()`/`gatewayBridge()`/`chatUiChannel()`/`start()`/`stop()` |
+| `HarnessGateway` | 网关默认实现（final，实现 `Gateway` + `WakeupDispatcher.WakeupTarget`）：多智能体注册与主 agent 回退、`canonicalKey`→稳定 sessionId 映射（`gw-<hash>`）、出站路由记录（`lastRouteBySession`）、每会话公平互斥（`SessionTurnGate`，默认 `LocalSessionTurnGate`）、RuntimeContext 构建（经 `ChannelRuntimeContextResolver` + 强制网关身份字段）、子智能体暴露路由（`exposeSubagent`/`revokeSubagent`/`resolveExposed`/`runSubagent`）、唤醒运行（`runWakeup`）、外部会话注册（`registerExternalSession`）；可插拔依赖 `subagentRegistry`/`subagentMaterializer`/`baseStore`/`sessionTurnGate`/`runtimeContextResolver` |
+| `MsgContext` | 入站轮次路由上下文（channel/group/room/threadId/threadTs/extra/userId），核心方法 `canonicalKey()` 拼接稳定会话键（extra 键排序保证稳定，**userId 不参与**），提供 `defaultContext()`/`withUserId()` |
+| `SubagentGatewayBridge` | `AgentSpawnTool` 与网关层之间的桥（函数式接口），使被 spawn 的子智能体可暴露为用户可寻址入口：`expose(agentId, sessionId, agent, replyTo) → ExposeResult`（含 subagentId 句柄） |
+| `WakeupDispatcher` | 每进程唤醒调度器（`AutoCloseable`），所有跨会话通信的通用激活器（后台任务完成、异步工具结果、团队消息、定时触发）。依赖 `MessageBus` + `WakeupTarget`（`isSessionRunning` + `runWakeup`，由 `HarnessGateway` 实现）：`start()` 先初始 drain 再 `subscribeWakeup()` 订阅实时信号；`dispatch(payload)` 解析 userId/sessionId，会话正在运行时跳过，否则经 `MultiThreadUtil.getMessageBusTaskExecutor()` 异步执行 `runWakeup` |
+
+##### 3.2.21.3 通道适配层（gateway/channel 包）
+
+| 类名 | 作用 |
+|------|------|
+| `Channel` | 单平台/程序化调用消息适配器接口：生命周期 `init(Gateway)`/`start()`/`stop()`；核心 `channelId()`/`config()`、`dispatch(InboundMessage)`（内部经 `ChannelRouter` 解析后调 `Gateway.run`）、`deliver(OutboundAddress, messages)`（主动出站）、`deliverWithReceipt(...)`（返回 provider 消息 ID）、`applyRoutingConfig(ChannelConfig)`（热更新路由配置） |
+| `ChannelManager` | `Channel` 适配器注册表与生命周期管理器（final），也是网关主动投递的出站出口：`register`/`unregister`/`getChannel`/`channelIds`、`initAll`/`startAll`/`stopAll`、`deliver(address, messages)`（按 channelId 找通道并委托 `Channel.deliver`） |
+| `ChannelRouter` | 路由决策核心（final），按**确定性优先级 7 层**评估 `ChannelBinding` 解析目标 agentId 与稳定 `MsgContext`：`explicit`→`peer`→`parentPeer`→`guildRoles`→`guild`→`team`→`account`→`channel`→`default`；`resolveRoute(config, msg)` 产出 agentId + matchedBy + effectiveScope + userId，构建 `MsgContext` 与 `OutboundAddress`；`buildDmContext` 按 `DmScope` 构造 DM 上下文 |
+| `ChannelConfig` / `ChannelBinding` | 通道路由配置（channelId/defaultAgentId/dmScope/bindings）与单条路由规则（peer/parentPeer/guild/roles/team/account/channel + 可选 sessionScope），静态工厂 `forPeer`/`forGuild`/`forGuildRoles`/`forTeam`/`forAccount`/`forChannel` 等 |
+| `InboundMessage` | 通道适配器归一化后的入站消息：`peer`（会话标识，构造 session 键）与 `senderId`（发送者身份，作为 userId）区分；字段含 channelId/accountId/peer/guild/team/roles/messages/preferredAgentId/runtimeContext；静态工厂 `dm`/`dmFor`/`channel` |
+| `OutboundAddress` | 主动出站投递目标：channelId/accountId/`to`（`channelId:peerKind:peerId`）/threadId，静态 `direct`/`withAccount`，与 `BaseStore` 互转 `toMap`/`fromMap` |
+| `Peer` / `PeerKind` | 会话对端标识（`key()` 返回 `kind:id` 用于绑定匹配）与对端类型枚举（DIRECT/CHANNEL/GROUP/THREAD） |
+| `RouteResult` | `ChannelRouter.resolveRoute` 的输出：agentId + MsgContext + matchedBy + OutboundAddress |
+| `DmScope` | DM 会话键作用域：MAIN（默认）/PER_PEER/PER_CHANNEL_PEER/PER_ACCOUNT_CHANNEL_PEER |
+| `ChannelRuntimeContextResolver` / `ChannelRuntimeContextRequest` | 运行期上下文解析器（函数式接口，可按请求替换 caller `ChatObject`）及其请求入参 POJO |
+| `ChannelFactory` | 通道工厂 |
+
+**ChatUI 子包（gateway/channel/chatui）：**
+
+| 类名 | 作用 |
+|------|------|
+| `ChatUiChannel` | 默认 ChatUI 通道实现（final，无外部传输，程序化收发）：CHANNEL_ID="chatui"；`dispatch` 经 `ChannelRouter` 后调 `Gateway.run`；`deliver` 入 `outboundQueue` 供 `pollOutbound` 拉取；大量 `send`/`sendStream` 重载（单会话、按 peerId、按 `SendOptions`、`sendToSubagent`），`previewRoute` 预计算会话键 |
+| `ChatUiRequest` | ChatUI 请求值对象（peerId/agentId/subagentId/messages），静态工厂 `of`/`withPeer`/`forAgent`/`toSubagent` 等 |
+| `OutboundEnvelope` | 被网关投递到 ChatUI 的缓冲出站消息（address + messages + timestampMs） |
+| `SendOptions` | ChatUI 请求的路由身份（userId/sessionId/agentId/runtimeContext），让调用方以业务标识表达路由意图、免于理解 `DmScope` |
+
+##### 3.2.21.4 子智能体管理（subagents 包）
+
+| 类名 | 作用 |
+|------|------|
+| `DefaultAgentManager` | 纯 agent 工厂与调用器（final，agent 内部层，无 session 注册表/lane 管理/运行跟踪）：由 `List<SubagentEntry>` 构建 `agentFactories` + `declarations`（volatile Map，支持 `refreshEntries`/`replaceAgents` 原子换快照）；`createAgentIfPresent`（竞争安全，PRIMARY-only 或未注册返回 empty）、`invokeAgent`/`invokeAgentStream`（保留父子调用层级路径）、`getWorkspaceManager` |
+| `SubagentEntry` | 子智能体描述符：name + description + `SubagentFactory` + 可选 `SubagentDeclaration` |
+| `SubagentFactory` | 函数式接口：按 agent_id 创建子智能体实例，`create(ChatObject parentRc)` 应把 parentRc 的 userId/sessionId 烘进子 agent 的持久化 SessionKey |
+| `SubagentDeclaration` | 子智能体声明（final + 链式 setter）：身份、workspace 解析策略、能力白名单及远程配置。三种互斥来源：①定义工作区（`workspacePath`，含 AGENTS.md 作 system prompt）/②内联 body/③远程 HTTP（`url`）；含 model/temperature/steps（默认10）/Mode（PRIMARY/SUBAGENT/ALL）/hidden/persistSession/inheritParentPermissions/exposeToUser/tools/skills 及远程 url/headers/remoteStreaming/remoteAskPolicy 等 |
+| `RemoteAskPolicy` | 远程子智能体 HITL 确认策略：`DENY`（自动拒绝，安全默认）/`PROPAGATE`（经父事件流上抛） |
+| `RemoteStreamDetail`（`subagents/protocol` 子包） | 远程事件流转发粒度（逐级为超集）：`STATUS` < `FULL`（流式父默认）< `VERBOSE` |
+
+##### 3.2.21.5 端到端数据流
+
+```
+入站路径：平台 → Channel 适配器归一化 InboundMessage
+        → Channel.dispatch → ChannelRouter.resolveRoute → RouteResult(agentId + MsgContext + OutboundAddress)
+        → Gateway.run → HarnessGateway 用 canonicalKey 解析稳定 sessionId、记录出站路由、
+          构建 RuntimeContext（ChannelRuntimeContextResolver + 网关身份字段）→ SessionTurnGate 串行化 → 对应 AIAgent
+
+装配路径：GatewayBootstrap.Builder 汇聚多 agent + 多通道 → ChannelManager + HarnessGateway
+        → 绑定主 agent、注册其余 agent → 装配 subagentMaterializer + SubagentRegistry
+        → start() 让 ChannelManager.initAll/startAll 注入并启动通道
+
+出站路径：HarnessGateway.deliverToSession（或子智能体回复 replyTo）
+        → ChannelManager.deliver(address, messages) → 目标 Channel.deliver（如 ChatUI 入 outboundQueue）
+
+子智能体暴露：SubagentGatewayBridge → HarnessGateway.exposeSubagent 生成 subagentId（活缓存 + 持久注册）
+        → 用户经 Channel.sendToSubagent / Gateway.runSubagent 直达；跨节点/重启时 resolveExposed 经 subagentMaterializer 重建
+
+唤醒路径：后台任务/团队消息完成 → MessageBus.enqueueWakeup（队列 + 信号）→ WakeupDispatcher drainAndDispatch
+        → 空闲会话经线程池调 HarnessGateway.runWakeup → 触发无输入推理轮
+        → 结果经 MessageBus.sessionPublishEvent 广播给会话事件订阅者
+```
+
 ---
 
 ### 3.3 bboss-ai-flow 工作流编排模块
@@ -1701,8 +1787,8 @@ agent.setAgentRuntimeContext(context);
 | `RouteChoice` | 路由选择项，封装路由分支的智能体 ID 和描述 |
 | `MarkdownJsonExtractor` | Markdown JSON 提取器，从 Markdown 响应中提取 JSON 结构化数据 |
 | `DynamicParrelAgentBuilder` | 动态并行智能体构建器 |
-| `ParrelAgentSessionStoreMemory` | 并行智能体内存会话存储 |
-| `SequenceAgentSessionStoreMemory` | 串行智能体内存会话存储 |
+| `ParrelAgentStoreMemory` | 并行智能体内存会话存储 |
+| `SequenceAgentStoreMemory` | 串行智能体内存会话存储 |
 
 #### 3.3.2 工作流构建器
 
@@ -1849,11 +1935,14 @@ planAgent.addDefaultRouteChoiceAgent(new AIAgent("默认处理"));
 
 ```
 ┌─────────────────────────────────────────┐
+│      GatewayBootstrap / HarnessGateway   │
+│  (多智能体网关：Channel 路由/会话串行化)  │
+├─────────────────────────────────────────┤
 │        AIPlanAgent (工作流编排层)         │
 │   (AISequence/AIParrel/AIRoute/...)    │
 ├─────────────────────────────────────────┤
 │           AIAgent (入口层)               │
-│     (AgentInterceptor 拦截器/预留)       │
+│     (AgentInterceptor 洋葱模型拦截器)     │
 ├─────────────────────────────────────────┤
 │         AgentAdapter (适配层)            │
 │    (Deepseek/Kimi/Qwen/...)            │
@@ -1863,7 +1952,7 @@ planAgent.addDefaultRouteChoiceAgent(new AIAgent("默认处理"));
 │         AgentMessage (模型层)            │
 │  (Chat/Image/Audio/Video/Tool)         │
 ├─────────────────────────────────────────┤
-│      AgentSessionStore (会话层)          │
+│         AgentStore (会话层)              │
 │    (Memory/DB 持久化 + Compaction)      │
 │  (MemoryFlushManager 记忆管理/AgentSessionService) │
 ├─────────────────────────────────────────┤
@@ -1891,6 +1980,8 @@ planAgent.addDefaultRouteChoiceAgent(new AIAgent("默认处理"));
 8. **模板方法模式（Template Method）**：`MCPBaseClient` 定义初始化/列工具/调用工具的调用骨架，SSE 与 Streamable HTTP 子类实现细节；`BaseCompactionManager` 定义压缩骨架
 9. **洋葱模型中间件（Onion Model）**：`AgentInterceptor` 提供 onReasoning/onActing/onModelCall/onSystemPrompt 分层拦截点
 10. **命令模式（Command）**：MCP 类型化请求/响应模型命令化；`McpCallObject` 以 requestId + CountDownLatch 实现异步命令的同步等待
+11. **网关模式（Gateway）+ 通道适配（Channel Adapter）**：`Gateway`/`HarnessGateway` 统一接收并按 `MsgContext` 路由，`Channel` 屏蔽 Slack/Discord/ChatUI 等平台差异；`ChannelRouter` 按 7 层确定性优先级选路
+12. **发布/订阅 + 唤醒调度（Pub/Sub + Wakeup）**：`MessageBus` 提供队列/重放日志/瞬态广播三种模式，`WakeupDispatcher` 消费唤醒信号对空闲会话触发跨会话推理轮
 
 ### 4.3 负载均衡与容错
 
@@ -1952,9 +2043,9 @@ AIAgent
   ↓
 AgentSessionStoreBuilder（构建器）
   ↓
-AgentSessionStore（主存储）
-  ├── AgentSessionStoreMemory（内存）
-  └── AgentSessionStoreDB（数据库）
+AgentStore（主存储）
+  ├── AgentStoreMemory（内存）
+  └── AgentStoreDB（数据库）
        ├── MySQL / Oracle / DM / SQL Server / PostgreSQL / SQLite
        └── ClickHouse 分布式集群（本地表 + 分布式表）
        ↓
@@ -2030,12 +2121,12 @@ AIAgentUtil.traceLLMInput() / AIAgent.recordTraceMessage()
   ↓
 TraceMessage（携带 TokenMetrics）
   ↓
-AgentSessionStore.recordTraceMessage()
+AgentStore.recordTraceMessage()
   ↓
-BaseAgentSessionStore → PersistentMessage
+BaseAgentStore → PersistentMessage
   ↓
-  ├── AgentSessionStoreMemory → 内存会话列表
-  └── AgentSessionStoreDB → agent_session_message 表
+  ├── AgentStoreMemory → 内存会话列表
+  └── AgentStoreDB → agent_session_message 表
               ↓
       按 sessionId + agentId 维度查询与回放
 ```
@@ -2404,6 +2495,45 @@ sessionService.deleteAgentSession(sessionId);
 - 会话消息表分布式表采用 `sipHash64(sessionId)` 分片，确保同一会话消息落在同一分片
 - 建表 SQL 通过 `ON CLUSTER` 在集群所有节点执行，首次调用时自动完成建表
 
+### 6.11 多智能体网关（Harness）
+
+通过 `GatewayBootstrap` 装配多个具名智能体与通道，`HarnessGateway` 按 `MsgContext` 路由入站消息并按会话串行化轮次；`ChatUiChannel` 提供进程内程序化收发。
+
+```java
+// 1. 构建网关：注册多个智能体 + ChatUI 通道
+GatewayBootstrap bootstrap = GatewayBootstrap.builder()
+    .agent("main", new AIAgent())                 // 主智能体
+    .agent("coder", new AIAgent())                // 其他智能体
+    .mainAgent("main")                            // 指定主智能体，缺省取第一个
+    .channel(ChatUiChannel.create())              // 注册 ChatUI 通道
+    .build();
+
+// 2. 启动通道（initAll + startAll）
+bootstrap.start();
+
+ChatUiChannel chatui = bootstrap.chatUiChannel();
+
+// 3. 同步发送：按 peerId 路由，返回聚合结果
+LinkedMessageMap<String, Object> result = chatui.send("user-123", "帮我分析这段代码");
+
+// 4. 流式发送：返回 Flux<ServerEvent>
+Flux<ServerEvent> flux = chatui.sendStream(
+    SendOptions.userId("user-123"), "帮我重构这段代码");
+flux.subscribe(event -> System.out.print(event.getData()));
+
+// 5. 主动拉取出站消息（适配拉取型消费方）
+List<OutboundEnvelope> outbound = chatui.pollOutbound();
+
+// 6. 关闭
+bootstrap.stop();
+```
+
+**要点：**
+- 同一 `MsgContext.canonicalKey()`（channel/group/room/thread/extra，userId 不参与）始终映射到同一稳定 sessionId（`gw-<hash>`），保证每个逻辑会话独立记忆
+- `ChannelConfig` + `ChannelBinding` 支持按 peer/guild/roles/team/account/channel 等条件把入站消息路由到指定 agentId，优先级由 `ChannelRouter` 的 7 层确定性规则决定
+- 配置 `distributedStore(AgentStore)` 后，会话路由元数据与子智能体暴露记录可跨节点持久化（`StoreBackedSubagentRegistry`）
+- 子智能体通过 `GatewayBootstrap.gatewayBridge()` 暴露为可寻址线程后，可经 `Channel.sendToSubagent` / `Gateway.runSubagent` 直达
+
 ---
 
 ## 七、总结
@@ -2429,6 +2559,7 @@ bboss-ai 是一个功能完善的 Java AI 智能体开发框架，具有以下�
 17. **混合推理内容流式推送**：`mixedData` 报文自动拆分，推理流与答案流分别渲染，适配九天 deepseek 等边推理边输出模型
 18. **步骤级事件**：`ServerEvent.TYPE_STEP` 实时推送"新一轮工具调用开始/人工介入完成"信号，支持按步骤进度展示
 19. **自主规划**：Plan Mode"规划 → 人工审批 → 执行"三段式流程，配合权限只读约束与任务清单管理
-20. **轻量级设计**：模块化结构，依赖精简
+20. **多智能体网关（Harness）**：多智能体注册与 7 层优先级路由、跨通道统一接入、基于 `canonicalKey` 的会话隔离与每会话轮次串行化、子智能体声明/暴露为可寻址线程、消息总线与跨会话唤醒调度
+21. **轻量级设计**：模块化结构，依赖精简
 
 该框架适合需要集成多种 AI 能力的 Java 企业级应用使用。

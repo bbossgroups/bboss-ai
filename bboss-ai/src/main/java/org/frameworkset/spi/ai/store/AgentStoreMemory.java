@@ -75,7 +75,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 	
 	
 	@Override
-	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit){
+	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,String agentId,int  limit){
 		return null;
 		
 	}

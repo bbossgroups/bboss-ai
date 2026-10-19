@@ -133,7 +133,7 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 	 * @param limit
 	 * @return
 	 */
-	List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit);
+	List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,String agentId,int  limit);
 	
 	PermissionRules getAgentPermissionRules(String sessionId,String agentId);
 	

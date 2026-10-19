@@ -440,11 +440,19 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	}
 	
 	@Override
-	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,int  limit){
+	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,String agentId,int  limit){
 		try {
 			
-			List<SessionMessage> agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-					agentSessionStoreDBConfig.getSelectSessionMessageByUserIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)), userId,limit);
+			List<SessionMessage> agentSessionMessages = null;
+			if(agentId == null) {
+				
+				agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+						agentSessionStoreDBConfig.getSelectSessionMessageByUserIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)), userId, limit);
+			}
+			else{
+				agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+						agentSessionStoreDBConfig.getSelectAgentSessionMessageByUserIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)), userId, agentId, limit);
+			}
 			
 			return agentSessionMessages;
 			
