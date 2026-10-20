@@ -25,7 +25,10 @@ import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
 import reactor.core.publisher.FluxSink;
 
 import java.io.File;
+import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 单次智能体对话对象，在一个请求会话过程中会调用多次智能体和工具，每次调用都会创建一个ChatObject对象
@@ -35,6 +38,8 @@ import java.util.Map;
 public class ChatObject extends StoreChatObject{
     private boolean stream;
 	private boolean fromWorkflow;
+	
+	private static final String TYPED_DEFAULT_KEY = "";
 
 
     private AIAgent agent;
@@ -52,6 +57,16 @@ public class ChatObject extends StoreChatObject{
     private String completionsUrl;
 	
 	private PermissionRules permissionRules;
+	
+	private final Map<Class<?>, Map<String, Object>> typedValues = new HashMap<>();
+	private Map<String, Object> stringExtras;
+	public static ChatObject builder(ChatObject runtimeContext) {
+		return runtimeContext;
+	}
+	
+	public static ChatObject empty(){
+		return new ChatObject();
+	}
 	
 	/**
 	 * 从历史消息中恢复权限规则：智能体会话记忆中保存了工具调用的最新权限规则，当会话开始时，会调用此方法恢复保存在历史会话记忆中的权限规则。
@@ -221,4 +236,26 @@ public class ChatObject extends StoreChatObject{
 	public void setFromWorkflow(boolean fromWorkflow) {
 		this.fromWorkflow = fromWorkflow;
 	}
+	
+ 
+	
+	public <T> ChatObject put(Class<T> type, T value) {
+		return put(TYPED_DEFAULT_KEY, type, value);
+	}
+	
+	public <T> ChatObject put(String key, Class<T> type, T value) {
+		if (key == null || type == null || value == null) {
+			return this;
+		}
+		this.typedValues.computeIfAbsent(type, k -> new HashMap<>()).put(key, value);
+		return this;
+	}
+	public ChatObject put(String key, Object value) {
+		if (this.stringExtras == null) {
+			this.stringExtras = new ConcurrentHashMap<>();
+		}
+		this.stringExtras.put(key, value);
+		return this;
+	}
+	
 }

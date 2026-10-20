@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.subagent.protocol;
+package org.frameworkset.spi.ai.harness.subagents.protocol;
 
 import java.util.Locale;
 
@@ -52,7 +52,7 @@ public enum RemoteStreamDetail {
 
     /** Parses a wire value, falling back to {@link #STATUS} for null or unknown input. */
     public static RemoteStreamDetail parse(String value) {
-        if (value == null || value.isBlank()) {
+        if (value == null || value.isEmpty()) {
             return STATUS;
         }
         for (RemoteStreamDetail level : values()) {

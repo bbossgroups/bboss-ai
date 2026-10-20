@@ -23,6 +23,7 @@ import org.frameworkset.spi.ai.compaction.ConversationCompactor;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.memory.AgentDayMemory;
 import org.frameworkset.spi.ai.model.memory.AgentMemory;
+import org.frameworkset.spi.ai.util.MultiThreadUtil;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +106,7 @@ public class MemoryFlushManager {
 	public void flushMemoriesAsync(AIAgent agent, List<LinkedMessageMap<String, Object>> messages) {
 		MemoryBackgroundTasks.begin();
 		try {
-			MemoryUtil.getMemoryFlushTaskExecutor().submit(() -> {
+			MultiThreadUtil.getMemoryFlushTaskExecutor().submit(() -> {
 				try {
 					flushMemories(agent, messages);
 				} catch (Exception e) {

@@ -21,7 +21,7 @@ import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.AgentResultSessionMessageContext;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.store.AgentSessionStore;
+import org.frameworkset.spi.ai.store.AgentStore;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.JobFlowNode;
 import org.frameworkset.tran.jobflow.NodeTrigger;
@@ -64,8 +64,8 @@ public class AIParrelAgent extends AIBaseNodeAgent<AIParrelAgent>  implements AI
 
 
     @Override
-    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore ){
-        return new ParrelAgentSessionStoreMemory(parentSessionStore );
+    protected AgentStore buildAgentSessionStore(AgentStore parentSessionStore ){
+        return new ParrelAgentStoreMemory(parentSessionStore );
     }
 
     /**

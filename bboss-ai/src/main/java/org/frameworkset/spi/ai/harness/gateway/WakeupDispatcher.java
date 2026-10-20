@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway;
+package org.frameworkset.spi.ai.harness.gateway;
 
-import io.agentscope.core.message.Msg;
-import io.agentscope.harness.agent.bus.BusEntry;
-import io.agentscope.harness.agent.bus.MessageBus;
-import java.util.List;
-import java.util.Map;
+ 
+import org.frameworkset.spi.ai.harness.bus.BusEntry;
+import org.frameworkset.spi.ai.harness.bus.MessageBus;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
+import org.frameworkset.spi.ai.util.MultiThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Per-process dispatcher that wakes idle sessions when background work completes.
@@ -36,7 +40,7 @@ import reactor.core.publisher.Mono;
  *
  * <ul>
  *   <li>Background subagent task completion
- *   <li>Async tool results ({@link io.agentscope.harness.agent.middleware.AsyncToolMiddleware})
+ *   <li>Async tool results ({link AsyncToolMiddleware})
  *   <li>Team messages (future Agent Teams support)
  *   <li>Scheduled task triggers
  * </ul>
@@ -73,7 +77,7 @@ public class WakeupDispatcher implements AutoCloseable {
          *     retained for backward compatibility and defaults to ignoring the user id.
          */
         @Deprecated
-        Mono<Msg> runWakeup(String sessionId);
+		LinkedMessageMap<String, Object> runWakeup(String sessionId);
 
         /**
          * Triggers a wakeup run for an idle session, carrying the owning user id when present.
@@ -88,7 +92,7 @@ public class WakeupDispatcher implements AutoCloseable {
          * @param sessionId the session to wake up
          * @return the agent's response, or {@link Mono#empty()} if the session is unknown
          */
-        default Mono<Msg> runWakeup(String userId, String sessionId) {
+        default LinkedMessageMap<String, Object> runWakeup(String userId, String sessionId) {
             return runWakeup(sessionId);
         }
     }
@@ -130,13 +134,13 @@ public class WakeupDispatcher implements AutoCloseable {
     private void drainAndDispatch() {
         try {
             List<BusEntry> entries =
-                    messageBus.queueDrain("agentscope:wakeups", MAX_DRAIN_COUNT).block();
+                    messageBus.queueDrain("agentscope:wakeups", MAX_DRAIN_COUNT);
             if (entries == null || entries.isEmpty()) {
                 return;
             }
 
             for (BusEntry entry : entries) {
-                dispatch(entry.payload());
+                dispatch(entry.getPayload());
             }
         } catch (Exception e) {
             log.warn("WakeupDispatcher: drainAndDispatch failed", e);
@@ -148,7 +152,7 @@ public class WakeupDispatcher implements AutoCloseable {
         String sessionId = getString(payload, "sessionId");
         String agentId = getString(payload, "agentId");
 
-        if (sessionId == null || sessionId.isBlank()) {
+        if (sessionId == null || sessionId.isEmpty()) {
             log.debug("WakeupDispatcher: skipping entry with no sessionId");
             return;
         }
@@ -166,21 +170,26 @@ public class WakeupDispatcher implements AutoCloseable {
                 sessionId,
                 userId,
                 agentId);
-        target.runWakeup(userId, sessionId)
-                .subscribe(
-                        msg ->
-                                log.debug(
-                                        "WakeupDispatcher: wakeup run completed for session {}",
-                                        sessionId),
-                        err ->
-                                log.warn(
-                                        "WakeupDispatcher: wakeup run failed for session {}",
-                                        sessionId,
-                                        err));
+		ExecutorService MESSAGEBUS_TASK_EXECUTOR = MultiThreadUtil.getMessageBusTaskExecutor();
+		MESSAGEBUS_TASK_EXECUTOR.execute(() -> {
+			try {
+				LinkedMessageMap<String, Object> msg = target.runWakeup(userId, sessionId);
+				log.debug(
+						"WakeupDispatcher: wakeup run completed for session {}",
+						sessionId);
+			}
+			catch (Exception err) {
+					 
+					log.warn(
+							"WakeupDispatcher: wakeup run failed for session {}",
+							sessionId,
+							err);
+			}
+		});
     }
 
     private static String getString(Map<String, Object> map, String key) {
         Object v = map.get(key);
-        return v instanceof String s ? s : null;
+        return v instanceof String ? (String) v : null;
     }
 }

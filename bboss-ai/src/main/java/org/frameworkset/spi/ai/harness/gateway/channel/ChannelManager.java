@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway;
+package org.frameworkset.spi.ai.harness.gateway.channel;
 
-import io.agentscope.core.message.Msg;
-import io.agentscope.harness.agent.gateway.channel.Channel;
-import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+ 
+import org.frameworkset.spi.ai.harness.gateway.Gateway;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registry and lifecycle manager for {@link Channel} adapters. Provides outbound dispatch so the
@@ -42,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * <h2>Outbound delivery</h2>
  *
  * {@link #deliver(OutboundAddress, List)} looks up the target channel by {@link
- * OutboundAddress#channelId()} and delegates to {@link Channel#deliver(OutboundAddress, List)}.
+ * OutboundAddress#getChannelId()} ()} and delegates to {@link Channel#deliver(OutboundAddress, List)}.
  */
 public final class ChannelManager {
 
@@ -95,16 +93,16 @@ public final class ChannelManager {
         }
         return Optional.ofNullable(channels.get(channelId));
     }
-
-    /** Returns an unmodifiable snapshot of all registered channel ids. */
-    public List<String> channelIds() {
-        return List.copyOf(channels.keySet());
-    }
-
-    /** Returns an unmodifiable snapshot of all registered channels. */
-    public Collection<Channel> getAllChannels() {
-        return List.copyOf(channels.values());
-    }
+	
+	/** Returns an unmodifiable snapshot of all registered channel ids. */
+	public List<String> channelIds() {
+		return Collections.unmodifiableList(new ArrayList<>(channels.keySet()));
+	}
+	
+	/** Returns an unmodifiable snapshot of all registered channels. */
+	public Collection<Channel> getAllChannels() {
+		return Collections.unmodifiableList(new ArrayList<>(channels.values()));
+	}
 
     /**
      * Injects the gateway into all registered channels via {@link Channel#init(Gateway)}. Called
@@ -154,22 +152,22 @@ public final class ChannelManager {
 
     /**
      * Delivers proactive outbound messages through the channel identified by {@link
-     * OutboundAddress#channelId()}. If the target channel is not registered, the messages are
+     * OutboundAddress#getChannelId()} ()}. If the target channel is not registered, the messages are
      * dropped with a warning log.
      *
      * @param address the delivery target
      * @param messages the messages to deliver
      */
-    public void deliver(OutboundAddress address, List<Msg> messages) {
+    public void deliver(OutboundAddress address, List<LinkedMessageMap<String, Object>> messages) {
         Objects.requireNonNull(address, "address");
         if (messages == null || messages.isEmpty()) {
             return;
         }
-        Channel ch = channels.get(address.channelId());
+        Channel ch = channels.get(address.getChannelId());
         if (ch == null) {
             log.warn(
                     "Outbound delivery skipped: no channel registered for '{}'",
-                    address.channelId());
+                    address.getChannelId());
             return;
         }
         try {
@@ -177,8 +175,8 @@ public final class ChannelManager {
         } catch (Exception e) {
             log.error(
                     "Outbound delivery failed: channel='{}', to='{}': {}",
-                    address.channelId(),
-                    address.to(),
+                    address.getChannelId(),
+                    address.getTo(),
                     e.getMessage(),
                     e);
         }

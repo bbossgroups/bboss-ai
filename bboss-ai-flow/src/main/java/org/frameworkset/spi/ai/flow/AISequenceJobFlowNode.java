@@ -41,7 +41,7 @@ public class AISequenceJobFlowNode extends SequenceJobFlowNode {
      */
     @Override
     public ExecuteResult execute(JobFlowNodeExecuteContext jobFlowNodeExecuteContext, JobFlowCyclicBarrier barrier){
-        sequenceAgent.reactMessage(sequenceAgent.getPlanAgent().getAgentMessage());
+        sequenceAgent.buildAgent(sequenceAgent.getPlanAgent().getAgentMessage());
         ExecuteResult result = super.execute(jobFlowNodeExecuteContext,barrier);       
         
         return result;

@@ -1,4 +1,4 @@
-package org.frameworkset.spi.ai.memory;
+package org.frameworkset.spi.ai.util;
 /**
  * Copyright 2026 bboss
  * <p>
@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutorService;
  * @author biaoping.yin
  * @Date 2026/10/9
  */
-public class MemoryUtil {
+public class MultiThreadUtil {
 	
 //	private static final int MEMORY_FLUSH_TASK_CORE_POOL_SIZE = 100;
 	private static final int MEMORY_FLUSH_TASK_MAX_POOL_SIZE = 500;
@@ -39,6 +39,10 @@ public class MemoryUtil {
 			BLOCKEDWAITTIMEOUT,WARNMULTSREJECTS,PRESTARTALLCORETHREADS,DAEMON);
 	
 	private static final ExecutorService MEMORY_MAINTAIN_TASK_EXECUTOR = ThreadPoolFactory.buildThreadPool("Agent-MemoryMaintainMiddleware-task","Agent-MemoryMaintainMiddleware-task-reject-message" ,
+			MEMORY_FLUSH_TASK_MAX_POOL_SIZE,MEMORY_FLUSH_TASK_QUEUE_CAPACITY,MEMORY_FLUSH_TASK_KEEP_ALIVE_SECONDS * 1000L,
+			BLOCKEDWAITTIMEOUT,WARNMULTSREJECTS,PRESTARTALLCORETHREADS,DAEMON);
+	
+	private static final ExecutorService MESSAGEBUS_TASK_EXECUTOR = ThreadPoolFactory.buildThreadPool("Agent-MessageBusMiddleware-task","Agent-MessageBusMiddleware-task-reject-message" ,
 			MEMORY_FLUSH_TASK_MAX_POOL_SIZE,MEMORY_FLUSH_TASK_QUEUE_CAPACITY,MEMORY_FLUSH_TASK_KEEP_ALIVE_SECONDS * 1000L,
 			BLOCKEDWAITTIMEOUT,WARNMULTSREJECTS,PRESTARTALLCORETHREADS,DAEMON);
 	public static boolean isDayMemoryPath(String path){
@@ -56,5 +60,9 @@ public class MemoryUtil {
 	
 	public static ExecutorService getMemoryMaintainTaskExecutor() {
 		return MEMORY_MAINTAIN_TASK_EXECUTOR;
+	}
+	
+	public static ExecutorService getMessageBusTaskExecutor() {
+		return MESSAGEBUS_TASK_EXECUTOR;
 	}
 }

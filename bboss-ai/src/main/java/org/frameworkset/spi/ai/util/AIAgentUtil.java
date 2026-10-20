@@ -25,10 +25,9 @@ import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
-import org.frameworkset.spi.ai.memory.MemoryBackgroundTasks;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.prompt.PromptEval;
-import org.frameworkset.spi.ai.store.AgentSessionStore;
+import org.frameworkset.spi.ai.store.AgentStore;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
@@ -36,7 +35,6 @@ import org.frameworkset.util.RetryCallback;
 import org.frameworkset.util.RetryUtil;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
-import org.frameworkset.util.concurrent.ThreadPoolFactory;
 import org.slf4j.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -48,11 +46,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * AI智能体工具类
@@ -1092,7 +1085,7 @@ public class AIAgentUtil {
     }
 	//
 	static  void doOnComplete(AIAgent agent,ChatObject chatObject){
-		AgentSessionStore mainSessionStore = agent.getMainSessionStore();
+		AgentStore mainSessionStore = agent.getMainSessionStore();
 		if(mainSessionStore != null){
 			try {
 				mainSessionStore.doOnComplete(agent, chatObject);

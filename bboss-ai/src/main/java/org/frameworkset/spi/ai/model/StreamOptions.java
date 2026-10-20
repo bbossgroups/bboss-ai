@@ -16,9 +16,7 @@
 
 package org.frameworkset.spi.ai.model;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Configuration options for the {@link Agent#stream} API.
@@ -60,9 +58,11 @@ import java.util.Set;
  * }</pre>
  */
 public class StreamOptions {
-
-    private final Set<EventType> eventTypes;
-    private final boolean incremental;
+	
+	// Defaults are "true" to preserve existing behavior.
+	private Set<String> eventTypes =
+			Collections.unmodifiableSet(new HashSet<>(Collections.singletonList("ALL")));
+    private boolean incremental = true;
 
     /**
      * Whether to include the incremental delta of the reasoning process during streaming.
@@ -70,7 +70,7 @@ public class StreamOptions {
      * If false, intermediate reasoning chunk emissions should be filtered out by the stream
      * implementation.
      */
-    private final boolean includeReasoningChunk;
+    private boolean includeReasoningChunk = true;
 
     /**
      * Whether to include the final consolidated reasoning output in the response.
@@ -78,7 +78,7 @@ public class StreamOptions {
      * If false, final reasoning result emissions should be filtered out by the stream
      * implementation.
      */
-    private final boolean includeReasoningResult;
+    private boolean includeReasoningResult = true;
 
     /**
      * Whether to include the incremental chunks from tool execution during streaming.
@@ -86,7 +86,7 @@ public class StreamOptions {
      * If false, intermediate acting chunk emissions should be filtered out by the stream
      * implementation.
      */
-    private final boolean includeActingChunk;
+    private boolean includeActingChunk = true;
 
     /**
      * Whether to include the incremental chunks from summary generation during streaming.
@@ -94,7 +94,7 @@ public class StreamOptions {
      * If false, intermediate summary chunk emissions should be filtered out by the stream
      * implementation.
      */
-    private final boolean includeSummaryChunk;
+    private boolean includeSummaryChunk = true;
 
     /**
      * Whether to include the final consolidated summary output in the response.
@@ -102,21 +102,15 @@ public class StreamOptions {
      * If false, final summary result emissions should be filtered out by the stream
      * implementation.
      */
-    private final boolean includeSummaryResult;
+    private boolean includeSummaryResult = true;
 
     /**
      * Private constructor called by the builder.
      *
      * @param builder The builder containing configuration values
      */
-    private StreamOptions(Builder builder) {
-        this.eventTypes = builder.eventTypes;
-        this.incremental = builder.incremental;
-        this.includeReasoningChunk = builder.includeReasoningChunk;
-        this.includeReasoningResult = builder.includeReasoningResult;
-        this.includeActingChunk = builder.includeActingChunk;
-        this.includeSummaryChunk = builder.includeSummaryChunk;
-        this.includeSummaryResult = builder.includeSummaryResult;
+    private StreamOptions() {
+       
     }
 
     /**
@@ -125,17 +119,10 @@ public class StreamOptions {
      * @return StreamOptions with default configuration
      */
     public static StreamOptions defaults() {
-        return builder().build();
+        return new StreamOptions();
     }
 
-    /**
-     * Creates a new builder for StreamOptions.
-     *
-     * @return A new builder instance
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
+ 
 
     /**
      * Get the set of event types that should be streamed.
@@ -144,7 +131,7 @@ public class StreamOptions {
      *
      * @return The set of event types to stream
      */
-    public Set<EventType> getEventTypes() {
+    public Set<String> getEventTypes() {
         return eventTypes;
     }
 
@@ -223,8 +210,8 @@ public class StreamOptions {
      * @param type The event type to check
      * @return true if this type should be streamed
      */
-    public boolean shouldStream(EventType type) {
-        return eventTypes.contains(EventType.ALL) || eventTypes.contains(type);
+    public boolean shouldStream(String type) {
+        return eventTypes.contains("ALL") || eventTypes.contains(type);
     }
 
     /**
@@ -249,122 +236,104 @@ public class StreamOptions {
     public boolean shouldIncludeSummaryEmission(boolean isChunk) {
         return isChunk ? includeSummaryChunk : includeSummaryResult;
     }
-
-    /** Builder for {@link StreamOptions}. */
-    public static class Builder {
-        private Set<EventType> eventTypes = EnumSet.of(EventType.ALL);
-        private boolean incremental = true;
-
-        // Defaults are "true" to preserve existing behavior.
-        private boolean includeReasoningChunk = true;
-        private boolean includeReasoningResult = true;
-        private boolean includeActingChunk = true;
-        private boolean includeSummaryChunk = true;
-        private boolean includeSummaryResult = true;
-
-        /**
-         * Set which event types to stream.
-         *
-         * <p>Only events matching these types will be emitted in the Flux. Use {@link
-         * EventType#ALL} to receive all types.
-         *
-         * @param types One or more event types
-         * @return this builder
-         */
-        public Builder eventTypes(EventType... types) {
-            this.eventTypes = EnumSet.copyOf(Arrays.asList(types));
-            return this;
-        }
-
-        /**
-         * Set whether to use incremental mode for streaming content.
-         *
-         * <p>Controls how streaming content is delivered:
-         * <ul>
-         *   <li>true (incremental): Only new content in each emission</li>
-         *   <li>false (cumulative): All accumulated content in each emission</li>
-         * </ul>
-         *
-         * @param incremental true for incremental mode, false for cumulative mode
-         * @return this builder
-         */
-        public Builder incremental(boolean incremental) {
-            this.incremental = incremental;
-            return this;
-        }
-
-        /**
-         * Include or exclude incremental reasoning chunk emissions.
-         *
-         * <p>When {@link EventType#REASONING} is enabled, some providers emit reasoning deltas (chunks)
-         * as the model thinks. Set to false to hide these.</p>
-         *
-         * @param includeReasoningChunk true to include chunk emissions, false to filter them out
-         * @return this builder
-         */
-        public Builder includeReasoningChunk(boolean includeReasoningChunk) {
-            this.includeReasoningChunk = includeReasoningChunk;
-            return this;
-        }
-
-        /**
-         * Include or exclude the final consolidated reasoning result emission.
-         *
-         * <p>When {@link EventType#REASONING} is enabled, some providers emit a final reasoning result.
-         * Set to false to hide it.</p>
-         *
-         * @param includeReasoningResult true to include the final reasoning result, false to filter it out
-         * @return this builder
-         */
-        public Builder includeReasoningResult(boolean includeReasoningResult) {
-            this.includeReasoningResult = includeReasoningResult;
-            return this;
-        }
-
-        /**
-         * Include or exclude tool execution chunk emissions.
-         *
-         * <p>When {@link EventType#TOOL_RESULT} is enabled, tools may emit intermediate chunks via
-         * ToolEmitter. Set to false to hide these and only receive the final tool result.</p>
-         *
-         * @param includeActingChunk true to include chunk emissions, false to filter them out
-         * @return this builder
-         */
-        public Builder includeActingChunk(boolean includeActingChunk) {
-            this.includeActingChunk = includeActingChunk;
-            return this;
-        }
-
-        /**
-         * Include or exclude summary chunk emissions.
-         *
-         * <p>When {@link EventType#SUMMARY} is enabled, summary generation may emit intermediate
-         * chunks. Set to false to hide these and only receive the final summary result.</p>
-         *
-         * @param includeSummaryChunk true to include chunk emissions, false to filter them out
-         * @return this builder
-         */
-        public Builder includeSummaryChunk(boolean includeSummaryChunk) {
-            this.includeSummaryChunk = includeSummaryChunk;
-            return this;
-        }
-
-        /**
-         * Include or exclude the final consolidated summary result emission.
-         *
-         * <p>When {@link EventType#SUMMARY} is enabled, the final summary result is emitted after
-         * generation completes. Set to false to hide it.</p>
-         *
-         * @param includeSummaryResult true to include the final summary result, false to filter it out
-         * @return this builder
-         */
-        public Builder includeSummaryResult(boolean includeSummaryResult) {
-            this.includeSummaryResult = includeSummaryResult;
-            return this;
-        }
-
-        public StreamOptions build() {
-            return new StreamOptions(this);
-        }
-    }
+	
+	/**
+	 * Set which event types to stream.
+	 *
+	 * <p>Only events matching these types will be emitted in the Flux. Use {@link
+	 * EventType#ALL} to receive all types.
+	 *
+	 * @param types One or more event types
+	 * @return this builder
+	 */
+	public StreamOptions setEventTypes(String... types) {
+		this.eventTypes = new HashSet<>(Arrays.asList(types));
+		return this;
+	}
+	
+	/**
+	 * Set whether to use incremental mode for streaming content.
+	 *
+	 * <p>Controls how streaming content is delivered:
+	 * <ul>
+	 *   <li>true (incremental): Only new content in each emission</li>
+	 *   <li>false (cumulative): All accumulated content in each emission</li>
+	 * </ul>
+	 *
+	 * @param incremental true for incremental mode, false for cumulative mode
+	 * @return this builder
+	 */
+	public StreamOptions setIncremental(boolean incremental) {
+		this.incremental = incremental;
+		return this;
+	}
+	
+	/**
+	 * Include or exclude incremental reasoning chunk emissions.
+	 *
+	 * <p>When {@link EventType#REASONING} is enabled, some providers emit reasoning deltas (chunks)
+	 * as the model thinks. Set to false to hide these.</p>
+	 *
+	 * @param includeReasoningChunk true to include chunk emissions, false to filter them out
+	 * @return this builder
+	 */
+	public StreamOptions setIncludeReasoningChunk(boolean includeReasoningChunk) {
+		this.includeReasoningChunk = includeReasoningChunk;
+		return this;
+	}
+	
+	/**
+	 * Include or exclude the final consolidated reasoning result emission.
+	 *
+	 * <p>When {@link EventType#REASONING} is enabled, some providers emit a final reasoning result.
+	 * Set to false to hide it.</p>
+	 *
+	 * @param includeReasoningResult true to include the final reasoning result, false to filter it out
+	 * @return this builder
+	 */
+	public StreamOptions setIncludeReasoningResult(boolean includeReasoningResult) {
+		this.includeReasoningResult = includeReasoningResult;
+		return this;
+	}
+	
+	/**
+	 * Include or exclude tool execution chunk emissions.
+	 *
+	 * <p>When {@link EventType#TOOL_RESULT} is enabled, tools may emit intermediate chunks via
+	 * ToolEmitter. Set to false to hide these and only receive the final tool result.</p>
+	 *
+	 * @param includeActingChunk true to include chunk emissions, false to filter them out
+	 * @return this builder
+	 */
+	public StreamOptions setIncludeActingChunk(boolean includeActingChunk) {
+		this.includeActingChunk = includeActingChunk;
+		return this;
+	}
+	
+	/**
+	 * Include or exclude summary chunk emissions.
+	 *
+	 * <p>When {@link EventType#SUMMARY} is enabled, summary generation may emit intermediate
+	 * chunks. Set to false to hide these and only receive the final summary result.</p>
+	 *
+	 * @param includeSummaryChunk true to include chunk emissions, false to filter them out
+	 * @return this builder
+	 */
+	public StreamOptions setIncludeSummaryChunk(boolean includeSummaryChunk) {
+		this.includeSummaryChunk = includeSummaryChunk;
+		return this;
+	}
+	/**
+	 * Include or exclude the final consolidated summary result emission.
+	 *
+	 * <p>When {@link EventType#SUMMARY} is enabled, the final summary result is emitted after
+	 * generation completes. Set to false to hide it.</p>
+	 *
+	 * @param includeSummaryResult true to include the final summary result, false to filter it out
+	 * @return this builder
+	 */
+	public StreamOptions setIncludeSummaryResult(boolean includeSummaryResult) {
+		this.includeSummaryResult = includeSummaryResult;
+		return this;
+	}
 }

@@ -18,6 +18,7 @@ package org.frameworkset.spi.ai.store;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
+import org.frameworkset.spi.ai.harness.subagents.SubagentRecord;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
@@ -29,16 +30,16 @@ import java.util.List;
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public interface AgentSessionStore<T extends AgentSessionStore> {
+public interface AgentStore<T extends AgentStore> {
     void init();
-    void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSession);
+    void addSubTaskSessionMemory(String agentId, AgentStore subTaskSession);
     StoreContext getStoreContext();
     String getAgentId();
     String genSubAgentId(AgentIdAssign agentIdAssign);
     void saveLastSessionMessage(LastSessionMessage lastSessionMessage,String refAgentId);
     LastSessionMessage getLastSubAgentSessionMessage();
     List<LastSessionMessage> getLastSubAgentSessionMessages();
-    AgentSessionStore getSubTaskSessionMemory(String agentId) ;
+    AgentStore getSubTaskSessionMemory(String agentId) ;
 	AgentSessionService getAgentSessionService();
 	void setAgentSessionService(AgentSessionService agentSessionService);
 	int getNextSeqNo();
@@ -103,9 +104,9 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 	
 	void updateAgentToolCallRules(AgentToolCallRules agentToolCallRules);
             //, TokenMetrics tokenMetrics);
-    AgentSessionStore getMainAgentSessionStore() ;
+    AgentStore getMainAgentSessionStore() ;
 
-    T setMainAgentSessionStore(AgentSessionStore mainAgentSessionStore) ;
+    T setMainAgentSessionStore(AgentStore mainAgentStore) ;
 
     void setParentAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage);
 
@@ -141,4 +142,6 @@ public interface AgentSessionStore<T extends AgentSessionStore> {
 	WorkspaceManager getWorkspaceManager();
 	
 	 void initMiddlewares(AIAgent  agent);
+	
+	List<SubagentRecord> searchSubagentRecord(List<String> namespace, int scanPageSize, int i);
 }

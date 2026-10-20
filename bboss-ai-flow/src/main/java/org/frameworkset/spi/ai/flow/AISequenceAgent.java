@@ -20,7 +20,7 @@ import org.frameworkset.spi.ai.flow.util.AIFlowUtil;
 import org.frameworkset.spi.ai.model.AgentResultSessionMessageContext;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.store.AgentSessionStore;
+import org.frameworkset.spi.ai.store.AgentStore;
 import org.frameworkset.spi.ai.util.ServerEventUtil;
 import org.frameworkset.tran.jobflow.JobFlowNode;
 import org.frameworkset.tran.jobflow.NodeTrigger;
@@ -59,8 +59,8 @@ public class AISequenceAgent extends AIBaseNodeAgent<AISequenceAgent>  implement
     }
 
     @Override
-    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore ){
-        return new SequenceAgentSessionStoreMemory(parentSessionStore );
+    protected AgentStore buildAgentSessionStore(AgentStore parentSessionStore ){
+        return new SequenceAgentStoreMemory(parentSessionStore );
     }
 	public  AISequenceAgent setDynamicNodeBuilder(   DynamicNodeBuilder dynamicNodeBuilder){
 		this.dynamicNodeBuilder = dynamicNodeBuilder;

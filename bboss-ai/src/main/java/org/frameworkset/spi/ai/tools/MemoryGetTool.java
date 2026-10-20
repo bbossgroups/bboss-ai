@@ -17,7 +17,7 @@ package org.frameworkset.spi.ai.tools;
 
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.memory.MemoryUtil;
+import org.frameworkset.spi.ai.util.MultiThreadUtil;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.annotation.Tool;
 import org.frameworkset.spi.ai.model.annotation.ToolParam;
@@ -65,7 +65,7 @@ public class MemoryGetTool {
 		AIAgent agent = chatObject.getAgent();
 		AgentSessionService agentSessionService = agent.getMainSessionStore().getAgentSessionService();
 		String text = null;
-		if(MemoryUtil.isDayMemoryPath(path)) {
+		if(MultiThreadUtil.isDayMemoryPath(path)) {
 			AgentDayMemory agentDayMemory = agentSessionService.getDayMemory(agent.getAgentId(), agent.getUserId(), path);
 			if (agentDayMemory == null) {
 				return "Error: day memory not found: " + path;

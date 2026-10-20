@@ -15,10 +15,10 @@ package org.frameworkset.spi.ai.store;
  * limitations under the License.
  */
 
-import com.frameworkset.common.poolman.SQLExecutor;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.harness.subagents.SubagentRecord;
 import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
@@ -26,6 +26,7 @@ import org.frameworkset.util.concurrent.IntegerCount;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,8 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author biaoping.yin
  * @Date 2026/1/4
  */
-public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends BaseAgentSessionStore<T>{
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AgentSessionStoreMemory.class);
+public class AgentStoreMemory<T extends AgentStoreMemory> extends BaseAgentStore<T> {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AgentStoreMemory.class);
     protected AgentSession agentSession;
     private static Map<String,AgentSession> agentSessions = new ConcurrentHashMap();
     protected IntegerCount integerCount = new IntegerCount();
@@ -47,7 +48,7 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
      */
     protected IntegerCount agentIdCount = new IntegerCount();
 
-    public AgentSessionStoreMemory(List<LinkedMessageMap<String, Object>> sessionMemory) {
+    public AgentStoreMemory(List<LinkedMessageMap<String, Object>> sessionMemory) {
         super(sessionMemory);
     }
 
@@ -55,20 +56,20 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
      
  
 
-    public AgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore ) {
-        super(parentAgentSessionStore);
+    public AgentStoreMemory(AgentStore parentAgentStore) {
+        super(parentAgentStore);
     }
 
     
 
-    public AgentSessionStoreMemory() {
+    public AgentStoreMemory() {
     }
 
-    public AgentSessionStoreMemory(String sessionId, String userId, String agentId) {
+    public AgentStoreMemory(String sessionId, String userId, String agentId) {
         super(sessionId, userId, agentId );
     }
 
-    public AgentSessionStoreMemory(StoreContext storeContext, AIAgent agent) {
+    public AgentStoreMemory(StoreContext storeContext, AIAgent agent) {
         super(storeContext,  agent);
         
     }
@@ -399,7 +400,13 @@ public class AgentSessionStoreMemory<T extends AgentSessionStoreMemory> extends 
 			throw new AIRuntimeException("getAgentPermissionRules: sessionId="+sessionId+",agentId="+agentId,exception);
 		}
 	}
-    @Override
+	
+	@Override
+	public List<SubagentRecord> searchSubagentRecord(List<String> namespace, int scanPageSize, int i) {
+		return Collections.emptyList();
+	}
+	
+	@Override
     public List<LinkedMessageMap<String, Object>> getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage, String agentId ) {
         try {
             if (this.agentSession == null) {

@@ -13,42 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway;
+package org.frameworkset.spi.ai.harness.gateway;
 
-import io.agentscope.core.ReActAgent;
-import io.agentscope.core.agent.Agent;
-import io.agentscope.core.agent.RuntimeContext;
-import io.agentscope.core.event.AgentEvent;
-import io.agentscope.core.event.AgentResultEvent;
-import io.agentscope.core.message.Msg;
-import io.agentscope.harness.agent.HarnessAgent;
-import io.agentscope.harness.agent.bus.MessageBus;
-import io.agentscope.harness.agent.filesystem.remote.store.BaseStore;
-import io.agentscope.harness.agent.filesystem.remote.store.StoreItem;
-import io.agentscope.harness.agent.gateway.channel.ChannelRuntimeContextRequest;
-import io.agentscope.harness.agent.gateway.channel.ChannelRuntimeContextResolver;
-import io.agentscope.harness.agent.gateway.channel.InboundMessage;
-import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
+ 
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.harness.bus.MessageBus;
+import org.frameworkset.spi.ai.harness.gateway.channel.ChannelManager;
+import org.frameworkset.spi.ai.harness.gateway.channel.ChannelRuntimeContextResolver;
+import org.frameworkset.spi.ai.harness.gateway.channel.OutboundAddress;
+import org.frameworkset.spi.ai.harness.subagents.InMemorySubagentRegistry;
+import org.frameworkset.spi.ai.harness.subagents.StoreBackedSubagentRegistry;
+import org.frameworkset.spi.ai.harness.subagents.SubagentRecord;
+import org.frameworkset.spi.ai.harness.subagents.SubagentRegistry;
+import org.frameworkset.spi.ai.model.ChatObject;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
+import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.store.AgentStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 /**
  * Default {@link Gateway} implementation. Routes inbound turns by {@link MsgContext#canonicalKey()},
- * serializes concurrent turns per session via {@link SessionTurnGate}, and dispatches to the
- * appropriate registered {@link HarnessAgent}.
+ * serializes concurrent turns per session via {link SessionTurnGate}, and dispatches to the
+ * appropriate registered {@link org.frameworkset.spi.ai.AIAgent}.
  *
  * <p>This implementation provides:
  * <ul>
@@ -62,16 +58,18 @@ import reactor.core.scheduler.Schedulers;
 public final class HarnessGateway implements Gateway, WakeupDispatcher.WakeupTarget {
 
     private static final Logger log = LoggerFactory.getLogger(HarnessGateway.class);
-
-    private static final List<String> SESSION_NAMESPACE = List.of("gateway", "sessions");
-    private static final List<String> ROUTE_NAMESPACE = List.of("gateway", "routes");
+	
+	private static final List<String> SESSION_NAMESPACE =
+			Collections.unmodifiableList(Arrays.asList("gateway", "sessions"));
+	private static final List<String> ROUTE_NAMESPACE =
+			Collections.unmodifiableList(Arrays.asList("gateway", "routes"));
 
     private final ChannelManager channelManager;
     private final MessageBus messageBus;
-    private volatile SessionTurnGate sessionTurnGate = new LocalSessionTurnGate();
+//    private volatile SessionTurnGate sessionTurnGate = new LocalSessionTurnGate();
 
-    private final AtomicReference<HarnessAgent> mainAgent = new AtomicReference<>();
-    private final ConcurrentHashMap<String, HarnessAgent> agentRegistry = new ConcurrentHashMap<>();
+    private final AtomicReference<AIAgent> mainAgent = new AtomicReference<>();
+    private final ConcurrentHashMap<String, AIAgent> agentRegistry = new ConcurrentHashMap<>();
     private volatile String defaultAgentId = null;
 
     /** Reverse mapping: session id → canonicalKey (for wakeup-driven runs). */
@@ -89,7 +87,7 @@ public final class HarnessGateway implements Gateway, WakeupDispatcher.WakeupTar
     private volatile SubagentRegistry subagentRegistry = new InMemorySubagentRegistry();
 
     /**
-     * Rebuilds a subagent {@link Agent} from its type id when the live instance is not present on
+     * Rebuilds a subagent {link Agent} from its type id when the live instance is not present on
      * this node (cross-node / post-restart). {@code null} disables recovery — only cached live
      * sessions are addressable.
      */
@@ -103,7 +101,7 @@ public final class HarnessGateway implements Gateway, WakeupDispatcher.WakeupTar
      * Optional durable store for session→gateKey and session→route mappings. When set, local
      * caches are written through on update and consulted on cache miss (cross-node recovery).
      */
-    private volatile BaseStore baseStore;
+    private volatile AgentStore baseStore;
 
     /**
      * Optional resolver that supplies / replaces the caller {@link RuntimeContext} before gateway
@@ -156,205 +154,308 @@ public final class HarnessGateway implements Gateway, WakeupDispatcher.WakeupTar
     }
 
     @Override
-    public void bindMainAgent(HarnessAgent agent) {
+    public void bindMainAgent(AIAgent agent) {
         Objects.requireNonNull(agent, "agent");
         mainAgent.set(agent);
         String id = resolveAgentId(agent);
         agentRegistry.put(id, agent);
         defaultAgentId = id;
     }
+	private static String resolveAgentId(AIAgent ha) {
+		String id = ha != null ? ha.getAgentId() : null;
+		return (id != null && !id.isEmpty()) ? id : "main";
+	}
 
     @Override
-    public void registerAgent(String agentId, HarnessAgent agent) {
+    public void registerAgent(String agentId, AIAgent agent) {
         Objects.requireNonNull(agentId, "agentId");
         Objects.requireNonNull(agent, "agent");
         agentRegistry.put(agentId, agent);
     }
-
-    /**
+	
+	/**
+	 * Inbound turn (direct API or channel adapter).
+	 *
+	 * @param context
+	 * @param messages
+	 */
+	@Override
+	public LinkedMessageMap<String, Object> run(MsgContext context, List<LinkedMessageMap<String, Object>> messages) {
+		return null;
+	}
+	
+	/**
      * Returns the agent registered under {@code agentId}, or null if not found. Exposed for
      * introspection (e.g. enumerate an agent's skill repositories).
      */
-    public HarnessAgent findAgent(String agentId) {
+    public AIAgent findAgent(String agentId) {
         if (agentId == null) return null;
         return agentRegistry.get(agentId);
     }
-
-    @Override
-    public Mono<Msg> run(MsgContext context, List<Msg> messages) {
-        return run(context, messages, null, null);
-    }
-
-    @Override
-    public Mono<Msg> run(MsgContext context, List<Msg> messages, OutboundAddress outboundAddress) {
-        return run(context, messages, outboundAddress, null);
-    }
-
-    @Override
-    public Mono<Msg> run(
-            MsgContext context,
-            List<Msg> messages,
-            OutboundAddress outboundAddress,
-            RuntimeContext callerContext) {
-        return run(context, messages, outboundAddress, callerContext, null);
-    }
-
-    @Override
-    public Mono<Msg> run(
-            MsgContext context,
-            List<Msg> messages,
-            OutboundAddress outboundAddress,
-            RuntimeContext callerContext,
-            InboundMessage inboundMessage) {
-        MsgContext ctx = context != null ? context : MsgContext.defaultContext();
-        String gateKey = ctx.canonicalKey();
-
-        String requestedAgentId = ctx.extra() != null ? ctx.extra().get("agentId") : null;
-        HarnessAgent ha = resolveAgent(requestedAgentId);
-        if (ha == null) {
-            return Mono.error(
-                    new IllegalStateException(
-                            "HarnessGateway.bindMainAgent must be called before run(...)"));
-        }
-
-        String sessionId = resolveSessionId(gateKey);
-
-        if (outboundAddress != null) {
-            persistRoute(sessionId, outboundAddress);
-        }
-
-        RuntimeContext runtimeContext =
-                buildRuntimeContext(
-                        ctx, outboundAddress, callerContext, inboundMessage, sessionId, gateKey);
-
-        return withGatedTurn(gateKey, () -> ha.call(messages, runtimeContext));
-    }
-
-    @Override
-    public Flux<AgentEvent> runStream(
-            MsgContext context, List<Msg> messages, OutboundAddress outboundAddress) {
-        return runStream(context, messages, outboundAddress, null, null);
-    }
-
-    @Override
-    public Flux<AgentEvent> runStream(
-            MsgContext context,
-            List<Msg> messages,
-            OutboundAddress outboundAddress,
-            RuntimeContext callerContext) {
-        return runStream(context, messages, outboundAddress, callerContext, null);
-    }
-
-    @Override
-    public Flux<AgentEvent> runStream(
-            MsgContext context,
-            List<Msg> messages,
-            OutboundAddress outboundAddress,
-            RuntimeContext callerContext,
-            InboundMessage inboundMessage) {
-        MsgContext ctx = context != null ? context : MsgContext.defaultContext();
-        String gateKey = ctx.canonicalKey();
-
-        String requestedAgentId = ctx.extra() != null ? ctx.extra().get("agentId") : null;
-        HarnessAgent ha = resolveAgent(requestedAgentId);
-        if (ha == null) {
-            return Flux.error(
-                    new IllegalStateException(
-                            "HarnessGateway.bindMainAgent must be called before runStream(...)"));
-        }
-
-        String sessionId = resolveSessionId(gateKey);
-
-        if (outboundAddress != null) {
-            persistRoute(sessionId, outboundAddress);
-        }
-
-        RuntimeContext runtimeContext =
-                buildRuntimeContext(
-                        ctx, outboundAddress, callerContext, inboundMessage, sessionId, gateKey);
-
-        return withGatedStream(gateKey, () -> ha.streamEvents(messages, runtimeContext));
-    }
-
-    /**
-     * Builds the effective {@link RuntimeContext} for a Gateway turn.
-     *
-     * <ol>
-     *   <li>Start from {@code callerContext} (may be null)
-     *   <li>If a {@link ChannelRuntimeContextResolver} is configured and returns non-null, that
-     *       value replaces the caller base
-     *   <li>Gateway identity fields ({@code sessionId}, {@code userId}, {@code msgContext}, {@code
-     *       gateKey}, {@code outboundAddress}) are applied and win on conflict
-     * </ol>
-     *
-     * @param inboundMessage optional inbound envelope (for resolver); may be null
-     */
-    RuntimeContext buildRuntimeContext(
-            MsgContext ctx,
-            OutboundAddress outboundAddress,
-            RuntimeContext callerContext,
-            InboundMessage inboundMessage,
-            String sessionId,
-            String gateKey) {
-        RuntimeContext base = callerContext;
-        ChannelRuntimeContextResolver resolver = this.runtimeContextResolver;
-        if (resolver != null) {
-            ChannelRuntimeContextRequest request =
-                    new ChannelRuntimeContextRequest(
-                            ctx != null ? ctx.channel() : null,
-                            inboundMessage,
-                            ctx,
-                            outboundAddress,
-                            callerContext);
-            RuntimeContext resolved = resolver.resolve(request);
-            if (resolved != null) {
-                base = resolved;
-            }
-        }
-
-        RuntimeContext.Builder rtcBuilder = RuntimeContext.builder(base).sessionId(sessionId);
-        if (ctx != null) {
-            rtcBuilder.put("msgContext", ctx);
-        }
-        if (gateKey != null) {
-            rtcBuilder.put("gateKey", gateKey);
-        }
-        if (outboundAddress != null) {
-            rtcBuilder.put("outboundAddress", outboundAddress);
-        }
-        if (ctx != null && ctx.userId() != null && !ctx.userId().isBlank()) {
-            rtcBuilder.userId(ctx.userId());
-        }
-        return rtcBuilder.build();
-    }
-
-    /**
-     * Delivers proactive outbound messages through the channel manager using the session's last
-     * recorded outbound address. Returns false if no route or no channel manager is available.
-     */
-    public boolean deliverToSession(String sessionId, List<Msg> messages) {
-        if (channelManager == null || sessionId == null || messages == null || messages.isEmpty()) {
-            return false;
-        }
-        OutboundAddress target = resolveRoute(sessionId);
-        if (target == null) {
-            log.debug("Cannot deliver to session {}: no outbound address recorded", sessionId);
-            return false;
-        }
-        channelManager.deliver(target, messages);
-        return true;
-    }
+	
+	@Override
+	public boolean isSessionRunning(String sessionId) {
+		return false;
+	}
+	
+	/**
+	 * Triggers a wakeup run without an owning user id.
+	 *
+	 * @param sessionId the session to wake up
+	 * @return the agent's response, or {@link Mono#empty()} if the session is unknown
+	 * @deprecated implementers should override {@link #runWakeup(String, String)} instead, so
+	 * the dispatcher can propagate the owning user id. Required for runtimes that isolate
+	 * agent state by {@code (userId, sessionId)}: without it, a wakeup-driven round loads
+	 * state from an anonymous slot and the original conversation is lost. This overload is
+	 * retained for backward compatibility and defaults to ignoring the user id.
+	 */
+	@Override
+	public LinkedMessageMap<String, Object> runWakeup(String sessionId) {
+		return null;
+	}
+// un-comment
+//    @Override
+//    public Mono<Msg> run(MsgContext context, List<Msg> messages) {
+//        return run(context, messages, null, null);
+//    }
+//
+//    @Override
+//    public Mono<Msg> run(MsgContext context, List<Msg> messages, OutboundAddress outboundAddress) {
+//        return run(context, messages, outboundAddress, null);
+//    }
+//
+//    @Override
+//    public Mono<Msg> run(
+//            MsgContext context,
+//            List<Msg> messages,
+//            OutboundAddress outboundAddress,
+//            RuntimeContext callerContext) {
+//        return run(context, messages, outboundAddress, callerContext, null);
+//    }
+//
+//    @Override
+//    public Mono<Msg> run(
+//            MsgContext context,
+//            List<Msg> messages,
+//            OutboundAddress outboundAddress,
+//            RuntimeContext callerContext,
+//            InboundMessage inboundMessage) {
+//        MsgContext ctx = context != null ? context : MsgContext.defaultContext();
+//        String gateKey = ctx.canonicalKey();
+//
+//        String requestedAgentId = ctx.extra() != null ? ctx.extra().get("agentId") : null;
+//        HarnessAgent ha = resolveAgent(requestedAgentId);
+//        if (ha == null) {
+//            return Mono.error(
+//                    new IllegalStateException(
+//                            "HarnessGateway.bindMainAgent must be called before run(...)"));
+//        }
+//
+//        String sessionId = resolveSessionId(gateKey);
+//
+//        if (outboundAddress != null) {
+//            persistRoute(sessionId, outboundAddress);
+//        }
+//
+//        RuntimeContext runtimeContext =
+//                buildRuntimeContext(
+//                        ctx, outboundAddress, callerContext, inboundMessage, sessionId, gateKey);
+//
+//        return withGatedTurn(gateKey, () -> ha.call(messages, runtimeContext));
+//    }
+//
+//    @Override
+//    public Flux<AgentEvent> runStream(
+//            MsgContext context, List<Msg> messages, OutboundAddress outboundAddress) {
+//        return runStream(context, messages, outboundAddress, null, null);
+//    }
+//
+//    @Override
+//    public Flux<AgentEvent> runStream(
+//            MsgContext context,
+//            List<Msg> messages,
+//            OutboundAddress outboundAddress,
+//            RuntimeContext callerContext) {
+//        return runStream(context, messages, outboundAddress, callerContext, null);
+//    }
+//
+//    @Override
+//    public Flux<AgentEvent> runStream(
+//            MsgContext context,
+//            List<Msg> messages,
+//            OutboundAddress outboundAddress,
+//            RuntimeContext callerContext,
+//            InboundMessage inboundMessage) {
+//        MsgContext ctx = context != null ? context : MsgContext.defaultContext();
+//        String gateKey = ctx.canonicalKey();
+//
+//        String requestedAgentId = ctx.extra() != null ? ctx.extra().get("agentId") : null;
+//        HarnessAgent ha = resolveAgent(requestedAgentId);
+//        if (ha == null) {
+//            return Flux.error(
+//                    new IllegalStateException(
+//                            "HarnessGateway.bindMainAgent must be called before runStream(...)"));
+//        }
+//
+//        String sessionId = resolveSessionId(gateKey);
+//
+//        if (outboundAddress != null) {
+//            persistRoute(sessionId, outboundAddress);
+//        }
+//
+//        RuntimeContext runtimeContext =
+//                buildRuntimeContext(
+//                        ctx, outboundAddress, callerContext, inboundMessage, sessionId, gateKey);
+//
+//        return withGatedStream(gateKey, () -> ha.streamEvents(messages, runtimeContext));
+//    }
+//
+//    /**
+//     * Builds the effective {@link RuntimeContext} for a Gateway turn.
+//     *
+//     * <ol>
+//     *   <li>Start from {@code callerContext} (may be null)
+//     *   <li>If a {@link ChannelRuntimeContextResolver} is configured and returns non-null, that
+//     *       value replaces the caller base
+//     *   <li>Gateway identity fields ({@code sessionId}, {@code userId}, {@code msgContext}, {@code
+//     *       gateKey}, {@code outboundAddress}) are applied and win on conflict
+//     * </ol>
+//     *
+//     * @param inboundMessage optional inbound envelope (for resolver); may be null
+//     */
+//    RuntimeContext buildRuntimeContext(
+//            MsgContext ctx,
+//            OutboundAddress outboundAddress,
+//            RuntimeContext callerContext,
+//            InboundMessage inboundMessage,
+//            String sessionId,
+//            String gateKey) {
+//        RuntimeContext base = callerContext;
+//        ChannelRuntimeContextResolver resolver = this.runtimeContextResolver;
+//        if (resolver != null) {
+//            ChannelRuntimeContextRequest request =
+//                    new ChannelRuntimeContextRequest(
+//                            ctx != null ? ctx.channel() : null,
+//                            inboundMessage,
+//                            ctx,
+//                            outboundAddress,
+//                            callerContext);
+//            RuntimeContext resolved = resolver.resolve(request);
+//            if (resolved != null) {
+//                base = resolved;
+//            }
+//        }
+//
+//        RuntimeContext.Builder rtcBuilder = RuntimeContext.builder(base).sessionId(sessionId);
+//        if (ctx != null) {
+//            rtcBuilder.put("msgContext", ctx);
+//        }
+//        if (gateKey != null) {
+//            rtcBuilder.put("gateKey", gateKey);
+//        }
+//        if (outboundAddress != null) {
+//            rtcBuilder.put("outboundAddress", outboundAddress);
+//        }
+//        if (ctx != null && ctx.userId() != null && !ctx.userId().isBlank()) {
+//            rtcBuilder.userId(ctx.userId());
+//        }
+//        return rtcBuilder.build();
+//    }
+//
+//    /**
+//     * Delivers proactive outbound messages through the channel manager using the session's last
+//     * recorded outbound address. Returns false if no route or no channel manager is available.
+//     */
+//    public boolean deliverToSession(String sessionId, List<Msg> messages) {
+//        if (channelManager == null || sessionId == null || messages == null || messages.isEmpty()) {
+//            return false;
+//        }
+//        OutboundAddress target = resolveRoute(sessionId);
+//        if (target == null) {
+//            log.debug("Cannot deliver to session {}: no outbound address recorded", sessionId);
+//            return false;
+//        }
+//        channelManager.deliver(target, messages);
+//        return true;
+//    }
 
     // -----------------------------------------------------------------
     //  Exposed subagent routing
     // -----------------------------------------------------------------
-
-    private record ExposedSession(
-            String subagentId,
-            String agentId,
-            String sessionId,
-            Agent agent,
-            OutboundAddress replyTo) {}
+	
+	private static final class ExposedSession {
+		
+		private final String subagentId;
+		private final String agentId;
+		private final String sessionId;
+		private final AIAgent agent;
+		private final OutboundAddress replyTo;
+		
+		private ExposedSession(
+				String subagentId,
+				String agentId,
+				String sessionId,
+				AIAgent agent,
+				OutboundAddress replyTo) {
+			this.subagentId = subagentId;
+			this.agentId = agentId;
+			this.sessionId = sessionId;
+			this.agent = agent;
+			this.replyTo = replyTo;
+		}
+		
+		public String getSubagentId() {
+			return subagentId;
+		}
+		
+		public String getAgentId() {
+			return agentId;
+		}
+		
+		public String getSessionId() {
+			return sessionId;
+		}
+		
+		public AIAgent getAgent() {
+			return agent;
+		}
+		
+		public OutboundAddress getReplyTo() {
+			return replyTo;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof ExposedSession)) {
+				return false;
+			}
+			ExposedSession that = (ExposedSession) o;
+			return Objects.equals(subagentId, that.subagentId)
+					&& Objects.equals(agentId, that.agentId)
+					&& Objects.equals(sessionId, that.sessionId)
+					&& Objects.equals(agent, that.agent)
+					&& Objects.equals(replyTo, that.replyTo);
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(subagentId, agentId, sessionId, agent, replyTo);
+		}
+		
+		@Override
+		public String toString() {
+			return "ExposedSession{"
+					+ "subagentId='" + subagentId + '\''
+					+ ", agentId='" + agentId + '\''
+					+ ", sessionId='" + sessionId + '\''
+					+ ", agent=" + agent
+					+ ", replyTo=" + replyTo
+					+ '}';
+		}
+	}
 
     /**
      * Exposes a spawned subagent as a user-addressable entry point. Returns the assigned
@@ -367,7 +468,7 @@ public final class HarnessGateway implements Gateway, WakeupDispatcher.WakeupTar
      * @return the subagentId handle for direct addressing
      */
     public String exposeSubagent(
-            String agentId, String sessionId, Agent agent, OutboundAddress replyTo) {
+            String agentId, String sessionId, AIAgent agent, OutboundAddress replyTo) {
         Objects.requireNonNull(agent, "agent");
         String subagentId = "sub-" + UUID.randomUUID().toString().substring(0, 8);
         exposedSessions.put(
@@ -419,429 +520,426 @@ public final class HarnessGateway implements Gateway, WakeupDispatcher.WakeupTar
     }
 
     /**
-     * Installs the {@link BaseStore} used to persist session routing metadata across nodes.
+     * Installs the {link BaseStore} used to persist session routing metadata across nodes.
      * Called during gateway wiring when a distributed store is configured.
      */
-    public void setBaseStore(BaseStore store) {
+    public void setBaseStore(AgentStore store) {
         this.baseStore = store;
     }
+// un-comment
+//    /**
+//     * Installs the {@link SessionTurnGate} used to serialize concurrent turns per session. Defaults
+//     * to {@link LocalSessionTurnGate} when not set.
+//     *
+//     * @param gate turn gate implementation; ignored when {@code null}
+//     */
+//    public void setSessionTurnGate(SessionTurnGate gate) {
+//        if (gate != null) {
+//            this.sessionTurnGate = gate;
+//        }
+//    }
+//
+//    /**
+//     * Resolves an exposed subagent to a runnable session: returns the cached live session when
+//     * present, otherwise rebuilds it from the durable registry via the configured
+//     * {@link SubagentMaterializer}. Returns {@code null} when the handle is unknown / expired or
+//     * cannot be re-materialized.
+//     */
+//    private ExposedSession resolveExposed(String subagentId) {
+//        ExposedSession live = exposedSessions.get(subagentId);
+//        if (live != null) {
+//            return live;
+//        }
+//        SubagentMaterializer materializer = this.subagentMaterializer;
+//        if (materializer == null) {
+//            return null;
+//        }
+//        Optional<SubagentRecord> recordOpt = subagentRegistry.find(subagentId);
+//        if (recordOpt.isEmpty()) {
+//            return null;
+//        }
+//        SubagentRecord record = recordOpt.get();
+//        RuntimeContext.Builder rcb = RuntimeContext.builder().sessionId(record.sessionId());
+//        if (record.userId() != null && !record.userId().isBlank()) {
+//            rcb.userId(record.userId());
+//        }
+//        Optional<Agent> agentOpt = materializer.materialize(record.agentId(), rcb.build());
+//        if (agentOpt.isEmpty()) {
+//            log.warn(
+//                    "Cannot re-materialize exposed subagent {} (agentId={}): unknown type",
+//                    subagentId,
+//                    record.agentId());
+//            return null;
+//        }
+//        ExposedSession rebuilt =
+//                new ExposedSession(
+//                        record.subagentId(),
+//                        record.agentId(),
+//                        record.sessionId(),
+//                        agentOpt.get(),
+//                        null);
+//        exposedSessions.putIfAbsent(subagentId, rebuilt);
+//        return exposedSessions.get(subagentId);
+//    }
+//
+//    @Override
+//    public Mono<Msg> runSubagent(String subagentId, List<Msg> messages) {
+//        ExposedSession session = resolveExposed(subagentId);
+//        if (session == null) {
+//            return Mono.error(new IllegalArgumentException("Unknown subagentId: " + subagentId));
+//        }
+//
+//        RuntimeContext rtc = RuntimeContext.builder().sessionId(session.sessionId()).build();
+//        String gateKey = "subagent:" + subagentId;
+//
+//        return withGatedTurn(gateKey, () -> invokeExposedAgent(session.agent(), messages, rtc))
+//                .doOnNext(
+//                        reply -> {
+//                            if (channelManager != null
+//                                    && session.replyTo() != null
+//                                    && reply != null) {
+//                                channelManager.deliver(session.replyTo(), List.of(reply));
+//                            }
+//                        });
+//    }
+//
+//    private Mono<Msg> invokeExposedAgent(Agent agent, List<Msg> messages, RuntimeContext ctx) {
+//        if (agent instanceof HarnessAgent ha) {
+//            return ha.call(messages, ctx);
+//        }
+//        if (agent instanceof ReActAgent ra) {
+//            return ra.call(messages, ctx);
+//        }
+//        return agent.call(messages);
+//    }
+//
+//    // -----------------------------------------------------------------
+//    //  Internal
+//    // -----------------------------------------------------------------
+//
+//    private AIAgent resolveAgent(String agentId) {
+//        if (agentId != null && agentRegistry.containsKey(agentId)) {
+//            return agentRegistry.get(agentId);
+//        }
+//		AIAgent def = mainAgent.get();
+//        if (def != null) {
+//            return def;
+//        }
+//        return defaultAgentId != null ? agentRegistry.get(defaultAgentId) : null;
+//    }
+//
 
-    /**
-     * Installs the {@link SessionTurnGate} used to serialize concurrent turns per session. Defaults
-     * to {@link LocalSessionTurnGate} when not set.
-     *
-     * @param gate turn gate implementation; ignored when {@code null}
-     */
-    public void setSessionTurnGate(SessionTurnGate gate) {
-        if (gate != null) {
-            this.sessionTurnGate = gate;
-        }
-    }
-
-    /**
-     * Resolves an exposed subagent to a runnable session: returns the cached live session when
-     * present, otherwise rebuilds it from the durable registry via the configured
-     * {@link SubagentMaterializer}. Returns {@code null} when the handle is unknown / expired or
-     * cannot be re-materialized.
-     */
-    private ExposedSession resolveExposed(String subagentId) {
-        ExposedSession live = exposedSessions.get(subagentId);
-        if (live != null) {
-            return live;
-        }
-        SubagentMaterializer materializer = this.subagentMaterializer;
-        if (materializer == null) {
-            return null;
-        }
-        Optional<SubagentRecord> recordOpt = subagentRegistry.find(subagentId);
-        if (recordOpt.isEmpty()) {
-            return null;
-        }
-        SubagentRecord record = recordOpt.get();
-        RuntimeContext.Builder rcb = RuntimeContext.builder().sessionId(record.sessionId());
-        if (record.userId() != null && !record.userId().isBlank()) {
-            rcb.userId(record.userId());
-        }
-        Optional<Agent> agentOpt = materializer.materialize(record.agentId(), rcb.build());
-        if (agentOpt.isEmpty()) {
-            log.warn(
-                    "Cannot re-materialize exposed subagent {} (agentId={}): unknown type",
-                    subagentId,
-                    record.agentId());
-            return null;
-        }
-        ExposedSession rebuilt =
-                new ExposedSession(
-                        record.subagentId(),
-                        record.agentId(),
-                        record.sessionId(),
-                        agentOpt.get(),
-                        null);
-        exposedSessions.putIfAbsent(subagentId, rebuilt);
-        return exposedSessions.get(subagentId);
-    }
-
-    @Override
-    public Mono<Msg> runSubagent(String subagentId, List<Msg> messages) {
-        ExposedSession session = resolveExposed(subagentId);
-        if (session == null) {
-            return Mono.error(new IllegalArgumentException("Unknown subagentId: " + subagentId));
-        }
-
-        RuntimeContext rtc = RuntimeContext.builder().sessionId(session.sessionId()).build();
-        String gateKey = "subagent:" + subagentId;
-
-        return withGatedTurn(gateKey, () -> invokeExposedAgent(session.agent(), messages, rtc))
-                .doOnNext(
-                        reply -> {
-                            if (channelManager != null
-                                    && session.replyTo() != null
-                                    && reply != null) {
-                                channelManager.deliver(session.replyTo(), List.of(reply));
-                            }
-                        });
-    }
-
-    private Mono<Msg> invokeExposedAgent(Agent agent, List<Msg> messages, RuntimeContext ctx) {
-        if (agent instanceof HarnessAgent ha) {
-            return ha.call(messages, ctx);
-        }
-        if (agent instanceof ReActAgent ra) {
-            return ra.call(messages, ctx);
-        }
-        return agent.call(messages);
-    }
-
-    // -----------------------------------------------------------------
-    //  Internal
-    // -----------------------------------------------------------------
-
-    private HarnessAgent resolveAgent(String agentId) {
-        if (agentId != null && agentRegistry.containsKey(agentId)) {
-            return agentRegistry.get(agentId);
-        }
-        HarnessAgent def = mainAgent.get();
-        if (def != null) {
-            return def;
-        }
-        return defaultAgentId != null ? agentRegistry.get(defaultAgentId) : null;
-    }
-
-    private static String resolveAgentId(HarnessAgent ha) {
-        String id = ha != null ? ha.getAgentId() : null;
-        return (id != null && !id.isBlank()) ? id : "main";
-    }
-
-    private static String generateSessionId(String gateKey) {
-        return "gw-" + SessionIdUtils.deterministicHash(gateKey);
-    }
-
-    @Override
-    public Flux<AgentEvent> runSubagentStream(String subagentId, List<Msg> messages) {
-        ExposedSession session = resolveExposed(subagentId);
-        if (session == null) {
-            return Flux.error(new IllegalArgumentException("Unknown subagentId: " + subagentId));
-        }
-
-        RuntimeContext rtc = RuntimeContext.builder().sessionId(session.sessionId()).build();
-        String gateKey = "subagent:" + subagentId;
-
-        return withGatedStream(gateKey, () -> streamExposedAgent(session.agent(), messages, rtc));
-    }
-
-    private Flux<AgentEvent> streamExposedAgent(
-            Agent agent, List<Msg> messages, RuntimeContext ctx) {
-        if (agent instanceof HarnessAgent ha) {
-            return ha.streamEvents(messages, ctx);
-        }
-        if (agent instanceof ReActAgent ra) {
-            return ra.streamEvents(messages, ctx);
-        }
-        return Flux.error(
-                new UnsupportedOperationException(
-                        "Agent type "
-                                + agent.getClass().getName()
-                                + " does not support streaming"));
-    }
-
-    // ------------------------------------------------------------------
-    //  Session helpers
-    // ------------------------------------------------------------------
-
-    private String resolveSessionId(String gateKey) {
-        String sessionId = generateSessionId(gateKey);
-        String previous = sessionToGateKey.put(sessionId, gateKey);
-        if (previous == null || !previous.equals(gateKey)) {
-            persistSessionGateKey(sessionId, gateKey);
-        }
-        return sessionId;
-    }
-
-    /**
-     * Adopts a control-plane-allocated session id so {@link #runWakeup(String, String)} can resolve
-     * it. Used by BYO {@code team_join}; Managed sessions already use product ids that the managed
-     * turn path accepts without this mapping.
-     *
-     * @param sessionId external session id assigned by the control plane
-     * @param gateKey stable gate key (e.g. {@code team:{teamName}:{role}})
-     */
-    public void registerExternalSession(String sessionId, String gateKey) {
-        if (sessionId == null || sessionId.isBlank()) {
-            throw new IllegalArgumentException("sessionId required");
-        }
-        if (gateKey == null || gateKey.isBlank()) {
-            throw new IllegalArgumentException("gateKey required");
-        }
-        sessionToGateKey.put(sessionId, gateKey);
-        persistSessionGateKey(sessionId, gateKey);
-    }
-
-    /**
-     * Returns {@code true} when the given session is currently inside a gated turn (a run is in
-     * progress). Used by {@link WakeupDispatcher} to skip sessions that will naturally drain their
-     * inbox on the current reasoning step.
-     */
-    public boolean isSessionRunning(String sessionId) {
-        String gateKey = resolveSessionGateKey(sessionId);
-        return gateKey != null && sessionTurnGate.isRunning(gateKey);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>Delegates to {@link #runWakeup(String, String)} with a {@code null} user id.
-     *
-     * @deprecated use {@link #runWakeup(String, String)} so the wakeup-driven round loads agent
-     *     state from the correct {@code (userId, sessionId)} slot. This overload preserves legacy
-     *     anonymous-wakeup behavior.
-     */
-    @Deprecated
-    @Override
-    public Mono<Msg> runWakeup(String sessionId) {
-        return runWakeup(null, sessionId);
-    }
-
-    /**
-     * Triggers a wakeup-driven run for an idle session, propagating the owning user id when
-     * present. Called by {@link WakeupDispatcher} when a background task completes or a team
-     * message arrives. The agent starts a reasoning round with no user input; {@link
-     * io.agentscope.harness.agent.middleware.InboxMiddleware} drains the inbox and injects the
-     * pending results as context.
-     *
-     * <p>When {@code userId} is non-blank it is set on the {@link RuntimeContext}, so the agent
-     * loads state from the same {@code (userId, sessionId)} slot as the original user-driven run
-     * — matching {@code runStream}. A blank or null user id preserves the legacy anonymous
-     * behavior.
-     *
-     * @param userId the owning user id carried by the wakeup entry; may be {@code null} or blank
-     * @param sessionId the session to wake up
-     * @return the agent's response, or {@link Mono#empty()} if the session is unknown
-     */
-    @Override
-    public Mono<Msg> runWakeup(String userId, String sessionId) {
-        String gateKey = resolveSessionGateKey(sessionId);
-        if (gateKey == null) {
-            log.debug("runWakeup: unknown sessionId={}, skipping", sessionId);
-            return Mono.empty();
-        }
-        HarnessAgent ha = resolveAgent(null);
-        if (ha == null) {
-            return Mono.empty();
-        }
-        RuntimeContext.Builder rtcBuilder =
-                RuntimeContext.builder()
-                        .sessionId(sessionId)
-                        .put("gateKey", gateKey)
-                        .put("outboundAddress", resolveRoute(sessionId));
-        if (userId != null && !userId.isBlank()) {
-            rtcBuilder.userId(userId);
-        }
-        RuntimeContext rtc = rtcBuilder.build();
-
-        if (messageBus == null) {
-            return withGatedTurn(gateKey, () -> ha.call(List.of(), rtc));
-        }
-
-        return withGatedTurn(
-                gateKey,
-                () ->
-                        ha.streamEvents(List.of(), rtc)
-                                .doOnNext(event -> publishEventToSession(sessionId, event))
-                                .filter(e -> e instanceof AgentResultEvent)
-                                .cast(AgentResultEvent.class)
-                                .map(AgentResultEvent::getResult)
-                                .last());
-    }
-
-    private void publishEventToSession(String sessionId, AgentEvent event) {
-        try {
-            Map<String, Object> payload =
-                    io.agentscope.core.util.JsonUtils.getJsonCodec()
-                            .convertValue(
-                                    event,
-                                    new com.fasterxml.jackson.core.type.TypeReference<
-                                            Map<String, Object>>() {});
-            messageBus.sessionPublishEvent(sessionId, payload).subscribe();
-        } catch (Exception e) {
-            log.debug("Failed to publish event to session {}: {}", sessionId, e.getMessage());
-        }
-    }
-
-    // ------------------------------------------------------------------
-    //  Turn serialization
-    // ------------------------------------------------------------------
-
-    private Mono<Msg> withGatedTurn(String gateKey, Supplier<Mono<Msg>> turn) {
-        AtomicReference<TurnLease> leaseRef = new AtomicReference<>();
-        return Mono.defer(
-                        () -> {
-                            try {
-                                leaseRef.set(sessionTurnGate.acquire(gateKey));
-                            } catch (TurnBusyException e) {
-                                log.debug(
-                                        "Skipping turn for {}: gate busy ({})",
-                                        gateKey,
-                                        e.getMessage());
-                                return Mono.empty();
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                                return Mono.error(new IllegalStateException(e));
-                            }
-                            return turn.get();
-                        })
-                .doFinally(
-                        sig -> {
-                            TurnLease lease = leaseRef.get();
-                            if (lease != null) {
-                                lease.close();
-                            }
-                        })
-                .subscribeOn(Schedulers.boundedElastic());
-    }
-
-    private Flux<AgentEvent> withGatedStream(String gateKey, Supplier<Flux<AgentEvent>> stream) {
-        AtomicReference<TurnLease> leaseRef = new AtomicReference<>();
-        return Flux.defer(
-                        () -> {
-                            try {
-                                leaseRef.set(sessionTurnGate.acquire(gateKey));
-                            } catch (TurnBusyException e) {
-                                log.debug(
-                                        "Skipping stream for {}: gate busy ({})",
-                                        gateKey,
-                                        e.getMessage());
-                                return Flux.empty();
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                                return Flux.error(new IllegalStateException(e));
-                            }
-                            return stream.get();
-                        })
-                .doFinally(
-                        sig -> {
-                            TurnLease lease = leaseRef.get();
-                            if (lease != null) {
-                                lease.close();
-                            }
-                        })
-                .subscribeOn(Schedulers.boundedElastic());
-    }
-
-    // ------------------------------------------------------------------
-    //  Route persistence (local cache + optional BaseStore)
-    // ------------------------------------------------------------------
-
-    private String resolveSessionGateKey(String sessionId) {
-        if (sessionId == null) {
-            return null;
-        }
-        String gateKey = sessionToGateKey.get(sessionId);
-        if (gateKey != null) {
-            return gateKey;
-        }
-        BaseStore store = this.baseStore;
-        if (store == null) {
-            return null;
-        }
-        try {
-            StoreItem item = store.get(SESSION_NAMESPACE, sessionId);
-            if (item == null || item.value() == null) {
-                return null;
-            }
-            Object value = item.value().get("gateKey");
-            if (value == null) {
-                return null;
-            }
-            gateKey = String.valueOf(value);
-            sessionToGateKey.put(sessionId, gateKey);
-            return gateKey;
-        } catch (RuntimeException e) {
-            log.debug(
-                    "Failed to load session gate key for {} from store: {}",
-                    sessionId,
-                    e.getMessage());
-            return null;
-        }
-    }
-
-    private OutboundAddress resolveRoute(String sessionId) {
-        if (sessionId == null) {
-            return null;
-        }
-        OutboundAddress route = lastRouteBySession.get(sessionId);
-        if (route != null) {
-            return route;
-        }
-        BaseStore store = this.baseStore;
-        if (store == null) {
-            return null;
-        }
-        try {
-            StoreItem item = store.get(ROUTE_NAMESPACE, sessionId);
-            if (item == null || item.value() == null) {
-                return null;
-            }
-            route = OutboundAddress.fromMap(item.value());
-            if (route != null) {
-                lastRouteBySession.put(sessionId, route);
-            }
-            return route;
-        } catch (RuntimeException e) {
-            log.debug(
-                    "Failed to load outbound route for {} from store: {}",
-                    sessionId,
-                    e.getMessage());
-            return null;
-        }
-    }
-
-    private void persistSessionGateKey(String sessionId, String gateKey) {
-        if (sessionId == null || gateKey == null) {
-            return;
-        }
-        BaseStore store = this.baseStore;
-        if (store == null) {
-            return;
-        }
-        try {
-            Map<String, Object> value = new HashMap<>();
-            value.put("gateKey", gateKey);
-            store.put(SESSION_NAMESPACE, sessionId, value);
-        } catch (RuntimeException e) {
-            log.warn("Failed to persist session gate key for {}: {}", sessionId, e.getMessage());
-        }
-    }
-
-    private void persistRoute(String sessionId, OutboundAddress outboundAddress) {
-        lastRouteBySession.put(sessionId, outboundAddress);
-        BaseStore store = this.baseStore;
-        if (store == null || outboundAddress == null) {
-            return;
-        }
-        try {
-            store.put(ROUTE_NAMESPACE, sessionId, outboundAddress.toMap());
-        } catch (RuntimeException e) {
-            log.warn("Failed to persist outbound route for {}: {}", sessionId, e.getMessage());
-        }
-    }
+//
+//    private static String generateSessionId(String gateKey) {
+//        return "gw-" + SessionIdUtils.deterministicHash(gateKey);
+//    }
+//
+//    @Override
+//    public Flux<ServerEvent> runSubagentStream(String subagentId, List<LinkedMessageMap<String,Object>> messages) {
+//        ExposedSession session = resolveExposed(subagentId);
+//        if (session == null) {
+//            return Flux.error(new IllegalArgumentException("Unknown subagentId: " + subagentId));
+//        }
+//
+//        RuntimeContext rtc = RuntimeContext.builder().sessionId(session.sessionId()).build();
+//        String gateKey = "subagent:" + subagentId;
+//
+//        return withGatedStream(gateKey, () -> streamExposedAgent(session.agent(), messages, rtc));
+//    }
+//
+//    private Flux<ServerEvent> streamExposedAgent(
+//            AIAgent agent, List<LinkedMessageMap<String,Object>> messages, ChatObject ctx) {
+//        if (agent instanceof HarnessAgent ha) {
+//            return ha.streamEvents(messages, ctx);
+//        }
+//        if (agent instanceof ReActAgent ra) {
+//            return ra.streamEvents(messages, ctx);
+//        }
+//        return Flux.error(
+//                new UnsupportedOperationException(
+//                        "Agent type "
+//                                + agent.getClass().getName()
+//                                + " does not support streaming"));
+//    }
+//
+//    // ------------------------------------------------------------------
+//    //  Session helpers
+//    // ------------------------------------------------------------------
+//
+//    private String resolveSessionId(String gateKey) {
+//        String sessionId = generateSessionId(gateKey);
+//        String previous = sessionToGateKey.put(sessionId, gateKey);
+//        if (previous == null || !previous.equals(gateKey)) {
+//            persistSessionGateKey(sessionId, gateKey);
+//        }
+//        return sessionId;
+//    }
+//
+//    /**
+//     * Adopts a control-plane-allocated session id so {@link #runWakeup(String, String)} can resolve
+//     * it. Used by BYO {@code team_join}; Managed sessions already use product ids that the managed
+//     * turn path accepts without this mapping.
+//     *
+//     * @param sessionId external session id assigned by the control plane
+//     * @param gateKey stable gate key (e.g. {@code team:{teamName}:{role}})
+//     */
+//    public void registerExternalSession(String sessionId, String gateKey) {
+//        if (sessionId == null || sessionId.isBlank()) {
+//            throw new IllegalArgumentException("sessionId required");
+//        }
+//        if (gateKey == null || gateKey.isBlank()) {
+//            throw new IllegalArgumentException("gateKey required");
+//        }
+//        sessionToGateKey.put(sessionId, gateKey);
+//        persistSessionGateKey(sessionId, gateKey);
+//    }
+//
+//    /**
+//     * Returns {@code true} when the given session is currently inside a gated turn (a run is in
+//     * progress). Used by {@link WakeupDispatcher} to skip sessions that will naturally drain their
+//     * inbox on the current reasoning step.
+//     */
+//    public boolean isSessionRunning(String sessionId) {
+//        String gateKey = resolveSessionGateKey(sessionId);
+//        return gateKey != null && sessionTurnGate.isRunning(gateKey);
+//    }
+//
+//    /**
+//     * {@inheritDoc}
+//     *
+//     * <p>Delegates to {@link #runWakeup(String, String)} with a {@code null} user id.
+//     *
+//     * @deprecated use {@link #runWakeup(String, String)} so the wakeup-driven round loads agent
+//     *     state from the correct {@code (userId, sessionId)} slot. This overload preserves legacy
+//     *     anonymous-wakeup behavior.
+//     */
+//    @Deprecated
+//    @Override
+//    public Mono<Msg> runWakeup(String sessionId) {
+//        return runWakeup(null, sessionId);
+//    }
+//
+//    /**
+//     * Triggers a wakeup-driven run for an idle session, propagating the owning user id when
+//     * present. Called by {@link WakeupDispatcher} when a background task completes or a team
+//     * message arrives. The agent starts a reasoning round with no user input; {@link
+//     * io.agentscope.harness.agent.middleware.InboxMiddleware} drains the inbox and injects the
+//     * pending results as context.
+//     *
+//     * <p>When {@code userId} is non-blank it is set on the {@link RuntimeContext}, so the agent
+//     * loads state from the same {@code (userId, sessionId)} slot as the original user-driven run
+//     * — matching {@code runStream}. A blank or null user id preserves the legacy anonymous
+//     * behavior.
+//     *
+//     * @param userId the owning user id carried by the wakeup entry; may be {@code null} or blank
+//     * @param sessionId the session to wake up
+//     * @return the agent's response, or {@link Mono#empty()} if the session is unknown
+//     */
+//    @Override
+//    public Mono<Msg> runWakeup(String userId, String sessionId) {
+//        String gateKey = resolveSessionGateKey(sessionId);
+//        if (gateKey == null) {
+//            log.debug("runWakeup: unknown sessionId={}, skipping", sessionId);
+//            return Mono.empty();
+//        }
+//        HarnessAgent ha = resolveAgent(null);
+//        if (ha == null) {
+//            return Mono.empty();
+//        }
+//        RuntimeContext.Builder rtcBuilder =
+//                RuntimeContext.builder()
+//                        .sessionId(sessionId)
+//                        .put("gateKey", gateKey)
+//                        .put("outboundAddress", resolveRoute(sessionId));
+//        if (userId != null && !userId.isBlank()) {
+//            rtcBuilder.userId(userId);
+//        }
+//        RuntimeContext rtc = rtcBuilder.build();
+//
+//        if (messageBus == null) {
+//            return withGatedTurn(gateKey, () -> ha.call(List.of(), rtc));
+//        }
+//
+//        return withGatedTurn(
+//                gateKey,
+//                () ->
+//                        ha.streamEvents(List.of(), rtc)
+//                                .doOnNext(event -> publishEventToSession(sessionId, event))
+//                                .filter(e -> e instanceof AgentResultEvent)
+//                                .cast(AgentResultEvent.class)
+//                                .map(AgentResultEvent::getResult)
+//                                .last());
+//    }
+//
+//    private void publishEventToSession(String sessionId, AgentEvent event) {
+//        try {
+//            Map<String, Object> payload =
+//                    io.agentscope.core.util.JsonUtils.getJsonCodec()
+//                            .convertValue(
+//                                    event,
+//                                    new com.fasterxml.jackson.core.type.TypeReference<
+//                                            Map<String, Object>>() {});
+//            messageBus.sessionPublishEvent(sessionId, payload).subscribe();
+//        } catch (Exception e) {
+//            log.debug("Failed to publish event to session {}: {}", sessionId, e.getMessage());
+//        }
+//    }
+//
+//    // ------------------------------------------------------------------
+//    //  Turn serialization
+//    // ------------------------------------------------------------------
+//
+//    private Mono<Msg> withGatedTurn(String gateKey, Supplier<Mono<Msg>> turn) {
+//        AtomicReference<TurnLease> leaseRef = new AtomicReference<>();
+//        return Mono.defer(
+//                        () -> {
+//                            try {
+//                                leaseRef.set(sessionTurnGate.acquire(gateKey));
+//                            } catch (TurnBusyException e) {
+//                                log.debug(
+//                                        "Skipping turn for {}: gate busy ({})",
+//                                        gateKey,
+//                                        e.getMessage());
+//                                return Mono.empty();
+//                            } catch (InterruptedException e) {
+//                                Thread.currentThread().interrupt();
+//                                return Mono.error(new IllegalStateException(e));
+//                            }
+//                            return turn.get();
+//                        })
+//                .doFinally(
+//                        sig -> {
+//                            TurnLease lease = leaseRef.get();
+//                            if (lease != null) {
+//                                lease.close();
+//                            }
+//                        })
+//                .subscribeOn(Schedulers.boundedElastic());
+//    }
+//
+//    private Flux<AgentEvent> withGatedStream(String gateKey, Supplier<Flux<AgentEvent>> stream) {
+//        AtomicReference<TurnLease> leaseRef = new AtomicReference<>();
+//        return Flux.defer(
+//                        () -> {
+//                            try {
+//                                leaseRef.set(sessionTurnGate.acquire(gateKey));
+//                            } catch (TurnBusyException e) {
+//                                log.debug(
+//                                        "Skipping stream for {}: gate busy ({})",
+//                                        gateKey,
+//                                        e.getMessage());
+//                                return Flux.empty();
+//                            } catch (InterruptedException e) {
+//                                Thread.currentThread().interrupt();
+//                                return Flux.error(new IllegalStateException(e));
+//                            }
+//                            return stream.get();
+//                        })
+//                .doFinally(
+//                        sig -> {
+//                            TurnLease lease = leaseRef.get();
+//                            if (lease != null) {
+//                                lease.close();
+//                            }
+//                        })
+//                .subscribeOn(Schedulers.boundedElastic());
+//    }
+//
+//    // ------------------------------------------------------------------
+//    //  Route persistence (local cache + optional BaseStore)
+//    // ------------------------------------------------------------------
+//
+//    private String resolveSessionGateKey(String sessionId) {
+//        if (sessionId == null) {
+//            return null;
+//        }
+//        String gateKey = sessionToGateKey.get(sessionId);
+//        if (gateKey != null) {
+//            return gateKey;
+//        }
+//        BaseStore store = this.baseStore;
+//        if (store == null) {
+//            return null;
+//        }
+//        try {
+//            StoreItem item = store.get(SESSION_NAMESPACE, sessionId);
+//            if (item == null || item.value() == null) {
+//                return null;
+//            }
+//            Object value = item.value().get("gateKey");
+//            if (value == null) {
+//                return null;
+//            }
+//            gateKey = String.valueOf(value);
+//            sessionToGateKey.put(sessionId, gateKey);
+//            return gateKey;
+//        } catch (RuntimeException e) {
+//            log.debug(
+//                    "Failed to load session gate key for {} from store: {}",
+//                    sessionId,
+//                    e.getMessage());
+//            return null;
+//        }
+//    }
+//
+//    private OutboundAddress resolveRoute(String sessionId) {
+//        if (sessionId == null) {
+//            return null;
+//        }
+//        OutboundAddress route = lastRouteBySession.get(sessionId);
+//        if (route != null) {
+//            return route;
+//        }
+//        BaseStore store = this.baseStore;
+//        if (store == null) {
+//            return null;
+//        }
+//        try {
+//            StoreItem item = store.get(ROUTE_NAMESPACE, sessionId);
+//            if (item == null || item.value() == null) {
+//                return null;
+//            }
+//            route = OutboundAddress.fromMap(item.value());
+//            if (route != null) {
+//                lastRouteBySession.put(sessionId, route);
+//            }
+//            return route;
+//        } catch (RuntimeException e) {
+//            log.debug(
+//                    "Failed to load outbound route for {} from store: {}",
+//                    sessionId,
+//                    e.getMessage());
+//            return null;
+//        }
+//    }
+//
+//    private void persistSessionGateKey(String sessionId, String gateKey) {
+//        if (sessionId == null || gateKey == null) {
+//            return;
+//        }
+//        BaseStore store = this.baseStore;
+//        if (store == null) {
+//            return;
+//        }
+//        try {
+//            Map<String, Object> value = new HashMap<>();
+//            value.put("gateKey", gateKey);
+//            store.put(SESSION_NAMESPACE, sessionId, value);
+//        } catch (RuntimeException e) {
+//            log.warn("Failed to persist session gate key for {}: {}", sessionId, e.getMessage());
+//        }
+//    }
+//
+//    private void persistRoute(String sessionId, OutboundAddress outboundAddress) {
+//        lastRouteBySession.put(sessionId, outboundAddress);
+//        BaseStore store = this.baseStore;
+//        if (store == null || outboundAddress == null) {
+//            return;
+//        }
+//        try {
+//            store.put(ROUTE_NAMESPACE, sessionId, outboundAddress.toMap());
+//        } catch (RuntimeException e) {
+//            log.warn("Failed to persist outbound route for {}: {}", sessionId, e.getMessage());
+//        }
+//    }
 }

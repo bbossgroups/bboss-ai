@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway.channel;
+package org.frameworkset.spi.ai.harness.gateway.channel;
 
-import io.agentscope.core.event.AgentEvent;
-import io.agentscope.core.message.Msg;
-import io.agentscope.harness.agent.gateway.Gateway;
-import java.util.List;
+ 
+import org.frameworkset.spi.ai.harness.gateway.Gateway;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
+import org.frameworkset.spi.ai.model.ServerEvent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 /**
  * Channel adapter — ingests inbound messages from one messaging platform (or a programmatic
@@ -43,10 +45,10 @@ import reactor.core.publisher.Mono;
  * <h2>Message dispatch</h2>
  *
  * Implementations call {@link Gateway#run} with the {@link
- * io.agentscope.harness.agent.gateway.MsgContext} produced by {@link ChannelRouter#resolveRoute},
+ * org.frameworkset.spi.ai.harness.gateway.MsgContext} produced by {@link ChannelRouter#resolveRoute},
  * the resolved {@link OutboundAddress}, and any caller {@link
- * io.agentscope.core.agent.RuntimeContext} carried on {@link InboundMessage#runtimeContext()}.
- * The returned {@link Msg} reply is delivered back to the originating platform by the channel
+ * org.frameworkset.spi.ai.model.ChatObject} carried on {@link InboundMessage#getRuntimeContext()} ()}.
+ * The returned {@link LinkedMessageMap<String, Object>} reply is delivered back to the originating platform by the channel
  * adapter.
  *
  * @see ChannelConfig
@@ -57,7 +59,7 @@ public interface Channel {
 
     /**
      * Logical identifier for this channel (e.g. {@code "chatui"}, {@code "slack"},
-     * {@code "discord"}). Must match {@link ChannelConfig#channelId()}.
+     * {@code "discord"}). Must match {@link ChannelConfig#getChannelId()} ()}.
      */
     String channelId();
 
@@ -90,19 +92,19 @@ public interface Channel {
      * <ol>
      *   <li>Calling {@link ChannelRouter#resolveRoute} to obtain a {@link RouteResult} (which
      *       includes the {@link OutboundAddress} for reply routing)
-     *   <li>Passing the {@link RouteResult#context()}, messages, and {@link
-     *       RouteResult#outboundAddress()} to {@link Gateway#run}
+     *   <li>Passing the {@link RouteResult#getContext()} ()}, messages, and {@link
+     *       RouteResult#getOutboundAddress()} ()} to {@link Gateway#run}
      * </ol>
      */
-    Mono<Msg> dispatch(InboundMessage message);
+    LinkedMessageMap<String, Object> dispatch(InboundMessage message);
 
     /**
      * Streaming variant of {@link #dispatch(InboundMessage)}. Returns fine-grained
-     * {@link AgentEvent}s instead of a single reply.
+     * {@link ServerEvent}s instead of a single reply.
      *
      * <p>The default delegates to {@link Gateway#runStream} with the resolved route.
      */
-    default Flux<AgentEvent> dispatchStream(InboundMessage message) {
+    default Flux<ServerEvent> dispatchStream(InboundMessage message) {
         return Flux.error(new UnsupportedOperationException("Streaming dispatch not supported"));
     }
 
@@ -117,13 +119,13 @@ public interface Channel {
      * @param address the delivery target (peer, thread, account context)
      * @param messages the messages to deliver
      */
-    default void deliver(OutboundAddress address, List<Msg> messages) {}
+    default void deliver(OutboundAddress address, List<LinkedMessageMap<String, Object>> messages) {}
 
     /** Delivers one durable notification and returns the provider message ID, not a local ack.
      * Unsupported transports fail explicitly so callers can keep the notification pending.
      */
     default Mono<String> deliverWithReceipt(
-            OutboundAddress address, Msg message, String deliveryId) {
+            OutboundAddress address, LinkedMessageMap<String, Object> message, String deliveryId) {
         return Mono.error(new UnsupportedOperationException("Provider receipts are not supported"));
     }
 

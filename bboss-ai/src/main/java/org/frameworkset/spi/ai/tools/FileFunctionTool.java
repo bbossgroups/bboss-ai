@@ -84,7 +84,7 @@ public class FileFunctionTool  extends BaseAuditorTool<FileFunctionTool>{
 			this.baseDirectories.addAll(baseDirectories);
 		}
 		if(workspaceManager.getWorkspace() != null) {
-			baseDirectories.add(workspaceManager.getWorkspace().toString());
+			this.baseDirectories.add(workspaceManager.getWorkspace().toString());
 		}
 	}
 	public FileFunctionTool(Auditor auditor) {

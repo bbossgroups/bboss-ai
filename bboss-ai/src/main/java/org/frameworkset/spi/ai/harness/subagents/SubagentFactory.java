@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.subagent;
+package org.frameworkset.spi.ai.harness.subagents;
 
-import io.agentscope.core.agent.Agent;
-import io.agentscope.core.agent.RuntimeContext;
+
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.model.ChatObject;
 
 /**
  * Creates a new subagent instance for a single spawn or session. Registered under an {@code
@@ -42,7 +43,7 @@ public interface SubagentFactory {
      * a parent-aware {@code SessionKey}); see the type-level javadoc.
      *
      * @param parentRc parent agent's runtime context at spawn time; may be
-     *     {@link RuntimeContext#empty()} when caller has no scope
+     *     {@link ChatObject#empty()} when caller has no scope
      */
-    Agent create(RuntimeContext parentRc);
+    AIAgent create(ChatObject parentRc);
 }

@@ -129,7 +129,7 @@ public class SessionSearchTool {
 			readOnly = true,
 			description = "Search the CURRENT user's past session transcripts for a keyword or phrase. "
 					+ "Scope: only messages belonging to the current user (agent.getUserId()) and "
-					+ "the current session store; other users' or other agents' sessions are never searched. "
+					+ "the current session store; other users' sessions are never searched. "
 					+ "Matching: case-insensitive substring match against the searchable text of each "
 					+ "session message (role, content, and any tool/attachment text that the session "
 					+ "store exposes). The most recent `limit` sessions are scanned, newest first. "
@@ -153,6 +153,94 @@ public class SessionSearchTool {
 							+ "Default 10 when <= 0 is passed. Hard cap 100 to protect context size.",
 					required = false
 			) int limit
+	) {
+		
+		
+		
+		
+		// ---- 3. 上下文获取（防御 null）----
+		ChatObject chatObject = AgentTraceHolder.getChatObject();
+		if (chatObject == null || chatObject.getAgent() == null) {
+			return "Error: no active agent context available for session search.";
+		}
+		AIAgent agent = chatObject.getAgent();
+		String userId = agent.getUserId();
+	 
+		if (userId == null  ) {
+			return "Error: userId is not available.";
+		}
+		
+		if (  agent.getMainSessionStore() == null  ) {
+			return "Error: user  "+userId+"'s session store is not available.";
+		}
+		
+		 
+		
+		return _userSessionsSearch(query, limit, null );
+	}
+	
+	@Tool(
+			name = "user_agent_sessions_search",
+			readOnly = true,
+			description = "Search the Agent CURRENT user's past session transcripts for a keyword or phrase. "
+					+ "Scope: only messages belonging to the current user (agent.getUserId()) and "
+					+ "the current session store; other users' or other agents' sessions are never searched. "
+					+ "Matching: case-insensitive substring match against the searchable text of each "
+					+ "session message (role, content, and any tool/attachment text that the session "
+					+ "store exposes). The most recent `limit` sessions are scanned, newest first. "
+					+ "Returns: a plain-text report containing the number of matches and, for each "
+					+ "match, the session context (session id / timestamp / role) plus a short snippet "
+					+ "around the matched keyword. If nothing matches, returns a clear \"no match\" message. "
+					+ "Use this tool when the user asks things like \"did we discuss X before?\", "
+					+ "\"find where I mentioned Y\", or \"what did I say about Z in earlier sessions?\". "
+					+ "Do NOT use it for real-time data, web search, or non-session content."
+	)
+	public String userAgentSessionsSearch(
+			@ToolParam(
+					name = "query",
+					description = "Search query: a keyword or short phrase. Case-insensitive substring match. "
+							+ "Can be empty; empty/blank queries are allowed, and return current users session context messages.",
+					required = false
+			) String query,
+			@ToolParam(
+					name = "limit",
+					description = "Maximum number of most-recent sessions to scan. "
+							+ "Default 10 when <= 0 is passed. Hard cap 100 to protect context size.",
+					required = false
+			) int limit
+	) {
+ 
+
+		
+		
+		// ---- 3. 上下文获取（防御 null）----
+		ChatObject chatObject = AgentTraceHolder.getChatObject();
+		if (chatObject == null || chatObject.getAgent() == null) {
+			return "Error: no active agent context available for session search.";
+		}
+		AIAgent agent = chatObject.getAgent();
+		String userId = agent.getUserId();
+		String agentId = agent.getAgentId();
+		if (userId == null  ) {
+			return "Error: userId is not available.";
+		}
+		
+		if (  agent.getMainSessionStore() == null  ) {
+			return "Error: user  "+userId+"'s session store is not available.";
+		}
+		
+		if ( agentId == null) {
+			return "Error: user "+userId+"'s agentId is not available.";
+		}
+		 
+		return _userSessionsSearch(query, limit, agentId );
+	}
+	
+ 
+	private String _userSessionsSearch(
+			  String query,
+			  int limit,
+			  String agentId 
 	) {
 		// ---- 1. 参数校验 ----
 //		if (query == null || query.trim().isEmpty()) {
@@ -188,7 +276,7 @@ public class SessionSearchTool {
 		
 		// ---- 4. 拉取最近 limit 条会话消息 ----
 		List<SessionMessage> sessionMessages =
-				agent.getMainSessionStore().getAllAgentSessionMessageOfUser(userId, limit);
+				agent.getMainSessionStore().getAllAgentSessionMessageOfUser(userId, agentId,limit);
 		
 		if (sessionMessages == null || sessionMessages.isEmpty()) {
 			return String.format("No past session messages found for user (limit=%d).", limit);

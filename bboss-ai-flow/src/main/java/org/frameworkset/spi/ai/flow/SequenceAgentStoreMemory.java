@@ -18,8 +18,8 @@ package org.frameworkset.spi.ai.flow;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
-import org.frameworkset.spi.ai.store.AgentSessionStore;
-import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
+import org.frameworkset.spi.ai.store.AgentStore;
+import org.frameworkset.spi.ai.store.AgentStoreMemory;
 import org.frameworkset.spi.ai.store.StoreContext;
 
 import java.util.List;
@@ -29,31 +29,31 @@ import java.util.List;
  * @author biaoping.yin
  * @Date 2026/5/3
  */
-public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<SequenceAgentSessionStoreMemory> {
-    public SequenceAgentSessionStoreMemory(List sessionMemory) {
+public class SequenceAgentStoreMemory extends AgentStoreMemory<SequenceAgentStoreMemory> {
+    public SequenceAgentStoreMemory(List sessionMemory) {
         super(sessionMemory);
     }
   
 
-    public SequenceAgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore ) {
-        super(parentAgentSessionStore );
+    public SequenceAgentStoreMemory(AgentStore parentAgentStore) {
+        super(parentAgentStore);
     }
 
-    public SequenceAgentSessionStoreMemory() {
+    public SequenceAgentStoreMemory() {
     }
 
-    public SequenceAgentSessionStoreMemory(String sessionId, String userId, String agentId) {
+    public SequenceAgentStoreMemory(String sessionId, String userId, String agentId) {
         super(sessionId, userId, agentId);
     }
 
-    public SequenceAgentSessionStoreMemory(StoreContext storeContext, AIAgent agent) {
+    public SequenceAgentStoreMemory(StoreContext storeContext, AIAgent agent) {
         super(storeContext,   agent);
     }
 
     private Object lock = new Object();
 
     @Override
-    public SequenceAgentSessionStoreMemory setAIAgent(AIAgent aiAgent) {
+    public SequenceAgentStoreMemory setAIAgent(AIAgent aiAgent) {
         this.agent = aiAgent;
         return  this;
     }
@@ -65,10 +65,10 @@ public class SequenceAgentSessionStoreMemory extends AgentSessionStoreMemory<Seq
     public LastSessionMessage getLastSubAgentSessionMessage(){
  
         if(this.agent.isSequenceHeaderNode()) {
-            if (this.parentAgentSessionStore != null) {
-                return this.parentAgentSessionStore.getLastSubAgentSessionMessage();
+            if (this.parentAgentStore != null) {
+                return this.parentAgentStore.getLastSubAgentSessionMessage();
             } else {
-                return this.mainAgentSessionStore.getLastSubAgentSessionMessage();
+                return this.mainAgentStore.getLastSubAgentSessionMessage();
             }
         }
         else{

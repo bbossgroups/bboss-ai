@@ -20,6 +20,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.memory.coordination.LocalPeriodicGate;
 import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.ChatObject;
+import org.frameworkset.spi.ai.util.MultiThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ public class MemoryMaintenance  {
 			// 限流失败：不提交任务，也无需登记 in-flight 槽位
 			return ;
 		}
-		ExecutorService MEMORY_MAINTAIN_TASK_EXECUTOR = MemoryUtil.getMemoryMaintainTaskExecutor();
+		ExecutorService MEMORY_MAINTAIN_TASK_EXECUTOR = MultiThreadUtil.getMemoryMaintainTaskExecutor();
 		MemoryBackgroundTasks.begin();
 		try {
 			MEMORY_MAINTAIN_TASK_EXECUTOR.submit(() -> {

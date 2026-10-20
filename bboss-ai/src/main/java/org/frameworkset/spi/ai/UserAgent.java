@@ -18,7 +18,7 @@ package org.frameworkset.spi.ai;
 
 import org.frameworkset.spi.ai.model.AgentMessage;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
-import org.frameworkset.spi.ai.store.AgentSessionStore;
+import org.frameworkset.spi.ai.store.AgentStore;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 
 /**
@@ -60,7 +60,7 @@ public class UserAgent<T extends UserAgent> extends AIAgent<T> {
      * @param agentMessage
      * @return
      */
-    protected LastSessionMessage getLastSubAgentSessionMessage(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
+    protected LastSessionMessage getLastSubAgentSessionMessage(AgentStore mainSessionStore, AgentMessage agentMessage){
        return null;
     }
    

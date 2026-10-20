@@ -42,8 +42,8 @@ import static org.frameworkset.spi.ai.store.SessionMessage.MESSAGE_TYPE_TRACE_ME
  * @author biaoping.yin
  * @Date 2026/4/2
  */
-public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> implements AgentSessionStore<T>{
-    private static Logger log = org.slf4j.LoggerFactory.getLogger(BaseAgentSessionStore.class);
+public abstract class BaseAgentStore<T extends BaseAgentStore> implements AgentStore<T> {
+    private static Logger log = org.slf4j.LoggerFactory.getLogger(BaseAgentStore.class);
 
     private final static AgentMessageTypeConvertor DEFAULT_AGENTMESSAGETYPECONVERTOR = new AgentMessageTypeConvertor();
     protected AgentMessageTypeConvertor agentMessageTypeConvertor = DEFAULT_AGENTMESSAGETYPECONVERTOR;
@@ -79,7 +79,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 	protected CompactionManagerInf compactionManager;
 	protected MemoryMaintenance memoryMaintenance;
 	protected MemoryFlushMiddleware memoryFlushMiddleware;
-    protected AgentSessionStore parentAgentSessionStore;
+    protected AgentStore parentAgentStore;
 	protected WorkspaceManager workspaceManager;
 
     protected AIAgent agent;
@@ -95,10 +95,10 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             this.agentMessageTypeConvertor = agentMessageTypeConvertor;
     }
 
-    protected AgentSessionStore mainAgentSessionStore;
+    protected AgentStore mainAgentStore;
     /** 短期记忆：使用静态变量存储会话记忆（实际项目中建议使用缓存或数据库）*/
     protected List<LinkedMessageMap<String, Object>> sessionMemory;
-    public BaseAgentSessionStore(List<LinkedMessageMap<String, Object>> sessionMemory){
+    public BaseAgentStore(List<LinkedMessageMap<String, Object>> sessionMemory){
         this.sessionMemory = sessionMemory;
 
     }
@@ -107,8 +107,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         if(this.storeContext != null){
             return storeContext;
         }
-        if(this.mainAgentSessionStore != null && this.mainAgentSessionStore != this){
-            return mainAgentSessionStore.getStoreContext();
+        if(this.mainAgentStore != null && this.mainAgentStore != this){
+            return mainAgentStore.getStoreContext();
         }
         return null;
     }
@@ -132,8 +132,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
  
  
-    public BaseAgentSessionStore( AgentSessionStore parentAgentSessionStore ){
-        this.parentAgentSessionStore = parentAgentSessionStore;
+    public BaseAgentStore(AgentStore parentAgentStore){
+        this.parentAgentStore = parentAgentStore;
         this.sessionMemory = new ArrayList<>();
         
 
@@ -141,16 +141,16 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     public void addSelfSessionMessage(Map<String, Object> message){
         
     }
-    public BaseAgentSessionStore(){
+    public BaseAgentStore(){
         this.sessionMemory = new ArrayList<>();
 
     }
 
-    public AgentSessionStore getParentAgentSessionStore() {
-        return parentAgentSessionStore;
+    public AgentStore getParentAgentSessionStore() {
+        return parentAgentStore;
     }
 
-    public BaseAgentSessionStore(StoreContext storeContext,AIAgent agent){
+    public BaseAgentStore(StoreContext storeContext, AIAgent agent){
 		 
         this.persistentSessionMemory = true;
         this.storeContext = storeContext;
@@ -243,9 +243,9 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
     /**
      * 子任务会话记忆
      */
-    private Map<String,AgentSessionStore> subTaskSessionMemorys;
+    private Map<String, AgentStore> subTaskSessionMemorys;
 
-    public BaseAgentSessionStore(String sessionId, String userId, String agentId ) {
+    public BaseAgentStore(String sessionId, String userId, String agentId ) {
         this.sessionId = sessionId;
         this.userId = userId;
         this.agentId = agentId;
@@ -256,7 +256,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return sessionMemory;
     }
     @Override
-    public void addSubTaskSessionMemory(String agentId,AgentSessionStore subTaskSessionMemory) {
+    public void addSubTaskSessionMemory(String agentId, AgentStore subTaskSessionMemory) {
         if(subTaskSessionMemorys == null){
             subTaskSessionMemorys = new LinkedMessageMap<>();
         }
@@ -266,16 +266,16 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 
 
     public String getParantAgentId(){
-        if(parentAgentSessionStore != null)
-            return parentAgentSessionStore.getAgentId();
-        else if(mainAgentSessionStore != null){
-            return mainAgentSessionStore.getAgentId();
+        if(parentAgentStore != null)
+            return parentAgentStore.getAgentId();
+        else if(mainAgentStore != null){
+            return mainAgentStore.getAgentId();
         }
         return null;
     }
 
     @Override
-    public AgentSessionStore getSubTaskSessionMemory(String agentId) {
+    public AgentStore getSubTaskSessionMemory(String agentId) {
         if(subTaskSessionMemorys == null){
             return null;
         }
@@ -407,8 +407,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 			messageType = messageType(role);
 		}
 		
-		if(mainAgentSessionStore != null){
-			mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),this.getAgent().getAgentNodeType(),null,null,null, messageType);
+		if(mainAgentStore != null){
+			mainAgentStore.persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),this.getAgent().getAgentNodeType(),null,null,null, messageType);
 		}
 		else if(this.persistentSessionMemory){
 			persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),this.getAgent().getAgentNodeType(),null,null,null, messageType);
@@ -531,8 +531,8 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 		}
 		appendSessionMessage(persistentMessage.getAgent(),message );
 		
-        if(mainAgentSessionStore != null){
-            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),this.getAgent().getAgentNodeType(),null,null,null, messageType);
+        if(mainAgentStore != null){
+            mainAgentStore.persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),this.getAgent().getAgentNodeType(),null,null,null, messageType);
         }
         else if(this.persistentSessionMemory){
             persistentSessionMessage(persistentMessage, agentId,this.getParantAgentId(),this.getAgent().getAgentNodeType(),null,null,null, messageType);
@@ -583,12 +583,12 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 //        message.setMessage(assistantMessage);
         appendSessionMessage(agentResultSessionMessageContext.getAgent(),assistantMessage );
 
-        if(parentAgentSessionStore != null){
+        if(parentAgentStore != null){
             if(agent != null ){
                 if(!agent.isDisablePush2ParentLastSubMessage()) {
 //                if(!aiAgent.isDisableGloableStore()) {
 //                    lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
-                    parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId(),
+                    parentAgentStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId(),
 							agentResultSessionMessageContext.getAgent() );
                 }
                 else{
@@ -597,7 +597,7 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
             }
             else{
 //                lastSubAgentSessionMessage = parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId());
-                parentAgentSessionStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId(),
+                parentAgentStore.addAgentResultSessionMessage(assistantMessage, agentId, this.getParantAgentId(),
 						agentResultSessionMessageContext.getAgent() );
             }
 
@@ -609,13 +609,13 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 //            lastSubAgentSessionMessage.setRequestId(this.getRequestId());
 //        }
 
-        if(mainAgentSessionStore != null){
+        if(mainAgentStore != null){
             PersistentMessage persistentMessage = new PersistentMessage();
             persistentMessage.setMessage(assistantMessage);
             persistentMessage.setTokenMetrics(agentResultSessionMessageContext.getTokenMetrics());
 			persistentMessage.setGroupId(agent.getGroupId());
 			persistentMessage.setParentGroupId(agent.getParentGroupId());
-            lastSubAgentSessionMessage = mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId, 
+            lastSubAgentSessionMessage = mainAgentStore.persistentSessionMessage(persistentMessage, agentId, 
                     this.getParantAgentId(),this.getAgent().getAgentNodeType(),agentResultSessionMessageContext.getSubAgentIdBy(),null,null, MESSAGE_TYPE_AGENT_RESULTMESSAGE);
         }
         else{
@@ -689,13 +689,13 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
 			String role = (String) message.get("role");
 			messageType = messageType(role);
 		}
-        if(this.mainAgentSessionStore != null) {//需要通过主智能体持久化消息
+        if(this.mainAgentStore != null) {//需要通过主智能体持久化消息
             //msgId,createTime,sessionId,seqNo,message,role
             PersistentMessage persistentMessage = new PersistentMessage();
             persistentMessage.setMessage(message);
 			persistentMessage.setGroupId(aiAgent.getGroupId());
 			persistentMessage.setParentGroupId(aiAgent.getParentGroupId());
-            mainAgentSessionStore.persistentSessionMessage(persistentMessage, agentId,parentAgentId,agentNodeType,null,null,null, messageType);
+            mainAgentStore.persistentSessionMessage(persistentMessage, agentId,parentAgentId,agentNodeType,null,null,null, messageType);
         }
         else if(this.persistentSessionMemory){//主智能体直接持久化消息
             PersistentMessage persistentMessage = new PersistentMessage();
@@ -829,18 +829,18 @@ public abstract class BaseAgentSessionStore<T extends BaseAgentSessionStore> imp
         return (T) this;
     }
 
-    public AgentSessionStore getMainAgentSessionStore() {
-        return mainAgentSessionStore;
+    public AgentStore getMainAgentSessionStore() {
+        return mainAgentStore;
     }
 
-    public T setMainAgentSessionStore(AgentSessionStore mainAgentSessionStore) {
-        this.mainAgentSessionStore = mainAgentSessionStore;
+    public T setMainAgentSessionStore(AgentStore mainAgentStore) {
+        this.mainAgentStore = mainAgentStore;
         return (T) this;
     }
 
     public void setParentAgentLastSessionMessage(LastSessionMessage lastSubAgentSessionMessage){
-        if(this.parentAgentSessionStore != null){
-            parentAgentSessionStore.setSubAgentLastSessionMessage(lastSubAgentSessionMessage);
+        if(this.parentAgentStore != null){
+            parentAgentStore.setSubAgentLastSessionMessage(lastSubAgentSessionMessage);
         }
         else {
             this.lastSubAgentSessionMessage = lastSubAgentSessionMessage;

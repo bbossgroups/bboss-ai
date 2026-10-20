@@ -22,7 +22,7 @@ import org.frameworkset.spi.ai.memory.coordination.PeriodicGate;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
-import org.frameworkset.util.concurrent.ThreadPoolFactory;
+import org.frameworkset.spi.ai.util.MultiThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -190,7 +190,7 @@ public class MemoryFlushMiddleware  {
 
     private void runFlush(String key, AIAgent agent, ChatObject chatObject,boolean asyn) {
 		if(asyn) {
-			ExecutorService MEMORY_FLUSH_TASK_EXECUTOR = MemoryUtil.getMemoryFlushTaskExecutor();
+			ExecutorService MEMORY_FLUSH_TASK_EXECUTOR = MultiThreadUtil.getMemoryFlushTaskExecutor();
 			int maxRetry = 3;
 			int retry = 0;
 			do {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway.channel;
+package org.frameworkset.spi.ai.harness.gateway.channel;
 
 /**
  * Controls how DM ({@link PeerKind#DIRECT}) session keys are scoped.

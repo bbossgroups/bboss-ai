@@ -13,26 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.subagent;
+package org.frameworkset.spi.ai.harness.subagents;
 
-import io.agentscope.core.ReActAgent;
-import io.agentscope.core.agent.Agent;
-import io.agentscope.core.agent.Event;
-import io.agentscope.core.agent.EventSource;
-import io.agentscope.core.agent.RuntimeContext;
-import io.agentscope.core.agent.StreamOptions;
-import io.agentscope.core.message.Msg;
-import io.agentscope.core.message.MsgRole;
-import io.agentscope.harness.agent.HarnessAgent;
-import io.agentscope.harness.agent.middleware.SubagentEntry;
-import io.agentscope.harness.agent.tool.AgentSpawnTool;
-import io.agentscope.harness.agent.workspace.WorkspaceManager;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
+import org.frameworkset.spi.ai.model.ChatAgentMessage;
+import org.frameworkset.spi.ai.model.ChatObject;
+import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.StreamOptions;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+
+import java.util.*;
 
 /**
  * Pure agent factory and invoker — knows how to create agents from registered factories and invoke
@@ -57,13 +49,13 @@ public final class DefaultAgentManager {
         Map<String, SubagentFactory> factories = new HashMap<>();
         Map<String, SubagentDeclaration> decls = new HashMap<>();
         for (SubagentEntry e : entries) {
-            factories.put(e.name(), e.factory());
-            if (e.declaration() != null) {
-                decls.put(e.name(), e.declaration());
+            factories.put(e.getName(), e.getFactory());
+            if (e.getDeclaration() != null) {
+                decls.put(e.getName(), e.getDeclaration());
             }
         }
-        this.agentFactories = Map.copyOf(factories);
-        this.declarations = Map.copyOf(decls);
+		this.agentFactories = Collections.unmodifiableMap(new HashMap<>(factories));
+		this.declarations = Collections.unmodifiableMap(new HashMap<>(decls));
         this.workspaceManager = workspaceManager;
     }
 
@@ -72,13 +64,13 @@ public final class DefaultAgentManager {
         Map<String, SubagentFactory> factories = new HashMap<>();
         Map<String, SubagentDeclaration> decls = new HashMap<>();
         for (SubagentEntry e : entries) {
-            factories.put(e.name(), e.factory());
-            if (e.declaration() != null) {
-                decls.put(e.name(), e.declaration());
+            factories.put(e.getName(), e.getFactory());
+            if (e.getDeclaration() != null) {
+                decls.put(e.getName(), e.getDeclaration	());
             }
         }
-        this.agentFactories = Map.copyOf(factories);
-        this.declarations = Map.copyOf(decls);
+		this.agentFactories = Collections.unmodifiableMap(new HashMap<>(factories));
+		this.declarations = Collections.unmodifiableMap(new HashMap<>(decls));
     }
 
     /**
@@ -104,7 +96,7 @@ public final class DefaultAgentManager {
      * agents can bucket their persisted state by parent identity. Pass
      * {@link RuntimeContext#empty()} when no parent context is available.
      */
-    public Optional<Agent> createAgentIfPresent(String agentId, RuntimeContext parentRc) {
+    public Optional<AIAgent> createAgentIfPresent(String agentId, ChatObject parentRc) {
         if (agentId == null) {
             return Optional.empty();
         }
@@ -116,12 +108,12 @@ public final class DefaultAgentManager {
         if (decl != null && decl.getMode() == SubagentDeclaration.Mode.PRIMARY) {
             return Optional.empty();
         }
-        return Optional.of(factory.create(parentRc != null ? parentRc : RuntimeContext.empty()));
+        return Optional.of(factory.create(parentRc != null ? parentRc : ChatObject.empty()));
     }
 
     /**
      * Returns {@code true} when {@code agentId} is registered with a {@code PRIMARY}-only
-     * declaration. Lets {@link io.agentscope.harness.agent.tool.AgentSpawnTool} produce a more
+     * declaration. Lets {link AgentSpawnTool} produce a more
      * helpful error message ("PRIMARY-only, cannot be spawned") instead of the generic
      * "Unknown agent_id" when {@link #createAgentIfPresent} returns empty.
      */
@@ -151,12 +143,12 @@ public final class DefaultAgentManager {
      *
      * @throws IllegalArgumentException if no factory is registered for the given id
      */
-    public Agent createAgent(String agentId, RuntimeContext parentRc) {
+    public AIAgent createAgent(String agentId, ChatObject parentRc) {
         SubagentFactory factory = agentFactories.get(agentId);
         if (factory == null) {
             throw new IllegalArgumentException("Unknown agent_id: " + agentId);
         }
-        return factory.create(parentRc != null ? parentRc : RuntimeContext.empty());
+        return factory.create(parentRc != null ? parentRc : ChatObject.empty());
     }
 
     /**
@@ -172,26 +164,27 @@ public final class DefaultAgentManager {
      * @param userId the parent's user-id (may be {@code null})
      * @param prompt the user message to send
      */
-    public Mono<Msg> invokeAgent(Agent agent, String sessionId, String userId, String prompt) {
+    public ServerEvent invokeAgent(AIAgent agent, String sessionId, String userId, String prompt) {
         return invokeAgent(agent, sessionId, userId, prompt, null);
     }
 
-    public Mono<Msg> invokeAgent(
-            Agent agent, String sessionId, String userId, String prompt, RuntimeContext parentRc) {
-        RuntimeContext ctx =
-                parentRc != null
-                        ? RuntimeContext.builder(parentRc)
-                                .sessionId(sessionId)
-                                .userId(userId)
-                                .build()
-                        : RuntimeContext.builder().sessionId(sessionId).userId(userId).build();
-        if (agent instanceof ReActAgent react) {
-            return react.call(List.of(userMessage(prompt)), ctx);
-        }
-        if (agent instanceof HarnessAgent harness) {
-            return harness.call(userMessage(prompt), ctx);
-        }
-        return agent.call(List.of(userMessage(prompt)));
+    public ServerEvent invokeAgent(
+			AIAgent agent, String sessionId, String userId, String prompt, ChatObject parentRc) {
+//		ChatObject ctx =
+//                parentRc != null
+//                        ? ChatObject.builder(parentRc)
+//                                .sessionId(sessionId)
+//                                .userId(userId)
+//                                .build()
+//                        : ChatObject.builder().sessionId(sessionId).userId(userId).build();
+//        if (agent instanceof ReActAgent react) {
+//            return agent.chat(prompt, ctx);
+//        }
+//        if (agent instanceof HarnessAgent harness) {
+//            return harness.call(userMessage(prompt), ctx);
+//        }
+//        return agent.call(List.of(userMessage(prompt)));
+		return agent.chat(prompt, (ChatAgentMessage) parentRc.getAgentMessage());
     }
 
     /**
@@ -213,48 +206,50 @@ public final class DefaultAgentManager {
      * @param options stream configuration passed to the child agent
      * @return {@link Flux} of tagged events; never null
      */
-    public Flux<Event> invokeAgentStream(
-            Agent agent,
+    public Flux<ServerEvent> invokeAgentStream(
+            AIAgent agent,
             String sessionId,
             String userId,
             String prompt,
-            EventSource source,
+			ServerEvent source,
             StreamOptions options) {
         return invokeAgentStream(agent, sessionId, userId, prompt, source, options, null);
     }
 
-    public Flux<Event> invokeAgentStream(
-            Agent agent,
+    public Flux<ServerEvent> invokeAgentStream(
+			AIAgent agent,
             String sessionId,
             String userId,
             String prompt,
-            EventSource source,
+			ServerEvent source,
             StreamOptions options,
-            RuntimeContext parentRc) {
-        Flux<Event> childFlux;
+            ChatObject parentRc) {
+        Flux<ServerEvent> childFlux;
         StreamOptions effective = options != null ? options : StreamOptions.defaults();
-        RuntimeContext ctx =
-                parentRc != null
-                        ? RuntimeContext.builder(parentRc)
-                                .sessionId(sessionId)
-                                .userId(userId)
-                                .build()
-                        : RuntimeContext.builder().sessionId(sessionId).userId(userId).build();
-        if (agent instanceof ReActAgent react) {
-            childFlux = react.stream(List.of(userMessage(prompt)), effective, ctx);
-        } else if (agent instanceof HarnessAgent harness) {
-            childFlux = harness.stream(List.of(userMessage(prompt)), effective, ctx);
-        } else {
-            childFlux = agent.stream(List.of(userMessage(prompt)), effective);
-        }
-        return childFlux.map(event -> event.withSource(source));
+//        RuntimeContext ctx =
+//                parentRc != null
+//                        ? RuntimeContext.builder(parentRc)
+//                                .sessionId(sessionId)
+//                                .userId(userId)
+//                                .build()
+//                        : RuntimeContext.builder().sessionId(sessionId).userId(userId).build();
+//        if (agent instanceof ReActAgent react) {
+//            childFlux = react.stream(List.of(userMessage(prompt)), effective, ctx);
+//        } else if (agent instanceof HarnessAgent harness) {
+//            childFlux = harness.stream(List.of(userMessage(prompt)), effective, ctx);
+//        } else {
+//            childFlux = agent.stream(List.of(userMessage(prompt)), effective);
+//        }
+		childFlux = agent.streamChat(prompt, (ChatAgentMessage) parentRc.getAgentMessage());
+//        return childFlux.map(event -> event.withSource(source));
+		return childFlux;
     }
 
     public WorkspaceManager getWorkspaceManager() {
         return workspaceManager;
     }
 
-    private static Msg userMessage(String prompt) {
-        return Msg.builder().role(MsgRole.USER).textContent(prompt).build();
-    }
+//    private static Msg userMessage(String prompt) {
+//        return Msg.builder().role(MsgRole.USER).textContent(prompt).build();
+//    }
 }

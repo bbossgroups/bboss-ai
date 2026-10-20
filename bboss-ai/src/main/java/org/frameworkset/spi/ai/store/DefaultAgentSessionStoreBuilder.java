@@ -20,9 +20,7 @@ import org.frameworkset.spi.ai.hitl.HitlTaskHelper;
 import org.frameworkset.spi.ai.hitl.cluster.RedisHitlTaskCallListener;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.frameworkset.spi.ai.store.db.AgentSessionServiceImpl;
-import org.frameworkset.spi.ai.store.db.AgentSessionStoreDB;
-
-import java.util.ArrayList;
+import org.frameworkset.spi.ai.store.db.AgentStoreDB;
 
 /**
  * @author biaoping.yin
@@ -32,29 +30,29 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
 
 
     @Override
-    public AgentSessionStore build(StoreContext storeContext, AIAgent agent) {
+    public AgentStore build(StoreContext storeContext, AIAgent agent) {
         if(storeContext.getMainSessionStore() != null){
             return storeContext.getMainSessionStore();
         }
-        AgentSessionStore agentSessionStore = null;
+        AgentStore agentStore = null;
         
         if(storeContext.getStoreType() == null || storeContext.getStoreType().equals(StoreContext.STORE_TYPE_MEMORY)) {
-            agentSessionStore = new AgentSessionStoreMemory(storeContext,agent);
+            agentStore = new AgentStoreMemory(storeContext,agent);
             
         }        
         else if(storeContext.getStoreType().equals(StoreContext.STORE_TYPE_DB)) {
-            agentSessionStore = new AgentSessionStoreDB(storeContext,   agent);
+            agentStore = new AgentStoreDB(storeContext,   agent);
         }
-        if(agentSessionStore == null)
+        if(agentStore == null)
             throw new AIRuntimeException("Invalid store type: " + storeContext.getStoreType())  ;
 		AgentSessionService agentSessionService = new AgentSessionServiceImpl();
 		agentSessionService.setDatasource(storeContext.getDataSource());
 		agentSessionService.setClickhouseCluster(storeContext.getClickhouseCluster());
-		agentSessionStore.setAgentSessionService(agentSessionService);
+		agentStore.setAgentSessionService(agentSessionService);
 		
-        agentSessionStore.init();
+        agentStore.init();
 		
-        storeContext.setMainSessionStore(agentSessionStore);
+        storeContext.setMainSessionStore(agentStore);
 		if(storeContext.isEnableHitl()) {
 			synchronized (HitlTaskHelper.getLock()) {
 				if (storeContext.getDataSource() != null && HitlTaskHelper.getHitlTaskHelperOnly() == null) {
@@ -71,6 +69,6 @@ public class DefaultAgentSessionStoreBuilder implements AgentSessionStoreBuilder
 				}
 			}
 		}
-        return agentSessionStore;
+        return agentStore;
     }
 }

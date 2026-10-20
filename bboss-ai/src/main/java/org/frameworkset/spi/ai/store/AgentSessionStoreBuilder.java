@@ -22,6 +22,6 @@ import org.frameworkset.spi.ai.AIAgent;
  * @Date 2026/4/7
  */
 public interface AgentSessionStoreBuilder {
-    AgentSessionStore build(StoreContext storeContext, AIAgent agent);
+    AgentStore build(StoreContext storeContext, AIAgent agent);
 
 }

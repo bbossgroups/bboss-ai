@@ -19,7 +19,6 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.store.*;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,7 +30,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
     
     /** 使用静态变量存储会话记忆（实际项目中建议使用缓存或数据库）*/
 //    private AgentSessionStore sessionStore;
-    private AgentSessionStore mainSessionStore;
+    private AgentStore mainSessionStore;
     private StoreContext storeContext;
     private AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
 
@@ -133,7 +132,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
 //        return (T)this;
 //    }
 
-    public AgentSessionStore getMainSessionStore(AIAgent aiAgent) {
+    public AgentStore getMainSessionStore(AIAgent aiAgent) {
         initSessionStore(  aiAgent);
         return mainSessionStore;
     }
@@ -157,7 +156,7 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
 			mainSessionStore = agent.getMainSessionStore();
 		}
     }
-    public T setMainSessionStore(AgentSessionStore mainSessionStore){
+    public T setMainSessionStore(AgentStore mainSessionStore){
         this.mainSessionStore = mainSessionStore;
         return (T)this;
     }
@@ -170,15 +169,15 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
 //    
 //    }
 
-    private AgentSessionStore getAgentSessionStore(String agentId){
-        AgentSessionStore agentSessionStore = null;
+    private AgentStore getAgentSessionStore(String agentId){
+        AgentStore agentStore = null;
         if(agentId == null){
-            agentSessionStore = mainSessionStore;
+            agentStore = mainSessionStore;
         }
         else {
-            agentSessionStore = mainSessionStore.getSubTaskSessionMemory(agentId);
+            agentStore = mainSessionStore.getSubTaskSessionMemory(agentId);
         }
-        return agentSessionStore;
+        return agentStore;
     }
     public T addSessionMessage(LinkedMessageMap<String, Object> systemMessage,String prompt, AIAgent aiAgent){
         initSessionStore(aiAgent);
@@ -186,14 +185,14 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             return (T)this;
         }
         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
-        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
-        if(agentSessionStore == null){
-            agentSessionStore = aiAgent.getAgentSessionStore();
+        AgentStore agentStore = getAgentSessionStore(  agentId);
+        if(agentStore == null){
+            agentStore = aiAgent.getAgentSessionStore();
         }
-        if(agentSessionStore == null){
+        if(agentStore == null){
             return (T)this;
         }
-        agentSessionStore.addSessionMessage(systemMessage,  prompt,  agentSessionStore.getAgentId(), agentSessionStore.getParantAgentId(),agentSessionStore.getAgent().getAgentNodeType(),   aiAgent);
+        agentStore.addSessionMessage(systemMessage,  prompt,  agentStore.getAgentId(), agentStore.getParantAgentId(), agentStore.getAgent().getAgentNodeType(),   aiAgent);
         
         return (T)this;
     }
@@ -204,18 +203,18 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             return (T)this;
         }
         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
-        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
-		if(agentSessionStore == null){
-			agentSessionStore = aiAgent.getAgentSessionStore();
+        AgentStore agentStore = getAgentSessionStore(  agentId);
+		if(agentStore == null){
+			agentStore = aiAgent.getAgentSessionStore();
 		}
-        if(agentSessionStore == null){
+        if(agentStore == null){
             return (T)this;
         }
         PersistentMessage persistentMessage = new PersistentMessage();
         persistentMessage.setMessage(message);
 		persistentMessage.setGroupId(aiAgent.getGroupId());
 		persistentMessage.setParentGroupId(aiAgent.getParentGroupId());		
-        agentSessionStore.addSessionMessage(persistentMessage);         
+        agentStore.addSessionMessage(persistentMessage);         
         return (T)this;
     }
     
@@ -239,16 +238,16 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             return null;
         }
         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
-        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
-		if(agentSessionStore == null){
-			agentSessionStore = aiAgent.getAgentSessionStore();
+        AgentStore agentStore = getAgentSessionStore(  agentId);
+		if(agentStore == null){
+			agentStore = aiAgent.getAgentSessionStore();
 		}
-        if(agentSessionStore == null){
+        if(agentStore == null){
             return null;
         }
 		serverEvent.setGroupId(aiAgent.getGroupId());
 		serverEvent.setParentGroupId(aiAgent.getParentGroupId());
-        return agentSessionStore.addAssistantSessionMessage(serverEvent);
+        return agentStore.addAssistantSessionMessage(serverEvent);
     }
 
     public Map<String,Object> addAssistantSessionMessage(BaseStreamDataBuilder baseStreamDataBuilder, AIAgent aiAgent){
@@ -257,14 +256,14 @@ public abstract class SessionAgentMessage<T extends SessionAgentMessage> extends
             return null;
         }
         String agentId = aiAgent != null ?aiAgent.getAgentId():null;
-        AgentSessionStore agentSessionStore = getAgentSessionStore(  agentId);
-		if(agentSessionStore == null){
-			agentSessionStore = aiAgent.getAgentSessionStore();
+        AgentStore agentStore = getAgentSessionStore(  agentId);
+		if(agentStore == null){
+			agentStore = aiAgent.getAgentSessionStore();
 		}
-        if(agentSessionStore == null){
+        if(agentStore == null){
             return null;
         }
-        return agentSessionStore.addAssistantSessionMessage(baseStreamDataBuilder);
+        return agentStore.addAssistantSessionMessage(baseStreamDataBuilder);
     }
 
 

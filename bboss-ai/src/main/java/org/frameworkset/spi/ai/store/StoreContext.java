@@ -19,7 +19,6 @@ import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.filesystem.AbstractFilesystem;
 import org.frameworkset.spi.ai.memory.MemoryConfig;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
-import org.frameworkset.spi.ai.model.ModelInfo;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +32,7 @@ public class StoreContext {
     public static final String STORE_TYPE_MEMORY = "memory";
 	public static final String DEFAULT_CLICKHOUSE_CLUSTER = "vops_3shards_1replicas";
 	private String clickhouseCluster = DEFAULT_CLICKHOUSE_CLUSTER;
-    private AgentSessionStore mainSessionStore;
+    private AgentStore mainSessionStore;
     private AgentMessageTypeConvertor agentMessageTypeConvertor;
 	private List<String> additionalContextFiles = Collections.emptyList();
 
@@ -218,11 +217,11 @@ public class StoreContext {
         return this;
     }
 
-    public AgentSessionStore getMainSessionStore() {
+    public AgentStore getMainSessionStore() {
         return mainSessionStore;
     }
 
-    public void setMainSessionStore(AgentSessionStore mainSessionStore) {
+    public void setMainSessionStore(AgentStore mainSessionStore) {
         this.mainSessionStore = mainSessionStore;
     }
 

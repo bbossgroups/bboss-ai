@@ -13,9 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.subagent;
+package org.frameworkset.spi.ai.harness.subagents;
 
-import io.agentscope.harness.agent.subagent.protocol.RemoteStreamDetail;
+
+import org.frameworkset.spi.ai.harness.subagents.protocol.RemoteStreamDetail;
+
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -69,7 +71,7 @@ public final class SubagentDeclaration {
      * Whether a declaration can be used as a top-level primary agent, only as a delegated
      * subagent, or both.
      *
-     * <p>The {@link io.agentscope.harness.agent.subagent.DefaultAgentManager#createAgentIfPresent}
+     * <p>The {@link DefaultAgentManager#createAgentIfPresent}
      * path rejects spawn requests for {@link #PRIMARY}-only declarations so they can never be
      * invoked as workers; conversely, top-level launchers may want to reject {@link #SUBAGENT}
      * declarations as entry points (current core does not own that check — top-level launch goes
@@ -80,87 +82,57 @@ public final class SubagentDeclaration {
         SUBAGENT,
         ALL
     }
-
-    private final String name;
-    private final String description;
-    private final WorkspaceMode workspaceMode;
-    private final Path workspacePath;
-    private final String inlineAgentsBody;
-    private final String model;
-    private final Double temperature;
-    private final Double topP;
-    private final String variant;
-    private final int steps;
-    private final Mode mode;
-    private final boolean hidden;
-    private final boolean persistSession;
-    private final boolean inheritParentPermissions;
-    private final Boolean exposeToUser;
-    private final Boolean enablePendingToolRecovery;
-    private final List<String> tools;
-    private final List<String> skills;
+	
+	private String name;
+	private String description;
+//	private WorkspaceMode workspaceMode = WorkspaceMode.ISOLATED;
+	private Path workspacePath;
+	private String inlineAgentsBody;
+	private String model;
+	private Double temperature;
+	private Double topP;
+	private String variant;
+	private int steps = 10;
+	private Mode mode = Mode.ALL;
+	private boolean hidden = false;
+	private boolean persistSession = false;
+	private boolean inheritParentPermissions = true;
+	private Boolean exposeToUser;
+	private Boolean enablePendingToolRecovery;
+	private List<String> tools;
+	private List<String> skills;
 
     /** Base URL of the remote task server (e.g. {@code http://host:8080}). */
-    private final String url;
+    private   String url;
 
-    private final Map<String, String> headers;
+    private   Map<String, String> headers;
 
     /**
      * Whether remote subagent events should be streamed back into the parent's event stream.
      * {@code null} defaults to {@code true}; see {@link #isRemoteStreaming()}.
      */
-    private final Boolean remoteStreaming;
+    private   Boolean remoteStreaming;
 
     /**
      * How much of the remote event stream to request. {@code null} defaults to
      * {@link RemoteStreamDetail#FULL}; see {@link #getRemoteStreamDetail()}.
      */
-    private final RemoteStreamDetail remoteStreamDetail;
+    private RemoteStreamDetail remoteStreamDetail;
 
     /** Policy for resolving remote HITL confirmations. Defaults to {@link RemoteAskPolicy#DENY}. */
-    private final RemoteAskPolicy remoteAskPolicy;
+    private   RemoteAskPolicy remoteAskPolicy;
 
     /**
      * Static attributes sent as {@code context.attributes} on every remote submission. Never empty
      * when non-null.
      */
-    private final Map<String, Object> remoteContextAttributes;
+    private   Map<String, Object> remoteContextAttributes;
 
-    private SubagentDeclaration(Builder b) {
-        this.name = b.name;
-        this.description = b.description;
-        this.workspaceMode = b.workspaceMode;
-        this.workspacePath = b.workspacePath;
-        this.inlineAgentsBody = b.inlineAgentsBody;
-        this.model = b.model;
-        this.temperature = b.temperature;
-        this.topP = b.topP;
-        this.variant = b.variant;
-        this.steps = b.steps;
-        this.mode = b.mode != null ? b.mode : Mode.ALL;
-        this.hidden = b.hidden;
-        this.persistSession = b.persistSession;
-        this.inheritParentPermissions = b.inheritParentPermissions;
-        this.exposeToUser = b.exposeToUser;
-        this.enablePendingToolRecovery = b.enablePendingToolRecovery;
-        this.tools = b.tools != null ? List.copyOf(b.tools) : List.of();
-        this.skills = b.skills != null ? List.copyOf(b.skills) : List.of();
-        this.url = b.url;
-        this.headers = b.headers != null && !b.headers.isEmpty() ? Map.copyOf(b.headers) : null;
-        this.remoteStreaming = b.remoteStreaming;
-        this.remoteStreamDetail = b.remoteStreamDetail;
-        this.remoteAskPolicy = b.remoteAskPolicy != null ? b.remoteAskPolicy : RemoteAskPolicy.DENY;
-        this.remoteContextAttributes =
-                b.remoteContextAttributes != null && !b.remoteContextAttributes.isEmpty()
-                        ? Collections.unmodifiableMap(
-                                new LinkedHashMap<>(b.remoteContextAttributes))
-                        : null;
+    private SubagentDeclaration( ) {
+         
     }
 
-    /** Factory method for a new builder. */
-    public static Builder builder() {
-        return new Builder();
-    }
+ 
 
     /** Unique name / agent-id used to reference this subagent. */
     public String getName() {
@@ -172,13 +144,13 @@ public final class SubagentDeclaration {
         return description;
     }
 
-    /**
-     * Workspace resolution strategy. Defaults to {@link WorkspaceMode#ISOLATED} when not
-     * specified.
-     */
-    public WorkspaceMode getWorkspaceMode() {
-        return workspaceMode;
-    }
+//    /**
+//     * Workspace resolution strategy. Defaults to {@link WorkspaceMode#ISOLATED} when not
+//     * specified.
+//     */
+//    public WorkspaceMode getWorkspaceMode() {
+//        return workspaceMode;
+//    }
 
     /**
      * Path to the definition workspace directory (contains at least {@code AGENTS.md}). When
@@ -325,7 +297,7 @@ public final class SubagentDeclaration {
 
     /** Returns {@code true} when this declaration targets a remote task HTTP server. */
     public boolean isRemote() {
-        return url != null && !url.isBlank();
+        return url != null && !url.isEmpty();
     }
 
     /**
@@ -389,313 +361,282 @@ public final class SubagentDeclaration {
     // -------------------------------------------------------------------------
     // Builder
     // -------------------------------------------------------------------------
+	/** Sets the unique name / agent-id for this subagent (required). */
+	public SubagentDeclaration setName(String name) {
+		this.name = name;
+		return this;
+	}
+	
+	/**
+	 * Sets the human-readable description the orchestrator uses to decide when to delegate
+	 * (required).
+	 */
+	public SubagentDeclaration setDescription(String description) {
+		this.description = description;
+		return this;
+	}
 
-    public static final class Builder {
-
-        private String name;
-        private String description;
-        private WorkspaceMode workspaceMode = WorkspaceMode.ISOLATED;
-        private Path workspacePath;
-        private String inlineAgentsBody;
-        private String model;
-        private Double temperature;
-        private Double topP;
-        private String variant;
-        private int steps = 10;
-        private Mode mode = Mode.ALL;
-        private boolean hidden = false;
-        private boolean persistSession = false;
-        private boolean inheritParentPermissions = true;
-        private Boolean exposeToUser;
-        private Boolean enablePendingToolRecovery;
-        private List<String> tools;
-        private List<String> skills;
-        private String url;
-        private Map<String, String> headers;
-        private Boolean remoteStreaming;
-        private RemoteStreamDetail remoteStreamDetail;
-        private RemoteAskPolicy remoteAskPolicy = RemoteAskPolicy.DENY;
-        private Map<String, Object> remoteContextAttributes;
-
-        private Builder() {}
-
-        /** Sets the unique name / agent-id for this subagent (required). */
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
-        /**
-         * Sets the human-readable description the orchestrator uses to decide when to delegate
-         * (required).
-         */
-        public Builder description(String description) {
-            this.description = description;
-            return this;
-        }
-
-        /**
-         * Sets the workspace resolution mode. Defaults to {@link WorkspaceMode#ISOLATED}.
-         *
-         * @param mode workspace mode; {@code null} is treated as {@link WorkspaceMode#ISOLATED}
-         */
-        public Builder workspaceMode(WorkspaceMode mode) {
-            this.workspaceMode = mode != null ? mode : WorkspaceMode.ISOLATED;
-            return this;
-        }
-
-        /**
-         * Points this declaration at an external definition workspace.
-         *
-         * <p>Mutually exclusive with {@link #inlineAgentsBody(String)}: passing both a non-null
-         * path <em>and</em> a non-blank inline body will cause {@link #build()} to throw.
-         *
-         * @param workspacePath absolute path, or path relative to {@code mainWorkspace} when set
-         *     via a Markdown front matter file
-         */
-        public Builder workspace(Path workspacePath) {
-            this.workspacePath = workspacePath;
-            return this;
-        }
-
-        /**
-         * Sets the inline system-prompt body for lightweight subagents that do not need a
-         * dedicated definition workspace.
-         *
-         * <p>Mutually exclusive with {@link #workspace(Path)}.
-         *
-         * @param body the system-prompt body text (Markdown); may be {@code null} or blank
-         */
-        public Builder inlineAgentsBody(String body) {
-            this.inlineAgentsBody = body;
-            return this;
-        }
-
-        /**
-         * Optional model override resolved via {@link io.agentscope.core.model.ModelRegistry}.
-         * Falls back to the parent model when blank or unresolvable.
-         */
-        public Builder model(String model) {
-            this.model = model;
-            return this;
-        }
-
-        /**
-         * Maximum reasoning iterations (default 10).
-         *
-         * @deprecated since Phase A — use {@link #steps(int)}. Equivalent in behaviour.
-         */
-        @Deprecated
-        public Builder maxIters(int maxIters) {
-            this.steps = maxIters;
-            return this;
-        }
-
-        /** Maximum reasoning iterations (default 10). */
-        public Builder steps(int steps) {
-            this.steps = steps;
-            return this;
-        }
-
-        /**
-         * Optional sampling temperature override. {@code null} (default) means inherit the parent
-         * agent's value. Typical range {@code 0.0 – 2.0}.
-         */
-        public Builder temperature(Double temperature) {
-            this.temperature = temperature;
-            return this;
-        }
-
-        /**
-         * Optional nucleus-sampling (top-p) override. {@code null} (default) means inherit the
-         * parent. Typical range {@code 0.0 – 1.0}.
-         */
-        public Builder topP(Double topP) {
-            this.topP = topP;
-            return this;
-        }
-
-        /**
-         * Optional model-variant identifier (e.g. {@code "thinking"} for DashScope thinking-mode
-         * variants). Blank / {@code null} means no variant transform; parent variant — if any —
-         * is inherited via builder copy.
-         */
-        public Builder variant(String variant) {
-            this.variant = variant;
-            return this;
-        }
-
-        /**
-         * Sets the {@link Mode}. {@code null} is treated as {@link Mode#ALL}.
-         */
-        public Builder mode(Mode mode) {
-            this.mode = mode != null ? mode : Mode.ALL;
-            return this;
-        }
-
-        /**
-         * Hide this declaration from the LLM's available-subagent list. Defaults to {@code false}.
-         */
-        public Builder hidden(boolean hidden) {
-            this.hidden = hidden;
-            return this;
-        }
-
-        /**
-         * When {@code true}, the subagent's spawn key is derived deterministically from
-         * (parentSessionId, agentId, label), enabling state recovery across parent calls and
-         * process restarts. Defaults to {@code false}.
-         */
-        public Builder persistSession(boolean persistSession) {
-            this.persistSession = persistSession;
-            return this;
-        }
-
-        /**
-         * When {@code true} (default), parent DENY permission rules are propagated to the child
-         * at spawn time. Set to {@code false} only when the child requires permissions that the
-         * parent explicitly denies (rare).
-         */
-        public Builder inheritParentPermissions(boolean inheritParentPermissions) {
-            this.inheritParentPermissions = inheritParentPermissions;
-            return this;
-        }
-
-        /**
-         * Per-type policy for exposing spawned instances as user-addressable threads.
-         *
-         * <p>{@code TRUE} forces exposure, {@code FALSE} forbids it (overriding an LLM request),
-         * and {@code null} (default) defers to the {@code RuntimeContext} override and then the
-         * LLM's {@code expose_to_user} argument.
-         */
-        public Builder exposeToUser(Boolean exposeToUser) {
-            this.exposeToUser = exposeToUser;
-            return this;
-        }
-
-        /**
-         * Overrides pending-tool recovery for this local subagent. Pass {@code null} to inherit
-         * the parent setting (the default). Permission confirmations are never auto-recovered.
-         *
-         * @param enable whether to enable recovery, or {@code null} to inherit
-         * @return this builder
-         */
-        public Builder enablePendingToolRecovery(Boolean enable) {
-            this.enablePendingToolRecovery = enable;
-            return this;
-        }
-
-        /**
-         * Tool allowlist: when non-empty, only inherited parent tools with listed names are kept.
-         * Child-local tool registrations are unaffected.
-         */
-        public Builder tools(List<String> tools) {
-            this.tools = tools;
-            return this;
-        }
-
-        public Builder skills(List<String> skills) {
-            this.skills = skills;
-            return this;
-        }
-
-        /**
-         * Remote task server base URL. Mutually exclusive with {@link #workspace(Path)} and a
-         * non-blank {@link #inlineAgentsBody(String)}.
-         */
-        public Builder url(String url) {
-            this.url = url;
-            return this;
-        }
-
-        /**
-         * Optional HTTP headers for the remote task server (e.g. {@code Authorization}). Only used
-         * when {@link #url(String)} is set.
-         */
-        public Builder headers(Map<String, String> headers) {
-            this.headers = headers;
-            return this;
-        }
-
-        /**
-         * Whether remote subagent events should be streamed back into the parent's event stream.
-         * {@code null} (default) is treated as {@code true}. Only relevant when {@link #url(String)}
-         * is set.
-         */
-        public Builder remoteStreaming(Boolean remoteStreaming) {
-            this.remoteStreaming = remoteStreaming;
-            return this;
-        }
-
-        /**
-         * How much of the remote event stream to forward. {@code null} (default) is treated as
-         * {@link RemoteStreamDetail#FULL}; {@link RemoteStreamDetail#VERBOSE} forwards every event
-         * the remote agent emits, matching a local subagent. Only relevant when
-         * {@link #remoteStreaming(Boolean)} is enabled.
-         */
-        public Builder remoteStreamDetail(RemoteStreamDetail remoteStreamDetail) {
-            this.remoteStreamDetail = remoteStreamDetail;
-            return this;
-        }
-
-        /**
-         * Policy for resolving remote HITL confirmations. {@code null} is treated as
-         * {@link RemoteAskPolicy#DENY}. Only relevant when {@link #url(String)} is set.
-         */
-        public Builder remoteAskPolicy(RemoteAskPolicy remoteAskPolicy) {
-            this.remoteAskPolicy = remoteAskPolicy != null ? remoteAskPolicy : RemoteAskPolicy.DENY;
-            return this;
-        }
-
-        /**
-         * Static attributes sent as {@code context.attributes} with every submission to this
-         * remote subagent (e.g. tenant or deployment tags). Values must be JSON-serializable. Per
-         * call attributes set on the parent's {@code RuntimeContext} are merged on top. Only
-         * relevant when {@link #url(String)} is set.
-         */
-        public Builder remoteContextAttributes(Map<String, Object> remoteContextAttributes) {
-            this.remoteContextAttributes = remoteContextAttributes;
-            return this;
-        }
-
-        /**
-         * Builds the {@link SubagentDeclaration}.
-         *
-         * @throws IllegalArgumentException if {@code name} or {@code description} is blank, or
-         *     mutually exclusive fields are combined (workspace vs inline vs remote URL)
-         */
-        public SubagentDeclaration build() {
-            if (name == null || name.isBlank()) {
-                throw new IllegalArgumentException("SubagentDeclaration requires a non-blank name");
-            }
-            if (description == null || description.isBlank()) {
-                throw new IllegalArgumentException(
-                        "SubagentDeclaration requires a non-blank description");
-            }
-            boolean remote = url != null && !url.isBlank();
-            if (remote) {
-                if (workspacePath != null) {
-                    throw new IllegalArgumentException(
-                            "url() and workspace(Path) are mutually exclusive for subagent '"
-                                    + name
-                                    + "'");
-                }
-                if (inlineAgentsBody != null && !inlineAgentsBody.isBlank()) {
-                    throw new IllegalArgumentException(
-                            "url() and inlineAgentsBody() are mutually exclusive for subagent '"
-                                    + name
-                                    + "'");
-                }
-            } else if (workspacePath != null
-                    && inlineAgentsBody != null
-                    && !inlineAgentsBody.isBlank()) {
-                throw new IllegalArgumentException(
-                        "workspace(Path) and inlineAgentsBody() are mutually exclusive;"
-                                + " set at most one for subagent '"
-                                + name
-                                + "'");
-            }
-            return new SubagentDeclaration(this);
-        }
-    }
+//	/**
+//	 * Sets the workspace resolution mode. Defaults to {@link WorkspaceMode#ISOLATED}.
+//	 *
+//	 * @param mode workspace mode; {@code null} is treated as {@link WorkspaceMode#ISOLATED}
+//	 */
+//	public SubagentDeclaration setWorkspaceMode(WorkspaceMode mode) {
+//		this.workspaceMode = mode != null ? mode : WorkspaceMode.ISOLATED;
+//		return this;
+//	}
+//	
+	
+	/**
+	 * Points this declaration at an external definition workspace.
+	 *
+	 * <p>Mutually exclusive with {@link #setInlineAgentsBody(String)}: passing both a non-null
+	 * path <em>and</em> a non-blank inline body will cause {@link #build()} to throw.
+	 *
+	 * @param workspacePath absolute path, or path relative to {@code mainWorkspace} when set
+	 *     via a Markdown front matter file
+	 */
+	public SubagentDeclaration setWorkspace(Path workspacePath) {
+		this.workspacePath = workspacePath;
+		return this;
+	}
+	
+	/**
+	 * Sets the inline system-prompt body for lightweight subagents that do not need a
+	 * dedicated definition workspace.
+	 *
+	 * <p>Mutually exclusive with {@link #setWorkspace(Path)}.
+	 *
+	 * @param body the system-prompt body text (Markdown); may be {@code null} or blank
+	 */
+	public SubagentDeclaration setInlineAgentsBody(String body) {
+		this.inlineAgentsBody = body;
+		return this;
+	}
+	
+	/**
+	 * Optional model override resolved via {@link io.agentscope.core.model.ModelRegistry}.
+	 * Falls back to the parent model when blank or unresolvable.
+	 */
+	public SubagentDeclaration setModel(String model) {
+		this.model = model;
+		return this;
+	}
+	
+	/**
+	 * Maximum reasoning iterations (default 10).
+	 *
+	 * @deprecated since Phase A — use {@link #setSteps(int)}. Equivalent in behaviour.
+	 */
+	@Deprecated
+	public SubagentDeclaration setMaxIters(int maxIters) {
+		this.steps = maxIters;
+		return this;
+	}
+	
+	/** Maximum reasoning iterations (default 10). */
+	public SubagentDeclaration setSteps(int steps) {
+		this.steps = steps;
+		return this;
+	}
+	
+	/**
+	 * Optional sampling temperature override. {@code null} (default) means inherit the parent
+	 * agent's value. Typical range {@code 0.0 – 2.0}.
+	 */
+	public SubagentDeclaration setTemperature(Double temperature) {
+		this.temperature = temperature;
+		return this;
+	}
+	
+	/**
+	 * Optional nucleus-sampling (top-p) override. {@code null} (default) means inherit the
+	 * parent. Typical range {@code 0.0 – 1.0}.
+	 */
+	public SubagentDeclaration setTopP(Double topP) {
+		this.topP = topP;
+		return this;
+	}
+	
+	/**
+	 * Optional model-variant identifier (e.g. {@code "thinking"} for DashScope thinking-mode
+	 * variants). Blank / {@code null} means no variant transform; parent variant — if any —
+	 * is inherited via builder copy.
+	 */
+	public SubagentDeclaration setVariant(String variant) {
+		this.variant = variant;
+		return this;
+	}
+	
+	/**
+	 * Sets the {@link Mode}. {@code null} is treated as {@link Mode#ALL}.
+	 */
+	public SubagentDeclaration setMode(Mode mode) {
+		this.mode = mode != null ? mode : Mode.ALL;
+		return this;
+	}
+	
+	/**
+	 * Hide this declaration from the LLM's available-subagent list. Defaults to {@code false}.
+	 */
+	public SubagentDeclaration setHidden(boolean hidden) {
+		this.hidden = hidden;
+		return this;
+	}
+	
+	/**
+	 * When {@code true}, the subagent's spawn key is derived deterministically from
+	 * (parentSessionId, agentId, label), enabling state recovery across parent calls and
+	 * process restarts. Defaults to {@code false}.
+	 */
+	public SubagentDeclaration setPersistSession(boolean persistSession) {
+		this.persistSession = persistSession;
+		return this;
+	}
+	
+	/**
+	 * When {@code true} (default), parent DENY permission rules are propagated to the child
+	 * at spawn time. Set to {@code false} only when the child requires permissions that the
+	 * parent explicitly denies (rare).
+	 */
+	public SubagentDeclaration setInheritParentPermissions(boolean inheritParentPermissions) {
+		this.inheritParentPermissions = inheritParentPermissions;
+		return this;
+	}
+	
+	/**
+	 * Per-type policy for exposing spawned instances as user-addressable threads.
+	 *
+	 * <p>{@code TRUE} forces exposure, {@code FALSE} forbids it (overriding an LLM request),
+	 * and {@code null} (default) defers to the {@code RuntimeContext} override and then the
+	 * LLM's {@code expose_to_user} argument.
+	 */
+	public SubagentDeclaration setExposeToUser(Boolean exposeToUser) {
+		this.exposeToUser = exposeToUser;
+		return this;
+	}
+	
+	/**
+	 * Overrides pending-tool recovery for this local subagent. Pass {@code null} to inherit
+	 * the parent setting (the default). Permission confirmations are never auto-recovered.
+	 *
+	 * @param enable whether to enable recovery, or {@code null} to inherit
+	 * @return this builder
+	 */
+	public SubagentDeclaration setEnablePendingToolRecovery(Boolean enable) {
+		this.enablePendingToolRecovery = enable;
+		return this;
+	}
+	
+	/**
+	 * Tool allowlist: when non-empty, only inherited parent tools with listed names are kept.
+	 * Child-local tool registrations are unaffected.
+	 */
+	public SubagentDeclaration setTools(List<String> tools) {
+		this.tools = tools;
+		return this;
+	}
+	
+	public SubagentDeclaration setSkills(List<String> skills) {
+		this.skills = skills;
+		return this;
+	}
+	
+	/**
+	 * Remote task server base URL. Mutually exclusive with {@link #setWorkspace(Path)} and a
+	 * non-blank {@link #setInlineAgentsBody(String)}.
+	 */
+	public SubagentDeclaration setUrl(String url) {
+		this.url = url;
+		return this;
+	}
+	
+	/**
+	 * Optional HTTP headers for the remote task server (e.g. {@code Authorization}). Only used
+	 * when {@link #setUrl(String)} is set.
+	 */
+	public SubagentDeclaration setHeaders(Map<String, String> headers) {
+		this.headers = headers;
+		return this;
+	}
+	
+	/**
+	 * Whether remote subagent events should be streamed back into the parent's event stream.
+	 * {@code null} (default) is treated as {@code true}. Only relevant when {@link #setUrl(String)}
+	 * is set.
+	 */
+	public SubagentDeclaration setRemoteStreaming(Boolean remoteStreaming) {
+		this.remoteStreaming = remoteStreaming;
+		return this;
+	}
+	
+	/**
+	 * How much of the remote event stream to forward. {@code null} (default) is treated as
+	 * {@link RemoteStreamDetail#FULL}; {@link RemoteStreamDetail#VERBOSE} forwards every event
+	 * the remote agent emits, matching a local subagent. Only relevant when
+	 * {@link #setRemoteStreaming(Boolean)} is enabled.
+	 */
+	public SubagentDeclaration setRemoteStreamDetail(RemoteStreamDetail remoteStreamDetail) {
+		this.remoteStreamDetail = remoteStreamDetail;
+		return this;
+	}
+	
+	/**
+	 * Policy for resolving remote HITL confirmations. {@code null} is treated as
+	 * {@link RemoteAskPolicy#DENY}. Only relevant when {@link #setUrl(String)} is set.
+	 */
+	public SubagentDeclaration setRemoteAskPolicy(RemoteAskPolicy remoteAskPolicy) {
+		this.remoteAskPolicy = remoteAskPolicy != null ? remoteAskPolicy : RemoteAskPolicy.DENY;
+		return this;
+	}
+	
+	/**
+	 * Static attributes sent as {@code context.attributes} with every submission to this
+	 * remote subagent (e.g. tenant or deployment tags). Values must be JSON-serializable. Per
+	 * call attributes set on the parent's {@code RuntimeContext} are merged on top. Only
+	 * relevant when {@link #setUrl(String)} is set.
+	 */
+	public SubagentDeclaration setRemoteContextAttributes(Map<String, Object> remoteContextAttributes) {
+		this.remoteContextAttributes = remoteContextAttributes;
+		return this;
+	}
+	
+	/**
+	 * Builds the {@link SubagentDeclaration}.
+	 *
+	 * @throws IllegalArgumentException if {@code name} or {@code description} is blank, or
+	 *     mutually exclusive fields are combined (workspace vs inline vs remote URL)
+	 */
+	public void build() {
+		if (name == null || name.isEmpty()) {
+			throw new IllegalArgumentException("SubagentDeclaration requires a non-blank name");
+		}
+		if (description == null || description.isEmpty()) {
+			throw new IllegalArgumentException(
+					"SubagentDeclaration requires a non-blank description");
+		}
+		boolean remote = url != null && !url.isEmpty();
+		if (remote) {
+			if (workspacePath != null) {
+				throw new IllegalArgumentException(
+						"url() and workspace(Path) are mutually exclusive for subagent '"
+								+ name
+								+ "'");
+			}
+			if (inlineAgentsBody != null && !inlineAgentsBody.isEmpty()) {
+				throw new IllegalArgumentException(
+						"url() and inlineAgentsBody() are mutually exclusive for subagent '"
+								+ name
+								+ "'");
+			}
+		} else if (workspacePath != null
+				&& inlineAgentsBody != null
+				&& !inlineAgentsBody.isEmpty()) {
+			throw new IllegalArgumentException(
+					"workspace(Path) and inlineAgentsBody() are mutually exclusive;"
+							+ " set at most one for subagent '"
+							+ name
+							+ "'");
+		}
+	}
 }

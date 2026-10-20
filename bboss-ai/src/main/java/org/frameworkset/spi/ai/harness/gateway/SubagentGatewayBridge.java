@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway;
+package org.frameworkset.spi.ai.harness.gateway;
 
-import io.agentscope.core.agent.Agent;
-import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
+ 
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.harness.gateway.channel.OutboundAddress;
+
+import java.util.Objects;
 
 /**
- * Bridge between {@link io.agentscope.harness.agent.tool.AgentSpawnTool} and the gateway layer.
+ * Bridge between {@link  AgentSpawnTool} and the gateway layer.
  * Allows spawned subagents to be exposed as user-addressable entry points without the spawn tool
  * needing to know about channels, routers, or the gateway implementation.
  *
@@ -28,23 +31,55 @@ import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
  */
 @FunctionalInterface
 public interface SubagentGatewayBridge {
-
-    /**
-     * Result of exposing a subagent to the user.
-     *
-     * @param subagentId the user-visible handle for addressing this subagent directly
-     */
-    record ExposeResult(String subagentId) {}
-
-    /**
-     * Exposes a spawned subagent as a user-addressable entry point in the gateway.
-     *
-     * @param agentId the subagent type identifier
-     * @param sessionId the session id assigned to the subagent
-     * @param agent the agent instance
-     * @param replyTo the outbound address for delivering replies back to the user's channel;
-     *     may be null if no outbound channel context is available
-     * @return the expose result containing the subagentId handle
-     */
-    ExposeResult expose(String agentId, String sessionId, Agent agent, OutboundAddress replyTo);
+	
+	/**
+	 * Result of exposing a subagent to the user.
+	 */
+	final class ExposeResult {
+		
+		private final String subagentId;
+		
+		public ExposeResult(String subagentId) {
+			this.subagentId = subagentId;
+		}
+		
+		/** The user-visible handle for addressing this subagent directly. */
+		public String getSubagentId() {
+			return subagentId;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof ExposeResult)) {
+				return false;
+			}
+			ExposeResult that = (ExposeResult) o;
+			return Objects.equals(subagentId, that.subagentId);
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(subagentId);
+		}
+		
+		@Override
+		public String toString() {
+			return "ExposeResult{" + "subagentId='" + subagentId + '\'' + '}';
+		}
+	}
+	
+	/**
+	 * Exposes a spawned subagent as a user-addressable entry point in the gateway.
+	 *
+	 * @param agentId the subagent type identifier
+	 * @param sessionId the session id assigned to the subagent
+	 * @param agent the agent instance
+	 * @param replyTo the outbound address for delivering replies back to the user's channel;
+	 *     may be null if no outbound channel context is available
+	 * @return the expose result containing the subagentId handle
+	 */
+	ExposeResult expose(String agentId, String sessionId, AIAgent agent, OutboundAddress replyTo);
 }

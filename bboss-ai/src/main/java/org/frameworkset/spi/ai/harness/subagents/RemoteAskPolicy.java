@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.subagent;
+package org.frameworkset.spi.ai.harness.subagents;
 
 /**
  * Policy for resolving a remote subagent's tool-confirmation (HITL) requests when the parent

@@ -15,22 +15,74 @@
  */
 package org.frameworkset.spi.ai.harness.gateway.channel.chatui;
 
-import io.agentscope.core.message.Msg;
-import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
+ 
+import org.frameworkset.spi.ai.harness.gateway.channel.OutboundAddress;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A buffered proactive outbound message delivered to {@link ChatUiChannel} by the gateway. Callers
  * retrieve these via {@link ChatUiChannel#pollOutbound()}.
- *
- * @param address the delivery target
- * @param messages the outbound messages
- * @param timestampMs when the envelope was created
  */
-public record OutboundEnvelope(OutboundAddress address, List<Msg> messages, long timestampMs) {
-
-    public OutboundEnvelope(OutboundAddress address, List<Msg> messages) {
-        this(address, List.copyOf(messages), System.currentTimeMillis());
-    }
+public final class OutboundEnvelope {
+	
+	private final OutboundAddress address;
+	private final List<LinkedMessageMap<String, Object>> messages;
+	private final long timestampMs;
+	
+	public OutboundEnvelope(OutboundAddress address, List<LinkedMessageMap<String, Object>> messages, long timestampMs) {
+		this.address = address;
+		this.messages = messages == null
+				? Collections.<LinkedMessageMap<String, Object>>emptyList()
+				: Collections.unmodifiableList(new ArrayList<LinkedMessageMap<String, Object>>(messages));
+		this.timestampMs = timestampMs;
+	}
+	
+	public OutboundEnvelope(OutboundAddress address, List<LinkedMessageMap<String, Object>> messages) {
+		this(address, messages, System.currentTimeMillis());
+	}
+	
+	public OutboundAddress getAddress() {
+		return address;
+	}
+	
+	public List<LinkedMessageMap<String, Object>> getMessages() {
+		return messages;
+	}
+	
+	public long getTimestampMs() {
+		return timestampMs;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof OutboundEnvelope)) {
+			return false;
+		}
+		OutboundEnvelope that = (OutboundEnvelope) o;
+		return timestampMs == that.timestampMs
+				&& Objects.equals(address, that.address)
+				&& Objects.equals(messages, that.messages);
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(address, messages, timestampMs);
+	}
+	
+	@Override
+	public String toString() {
+		return "OutboundEnvelope{"
+				+ "address=" + address
+				+ ", messages=" + messages
+				+ ", timestampMs=" + timestampMs
+				+ '}';
+	}
 }

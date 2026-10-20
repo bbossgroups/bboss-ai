@@ -13,26 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway;
+package org.frameworkset.spi.ai.harness.gateway;
 
-import io.agentscope.core.agent.RuntimeContext;
-import io.agentscope.core.event.AgentEvent;
-import io.agentscope.core.message.Msg;
-import io.agentscope.harness.agent.HarnessAgent;
-import io.agentscope.harness.agent.gateway.channel.InboundMessage;
-import io.agentscope.harness.agent.gateway.channel.OutboundAddress;
-import java.util.List;
+ 
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.harness.gateway.channel.InboundMessage;
+import org.frameworkset.spi.ai.harness.gateway.channel.OutboundAddress;
+import org.frameworkset.spi.ai.model.ChatObject;
+import org.frameworkset.spi.ai.model.LinkedMessageMap;
+import org.frameworkset.spi.ai.model.ServerEvent;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Gateway-style entrypoint: route inbound turns by {@link MsgContext}, and bind the primary {@link
- * HarnessAgent} for announce delivery.
+ * AIAgent} for announce delivery.
  *
  * <p>Implementations should serialize turns per logical session (fair wait) so injected announce
- * runs and user/channel {@link #run} calls do not race the same {@code HarnessAgent} turn.
+ * runs and user/channel {@link #run} calls do not race the same {@code AIAgent} turn.
  *
- * <p>Callers may supply a {@link RuntimeContext} that is merged into the agent turn. Gateway-owned
+ * <p>Callers may supply a {@link ChatObject} that is merged into the agent turn. Gateway-owned
  * identity fields ({@code sessionId}, {@code userId}, {@code outboundAddress}, …) always win on
  * conflict.
  */
@@ -40,19 +42,19 @@ public interface Gateway {
 
     /**
      * Binds the primary harness agent after construction. The agent is registered under its
-     * {@link HarnessAgent#getAgentId()} for routing by {@link #run}.
+     * {@link AIAgent#getAgentId()} for routing by {@link #run}.
      */
-    void bindMainAgent(HarnessAgent agent);
+    void bindMainAgent(AIAgent agent);
 
     /**
      * Registers a named harness agent for routing. {@link #run} will resolve the target agent by
-     * the {@code agentId} supplied in {@link MsgContext#extra()} (key {@code "agentId"}), falling
+     * the {@code agentId} supplied in {@link MsgContext#getExtra()} ()} (key {@code "agentId"}), falling
      * back to the agent registered via {@link #bindMainAgent}.
      */
-    default void registerAgent(String agentId, HarnessAgent agent) {}
+    default void registerAgent(String agentId, AIAgent agent) {}
 
     /** Inbound turn (direct API or channel adapter). */
-    Mono<Msg> run(MsgContext context, List<Msg> messages);
+    LinkedMessageMap<String, Object> run(MsgContext context, List<LinkedMessageMap<String, Object>> messages);
 
     /**
      * Inbound turn with outbound address. The {@code outboundAddress} is recorded as the session's
@@ -63,12 +65,12 @@ public interface Gateway {
      * @param messages the inbound messages
      * @param outboundAddress the delivery target for proactive replies; may be null
      */
-    default Mono<Msg> run(MsgContext context, List<Msg> messages, OutboundAddress outboundAddress) {
+    default LinkedMessageMap<String, Object> run(MsgContext context, List<LinkedMessageMap<String, Object>> messages, OutboundAddress outboundAddress) {
         return run(context, messages, outboundAddress, null);
     }
 
     /**
-     * Inbound turn with outbound address and an optional caller {@link RuntimeContext}.
+     * Inbound turn with outbound address and an optional caller {@link org.frameworkset.spi.ai.model.ChatObject}.
      *
      * <p>The caller context is merged into the turn; gateway identity fields take precedence. The
      * default implementation ignores {@code callerContext} and delegates to {@link
@@ -79,67 +81,68 @@ public interface Gateway {
      * @param outboundAddress the delivery target for proactive replies; may be null
      * @param callerContext optional application context to merge; may be null
      */
-    default Mono<Msg> run(
+    default LinkedMessageMap<String, Object> run(
             MsgContext context,
-            List<Msg> messages,
+            List<LinkedMessageMap<String, Object>> messages,
             OutboundAddress outboundAddress,
-            RuntimeContext callerContext) {
+            ChatObject callerContext) {
         return run(context, messages, outboundAddress, callerContext, null);
     }
 
     /**
-     * Inbound turn with full Channel metadata for {@link
-     * io.agentscope.harness.agent.gateway.channel.ChannelRuntimeContextResolver}.
+     * Inbound turn with full Channel metadata for {link
+     * ChannelRuntimeContextResolver}.
      *
      * @param inboundMessage optional inbound envelope passed to the resolver; may be null
      */
-    default Mono<Msg> run(
+    default LinkedMessageMap<String, Object> run(
             MsgContext context,
-            List<Msg> messages,
+            List<LinkedMessageMap<String, Object>> messages,
             OutboundAddress outboundAddress,
-            RuntimeContext callerContext,
+			ChatObject callerContext,
             InboundMessage inboundMessage) {
         return run(context, messages);
     }
-
-    /** Single-message convenience. */
-    default Mono<Msg> run(MsgContext context, Msg message) {
-        return run(context, List.of(message));
-    }
+	
+	/** Single-message convenience. */
+	default LinkedMessageMap<String, Object> run(
+			MsgContext context, LinkedMessageMap<String, Object> message) {
+		return run(context, Collections.singletonList(message));
+	}
 
     /** Streaming variant of {@link #run(MsgContext, List)}. Returns fine-grained events. */
-    default Flux<AgentEvent> runStream(MsgContext context, List<Msg> messages) {
+    default Flux<ServerEvent> runStream(MsgContext context, List<LinkedMessageMap<String, Object>> messages) {
         return runStream(context, messages, null, null);
     }
 
     /** Streaming variant of {@link #run(MsgContext, List, OutboundAddress)}. */
-    default Flux<AgentEvent> runStream(
-            MsgContext context, List<Msg> messages, OutboundAddress outboundAddress) {
+    default Flux<ServerEvent> runStream(
+            MsgContext context, List<LinkedMessageMap<String, Object>> messages, OutboundAddress outboundAddress) {
         return runStream(context, messages, outboundAddress, null);
     }
 
     /**
-     * Streaming variant of {@link #run(MsgContext, List, OutboundAddress, RuntimeContext)}.
+     * Streaming variant of {@link #run(MsgContext, List, OutboundAddress, ChatObject)}.
      *
      * <p>The default signals unsupported streaming.
      */
-    default Flux<AgentEvent> runStream(
+    default Flux<ServerEvent> runStream(
             MsgContext context,
-            List<Msg> messages,
+            List<LinkedMessageMap<String, Object>> messages,
             OutboundAddress outboundAddress,
-            RuntimeContext callerContext) {
+            ChatObject callerContext) {
         return runStream(context, messages, outboundAddress, callerContext, null);
     }
 
     /**
-     * Streaming variant of {@link #run(MsgContext, List, OutboundAddress, RuntimeContext,
+     * Streaming variant of {@link #run(MsgContext, List, OutboundAddress, ChatObject,
      * InboundMessage)}.
      */
-    default Flux<AgentEvent> runStream(
+    default Flux<ServerEvent> runStream(
             MsgContext context,
-            List<Msg> messages,
+            List<LinkedMessageMap<String, Object>> messages,
             OutboundAddress outboundAddress,
-            RuntimeContext callerContext,
+            ChatObject callerContext,
             InboundMessage inboundMessage) {
         return Flux.error(new UnsupportedOperationException("Streaming not supported"));
     }
@@ -149,15 +152,15 @@ public interface Gateway {
      * bypassing normal binding-based routing. Returns the subagent's reply.
      *
      * @param subagentId the handle returned by
-     *     {@link SubagentGatewayBridge.ExposeResult#subagentId()}
+     *     {link SubagentGatewayBridge.this.ExposeResult#getId()}
      * @param messages the messages to send to the subagent
      */
-    default Mono<Msg> runSubagent(String subagentId, List<Msg> messages) {
-        return Mono.error(new UnsupportedOperationException("Subagent routing not supported"));
+    default LinkedMessageMap<String, Object> runSubagent(String subagentId, List<LinkedMessageMap<String, Object>> messages) {
+        throw  new UnsupportedOperationException("Subagent routing not supported");
     }
 
     /** Streaming variant of {@link #runSubagent(String, List)}. */
-    default Flux<AgentEvent> runSubagentStream(String subagentId, List<Msg> messages) {
+    default Flux<ServerEvent> runSubagentStream(String subagentId, List<LinkedMessageMap<String, Object>> messages) {
         return Flux.error(new UnsupportedOperationException("Subagent streaming not supported"));
     }
 }

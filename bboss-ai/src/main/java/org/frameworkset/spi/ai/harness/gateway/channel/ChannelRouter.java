@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway.channel;
+package org.frameworkset.spi.ai.harness.gateway.channel;
 
-import io.agentscope.harness.agent.gateway.MsgContext;
+import org.frameworkset.spi.ai.harness.gateway.MsgContext;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,7 +31,7 @@ import java.util.Objects;
  * <h2>Binding evaluation tiers (highest to lowest priority)</h2>
  *
  * <ol>
- *   <li><b>explicit</b> — {@link InboundMessage#preferredAgentId()} short-circuit when the caller
+ *   <li><b>explicit</b> — {@link InboundMessage#getPreferredAgentId()} ()} short-circuit when the caller
  *       has already nominated a specific agent. Bindings are still consulted to determine
  *       {@code sessionScope} and outbound addressing.
  *   <li><b>peer</b> — exact {@link Peer#key()} match (e.g. {@code "direct:u_42"})
@@ -38,10 +42,10 @@ import java.util.Objects;
  *   <li><b>team</b> — team id matches
  *   <li><b>account</b> — account id matches
  *   <li><b>channel</b> — channel id matches
- *   <li><b>default</b> — {@link ChannelConfig#defaultAgentId()} or {@code globalDefaultAgentId}
+ *   <li><b>default</b> — {@link ChannelConfig#getDefaultAgentId()} ()} or {@code globalDefaultAgentId}
  * </ol>
  *
- * <p>Within each tier the first binding in {@link ChannelConfig#bindings()} list order that
+ * <p>Within each tier the first binding in {@link ChannelConfig#getBindings()} ()} list order that
  * matches wins.
  *
  * <h2>Session key construction ({@link MsgContext})</h2>
@@ -56,167 +60,209 @@ import java.util.Objects;
  *   <li>Non-DM channel/group — room = peer id, group = guild
  * </ul>
  *
- * The resolved {@code agentId} is always included in {@link MsgContext#extra()} under key {@code
+ * The resolved {@code agentId} is always included in {link MsgContext#extra()} under key {@code
  * "agentId"} so that the gateway can pick the correct agent from its registry.
  */
 public final class ChannelRouter {
-
-    private final String globalDefaultAgentId;
-
-    /**
-     * @param globalDefaultAgentId fallback agent id when no binding and no channel-level default
-     *     match; typically the id of the agent registered via
-     *     {@link io.agentscope.harness.agent.gateway.Gateway#bindMainAgent}
-     */
-    public ChannelRouter(String globalDefaultAgentId) {
-        this.globalDefaultAgentId = globalDefaultAgentId != null ? globalDefaultAgentId : "main";
-    }
-
-    /**
-     * Evaluates bindings in priority order and returns a {@link RouteResult} ready for gateway
-     * execution.
-     *
-     * @param config channel-level routing config (bindings + dmScope + channel default agent)
-     * @param msg normalized inbound message
-     */
-    public RouteResult resolveRoute(ChannelConfig config, InboundMessage msg) {
-        Objects.requireNonNull(config, "config");
-        Objects.requireNonNull(msg, "msg");
-
-        String agentId;
-        String matchedBy;
-        String explicit = msg.preferredAgentId();
-        ChannelBinding matchedBinding = findMatchedBinding(config.bindings(), msg);
-
-        if (explicit != null && !explicit.isBlank()) {
-            agentId = explicit;
-            matchedBy = "explicit";
-        } else if (matchedBinding != null) {
-            agentId = matchedBinding.agentId();
-            matchedBy = detectMatchedTier(config.bindings(), msg);
-        } else if (config.defaultAgentId() != null) {
-            agentId = config.defaultAgentId();
-            matchedBy = "channel-default";
-        } else {
-            agentId = globalDefaultAgentId;
-            matchedBy = "global-default";
-        }
-
-        DmScope effectiveScope =
-                matchedBinding != null && matchedBinding.sessionScope() != null
-                        ? matchedBinding.sessionScope()
-                        : config.dmScope();
-
-        String userId =
-                msg.senderId() != null
-                        ? msg.senderId()
-                        : (msg.peer().kind().isDirect() ? msg.peer().id() : null);
-
-        MsgContext context = buildContext(msg, effectiveScope, agentId, userId);
-        OutboundAddress outbound = buildOutboundAddress(msg);
-        return new RouteResult(agentId, context, matchedBy, outbound);
-    }
-
-    // -----------------------------------------------------------------
-    //  Binding evaluation - 7 tiers
-    // -----------------------------------------------------------------
-
-    private static final List<String> TIERS =
-            List.of("peer", "parentPeer", "guildRoles", "guild", "team", "account", "channel");
-
-    private ChannelBinding findMatchedBinding(List<ChannelBinding> bindings, InboundMessage msg) {
-        for (String tier : TIERS) {
-            ChannelBinding b = findFirstBinding(bindings, msg, tier);
-            if (b != null) return b;
-        }
-        return null;
-    }
-
-    private String detectMatchedTier(List<ChannelBinding> bindings, InboundMessage msg) {
-        for (String tier : TIERS) {
-            if (findFirstBinding(bindings, msg, tier) != null) {
-                return tier.equals("guildRoles") ? "guild+roles" : tier;
-            }
-        }
-        return "none";
-    }
-
-    private ChannelBinding findFirstBinding(
-            List<ChannelBinding> bindings, InboundMessage msg, String tier) {
-        for (ChannelBinding b : bindings) {
-            if (matches(b, msg, tier)) {
-                return b;
-            }
-        }
-        return null;
-    }
-
-    private boolean matches(ChannelBinding b, InboundMessage msg, String tier) {
-        return switch (tier) {
-            case "peer" -> b.peer() != null && b.peer().equals(msg.peer().key());
-            case "parentPeer" ->
-                    b.parentPeer() != null
-                            && msg.parentPeer() != null
-                            && b.parentPeer().equals(msg.parentPeer().key());
-            case "guildRoles" ->
-                    b.guild() != null
-                            && !b.roles().isEmpty()
-                            && b.guild().equals(msg.guild())
-                            && msg.roles().stream().anyMatch(b.roles()::contains);
-            case "guild" ->
-                    b.guild() != null && b.roles().isEmpty() && b.guild().equals(msg.guild());
-            case "team" -> b.team() != null && b.team().equals(msg.team());
-            case "account" -> b.account() != null && b.account().equals(msg.accountId());
-            case "channel" -> b.channel() != null && b.channel().equals(msg.channelId());
-            default -> false;
-        };
-    }
-
-    // -----------------------------------------------------------------
-    //  MsgContext construction from routing result + dmScope
-    // -----------------------------------------------------------------
-
-    private MsgContext buildContext(
-            InboundMessage msg, DmScope dmScope, String agentId, String userId) {
-        Map<String, String> extra = Map.of("agentId", agentId);
-        String channel = msg.channelId();
-        Peer peer = msg.peer();
-
-        MsgContext ctx;
-        if (peer.kind().isThread()) {
-            String parentRoom = msg.parentPeer() != null ? msg.parentPeer().id() : null;
-            ctx = new MsgContext(channel, msg.guild(), parentRoom, peer.id(), null, extra);
-        } else if (peer.kind().isDirect()) {
-            ctx = buildDmContext(channel, peer.id(), msg.accountId(), dmScope, extra);
-        } else {
-            ctx = new MsgContext(channel, msg.guild(), peer.id(), null, null, extra);
-        }
-
-        return userId != null ? ctx.withUserId(userId) : ctx;
-    }
-
-    private MsgContext buildDmContext(
-            String channel,
-            String peerId,
-            String accountId,
-            DmScope dmScope,
-            Map<String, String> extra) {
-        return switch (dmScope) {
-            case MAIN -> new MsgContext(channel, null, null, null, null, extra);
-            case PER_PEER -> new MsgContext(channel, null, peerId, null, null, extra);
-            case PER_CHANNEL_PEER -> new MsgContext(channel, null, peerId, null, null, extra);
-            case PER_ACCOUNT_CHANNEL_PEER ->
-                    new MsgContext(channel, accountId, peerId, null, null, extra);
-        };
-    }
-
-    // -----------------------------------------------------------------
-    //  OutboundAddress construction
-    // -----------------------------------------------------------------
-
-    private OutboundAddress buildOutboundAddress(InboundMessage msg) {
-        String to = msg.channelId() + ":" + msg.peer().kind().name() + ":" + msg.peer().id();
-        String threadId = msg.peer().kind().isThread() ? msg.peer().id() : null;
-        return new OutboundAddress(msg.channelId(), msg.accountId(), to, threadId);
-    }
+	
+	private static final List<String> TIERS;
+	
+	static {
+		List<String> tiers = new ArrayList<String>(7);
+		tiers.add("peer");
+		tiers.add("parentPeer");
+		tiers.add("guildRoles");
+		tiers.add("guild");
+		tiers.add("team");
+		tiers.add("account");
+		tiers.add("channel");
+		TIERS = Collections.unmodifiableList(tiers);
+	}
+	
+	private final String globalDefaultAgentId;
+	
+	/**
+	 * @param globalDefaultAgentId fallback agent id when no binding and no channel-level default
+	 *     match; typically the id of the agent registered via
+	 *     {link Gateway#bindMainAgent}
+	 */
+	public ChannelRouter(String globalDefaultAgentId) {
+		this.globalDefaultAgentId = globalDefaultAgentId != null ? globalDefaultAgentId : "main";
+	}
+	
+	/**
+	 * Evaluates bindings in priority order and returns a {@link RouteResult} ready for gateway
+	 * execution.
+	 *
+	 * @param config channel-level routing config (bindings + dmScope + channel default agent)
+	 * @param msg normalized inbound message
+	 */
+	public RouteResult resolveRoute(ChannelConfig config, InboundMessage msg) {
+		Objects.requireNonNull(config, "config");
+		Objects.requireNonNull(msg, "msg");
+		
+		String agentId;
+		String matchedBy;
+		String explicit = msg.getPreferredAgentId();
+		ChannelBinding matchedBinding = findMatchedBinding(config.getBindings(), msg);
+		
+		if (explicit != null && !explicit.trim().isEmpty()) {
+			agentId = explicit;
+			matchedBy = "explicit";
+		} else if (matchedBinding != null) {
+			agentId = matchedBinding.getAgentId();
+			matchedBy = detectMatchedTier(config.getBindings(), msg);
+		} else if (config.getDefaultAgentId() != null) {
+			agentId = config.getDefaultAgentId();
+			matchedBy = "channel-default";
+		} else {
+			agentId = globalDefaultAgentId;
+			matchedBy = "global-default";
+		}
+		
+		DmScope effectiveScope =
+				matchedBinding != null && matchedBinding.getSessionScope() != null
+						? matchedBinding.getSessionScope()
+						: config.getDmScope();
+		
+		String userId =
+				msg.getSenderId() != null
+						? msg.getSenderId()
+						: (msg.getPeer().getKind().isDirect() ? msg.getPeer().getId() : null);
+		
+		MsgContext context = buildContext(msg, effectiveScope, agentId, userId);
+		OutboundAddress outbound = buildOutboundAddress(msg);
+		return new RouteResult(agentId, context, matchedBy, outbound);
+	}
+	
+	// -----------------------------------------------------------------
+	//  Binding evaluation - 7 tiers
+	// -----------------------------------------------------------------
+	
+	private ChannelBinding findMatchedBinding(List<ChannelBinding> bindings, InboundMessage msg) {
+		for (String tier : TIERS) {
+			ChannelBinding b = findFirstBinding(bindings, msg, tier);
+			if (b != null) {
+				return b;
+			}
+		}
+		return null;
+	}
+	
+	private String detectMatchedTier(List<ChannelBinding> bindings, InboundMessage msg) {
+		for (String tier : TIERS) {
+			if (findFirstBinding(bindings, msg, tier) != null) {
+				return "guildRoles".equals(tier) ? "guild+roles" : tier;
+			}
+		}
+		return "none";
+	}
+	
+	private ChannelBinding findFirstBinding(
+			List<ChannelBinding> bindings, InboundMessage msg, String tier) {
+		for (ChannelBinding b : bindings) {
+			if (matches(b, msg, tier)) {
+				return b;
+			}
+		}
+		return null;
+	}
+	
+	private boolean matches(ChannelBinding b, InboundMessage msg, String tier) {
+		switch (tier) {
+			case "peer":
+				return b.getPeer() != null && b.getPeer().equals(msg.getPeer().key());
+			case "parentPeer":
+				return b.getParentPeer() != null
+						&& msg.getParentPeer() != null
+						&& b.getParentPeer().equals(msg.getParentPeer().key());
+			case "guildRoles":
+				return b.getGuild() != null
+						&& !b.getRoles().isEmpty()
+						&& b.getGuild().equals(msg.getGuild())
+						&& hasAnyRoleMatch(msg.getRoles(), b.getRoles());
+			case "guild":
+				return b.getGuild() != null
+						&& b.getRoles().isEmpty()
+						&& b.getGuild().equals(msg.getGuild());
+			case "team":
+				return b.getTeam() != null && b.getTeam().equals(msg.getTeam());
+			case "account":
+				return b.getAccount() != null && b.getAccount().equals(msg.getAccountId());
+			case "channel":
+				return b.getChannel() != null && b.getChannel().equals(msg.getChannelId());
+			default:
+				return false;
+		}
+	}
+	
+	private static boolean hasAnyRoleMatch(
+			java.util.Collection<String> messageRoles,
+			java.util.Set<String> bindingRoles) {
+		if (messageRoles == null || messageRoles.isEmpty()) {
+			return false;
+		}
+		for (String role : messageRoles) {
+			if (bindingRoles.contains(role)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	// -----------------------------------------------------------------
+	//  MsgContext construction from routing result + dmScope
+	// -----------------------------------------------------------------
+	
+	private MsgContext buildContext(
+			InboundMessage msg, DmScope dmScope, String agentId, String userId) {
+		Map<String, String> extra = new HashMap<String, String>(1);
+		extra.put("agentId", agentId);
+		extra = Collections.unmodifiableMap(extra);
+		
+		String channel = msg.getChannelId();
+		Peer peer = msg.getPeer();
+		
+		MsgContext ctx;
+		if (peer.getKind().isThread()) {
+			String parentRoom = msg.getParentPeer() != null ? msg.getParentPeer().getId() : null;
+			ctx = new MsgContext(channel, msg.getGuild(), parentRoom, peer.getId(), null, extra);
+		} else if (peer.getKind().isDirect()) {
+			ctx = buildDmContext(channel, peer.getId(), msg.getAccountId(), dmScope, extra);
+		} else {
+			ctx = new MsgContext(channel, msg.getGuild(), peer.getId(), null, null, extra);
+		}
+		
+		return userId != null ? ctx.withUserId(userId) : ctx;
+	}
+	
+	private MsgContext buildDmContext(
+			String channel,
+			String peerId,
+			String accountId,
+			DmScope dmScope,
+			Map<String, String> extra) {
+		switch (dmScope) {
+			case MAIN:
+				return new MsgContext(channel, null, null, null, null, extra);
+			case PER_PEER:
+				return new MsgContext(channel, null, peerId, null, null, extra);
+			case PER_CHANNEL_PEER:
+				return new MsgContext(channel, null, peerId, null, null, extra);
+			case PER_ACCOUNT_CHANNEL_PEER:
+				return new MsgContext(channel, accountId, peerId, null, null, extra);
+			default:
+				return new MsgContext(channel, null, null, null, null, extra);
+		}
+	}
+	
+	// -----------------------------------------------------------------
+	//  OutboundAddress construction
+	// -----------------------------------------------------------------
+	
+	private OutboundAddress buildOutboundAddress(InboundMessage msg) {
+		String to = msg.getChannelId() + ":" + msg.getPeer().getKind().name() + ":" + msg.getPeer().getId();
+		String threadId = msg.getPeer().getKind().isThread() ? msg.getPeer().getId() : null;
+		return new OutboundAddress(msg.getChannelId(), msg.getAccountId(), to, threadId);
+	}
 }

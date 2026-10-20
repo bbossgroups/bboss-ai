@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway.channel;
+package org.frameworkset.spi.ai.harness.gateway.channel;
 
-import io.agentscope.core.agent.RuntimeContext;
+
+import org.frameworkset.spi.ai.model.ChatObject;
 
 /**
- * Resolves a caller-provided {@link RuntimeContext} for a Channel / Gateway turn.
+ * Resolves a caller-provided {@link ChatObject} for a Channel / Gateway turn.
  *
  * <p>Applications can plug this into {@link
- * io.agentscope.harness.agent.gateway.HarnessGateway} (or via {@link
- * io.agentscope.harness.agent.gateway.GatewayBootstrap}) to attach request-scoped values such as
+ * HarnessGateway} (or via {@link
+ * GatewayBootstrap}) to attach request-scoped values such as
  * tenant information, force-sync flags, or tool dependencies. Gateway identity fields ({@code
  * sessionId}, {@code userId}, {@code outboundAddress}, …) are still applied after resolution and
  * take precedence over conflicting caller values.
  *
  * <p>Return {@code null} to leave the existing caller context (from {@link
- * ChannelRuntimeContextRequest#callerContext()}) unchanged.
+ * ChannelRuntimeContextRequest#getCallerContext()}) unchanged.
  */
 @FunctionalInterface
 public interface ChannelRuntimeContextResolver {
@@ -38,7 +39,7 @@ public interface ChannelRuntimeContextResolver {
      *
      * @param request channel turn metadata, including any caller-supplied context
      * @return a runtime context to use as the merge base, or {@code null} to keep {@link
-     *     ChannelRuntimeContextRequest#callerContext()}
+     *     ChannelRuntimeContextRequest#getCallerContext()} 
      */
-    RuntimeContext resolve(ChannelRuntimeContextRequest request);
+    ChatObject resolve( ChannelRuntimeContextRequest request);
 }

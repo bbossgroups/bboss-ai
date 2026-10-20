@@ -41,7 +41,7 @@ public class AIParrelJobFlowNode extends ParrelJobFlowNode {
      */
     @Override
     public ExecuteResult execute(JobFlowNodeExecuteContext jobFlowNodeExecuteContext, JobFlowCyclicBarrier barrier){
-        parrelAgent.reactMessage(parrelAgent.getPlanAgent().getAgentMessage());
+        parrelAgent.buildAgent(parrelAgent.getPlanAgent().getAgentMessage());
         ExecuteResult result = super.execute(jobFlowNodeExecuteContext,barrier);       
         
         return result;

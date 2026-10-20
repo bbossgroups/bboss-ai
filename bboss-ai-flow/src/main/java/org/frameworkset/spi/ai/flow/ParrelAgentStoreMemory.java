@@ -16,24 +16,22 @@ package org.frameworkset.spi.ai.flow;
  */
 
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.LastSessionMessage;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
-import org.frameworkset.spi.ai.store.AgentSessionStore;
-import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
+import org.frameworkset.spi.ai.store.AgentStore;
+import org.frameworkset.spi.ai.store.AgentStoreMemory;
 import org.frameworkset.spi.ai.store.StoreContext;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
 /**
  * @author biaoping.yin
  * @Date 2026/5/3
  */
-public class ParrelAgentSessionStoreMemory extends AgentSessionStoreMemory<ParrelAgentSessionStoreMemory> {
-    public ParrelAgentSessionStoreMemory(List sessionMemory) {
+public class ParrelAgentStoreMemory extends AgentStoreMemory<ParrelAgentStoreMemory> {
+    public ParrelAgentStoreMemory(List sessionMemory) {
         super(sessionMemory);
     }
 
@@ -41,18 +39,18 @@ public class ParrelAgentSessionStoreMemory extends AgentSessionStoreMemory<Parre
 
  
 
-    public ParrelAgentSessionStoreMemory(AgentSessionStore parentAgentSessionStore ) {
-        super(parentAgentSessionStore );
+    public ParrelAgentStoreMemory(AgentStore parentAgentStore) {
+        super(parentAgentStore);
     }
 
-    public ParrelAgentSessionStoreMemory() {
+    public ParrelAgentStoreMemory() {
     }
 
-    public ParrelAgentSessionStoreMemory(String sessionId, String userId, String agentId) {
+    public ParrelAgentStoreMemory(String sessionId, String userId, String agentId) {
         super(sessionId, userId, agentId);
     }
 
-    public ParrelAgentSessionStoreMemory(StoreContext storeContext, AIAgent agent) {
+    public ParrelAgentStoreMemory(StoreContext storeContext, AIAgent agent) {
         super(storeContext,agent);
     }
 
@@ -80,11 +78,11 @@ public class ParrelAgentSessionStoreMemory extends AgentSessionStoreMemory<Parre
 //        else{
 //            return null;
 //        }
-        if(this.parentAgentSessionStore != null){
-            return this.parentAgentSessionStore.getLastSubAgentSessionMessage();
+        if(this.parentAgentStore != null){
+            return this.parentAgentStore.getLastSubAgentSessionMessage();
         }
         else{
-            return this.mainAgentSessionStore.getLastSubAgentSessionMessage();
+            return this.mainAgentStore.getLastSubAgentSessionMessage();
         }
     }
 

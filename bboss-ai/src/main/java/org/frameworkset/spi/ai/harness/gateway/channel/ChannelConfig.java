@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway.channel;
+package org.frameworkset.spi.ai.harness.gateway.channel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -25,74 +26,161 @@ import java.util.Objects;
  *
  * <p>Used by {@link Channel} implementations to parameterize routing without hard-coding agent ids
  * or session shapes in adapter code.
- *
- * @param channelId the logical channel identifier this config applies to (must match {@link
- *     Channel#channelId()})
- * @param defaultAgentId fallback agent id when no binding matches; if null the global default
- *     agent (registered via {@link io.agentscope.harness.agent.gateway.Gateway#bindMainAgent}) is
- *     used
- * @param dmScope controls how DM ({@link PeerKind#DIRECT}) sessions are keyed; defaults to {@link
- *     DmScope#MAIN}
- * @param bindings ordered list of binding rules; evaluated in list order within each priority tier
  */
-public record ChannelConfig(
-        String channelId, String defaultAgentId, DmScope dmScope, List<ChannelBinding> bindings) {
-
-    public ChannelConfig {
-        Objects.requireNonNull(channelId, "channelId");
-        dmScope = dmScope != null ? dmScope : DmScope.defaultScope();
-        bindings = bindings != null ? List.copyOf(bindings) : List.of();
-    }
-
-    /** Minimal config: channel id only, using global agent default and {@link DmScope#MAIN}. */
-    public static ChannelConfig of(String channelId) {
-        return new ChannelConfig(channelId, null, DmScope.MAIN, List.of());
-    }
-
-    /** Config with explicit default agent (no binding rules). */
-    public static ChannelConfig of(String channelId, String defaultAgentId) {
-        return new ChannelConfig(channelId, defaultAgentId, DmScope.MAIN, List.of());
-    }
-
-    /** Returns a builder for constructing channel configs fluently. */
-    public static Builder builder(String channelId) {
-        return new Builder(channelId);
-    }
-
-    public static final class Builder {
-        private final String channelId;
-        private String defaultAgentId;
-        private DmScope dmScope = DmScope.MAIN;
-        private final List<ChannelBinding> bindings = new ArrayList<>();
-
-        private Builder(String channelId) {
-            this.channelId = Objects.requireNonNull(channelId, "channelId");
-        }
-
-        public Builder defaultAgentId(String defaultAgentId) {
-            this.defaultAgentId = defaultAgentId;
-            return this;
-        }
-
-        public Builder dmScope(DmScope dmScope) {
-            this.dmScope = dmScope;
-            return this;
-        }
-
-        public Builder binding(ChannelBinding binding) {
-            this.bindings.add(Objects.requireNonNull(binding, "binding"));
-            return this;
-        }
-
-        public Builder bindings(List<ChannelBinding> bindings) {
-            if (bindings != null) {
-                this.bindings.addAll(bindings);
-            }
-            return this;
-        }
-
-        public ChannelConfig build() {
-            return new ChannelConfig(channelId, defaultAgentId, dmScope, bindings);
-        }
-    }
+public class ChannelConfig {
+	
+	private String channelId;
+	private String defaultAgentId;
+	private DmScope dmScope = DmScope.MAIN;
+	private List<ChannelBinding> bindings = Collections.emptyList();
+	
+	/** No-arg constructor required for JavaBean conventions. */
+	public ChannelConfig() {
+	}
+	
+	/**
+	 * Full constructor.
+	 *
+	 * @param channelId the logical channel identifier this config applies to (must match {@link
+	 *     Channel#channelId()})
+	 * @param defaultAgentId fallback agent id when no binding matches; if null the global default
+	 *     agent (registered via {link Gateway#bindMainAgent})
+	 *     is used
+	 * @param dmScope controls how DM ({@link PeerKind#DIRECT}) sessions are keyed; defaults to
+	 *     {@link DmScope#MAIN}
+	 * @param bindings ordered list of binding rules; evaluated in list order within each priority
+	 *     tier
+	 */
+	public ChannelConfig(
+			String channelId, String defaultAgentId, DmScope dmScope, List<ChannelBinding> bindings) {
+		setChannelId(channelId);
+		setDefaultAgentId(defaultAgentId);
+		setDmScope(dmScope);
+		setBindings(bindings);
+	}
+	
+	/** Minimal config: channel id only, using global agent default and {@link DmScope#MAIN}. */
+	public static ChannelConfig of(String channelId) {
+		return new ChannelConfig(channelId, null, DmScope.MAIN, Collections.<ChannelBinding>emptyList());
+	}
+	
+	/** Config with explicit default agent (no binding rules). */
+	public static ChannelConfig of(String channelId, String defaultAgentId) {
+		return new ChannelConfig(
+				channelId, defaultAgentId, DmScope.MAIN, Collections.<ChannelBinding>emptyList());
+	}
+	
+	/** Returns a builder for constructing channel configs fluently. */
+	public static Builder builder(String channelId) {
+		return new Builder(channelId);
+	}
+	
+	public String getChannelId() {
+		return channelId;
+	}
+	
+	public void setChannelId(String channelId) {
+		this.channelId = Objects.requireNonNull(channelId, "channelId");
+	}
+	
+	public String getDefaultAgentId() {
+		return defaultAgentId;
+	}
+	
+	public void setDefaultAgentId(String defaultAgentId) {
+		this.defaultAgentId = defaultAgentId;
+	}
+	
+	public DmScope getDmScope() {
+		return dmScope;
+	}
+	
+	public void setDmScope(DmScope dmScope) {
+		this.dmScope = dmScope != null ? dmScope : DmScope.defaultScope();
+	}
+	
+	public List<ChannelBinding> getBindings() {
+		return bindings;
+	}
+	
+	public void setBindings(List<ChannelBinding> bindings) {
+		if (bindings != null) {
+			this.bindings = Collections.unmodifiableList(new ArrayList<ChannelBinding>(bindings));
+		} else {
+			this.bindings = Collections.emptyList();
+		}
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof ChannelConfig)) {
+			return false;
+		}
+		ChannelConfig that = (ChannelConfig) o;
+		return Objects.equals(channelId, that.channelId)
+				&& Objects.equals(defaultAgentId, that.defaultAgentId)
+				&& dmScope == that.dmScope
+				&& Objects.equals(bindings, that.bindings);
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(channelId, defaultAgentId, dmScope, bindings);
+	}
+	
+	@Override
+	public String toString() {
+		return "ChannelConfig{"
+				+ "channelId='"
+				+ channelId
+				+ '\''
+				+ ", defaultAgentId='"
+				+ defaultAgentId
+				+ '\''
+				+ ", dmScope="
+				+ dmScope
+				+ ", bindings="
+				+ bindings
+				+ '}';
+	}
+	
+	public static final class Builder {
+		private final String channelId;
+		private String defaultAgentId;
+		private DmScope dmScope = DmScope.MAIN;
+		private final List<ChannelBinding> bindings = new ArrayList<ChannelBinding>();
+		
+		private Builder(String channelId) {
+			this.channelId = Objects.requireNonNull(channelId, "channelId");
+		}
+		
+		public Builder defaultAgentId(String defaultAgentId) {
+			this.defaultAgentId = defaultAgentId;
+			return this;
+		}
+		
+		public Builder dmScope(DmScope dmScope) {
+			this.dmScope = dmScope;
+			return this;
+		}
+		
+		public Builder binding(ChannelBinding binding) {
+			this.bindings.add(Objects.requireNonNull(binding, "binding"));
+			return this;
+		}
+		
+		public Builder bindings(List<ChannelBinding> bindings) {
+			if (bindings != null) {
+				this.bindings.addAll(bindings);
+			}
+			return this;
+		}
+		
+		public ChannelConfig build() {
+			return new ChannelConfig(channelId, defaultAgentId, dmScope, bindings);
+		}
+	}
 }

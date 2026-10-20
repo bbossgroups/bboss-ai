@@ -24,6 +24,7 @@ import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.context.HarnessAgentRuntimeContext;
 import org.frameworkset.spi.ai.filesystem.WorkspaceManager;
+import org.frameworkset.spi.ai.harness.subagents.DefaultAgentManager;
 import org.frameworkset.spi.ai.interceptor.AgentInterceptor;
 import org.frameworkset.spi.ai.interceptor.impl.HarnessAgentInterceptor;
 import org.frameworkset.spi.ai.material.StoreFilePathFunction;
@@ -57,6 +58,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 	
 	
 	protected List<AgentInterceptor> agentInterceptors;
+	protected DefaultAgentManager defaultAgentManager	;
 	
 	public List<AgentInterceptor> getAgentInterceptors() {
 		return agentInterceptors;
@@ -172,7 +174,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 	/**
 	 * 虚拟主智能体对象，对应的Agent对象，可以是planAgent，可以是不存在的agent
 	 */
-    protected volatile AgentSessionStore mainSessionStore;
+    protected volatile AgentStore mainSessionStore;
     protected StoreContext storeContext;
 
     public AIAgent(StoreContext storeContext) {
@@ -189,7 +191,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
            
 			if(storeContext != null) {
 				AgentSessionStoreBuilder agentSessionStoreBuilder = new DefaultAgentSessionStoreBuilder();
-				AgentSessionStore mainSessionStore = agentSessionStoreBuilder.build(storeContext, this);
+				AgentStore mainSessionStore = agentSessionStoreBuilder.build(storeContext, this);
 				mainSessionStore.setAIAgent(this);
 				mainSessionStore.initMiddlewares(this);
 				if (agentMessage != null && agentMessage instanceof SessionAgentMessage) {
@@ -199,10 +201,10 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 					mainSessionStore.removeSession(storeContext.getSessionId());
 				}
 				this.mainSessionStore = mainSessionStore;
-				this.agentSessionStore = mainSessionStore;
+				this.agentStore = mainSessionStore;
 			}
 			else{
-				AgentSessionStore mainSessionStore = null;
+				AgentStore mainSessionStore = null;
 				if(parentAgent != null){
 					mainSessionStore = parentAgent.getMainSessionStore();
 				}
@@ -259,9 +261,9 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 
 
     @JsonIgnore
-    protected AgentSessionStore agentSessionStore;
+    protected AgentStore agentStore;
     @JsonIgnore
-    protected AgentSessionStore parentSessionStore;
+    protected AgentStore parentSessionStore;
     protected String agentId;
 
     public T setParentAgent(AIAgent parentAgent) {
@@ -325,28 +327,28 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 		return null;
 	}
 
-    public T setMainSessionStore(AgentSessionStore mainSessionStore) {
+    public T setMainSessionStore(AgentStore mainSessionStore) {
         this.mainSessionStore = mainSessionStore;
         return (T)this;
     }
 
-    public T setAgentSessionStore(AgentSessionStore agentSessionStore) {
-        this.agentSessionStore = agentSessionStore;
+    public T setAgentSessionStore(AgentStore agentStore) {
+        this.agentStore = agentStore;
         return (T)this;
     }
     
 
     public LastSessionMessage getLastSessionMessage(){
-        return agentSessionStore != null?agentSessionStore.getLastSubAgentSessionMessage():null;
+        return agentStore != null? agentStore.getLastSubAgentSessionMessage():null;
     }
 
     public void cleanLastSessionMessages(){
-        if(this.agentSessionStore != null){
-            agentSessionStore.cleanLastSessionMessages();
+        if(this.agentStore != null){
+            agentStore.cleanLastSessionMessages();
         }
     }
     public List<LastSessionMessage> getLastSessionMessages(){
-        return agentSessionStore != null?agentSessionStore.getLastSubAgentSessionMessages():null;
+        return agentStore != null? agentStore.getLastSubAgentSessionMessages():null;
     }
 
     public T setAgentMessage(AgentMessage agentMessage) {
@@ -386,20 +388,20 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
         return (T)this;
     }
 
-    public T setParentSessionStore(AgentSessionStore parentSessionStore) {
+    public T setParentSessionStore(AgentStore parentSessionStore) {
         this.parentSessionStore = parentSessionStore;
         return (T)this;
     }
 
-    public AgentSessionStore getParentSessionStore() {
+    public AgentStore getParentSessionStore() {
         return parentSessionStore;
     }
 
-    public AgentSessionStore getAgentSessionStore() {
-        return agentSessionStore;
+    public AgentStore getAgentSessionStore() {
+        return agentStore;
     }
 
-    public AgentSessionStore getMainSessionStore() {
+    public AgentStore getMainSessionStore() {
         if(mainSessionStore != null)
             return mainSessionStore;
         if(parentAgent != null){
@@ -452,7 +454,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
         this(  prompt,   null,sessionSize);
     }
     
-    protected LastSessionMessage getLastSubAgentSessionMessage(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
+    protected LastSessionMessage getLastSubAgentSessionMessage(AgentStore mainSessionStore, AgentMessage agentMessage){
         //UserAgent无需追加父智能体中产生的最新的消息作
         LastSessionMessage lastSubAgentSessionMessage = null;
         if(parentSessionStore != null) {
@@ -492,14 +494,14 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 //			agentRuntimeContext.setPermissionRules(JsonUtil.json2Object(json, PermissionRules.class));
 //		}
 	}
-    protected void loadHistoryMessages(AgentSessionStore mainSessionStore,AgentMessage agentMessage){
-        if(agentSessionStore == null){
+    protected void loadHistoryMessages(AgentStore mainSessionStore, AgentMessage agentMessage){
+        if(agentStore == null){
             return;
         }
-        List<LinkedMessageMap<String,Object>> sessionMemory = agentSessionStore.getSessionMemory();
+        List<LinkedMessageMap<String,Object>> sessionMemory = agentStore.getSessionMemory();
         boolean empty = sessionMemory.isEmpty();
 //                sessionAgentMessage.setSessionStore(agentSessionStore);
-        mainSessionStore.addSubTaskSessionMemory(agentId, agentSessionStore);
+        mainSessionStore.addSubTaskSessionMemory(agentId, agentStore);
 		LastSessionMessage lastSubAgentSessionMessage = null;
 		if(!isDisableReferenceParentLastSubMessage()) {
 //        if(!isDisableGloableStore()) {
@@ -512,7 +514,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 			
 			if (sessionMessages != null && sessionMessages.size() > 0) {
 				for (LinkedMessageMap<String, Object> sessionMessage : sessionMessages) {
-					agentSessionStore.appendSessionMessageFromParent(this,sessionMessage);
+					agentStore.appendSessionMessageFromParent(this,sessionMessage);
 				}
 				
 				
@@ -522,7 +524,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 //			restorePermissionRules(    sessionMemory);
 			if(!lastSubAgentSessionMessage.getMsgAgentId().equals(this.getAgentId())) {
 				
-				agentSessionStore.appendSessionMessageFromParent(this,lastSubAgentSessionMessage.getLastSessionMessage());
+				agentStore.appendSessionMessageFromParent(this,lastSubAgentSessionMessage.getLastSessionMessage());
 				//记录消息引用关系
 				mainSessionStore.saveLastSessionMessage(lastSubAgentSessionMessage, agentId);
 			}
@@ -550,7 +552,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 		}
 		
 		
-        AgentSessionStore mainSessionStore = this.getMainSessionStore();
+        AgentStore mainSessionStore = this.getMainSessionStore();
         SessionAgentMessage sessionAgentMessage = null;
         if( agentMessage instanceof SessionAgentMessage) {
             sessionAgentMessage = (SessionAgentMessage)agentMessage;
@@ -618,14 +620,14 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
             if(parentSessionStore == null && this.parentAgent != null){
                 this.parentSessionStore = parentAgent.getAgentSessionStore();
             }
-            if(agentSessionStore == null){
+            if(agentStore == null){
                 if(parentSessionStore != null)
-                    agentSessionStore = buildAgentSessionStore(parentSessionStore );
+                    agentStore = buildAgentSessionStore(parentSessionStore );
                 else
-                    agentSessionStore = buildAgentSessionStore(mainSessionStore );
-                agentSessionStore.setAgentId(agentId);
-                agentSessionStore.setAIAgent(this);
-                agentSessionStore.setMainAgentSessionStore(mainSessionStore);
+                    agentStore = buildAgentSessionStore(mainSessionStore );
+                agentStore.setAgentId(agentId);
+                agentStore.setAIAgent(this);
+                agentStore.setMainAgentSessionStore(mainSessionStore);
             }
             loadHistoryMessages(  mainSessionStore,  agentMessage);
 			
@@ -634,8 +636,8 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
         
     }
     
-    protected AgentSessionStore buildAgentSessionStore(AgentSessionStore parentSessionStore ){
-        return new AgentSessionStoreMemory(parentSessionStore );
+    protected AgentStore buildAgentSessionStore(AgentStore parentSessionStore ){
+        return new AgentStoreMemory(parentSessionStore );
     }
 
     /**
@@ -914,12 +916,12 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
     
     public LastSessionMessage addAgentResultSessionMessage(AgentResultSessionMessageContext agentResultSessionMessageContext,String message){
         LastSessionMessage lastSubAgentSessionMessage = null;
-        if(this.agentSessionStore != null ) {
+        if(this.agentStore != null ) {
 
-            lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(    agentResultSessionMessageContext,message);
+            lastSubAgentSessionMessage = this.agentStore.addAgentResultSessionMessage(    agentResultSessionMessageContext,message);
 //            if( !isDisableGloableStore()) {
             if( !isDisablePush2ParentLastSubMessage()) {
-                this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
+                this.agentStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
             }
         }
         return  lastSubAgentSessionMessage;
@@ -927,12 +929,12 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 
     public LastSessionMessage addAgentResultSessionMessage(ServerEvent serverEvent){
         LastSessionMessage lastSubAgentSessionMessage = null;
-        if(this.agentSessionStore != null ) {
+        if(this.agentStore != null ) {
 
-            lastSubAgentSessionMessage = this.agentSessionStore.addAgentResultSessionMessage(serverEvent);
+            lastSubAgentSessionMessage = this.agentStore.addAgentResultSessionMessage(serverEvent);
 //            if( !isDisableGloableStore()) {
             if( !isDisablePush2ParentLastSubMessage()) {
-                this.agentSessionStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
+                this.agentStore.setParentAgentLastSessionMessage(lastSubAgentSessionMessage);
             }
         }
         return  lastSubAgentSessionMessage;
@@ -1018,38 +1020,38 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 
 
     public String getAgentId() {
-        return this.agentId != null ? this.agentId : agentSessionStore != null?this.agentSessionStore.getAgentId():null;
+        return this.agentId != null ? this.agentId : agentStore != null?this.agentStore.getAgentId():null;
     }
 
     public String getParentAgentId() {
         if(parentAgent != null){
             return parentAgent.getAgentId();
         }
-        if(agentSessionStore != null) {
-            return this.agentSessionStore.getParantAgentId();
+        if(agentStore != null) {
+            return this.agentStore.getParantAgentId();
         }
         return null;
     }
 
     public List<LinkedMessageMap<String, Object>> getSessionMemory() {
-        if(this.agentSessionStore != null) {
-            return this.agentSessionStore.getSessionMemory();
+        if(this.agentStore != null) {
+            return this.agentStore.getSessionMemory();
         }
         return getSessionMemory(false);
     }
 
 	public List<LinkedMessageMap<String, Object>> getSessionMemory(boolean create) {
 		
-		if(agentSessionStore == null && create){
-			this.agentSessionStore = new AgentSessionStoreMemory(new ArrayList<>());
-			this.agentSessionStore.setAIAgent(this);
-			this.mainSessionStore = this.agentSessionStore;
+		if(agentStore == null && create){
+			this.agentStore = new AgentStoreMemory(new ArrayList<>());
+			this.agentStore.setAIAgent(this);
+			this.mainSessionStore = this.agentStore;
 			
 		}
-		if(this.agentSessionStore == null) {
+		if(this.agentStore == null) {
 			return null;
 		}
-		return this.agentSessionStore.getSessionMemory();
+		return this.agentStore.getSessionMemory();
 	}
 
     /**
@@ -1098,14 +1100,14 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
                 .setAgentId(genSubAgentId())
                 .setAgentName(genSubAgentName(agent.getAgentId()))
                 .setMainSessionStore(this.mainSessionStore)
-                .setParentSessionStore(this.agentSessionStore);
+                .setParentSessionStore(this.agentStore);
         
         return agent;
     }
 	protected CompactionManagerInf compactionManager;
 	protected MemoryMaintenance memoryMaintenance;
 	protected MemoryFlushMiddleware memoryFlushMiddleware;
-	protected AgentSessionStore parentAgentSessionStore;
+	protected AgentStore parentAgentStore;
 	protected WorkspaceManager workspaceManager;
 	 
     public void initToolKits(){
@@ -1695,7 +1697,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 		persistentMessage.setMessage(summaryMessage);
 		persistentMessage.setGroupId(getGroupId());
 		persistentMessage.setParentGroupId(getParentGroupId());
-		this.agentSessionStore.saveSummeryMessage(persistentMessage);
+		this.agentStore.saveSummeryMessage(persistentMessage);
 	}
 	
 	public int getNextSeqNo() {
@@ -1813,4 +1815,30 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 		this.agentInterceptors.add(index,agentInterceptor);
 		return (T)this;
 	}
+	
+	public static class Builder {
+		
+		public AIAgent build(){
+			return null;
+		}
+	}
+	public static Builder builder(){
+		return new Builder();
+	}
+	
+	/**
+	 * The internal {@link DefaultAgentManager} able to
+	 * re-materialize this agent's subagents, or {@code null} when none is owned (e.g. session-mode
+	 * external subagent tool). Used to wire a gateway materializer for cross-node recovery.
+	 */
+	public DefaultAgentManager getSubagentAgentManager() {
+//		if (subagentMiddleware instanceof SubagentsMiddleware sm) {
+//			return sm.getAgentManager();
+//		}
+//		if (subagentMiddleware instanceof DynamicSubagentsMiddleware dm) {
+//			return dm.getAgentManager();
+//		}
+		return this.defaultAgentManager;
+	}
+	
 }

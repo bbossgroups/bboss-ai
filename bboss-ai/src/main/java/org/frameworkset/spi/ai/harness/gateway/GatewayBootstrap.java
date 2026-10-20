@@ -13,24 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.harness.agent.gateway;
+package org.frameworkset.spi.ai.harness.gateway;
 
-import io.agentscope.core.agent.Agent;
-import io.agentscope.harness.agent.DistributedStore;
-import io.agentscope.harness.agent.HarnessAgent;
-import io.agentscope.harness.agent.gateway.channel.Channel;
-import io.agentscope.harness.agent.gateway.channel.ChannelConfig;
-import io.agentscope.harness.agent.gateway.channel.ChannelRuntimeContextResolver;
-import io.agentscope.harness.agent.gateway.channel.chatui.ChatUiChannel;
-import io.agentscope.harness.agent.subagent.DefaultAgentManager;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+ 
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.harness.gateway.channel.Channel;
+import org.frameworkset.spi.ai.harness.gateway.channel.ChannelConfig;
+import org.frameworkset.spi.ai.harness.gateway.channel.ChannelManager;
+import org.frameworkset.spi.ai.harness.gateway.channel.ChannelRuntimeContextResolver;
+import org.frameworkset.spi.ai.harness.gateway.channel.chatui.ChatUiChannel;
+import org.frameworkset.spi.ai.harness.subagents.DefaultAgentManager;
+import org.frameworkset.spi.ai.harness.subagents.StoreBackedSubagentRegistry;
+import org.frameworkset.spi.ai.harness.subagents.SubagentRegistry;
+import org.frameworkset.spi.ai.store.AgentStore;
+
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Multi-agent + channel routing bootstrap. The primary user-facing entry point for building a
@@ -86,13 +85,13 @@ public final class GatewayBootstrap {
 
     private final HarnessGateway gateway;
     private final ChannelManager channelManager;
-    private final Map<String, HarnessAgent> agents;
+    private final Map<String, AIAgent> agents ;
     private final String mainAgentId;
 
     private GatewayBootstrap(
             HarnessGateway gateway,
             ChannelManager channelManager,
-            Map<String, HarnessAgent> agents,
+            Map<String, AIAgent> agents,
             String mainAgentId) {
         this.gateway = gateway;
         this.channelManager = channelManager;
@@ -116,7 +115,7 @@ public final class GatewayBootstrap {
     }
 
     /** The registered agents keyed by id. */
-    public Map<String, HarnessAgent> agents() {
+    public Map<String, AIAgent> agents() {
         return agents;
     }
 
@@ -128,7 +127,7 @@ public final class GatewayBootstrap {
     /**
      * Returns a {@link SubagentGatewayBridge} that exposes subagents as user-addressable threads
      * within this gateway. Pass this to
-     * {@link io.agentscope.harness.agent.middleware.SubagentsMiddleware#setGatewayBridge} to enable
+     * {link SubagentsMiddleware#setGatewayBridge} to enable
      * the {@code expose_to_user} parameter on {@code agent_spawn}.
      */
     public SubagentGatewayBridge gatewayBridge() {
@@ -168,24 +167,29 @@ public final class GatewayBootstrap {
     public void stop() {
         channelManager.stopAll();
     }
-
+    public GatewayBootstrap agent(String id, AIAgent agent) {
+		Objects.requireNonNull(id, "id");
+		Objects.requireNonNull(agent, "agent");
+		agents.put(id, agent);
+		return this;
+	}
     // =========================================================================
     //  Builder
     // =========================================================================
 
     public static final class Builder {
 
-        private final LinkedHashMap<String, HarnessAgent> agents = new LinkedHashMap<>();
+        private final LinkedHashMap<String, AIAgent> agents = new LinkedHashMap<>();
         private String mainAgentId;
         private final List<Channel> channels = new ArrayList<>();
-        private Consumer<HarnessAgent.Builder> agentCustomizer;
-        private DistributedStore distributedStore;
+        private Consumer<AIAgent.Builder> agentCustomizer;
+        private AgentStore agentStore;
         private ChannelRuntimeContextResolver runtimeContextResolver;
 
         private Builder() {}
 
         /** Registers a pre-built agent under the given id. */
-        public Builder agent(String id, HarnessAgent agent) {
+        public Builder agent(String id, AIAgent agent) {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(agent, "agent");
             agents.put(id, agent);
@@ -194,12 +198,12 @@ public final class GatewayBootstrap {
 
         /**
          * Registers an agent declared via a builder lambda. The lambda receives a
-         * {@link HarnessAgent.Builder} pre-configured with any global customizer.
+         * {@link AIAgent.Builder} pre-configured with any global customizer.
          */
-        public Builder agent(String id, Consumer<HarnessAgent.Builder> configurator) {
+        public Builder agent(String id, Consumer<AIAgent.Builder> configurator) {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(configurator, "configurator");
-            HarnessAgent.Builder b = HarnessAgent.builder();
+			AIAgent.Builder b = AIAgent.builder();
             if (agentCustomizer != null) {
                 agentCustomizer.accept(b);
             }
@@ -229,7 +233,7 @@ public final class GatewayBootstrap {
          * Applies a customizer to every agent builder created via the lambda-based
          * {@link #agent(String, Consumer)} method. Useful for setting a shared model or workspace.
          */
-        public Builder configureAllAgents(Consumer<HarnessAgent.Builder> customizer) {
+        public Builder configureAllAgents(Consumer<AIAgent.Builder> customizer) {
             this.agentCustomizer = customizer;
             return this;
         }
@@ -241,8 +245,8 @@ public final class GatewayBootstrap {
          * {@code distributedStore} (if any) is used as a fallback; otherwise exposure stays
          * in-process.
          */
-        public Builder distributedStore(DistributedStore store) {
-            this.distributedStore = store;
+        public Builder distributedStore(AgentStore store) {
+            this.agentStore = store;
             return this;
         }
 
@@ -287,9 +291,9 @@ public final class GatewayBootstrap {
             }
 
             // Register all agents, bind the main one
-            HarnessAgent mainHa = agents.get(resolvedMainId);
+            AIAgent mainHa = agents.get(resolvedMainId);
             gw.bindMainAgent(mainHa);
-            for (Map.Entry<String, HarnessAgent> entry : agents.entrySet()) {
+            for (Map.Entry<String, AIAgent> entry : agents.entrySet()) {
                 if (!entry.getKey().equals(resolvedMainId)) {
                     gw.registerAgent(entry.getKey(), entry.getValue());
                 }
@@ -300,16 +304,16 @@ public final class GatewayBootstrap {
             // agent's manager in turn; a durable registry (when a distributed store is present)
             // makes the subagentId resolvable beyond this process. Without these, exposure stays
             // in-process (legacy behaviour).
-            List<DefaultAgentManager> managers =
-                    agents.values().stream()
-                            .map(HarnessAgent::getSubagentAgentManager)
-                            .filter(Objects::nonNull)
-                            .toList();
+			List<DefaultAgentManager> managers =
+					agents.values().stream()
+							.map(AIAgent::getSubagentAgentManager)
+							.filter(Objects::nonNull)
+							.collect(Collectors.toList());
             if (!managers.isEmpty()) {
                 gw.setSubagentMaterializer(
                         (agentId, rc) -> {
                             for (DefaultAgentManager m : managers) {
-                                Optional<Agent> agent = m.createAgentIfPresent(agentId, rc);
+                                Optional<AIAgent> agent = m.createAgentIfPresent(agentId, rc);
                                 if (agent.isPresent()) {
                                     return agent;
                                 }
@@ -317,12 +321,13 @@ public final class GatewayBootstrap {
                             return Optional.empty();
                         });
             }
-            DistributedStore store = distributedStore;
-            if (store == null) {
-                store = mainHa.getDistributedStore();
-            }
+            AgentStore store = mainHa.getMainSessionStore();
+//            if (store == null) {
+//                store = mainHa.getMainSessionStore();
+//            }
             if (store != null) {
-                gw.setSubagentRegistry(new StoreBackedSubagentRegistry(store.baseStore()));
+//                gw.setSubagentRegistry(new StoreBackedSubagentRegistry(store.baseStore()));
+				gw.setSubagentRegistry(new StoreBackedSubagentRegistry(store));
             }
 
             return new GatewayBootstrap(gw, cm, new LinkedHashMap<>(agents), resolvedMainId);

@@ -23,7 +23,7 @@ import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.AgentToolCallRules;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.store.AgentSession;
-import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
+import org.frameworkset.spi.ai.store.AgentStoreMemory;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.store.StoreContext;
 import org.slf4j.LoggerFactory;
@@ -38,8 +38,8 @@ import java.util.List;
  * @author biaoping.yin
  * @Date 2026/4/5
  */
-public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionStoreDB> {
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(AgentSessionStoreDB.class);
+public class AgentStoreDB extends AgentStoreMemory<AgentStoreDB> {
+    private static org.slf4j.Logger logger = LoggerFactory.getLogger(AgentStoreDB.class);
     private AgentSessionStoreDBConfig agentSessionStoreDBConfig;
     
 
@@ -52,7 +52,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 	 * 人工介入任务数据库表数据源
 	 */
 	private String hitlDatasource = "bboss";
-    public AgentSessionStoreDB(List<LinkedMessageMap<String, Object>> sessionMemory) {
+    public AgentStoreDB(List<LinkedMessageMap<String, Object>> sessionMemory) {
         super(sessionMemory);
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         persistentSessionMemory = true;
@@ -62,7 +62,7 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
 
     
     
-    public AgentSessionStoreDB(StoreContext storeContext, AIAgent agent) {
+    public AgentStoreDB(StoreContext storeContext, AIAgent agent) {
         super(storeContext,   agent);
         this.dataSource = storeContext.getDataSource();
 		this.hitlDatasource = storeContext.getHitlDatasource();
@@ -104,13 +104,13 @@ public class AgentSessionStoreDB extends AgentSessionStoreMemory<AgentSessionSto
         
     }
 
-    public AgentSessionStoreDB setDataSource(String dataSource) {
+    public AgentStoreDB setDataSource(String dataSource) {
         this.dataSource = dataSource;
 		this.clickhouseCluster = storeContext.getClickhouseCluster();
         return this;
     }
 	
-	public AgentSessionStoreDB setHitlDatasource(String hitlDatasource) {
+	public AgentStoreDB setHitlDatasource(String hitlDatasource) {
 		this.hitlDatasource = hitlDatasource;
 		return this;
 	}
