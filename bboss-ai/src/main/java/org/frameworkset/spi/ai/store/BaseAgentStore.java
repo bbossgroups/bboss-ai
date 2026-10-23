@@ -58,8 +58,12 @@ public abstract class BaseAgentStore<T extends BaseAgentStore> implements AgentS
      */
 
     protected String sessionId;
-
-
+	
+	/**
+	 * 业务领域
+	 */
+	
+	protected String domain;
 
     /**
      * 前端用户请求id，每次请求生成一个
@@ -806,8 +810,16 @@ public abstract class BaseAgentStore<T extends BaseAgentStore> implements AgentS
     public String getSessionId() {
         return sessionId;
     }
-
-    public void setSessionId(String sessionId) {
+	
+	public String getDomain(){
+		return domain;
+	}
+	
+	public void setDomain(String domain) {
+		this.domain = domain;
+	}
+	
+	public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
     }
 

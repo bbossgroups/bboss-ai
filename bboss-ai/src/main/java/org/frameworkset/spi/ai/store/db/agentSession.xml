@@ -599,5 +599,32 @@
 			select * from agent_consolidation_state where agentId=? and userId=?
 		]]>
     </property>
+    <!--查询用户会话消息记录-->
+    <property name="selectSessionMessageByUserIdSQL">
+        <![CDATA[
+			select *  from agent_session_message as tm where tm.sessionId in (select sessionId from agent_session 
+					 as ts where ts.userId=#[userId]
+					  #if($domain) and ts.domain=#[domain] #end
+					  #if($agentId) and ts.agentId=#[agentId] #end	
+					  order by ts.createTime desc limit #[limit]) 
+					 and tm.messageType in ('0','1','2','3','4','23')  and tm.agentNodeType in ('standard','route','judge') 
+					 order by tm.sessionId,tm.createTime,tm.seqNo desc
+		]]>
+    </property>
+
+
+    <!--查询用户会话消息记录-->
+    <property name="selectSessionMessageByUserIdSQL-yandex_clickhouse">
+        <![CDATA[
+			select *  from agent_session_message as tm where tm.sessionId in (select sessionId from ${databaseSchema}.agent_session 
+					 as ts where ts.userId=#[userId]
+					  #if($domain) and ts.domain=#[domain] #end
+					  #if($agentId) and ts.agentId=#[agentId] #end					  
+					  order by ts.createTime desc limit #[limit]) 
+					 and tm.messageType in ('0','1','2','3','4','23')  and tm.agentNodeType in ('standard','route','judge') 
+					 order by  (tm.sessionId,tm.createTime,tm.seqNo) desc
+		]]>
+    </property>
+    
 
 </properties>

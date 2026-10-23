@@ -17,6 +17,7 @@ package org.frameworkset.spi.ai.store.db;
 
 import com.frameworkset.common.poolman.DBUtil;
 import com.frameworkset.common.poolman.SQLExecutor;
+import com.frameworkset.common.poolman.util.JDBCPool;
 import com.frameworkset.orm.adapter.DB;
 import org.frameworkset.spi.ai.model.AIRuntimeException;
 import org.slf4j.Logger;
@@ -1338,7 +1339,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create session message table", e);
 			}
 		}
-		
+		/**
 		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistAgentToolCallRulesSQL());
 		}
@@ -1359,6 +1360,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create agent tool call rules table", e);
 			}
 		}
+		 */
 		//创建记忆总账表 
 		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMemorySQL());
@@ -1398,7 +1400,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create day memory table", e);
 			}
 		}
-		
+		/**
 		//创建总账水位表 
 		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistConsolidationStateSQL());
@@ -1418,6 +1420,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 				throw new AIRuntimeException("Failed to create consolidation state table", e);
 			}
 		}
+		 */
 		
 		try {
 			SQLExecutor.queryObjectWithDBName(int.class, dataSource, getExistMessageReferenceSQL());
@@ -1899,7 +1902,7 @@ public static final String sqlserver_createSessionMessageReferenceTableSQL = new
 		return sql.replace("${sessionMessageTableName}", sessionMessageTableName).replace("$clickhouseCluster", clickhouseCluster);
 	}
 	public boolean isClickhouse(String dbName){
-		DB adaptor  = DBUtil.getDBAdapter(dbName);
+		DB adaptor  = DBUtil.getDBAdapter(dbName);		
 		String type = adaptor.getDBTYPE();
 		if(type != null && type.indexOf("clickhouse") >= 0)
 			return true;

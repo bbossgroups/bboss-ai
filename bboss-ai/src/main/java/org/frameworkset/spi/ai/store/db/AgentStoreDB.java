@@ -15,7 +15,10 @@ package org.frameworkset.spi.ai.store.db;
  * limitations under the License.
  */
 
+import com.frameworkset.common.poolman.ConfigSQLExecutor;
+import com.frameworkset.common.poolman.DBUtil;
 import com.frameworkset.common.poolman.SQLExecutor;
+import com.frameworkset.common.poolman.util.JDBCPool;
 import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
@@ -30,9 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author biaoping.yin
@@ -41,6 +42,7 @@ import java.util.List;
 public class AgentStoreDB extends AgentStoreMemory<AgentStoreDB> {
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(AgentStoreDB.class);
     private AgentSessionStoreDBConfig agentSessionStoreDBConfig;
+	private ConfigSQLExecutor executor = new ConfigSQLExecutor("org/frameworkset/spi/ai/store/db/agentSession.xml");
     
 
     private String clickhouseCluster;
@@ -48,6 +50,7 @@ public class AgentStoreDB extends AgentStoreMemory<AgentStoreDB> {
      * 持久化对话记录的数据源名称
      */
     private String dataSource;
+	private String databaseSchema;
 	/**
 	 * 人工介入任务数据库表数据源
 	 */
@@ -69,6 +72,10 @@ public class AgentStoreDB extends AgentStoreMemory<AgentStoreDB> {
 		if(hitlDatasource == null){
 			hitlDatasource = dataSource;
 		}
+		JDBCPool jdbcPool = DBUtil.getPool(dataSource);
+//		logger.info("DatabaseSchema:{}",jdbcPool.getJDBCPoolMetadata().getDatabaseSchema());
+		databaseSchema = jdbcPool.getJDBCPoolMetadata().getDatabaseSchema();
+		logger.info("DatabaseSchema:{}",databaseSchema);
 		this.clickhouseCluster = storeContext.getClickhouseCluster();
         agentSessionStoreDBConfig = new AgentSessionStoreDBConfig();
         agentSessionStoreDBConfig.setSessionTableName(storeContext.getSessionTableName());
@@ -443,16 +450,30 @@ public class AgentStoreDB extends AgentStoreMemory<AgentStoreDB> {
 	public List<SessionMessage>  getAllAgentSessionMessageOfUser(String userId,String agentId,int  limit){
 		try {
 			
+			String domain = this.storeContext != null ?this.storeContext.getDomain():null;
 			List<SessionMessage> agentSessionMessages = null;
-			if(agentId == null) {
-				
-				agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-						agentSessionStoreDBConfig.getSelectSessionMessageByUserIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)), userId, limit);
+			Map<String,Object> params = new LinkedHashMap<>();
+			params.put("userId", userId);
+			if(domain != null){
+				params.put("domain", domain);
 			}
-			else{
-				agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
-						agentSessionStoreDBConfig.getSelectAgentSessionMessageByUserIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)), userId, agentId, limit);
+			params.put("limit", limit);
+			if(agentId != null){
+				params.put("agentId", agentId);
 			}
+			if(databaseSchema != null)
+				params.put("databaseSchema", databaseSchema);
+			agentSessionMessages = executor.queryListBeanWithDBName(SessionMessage.class, dataSource,
+					"selectSessionMessageByUserIdSQL", params);
+//			if(agentId == null) {
+//				
+//				agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+//						agentSessionStoreDBConfig.getSelectSessionMessageByUserIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)), userId, limit);
+//			}
+//			else{
+//				agentSessionMessages = SQLExecutor.queryListWithDBName(SessionMessage.class, dataSource,
+//						agentSessionStoreDBConfig.getSelectAgentSessionMessageByUserIdSQL(agentSessionStoreDBConfig.isClickhouse(dataSource)), userId, agentId, limit);
+//			}
 			
 			return agentSessionMessages;
 			

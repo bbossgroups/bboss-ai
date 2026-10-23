@@ -15,7 +15,9 @@ package org.frameworkset.spi.ai.compact;
  * limitations under the License.
  */
 
+import com.frameworkset.common.poolman.DBUtil;
 import com.frameworkset.common.poolman.util.DBConf;
+import com.frameworkset.common.poolman.util.JDBCPool;
 import com.frameworkset.common.poolman.util.SQLManager;
 import org.frameworkset.nosql.redis.RedisConfig;
 import org.frameworkset.nosql.redis.RedisDB;
@@ -113,6 +115,8 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest {
 		
 		tempConf.setShowsql(false);
 		SQLManager. startPool(tempConf);
+		JDBCPool jdbcPool = DBUtil.getPool("visualops");
+		logger.info("DatabaseSchema:{}",jdbcPool.getJDBCPoolMetadata().getDatabaseSchema());
 	}
 	
 	public static void callMinimaxSimple() throws InterruptedException {
