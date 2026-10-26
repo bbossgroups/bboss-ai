@@ -15,6 +15,7 @@ package org.frameworkset.spi.ai.compaction;
  * limitations under the License.
  */
 
+import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.model.ChatAgentMessage;
@@ -22,6 +23,7 @@ import org.frameworkset.spi.ai.model.LinkedMessageMap;
 import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
+import org.frameworkset.spi.ai.model.tool.ToolCallState;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.ai.util.MessageBuilder;
 
@@ -29,6 +31,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 
 /**
  *
@@ -101,6 +105,26 @@ public class SummeryUtils {
 //                .collect(Collectors.joining("\n\n"));
 	}
 	
+	private static final int SUMMARY_PREVIEW_CHARS = 600;
+	
+	/** Keep every argument name and short value; abbreviate large values individually. */
+	private static String renderToolArgsForSummary(Map<String, Object> function) {
+		String arguments = (String) function.get("arguments");
+		if (arguments.length() <= SUMMARY_PREVIEW_CHARS) {
+			return arguments;
+		}
+		Map<?, ?> args = JsonUtil.json2Object(arguments, Map.class);
+		return args.entrySet().stream()
+				.map(
+						entry ->
+								entry.getKey()
+										+ ":"
+										+ ConversationCompactor.buildPrunePreview(
+										JsonUtil.object2json(entry.getValue()),
+										SUMMARY_PREVIEW_CHARS))
+				.collect(Collectors.joining(",", "{", "}"));
+	}
+	
 	private static String renderMessageForSummary(LinkedMessageMap<String, Object> msg,String role) {
 		String roleLabel = null;
 		if(role.equals(MessageBuilder.ROLE_USER)){
@@ -136,21 +160,45 @@ public class SummeryUtils {
 				if (sb.length() > 0 ) sb.append("\n\n");
 				Map<String, Object> function = (Map<String, Object>) toolCall.get("function");
 				String name = (String) function.get("name");
-				sb.append("[tool_call: ").append(name).append("]");
+				
+				sb.append("[tool_call: ").append(name).append(" ")
+						.append(renderToolArgsForSummary(function)).append("]");
+				
 //				sb.append(renderToolUse(toolCall));
 			}
 		}
 		else if(role.equals(MessageBuilder.ROLE_TOOL)){			
 			sb.append("[tool_result: ")
-					.append(msg.getName() != null ? msg.getName() : "?")
-					.append("] ");
-			if (!content.isEmpty()) {
-				sb.append(content.length() > 500 ? content.substring(0, 500) + "..." : content);
+					.append(msg.getName() != null ? msg.getName() : "?");
+			String toolCallState = (String)msg.getMetaValue("toolCallState");
+					
+			if (toolCallState != null && toolCallState.equals(ToolCallState.FAILED.name())) {
+				sb.append(" (error)");
+			}
+			sb.append("] ");
+			if (!content.isEmpty()) {				
+//				sb.append(content.length() > 500 ? content.substring(0, 500) + "..." : content);
+				sb.append(ConversationCompactor.buildPrunePreview(content, SUMMARY_PREVIEW_CHARS));
 			}
 		}
 		else if (content != null) {			
 			sb.append(content.trim());
 		}
+//		
+//	} else if (block instanceof ToolUseBlock tu) {
+//		sb.append("[tool_call: ")
+//				.append(tu.getName())
+//				.append(" ")
+//				.append(renderToolArgsForSummary(tu))
+//				.append("]");
+//	} else if (block instanceof ToolResultBlock tr) {
+//		sb.append("[tool_result: ").append(tr.getName() != null ? tr.getName() : "?");
+//		if (tr.getState() == ToolResultState.ERROR) {
+//			sb.append(" (error)");
+//		}
+//		sb.append("] ");
+//		sb.append(buildPrunePreview(extractToolResultText(tr), SUMMARY_PREVIEW_CHARS));
+//	}
 
 //			
 //        for (ContentBlock block : msg.getContent()) {
@@ -192,7 +240,6 @@ public class SummeryUtils {
 																	   List<LinkedMessageMap<String, Object>> summeryMessages,
 																	   String filePath,
 																	   LinkedMessageMap<String, Object> nextMessage ) {
-		String content;
 		LinkedMessageMap<String, Object> linkedMessageMap = new LinkedMessageMap<>();
 		Map<String, Object> meta = new LinkedHashMap<>();
 		List<String> summaryIds = new ArrayList<>(summeryMessages.size());
@@ -200,8 +247,30 @@ public class SummeryUtils {
 			summaryIds.add(summeryMessage.getId());
 		}
 		meta.put("summaryIds", summaryIds);
-		 
+//		String historyReference =
+//				
+//				"session_history(agentId=\""+
+//						agent.getAgentId()
+//						+ "\", sessionId=\""+
+//						agent.getSessionId()
+//						+ "\")";
 		linkedMessageMap.setMeta(meta);
+//		String historyHint =
+//				historyReference == null
+//						? ""
+//						: "Earlier conversation details are retrievable with "
+//						+ historyReference
+//						+ ".\n\n";
+//		String content =
+//				"You are continuing a conversation that has been summarized.\n\n"
+//						+ historyHint
+//						+ "A condensed summary of the conversation so far follows. Treat it as "
+//						+ "established background: continue the work directly — do not recap the "
+//						+ "summary, do not greet the user anew, and do not mention the "
+//						+ "summarization.\n\n<summary>\n"
+//						+ summary
+//						+ "\n</summary>";
+		String content ;
 		if (filePath != null) {
 			content =
 					"You are in the middle of a conversation that has been summarized.\n\n"

@@ -87,7 +87,6 @@ public class AgentRuntimeContext<T extends AgentRuntimeContext> {
 	 * 智能体工作空间目录
 	 */
 	private String workspace;
-	private CompactionConfig compactionConfig;
 	
 	/**
 	 * 是否启用任务列表
@@ -138,16 +137,7 @@ public class AgentRuntimeContext<T extends AgentRuntimeContext> {
 		this.debugSSEData = debugSSEData;
 		return (T)this;
 	}
-	
-	
-	public CompactionConfig getCompactionConfig() {
-		return compactionConfig;
-	}
-	
-	public T setCompactionConfig(CompactionConfig compactionConfig) {
-		this.compactionConfig = compactionConfig;
-		return (T)this;
-	}
+	 
 	
  
 	 

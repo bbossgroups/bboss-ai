@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 智能体集群部署场景：基于redis实现人工介入任务和智能体之间的通讯机制，适合于智能体集群部署场景
@@ -125,14 +124,14 @@ public class PermissionChecklistCodeViewAgentHitlClickhouseResisTokenTest {
 		
 		//设置模型调用参数，
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3).setContextWindowSize(1024_0000);
+//		chatAgentMessage.setModel("MiniMax-M2.7").setMaas("minimax").setRetry(3).setContextWindowSize(1024_0000);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwenvlplus").setRetry(3);
 //        chatAgentMessage.setModel("qwen3.7-plus").setMaas("qwentokenplan").setRetry(3);
 		
 //		chatAgentMessage.setMaas("deepseek").setModel("deepseek-v4-pro");
 		
-//		chatAgentMessage.setMaas("kimi").setModel("kimi-k2.6");
-//		chatAgentMessage.setMaas("hunyuan").setModel("hy3");
+		chatAgentMessage.setMaas("kimi").setModel("kimi-k2.6").setRetry(3).setContextWindowSize(1024_0000);
+//		chatAgentMessage.setMaas("hunyuan").setModel("hy3").setRetry(3).setContextWindowSize(1024_0000);
 		chatAgentMessage.setIncludeUsage(true);
 		
 //		chatAgentMessage.setMaas("kimi").setModel("kimi-k3");

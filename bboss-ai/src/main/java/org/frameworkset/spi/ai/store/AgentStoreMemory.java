@@ -401,10 +401,39 @@ public class AgentStoreMemory<T extends AgentStoreMemory> extends BaseAgentStore
 		}
 	}
 	
+	/**
+	 * need implement
+	 * @param namespace
+	 * @param scanPageSize
+	 * @param i
+	 * @return
+	 */
 	@Override
 	public List<SubagentRecord> searchSubagentRecord(List<String> namespace, int scanPageSize, int i) {
 		return Collections.emptyList();
 	}
+	
+	/**
+	 * need implement
+	 * @param namespace
+	 * @param subagentId
+	 */
+	@Override
+	public void deleteSubagentRecord(List<String> namespace, String subagentId) {
+		
+	}
+	
+	/**
+	 * need implement
+	 * @param namespace
+	 * @param subagentId
+	 * @return
+	 */
+	@Override
+	public SubagentRecord getSubagentRecord(List<String> namespace, String subagentId){
+		return null;
+	}
+
 	
 	@Override
     public List<LinkedMessageMap<String, Object>> getAgentSessionMessage(AIAgent agent,LastSessionMessage lastSubAgentSessionMessage, String agentId ) {

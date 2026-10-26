@@ -21,6 +21,8 @@ import org.apache.hc.core5.http.ParseException;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
+import org.frameworkset.spi.ai.compaction.CompactionConfig;
+import org.frameworkset.spi.ai.compaction.CompactionManager;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
 import org.frameworkset.spi.ai.material.ReponseStoreFilePathFunction;
@@ -33,6 +35,7 @@ import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
 import org.frameworkset.util.RetryCallback;
 import org.frameworkset.util.RetryUtil;
+import org.frameworkset.util.beans.ObjectHolder;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
 import org.slf4j.Logger;
@@ -147,7 +150,7 @@ public class AIAgentUtil {
             }
             else{
 //                final String _data = (String)data;
-                imageEvent = RetryUtil.executeWithRetry("multimodalImageGeneration",retry, message.getRetryInterval(), (RetryCallback<ImageEvent>) () -> {
+                imageEvent = RetryUtil.executeWithRetry("multimodalImageGeneration",retry, message.getRetryInterval(), (RetryCallback<ImageEvent>) (throwable	,   retryCount) -> {
                     Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(config,message),Map.class);
                     return agentAdapter.buildGenImageResponse(config,message,storeChatObject, data);
                 });
@@ -227,7 +230,7 @@ public class AIAgentUtil {
                     audioEvent.setAudioUrl(audioUrl);
                 }
                 else{
-                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
+                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount) -> {
                         String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
                         AudioEvent audioEvent_ = new AudioEvent();
                         audioEvent_.setAudioUrl(audioUrl);
@@ -242,7 +245,7 @@ public class AIAgentUtil {
                     audioEvent = agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
                 }
                 else{
-                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) () -> {
+                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount) -> {
                         Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), Map.class);
                         return agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
                     });
@@ -351,14 +354,49 @@ public class AIAgentUtil {
                 AgentMessage agentMessage = chatObject.getAgentMessage();
                 int retry = agentMessage.getRetry();
                 if(retry <= 0) {
-                    HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, chatObject.getCompletionsUrl(), header, responseHandler);
-                }
+                    
+					try {
+						HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, chatObject.getCompletionsUrl(), header, responseHandler);
+					}
+					catch (Throwable throwable) {
+						if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof List ){
+							List<LinkedMessageMap<String,Object>> compact = forceCompact(  chatObject.getAgent(),  (List<LinkedMessageMap<String,Object>>)message,   chatObject);
+							String tmp = SimpleStringUtil.object2json(compact);
+							HttpRequestProxy.sendJsonBody(clientConfiguration, tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+						}
+						else{
+							throw throwable;
+						}
+					}
+                }	
                 else{
                     final String _data = (String)data;
-                    RetryUtil.executeWithRetry("executeTools",retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
-                        HttpRequestProxy.sendJsonBody(clientConfiguration, _data, chatObject.getCompletionsUrl(), header, responseHandler);
-                        return null;
-                    });
+					ObjectHolder<String> objectHolder = new ObjectHolder();
+                    RetryUtil.executeWithRetry("executeTools",retry, agentMessage.getRetryInterval(),new RetryCallback<Void>(){
+						public Void doRetry (Throwable throwable	,   int retryCount)  {
+							String tmp = objectHolder.getObject() == null?_data:objectHolder.getObject();
+							if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof List ){
+								List<LinkedMessageMap<String,Object>> compact = forceCompact(  chatObject.getAgent(),  (List<LinkedMessageMap<String,Object>>)message,   chatObject);
+								tmp = SimpleStringUtil.object2json(compact);
+								objectHolder.setObject(tmp);
+							}
+							HttpRequestProxy.sendJsonBody(clientConfiguration, tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+							return null;
+						}
+						
+						@Override
+						public boolean assertRetryException(Throwable throwable) {
+							Integer statusCode = ResponseUtil.getHttpReponseStatusCodeFromThrowable(throwable);
+							if(statusCode == null){
+								return true;
+							}
+							if (statusCode >= 400
+									&& statusCode < 500) {
+								return false; // 客户端错误，不重试
+							}
+							return true;
+						}
+					} );
                 }
                 
 //                            if(baseStreamDataBuilder.)
@@ -669,7 +707,7 @@ public class AIAgentUtil {
 
                 if (message != null) {
                     if (message instanceof String) {
-                        data = (String) message;
+                        data =   message;
                     } else {
                         data = SimpleStringUtil.object2json(message);
                     }
@@ -677,14 +715,49 @@ public class AIAgentUtil {
                 AgentMessage agentMessage = chatObject.getAgentMessage();
                 int retry = agentMessage.getRetry();
                 if(retry <= 0) {
-                    HttpRequestProxy.sendJsonBody(clientConfiguration, (String) data, chatObject.getCompletionsUrl(), header, responseHandler);
+					try {
+						HttpRequestProxy.sendJsonBody(clientConfiguration, (String) data, chatObject.getCompletionsUrl(), header, responseHandler);
+					}
+					catch (Throwable throwable) {
+						if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof List ){
+							List<LinkedMessageMap<String,Object>> compact = forceCompact(  chatObject.getAgent(),  (List<LinkedMessageMap<String,Object>>)message,   chatObject);
+							String tmp = SimpleStringUtil.object2json(compact);
+							HttpRequestProxy.sendJsonBody(clientConfiguration, tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+						}
+						else{
+							throw throwable;
+						}
+					}
                 }
                 else{
                     final String _data = (String)data;
-                    RetryUtil.executeWithRetry("executeSink",retry, agentMessage.getRetryInterval(), (RetryCallback<Void>) () -> {
-                         HttpRequestProxy.sendJsonBody(clientConfiguration,  _data, chatObject.getCompletionsUrl(), header, responseHandler);
-                         return null;
-                    });
+					ObjectHolder<String> objectHolder = new ObjectHolder();
+					
+					RetryUtil.executeWithRetry("executeSink",retry, agentMessage.getRetryInterval(),new RetryCallback<Void>(){
+						public Void doRetry (Throwable throwable	,   int retryCount)  {
+							String tmp = objectHolder.getObject() == null?_data:objectHolder.getObject();
+							if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof List ){
+								List<LinkedMessageMap<String,Object>> compact = forceCompact(  chatObject.getAgent(),  (List<LinkedMessageMap<String,Object>>)message,   chatObject);
+								tmp = SimpleStringUtil.object2json(compact);
+								objectHolder.setObject(tmp);
+							}
+							HttpRequestProxy.sendJsonBody(clientConfiguration,  tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+							return null;
+						}
+						
+						@Override
+						public boolean assertRetryException(Throwable throwable) {
+							Integer statusCode = ResponseUtil.getHttpReponseStatusCodeFromThrowable(throwable);
+							if(statusCode == null){
+								return true;
+							}
+							if (statusCode >= 400
+									&& statusCode < 500) {
+								return false; // 客户端错误，不重试
+							}
+							return true;
+						}
+					});
                 }
 //                            if(baseStreamDataBuilder.)
             }
@@ -749,8 +822,66 @@ public class AIAgentUtil {
             }
         }
     }
-
-    private static <T> Flux<T> buildFlux(ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler) {
+	
+	/**
+	 * Compacts the failed call's context, persists the result and retries once.
+	 *
+	 * <p>A failed call persists the state it accumulated, including this turn's input, and the
+	 * retry reloads the session from the state store. The compacted context is therefore persisted
+	 * before retrying (otherwise the reload restores the original, oversized context), and when
+	 * the input is already in the context the retry continues from it with an empty input instead
+	 * of appending the input a second time.
+	 */
+	private static List<LinkedMessageMap<String,Object>> forceCompact(AIAgent agent, List<LinkedMessageMap<String,Object>> msgs, ChatObject chatObject) {
+		 
+		// Decide before compaction, which may fold the input into the summary.
+	 
+	 
+		
+		CompactionConfig forceConfig = new CompactionConfig().setKeepMessages(1);
+		List<LinkedMessageMap<String,Object>> compacted = CompactionManager.compact(forceConfig, chatObject.getChatContext(), agent, msgs);	
+		return compacted;
+//		MemoryConfig memoryConfig = chatObject.getMemoryConfig();
+//		String effectiveFlushPrompt =
+//				memoryConfig.flushPrompt() != null
+//						? memoryConfig.flushPrompt()
+//						: MemoryFlushManager.DEFAULT_FLUSH_PROMPT;
+//		ModelInfo modelInfo = forceConfig.getCompactModel();
+//		if(modelInfo == null){
+//			modelInfo = chatObject.getChatContext().getModelInfo();
+//		}
+//		MemoryFlushManager fm =
+//				new MemoryFlushManager( modelInfo, effectiveFlushPrompt);
+//		ConversationCompactor compactor = new ConversationCompactor(modelInfo, fm);
+//		
+//		return compactor
+//				.compactIfNeeded(chatObject.getChatContext() ,agent, msgs, forceConfig);
+//				.flatMap(
+//						opt -> {
+//							if (opt.isEmpty()) {
+//								return Mono.error(
+//										new RuntimeException(
+//												"Context overflow: emergency compaction yielded no"
+//														+ " result"));
+//							}
+//							List<Msg> compacted = opt.get();
+//							return Mono.fromRunnable(
+//											() ->
+//													delegate.updateAgentState(
+//															ctx,
+//															"overflow_compaction",
+//															s -> {
+//																s.contextMutable().clear();
+//																s.contextMutable()
+//																		.addAll(compacted);
+//															}))
+//									.subscribeOn(Schedulers.boundedElastic())
+//									.then(Mono.defer(() -> delegate.call(retryInput, ctx)));
+//						});
+	}
+	
+	
+	private static <T> Flux<T> buildFlux(ClientConfiguration clientConfiguration,ChatObject chatObject ,BaseStreamDataHandler<T> streamDataHandler) {
         AIAgent agent = chatObject.getAgent();
         ChatContext chatContext = chatObject.getChatContext();
         if(agent != null){
@@ -1269,7 +1400,7 @@ public class AIAgentUtil {
             embedding = agentAdapter.embedding(  config,embeddingMessage,agent,params);
         }
         else{
-            embedding = RetryUtil.executeWithRetry("embedding",retry, embeddingMessage.getRetryInterval(), () -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
+            embedding = RetryUtil.executeWithRetry("embedding",retry, embeddingMessage.getRetryInterval(), (throwable	,   retryCount) -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
 
         }
         traceLLMOutput(embedding, agent,SessionMessage.MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE_NAME);
@@ -1293,7 +1424,7 @@ public class AIAgentUtil {
             rerankedDocuments = agentAdapter.rerank(config, rerankMessage, agent, params);
         }
         else{
-            rerankedDocuments = RetryUtil.executeWithRetry("rerank",retry, rerankMessage.getRetryInterval(), () -> agentAdapter.rerank(config, rerankMessage, agent, params));
+            rerankedDocuments = RetryUtil.executeWithRetry("rerank",retry, rerankMessage.getRetryInterval(), (throwable	,   retryCount) -> agentAdapter.rerank(config, rerankMessage, agent, params));
             
         }
          

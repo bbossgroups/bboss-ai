@@ -17,7 +17,6 @@ package org.frameworkset.spi.ai.harness.subagents;
 
  
 import org.frameworkset.spi.ai.store.AgentStore;
-import org.frameworkset.spi.ai.store.StoreItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,28 +72,27 @@ public final class StoreBackedSubagentRegistry implements SubagentRegistry {
         if (subagentId == null) {
             return Optional.empty();
         }
-		/** un-comment
-        StoreItem item;
+		
+		SubagentRecord record;
         try {
-            item = store.get(NAMESPACE, subagentId);
+			record = store.getSubagentRecord(NAMESPACE, subagentId);
         } catch (RuntimeException e) {
             log.warn("Failed to read exposed-subagent record {}: {}", subagentId, e.getMessage());
             return Optional.empty();
         }
-        if (item == null || item.value() == null) {
+        if (record == null  ) {
             return Optional.empty();
         }
-        SubagentRecord record = SubagentRecord.fromMap(item.value());
-        if (record == null) {
-            return Optional.empty();
-        }
+//        SubagentRecord record = SubagentRecord.fromMap(item.value());
+//        if (record == null) {
+//            return Optional.empty();
+//        }
         if (record.isExpired(Instant.now())) {
             revoke(subagentId);
             return Optional.empty();
         }
         return Optional.of(record);
-		 */
-		return Optional.empty();
+		 
     }
 
     @Override
@@ -103,7 +101,7 @@ public final class StoreBackedSubagentRegistry implements SubagentRegistry {
             return;
         }
         try {
-//            store.delete(NAMESPACE, subagentId);
+            store.deleteSubagentRecord(NAMESPACE, subagentId);
         } catch (RuntimeException e) {
             log.warn("Failed to revoke exposed-subagent record {}: {}", subagentId, e.getMessage());
         }

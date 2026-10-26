@@ -40,10 +40,10 @@ public class AgentMessage<T extends AgentMessage> {
     private Map<String,Object> contextData ;
 
     /**
-     * 模型调用报错时，是否重试
+     * 模型调用报错时，是否重试,默认重试3次
      * > 0时重试
      */
-    private int retry;
+    private int retry = 3;
     /**
      * 重试时间间隔
      */

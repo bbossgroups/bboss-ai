@@ -16,6 +16,7 @@ package org.frameworkset.spi.ai.context;
  */
 
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
+import org.frameworkset.spi.ai.memory.MemoryConfig;
 import org.frameworkset.spi.ai.model.FunctionToolDefine;
 import org.frameworkset.spi.ai.model.ModelInfo;
 import org.frameworkset.spi.ai.model.ServerEvent;
@@ -371,4 +372,5 @@ public class ChatContext {
 		return false;
 	}
 	
+ 
 }

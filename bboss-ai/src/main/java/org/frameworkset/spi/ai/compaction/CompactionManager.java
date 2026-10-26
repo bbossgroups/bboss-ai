@@ -61,14 +61,23 @@ public class CompactionManager extends BaseCompactionManager {
     public List<LinkedMessageMap<String,Object>> compact(ChatContext chatContext,
             AIAgent agent,List<LinkedMessageMap<String,Object>> messages 
           ) {
-         
+         return compact( config, chatContext,
+				   agent,  messages
+		 );
+                 
+    }
+	
+	public static List<LinkedMessageMap<String,Object>> compact(CompactionConfig config,ChatContext chatContext,
+														 AIAgent agent,List<LinkedMessageMap<String,Object>> messages
+	) {
+
 //        final AgentRuntimeContext rc = chatContext != null ? chatContext.getAgentRuntimeContext() : new AgentRuntimeContext();
 		
 		LinkedMessageMap<String,Object> systemMsg = null;
 		List<LinkedMessageMap<String,Object>> conversation;
 		if (messages != null
 				&& !messages.isEmpty()
-				) {
+		) {
 			systemMsg = messages.get(0);
 			if(!systemMsg.get("role").equals(MessageBuilder.ROLE_SYSTEM)){
 				systemMsg = null;
@@ -82,18 +91,18 @@ public class CompactionManager extends BaseCompactionManager {
 		} else {
 			return messages;
 		}
-
- 
+		
+		
 		ModelInfo model = config.getCompactModel();
 		if(model == null)
 			model = chatContext.getModelInfo();
-		CompactionConfig effectiveConfig = resolveEffectiveConfig(model);
+		CompactionConfig effectiveConfig = resolveEffectiveConfig(config,model);
 		
 		MemoryFlushManager flushManager =
 				new MemoryFlushManager(model);
 		ConversationCompactor compactor =
 				new ConversationCompactor(model, flushManager);
-
+		
 		// Only compaction may degrade; downstream reasoning errors must propagate.
 		List<LinkedMessageMap<String, Object>> compacted = compactor
 				.compactIfNeeded( chatContext,agent, conversation, effectiveConfig );
@@ -142,8 +151,8 @@ public class CompactionManager extends BaseCompactionManager {
 //											input.tools(),
 //											input.options()));
 //						});
-                 
-    }
+		
+	}
 
     private static boolean containsInterruptedException(Throwable error) {
         IdentityHashMap<Throwable, Boolean> visited = new IdentityHashMap<>();
@@ -160,7 +169,7 @@ public class CompactionManager extends BaseCompactionManager {
     /**
      * Resolves dynamic defaults in the config using the model's context window.
      */
-    private CompactionConfig resolveEffectiveConfig(ModelInfo modelInfo) {
+    private static CompactionConfig resolveEffectiveConfig(CompactionConfig config,ModelInfo modelInfo) {
         int configTrigger = config.getTriggerTokens();
         int configKeep = config.getKeepTokens();
 

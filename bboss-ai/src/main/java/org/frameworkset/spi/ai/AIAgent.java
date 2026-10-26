@@ -400,7 +400,17 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
     public AgentStore getAgentSessionStore() {
         return agentStore;
     }
-
+	
+	public StoreContext getStoreContext() {
+		return storeContext;
+	}
+	
+	public MemoryConfig getMemoryConfig() {
+		if(storeContext == null){
+			return null;
+		}
+		return storeContext.getMemoryConfig();
+	}
     public AgentStore getMainSessionStore() {
         if(mainSessionStore != null)
             return mainSessionStore;
@@ -1081,10 +1091,7 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 
     public T registTools(List<FunctionToolDefine> tools) {
         reset();
-        if(this.tools == null){
-            this.tools = new ArrayList<>();
-        }
-        this.tools.addAll( tools);
+        addTools(tools);
         return (T)this;
     }
     private volatile boolean toolInited = false;
@@ -1244,21 +1251,36 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
         });
         if(CollectionUtils.isNotEmpty(functionToolDefines)){
             reset();
-            if (this.tools == null) {
-                tools = new ArrayList<>();
-            }
-            tools.addAll(functionToolDefines);
+			addTools(   functionToolDefines);
+//            tools.addAll(functionToolDefines);
         }
         
 
         return (T) this;
     }
+	private void addTools( List<FunctionToolDefine> functionToolDefines) {
+		 
+		for(FunctionToolDefine functionToolDefine : functionToolDefines) {
+			addTool(   functionToolDefine);
+		}
+		
+	}
+	private void addTool( FunctionToolDefine functionToolDefine) {
+		if (this.tools == null) {
+			tools = new ArrayList<>();
+		}	 
+		for (FunctionToolDefine _functionToolDefine : tools) {
+			if (_functionToolDefine.getFunction().getName().equals(functionToolDefine.getFunction().getName())) {
+				return;
+			}
+		}
+		tools.add(functionToolDefine);
+		
+	}
     public T registTool(FunctionToolDefine functionToolDefine) {
         reset();
-        if (this.tools == null) {
-            tools = new ArrayList<>();
-        }
-        tools.add(functionToolDefine);
+        addTool(functionToolDefine); 
+//        tools.add(functionToolDefine);
 
         return (T) this;
     }

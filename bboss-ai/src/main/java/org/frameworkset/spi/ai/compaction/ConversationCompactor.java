@@ -51,7 +51,6 @@ public class ConversationCompactor {
 
     /** Marker stored in message name to identify injected summary messages. */
     public static final String SUMMARY_MSG_NAME = "__compaction_summary__";
-
     private final ModelInfo model;
     private final MemoryFlushManager flushManager;
 
@@ -188,6 +187,9 @@ public class ConversationCompactor {
 		String summarize = SummeryUtils.summarizePrefix(summaryInput, config,chatContext);
 		
 		List<LinkedMessageMap<String, Object>> compacted = new ArrayList<>();
+		// Native logging already preserves all pre-compaction messages. Reference the logical
+		// history API; never write another full transcript or expose private journal paths.
+
 		LinkedMessageMap<String, Object> summaryMsg = SummeryUtils.buildSummaryMessage(chatContext,agent,summarize,summaryInput, null,tail.get(0));
 		agent.saveSummeryMessage(summaryMsg);//持久化摘要消息
 		compacted.add(summaryMsg);
@@ -572,7 +574,7 @@ public class ConversationCompactor {
         return result;
     }
 
-    private static String buildPrunePreview(String text, int maxChars) {
+    public static String buildPrunePreview(String text, int maxChars) {
         int half = maxChars / 2;
         String head = text.substring(0, Math.min(half, text.length()));
         String tail =
@@ -583,6 +585,7 @@ public class ConversationCompactor {
         }
         return head + "\n\n...(" + removed + " chars pruned)...\n\n" + tail;
     }
+	
 
     /**
      * Truncates large {@code ToolUseBlock} argument values in old messages.

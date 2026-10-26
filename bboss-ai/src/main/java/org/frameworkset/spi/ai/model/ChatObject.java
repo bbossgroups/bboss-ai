@@ -19,6 +19,7 @@ import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.adapter.AgentAdapter;
 import org.frameworkset.spi.ai.context.ChatContext;
 import org.frameworkset.spi.ai.callback.ChatStreamCallback;
+import org.frameworkset.spi.ai.memory.MemoryConfig;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.util.StreamDataBuilder;
 import org.frameworkset.spi.reactor.SSEHeaderSetFunction;
@@ -258,4 +259,7 @@ public class ChatObject extends StoreChatObject{
 		return this;
 	}
 	
+	public MemoryConfig getMemoryConfig() {
+		return this.agent.getMemoryConfig();
+	}
 }

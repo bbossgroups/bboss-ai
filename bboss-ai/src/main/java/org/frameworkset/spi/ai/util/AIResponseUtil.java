@@ -41,6 +41,7 @@ import reactor.core.publisher.FluxSink;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -851,11 +852,13 @@ public class AIResponseUtil {
                     logger.debug(new StringBuilder().append("Request url:").append(url).append(",status:").append(status).toString());
                 }
                 throw new ReactorCallException(new StringBuilder().append("Request url:")
-                        .append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString());
+                        .append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString())
+						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString()));
             }
             else {
-                throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString());
+                throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString())
+						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString()));
             }
         }
@@ -879,12 +882,14 @@ public class AIResponseUtil {
                         .append(url).append(",error,").append("status=")
                         .append(status).append(":")
                         .append(EntityUtils.toString(entity))
-                        .append(",\r\n use message:").append( data).toString());
+                        .append(",\r\n use message:").append( data).toString())
+						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString()));
             }
             else {
                 throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status)
-                        .append(",\r\n use message:").append( data).toString());
+                        .append(",\r\n use message:").append( data).toString())
+						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString()));
             }
         }
@@ -909,12 +914,14 @@ public class AIResponseUtil {
 						.append(url).append(",error,").append("status=")
 						.append(status).append(":")
 						.append(EntityUtils.toString(entity))
-						.append(",\r\n use message:").append( data).toString());
+						.append(",\r\n use message:").append( data).toString())
+						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString()));
 			}
 			else {
 				throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status)
-						.append(",\r\n use message:").append( data).toString());
+						.append(",\r\n use message:").append( data).toString())
+						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString()));
 			}
 		}
@@ -939,12 +946,14 @@ public class AIResponseUtil {
                         .append(url).append(",error,").append("status=")
                         .append(status).append(":")
                         .append(EntityUtils.toString(entity))
-                        .append(",\r\n use message:").append( data).toString());
+                        .append(",\r\n use message:").append( data).toString())
+						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString()));
             }
             else {
                 throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status)
-                        .append(",\r\n use message:").append( data).toString());
+                        .append(",\r\n use message:").append( data).toString())
+						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString()));
             }
         }
@@ -1356,5 +1365,27 @@ public class AIResponseUtil {
         sink.next(serverEvent);
         
     }
+	
+	
+	/**
+	 * 判断是否是上下文溢出错误
+	 * @param error
+	 * @return
+	 */
+	public static boolean isContextOverflowError(Throwable error) {	
+        if(error == null) {
+            return false;
+        }
+		String message = error.getMessage();
+		if (message == null) return false;
+		String lower = message.toLowerCase(Locale.ROOT);
+		return lower.contains("context_length_exceeded")
+				|| lower.contains("context length")
+				|| lower.contains("maximum context")
+				|| lower.contains("token limit")
+				|| lower.contains("too many tokens")
+				|| lower.contains("exceeds the model's maximum")
+				|| lower.contains("reduce the length");
+	}
 
 }

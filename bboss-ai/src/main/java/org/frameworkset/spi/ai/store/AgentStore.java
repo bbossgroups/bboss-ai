@@ -144,4 +144,8 @@ public interface AgentStore<T extends AgentStore> {
 	 void initMiddlewares(AIAgent  agent);
 	
 	List<SubagentRecord> searchSubagentRecord(List<String> namespace, int scanPageSize, int i);
+	
+	void deleteSubagentRecord(List<String> namespace, String subagentId);
+	
+	SubagentRecord getSubagentRecord(List<String> namespace, String subagentId);
 }
