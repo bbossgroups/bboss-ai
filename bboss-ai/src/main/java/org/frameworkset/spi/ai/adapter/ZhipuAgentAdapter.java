@@ -411,7 +411,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
                     audioEvent.setAudioUrl(audioUrl);
                 }
                 else{
-                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount) -> {
+                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount,   retryContext) -> {
                         String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), this.getGenAudioCompletionsUrl(config,message),
                                 AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
                         AudioEvent audioEvent_ = new AudioEvent();
@@ -427,7 +427,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
                     audioEvent = this.buildGenAudioResponse(config, message, storeChatObject,data);
                 }
                 else{
-                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount) -> {
+                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount,   retryContext) -> {
                         Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), this.getGenAudioCompletionsUrl(config,message), Map.class);
                         return this.buildGenAudioResponse(config, message, storeChatObject,data);
                     });
@@ -436,7 +436,7 @@ public class ZhipuAgentAdapter extends DoubaoAgentAdapter{
 
             }
         }
-        catch(Exception e){
+        catch(Throwable e){
             audioEvent = new AudioEvent();
             audioEvent.setCode(ResponseStatus.ERROR_CODE);
             audioEvent.setMessage(SimpleStringUtil.exceptionToString(e));

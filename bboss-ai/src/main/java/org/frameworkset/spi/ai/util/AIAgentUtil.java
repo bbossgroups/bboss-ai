@@ -34,6 +34,7 @@ import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.*;
 import org.frameworkset.util.RetryCallback;
+import org.frameworkset.util.RetryContext;
 import org.frameworkset.util.RetryUtil;
 import org.frameworkset.util.beans.ObjectHolder;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
@@ -49,6 +50,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * AI智能体工具类
@@ -150,7 +152,7 @@ public class AIAgentUtil {
             }
             else{
 //                final String _data = (String)data;
-                imageEvent = RetryUtil.executeWithRetry("multimodalImageGeneration",retry, message.getRetryInterval(), (RetryCallback<ImageEvent>) (throwable	,   retryCount) -> {
+                imageEvent = RetryUtil.executeWithRetry("multimodalImageGeneration",retry, message.getRetryInterval(), (RetryCallback<ImageEvent>) (throwable	,   retryCount,retryContext) -> {
                     Map data = HttpRequestProxy.sendJsonBody(config,storeChatObject.getMessage(),agentAdapter.getGenImageCompletionsUrl(config,message),Map.class);
                     return agentAdapter.buildGenImageResponse(config,message,storeChatObject, data);
                 });
@@ -230,7 +232,7 @@ public class AIAgentUtil {
                     audioEvent.setAudioUrl(audioUrl);
                 }
                 else{
-                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount) -> {
+                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount,retryContext) -> {
                         String audioUrl = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), AIResponseUtil.buildDownAudioHttpClientResponseHandler(config, message,storeChatObject));
                         AudioEvent audioEvent_ = new AudioEvent();
                         audioEvent_.setAudioUrl(audioUrl);
@@ -245,7 +247,7 @@ public class AIAgentUtil {
                     audioEvent = agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
                 }
                 else{
-                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount) -> {
+                    audioEvent = RetryUtil.executeWithRetry("multimodalAudioGeneration",retry, message.getRetryInterval(), (RetryCallback<AudioEvent>) (throwable	,   retryCount,retryContext) -> {
                         Map data = HttpRequestProxy.sendJsonBody(config, storeChatObject.getMessage(), agentAdapter.getGenAudioCompletionsUrl(config,message), Map.class);
                         return agentAdapter.buildGenAudioResponse(config, message, storeChatObject,data);
                     });
@@ -318,7 +320,7 @@ public class AIAgentUtil {
 								 BaseStreamDataHandler streamDataHandler, FluxSink<T> sink,DisposeEventHandler disposeEventHandler){
         Object data = null;
         Object message = chatObject.getMessage();
-
+		final ObjectHolder<Boolean> agentStreamBeginHolder = new ObjectHolder<>();
         BaseStreamDataBuilder baseStreamDataBuilder = (BaseStreamDataBuilder) streamDataHandler.getStreamDataBuilder();
         try {
 
@@ -327,7 +329,7 @@ public class AIAgentUtil {
                 @Override
                 public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
                     streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
-                    AIResponseUtil.handleStreamResponse(url, response, sink, streamDataHandler,disposeEventHandler);
+                    AIResponseUtil.handleStreamResponse(agentStreamBeginHolder,url, response, sink, streamDataHandler,disposeEventHandler);
                     return null;
 
                 }
@@ -359,44 +361,33 @@ public class AIAgentUtil {
 						HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, chatObject.getCompletionsUrl(), header, responseHandler);
 					}
 					catch (Throwable throwable) {
-						if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof List ){
-							List<LinkedMessageMap<String,Object>> compact = forceCompact(  chatObject.getAgent(),  (List<LinkedMessageMap<String,Object>>)message,   chatObject);
-							String tmp = SimpleStringUtil.object2json(compact);
-							HttpRequestProxy.sendJsonBody(clientConfiguration, tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+						Boolean streamBegin = agentStreamBeginHolder.getObject();
+						if(streamBegin == null || !streamBegin) {
+							simpleRetryCall(throwable, message, chatObject, new Function<Object, Void>() {
+								@Override
+								public Void apply(Object o) {
+									HttpRequestProxy.sendJsonBody(clientConfiguration, (String) o, chatObject.getCompletionsUrl(), header, responseHandler);
+									return null;
+								}
+							});
 						}
 						else{
 							throw throwable;
 						}
+						 
 					}
                 }	
                 else{
                     final String _data = (String)data;
 					ObjectHolder<String> objectHolder = new ObjectHolder();
-                    RetryUtil.executeWithRetry("executeTools",retry, agentMessage.getRetryInterval(),new RetryCallback<Void>(){
-						public Void doRetry (Throwable throwable	,   int retryCount)  {
-							String tmp = objectHolder.getObject() == null?_data:objectHolder.getObject();
-							if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof List ){
-								List<LinkedMessageMap<String,Object>> compact = forceCompact(  chatObject.getAgent(),  (List<LinkedMessageMap<String,Object>>)message,   chatObject);
-								tmp = SimpleStringUtil.object2json(compact);
-								objectHolder.setObject(tmp);
-							}
-							HttpRequestProxy.sendJsonBody(clientConfiguration, tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+					AgentLLMRetryCallback agentLLMRetryCallback = new AgentLLMRetryCallback(agentStreamBeginHolder,_data, objectHolder, message, chatObject, new Function<Object, Void>() {
+						@Override
+						public Void apply(Object o) {
+							HttpRequestProxy.sendJsonBody(clientConfiguration, (String)o, chatObject.getCompletionsUrl(), header, responseHandler);
 							return null;
 						}
-						
-						@Override
-						public boolean assertRetryException(Throwable throwable) {
-							Integer statusCode = ResponseUtil.getHttpReponseStatusCodeFromThrowable(throwable);
-							if(statusCode == null){
-								return true;
-							}
-							if (statusCode >= 400
-									&& statusCode < 500) {
-								return false; // 客户端错误，不重试
-							}
-							return true;
-						}
-					} );
+					});
+                    RetryUtil.executeWithRetry("executeTools",retry, agentMessage.getRetryInterval(),agentLLMRetryCallback );
                 }
                 
 //                            if(baseStreamDataBuilder.)
@@ -671,6 +662,34 @@ public class AIAgentUtil {
 //       
 //
 //    }
+
+	private static void simpleRetryCall(Throwable throwable,Object message,ChatObject chatObject,Function<Object, Void> function) throws Throwable {
+		if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof Map ){
+			logger.warn("检测到溢出→开始压缩消息");
+			Map messageMap = (Map)message;
+			List<LinkedMessageMap<String,Object>> messages = (List<LinkedMessageMap<String, Object>>) messageMap.get("messages");
+			List<LinkedMessageMap<String,Object>> compact;
+			try {
+				compact = forceCompact(  chatObject.getAgent(),  messages,   chatObject);
+			} catch (RuntimeException e) {
+				logger.warn("上下文压缩失败，终止重试", e);
+				throw throwable;
+			}
+			if(compact != messages ) {
+				logger.warn("Context overflow error, retrying with compacted messages");
+				messageMap.put("messages", compact);
+				String tmp = SimpleStringUtil.object2json(messageMap);
+				function.apply(tmp);
+//				HttpRequestProxy.sendJsonBody(clientConfiguration, tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+			}
+			else{
+				throw throwable;
+			}
+		}
+		else{
+			throw throwable;
+		}
+	}
     private static <T> void executeSink(DisposeEventHandler disposeEventHandler,FluxSink<T> sink,
                                         ClientConfiguration clientConfiguration,ChatObject chatObject ,
                                         BaseStreamDataHandler<T> streamDataHandler,boolean fromAgentFlow){
@@ -681,13 +700,13 @@ public class AIAgentUtil {
 
             BaseStreamDataBuilder baseStreamDataBuilder = (BaseStreamDataBuilder) streamDataHandler.getStreamDataBuilder();
 
-//            DisposeEventHandler disposeEventHandler = new DisposeEventHandler();
-
+			final ObjectHolder<Boolean> agentStreamBeginHolder = new ObjectHolder<>();
+			
             BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
                 @Override
                 public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
                     streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
-                    AIResponseUtil.handleStreamResponse(url, response, sink, streamDataHandler,disposeEventHandler);
+                    AIResponseUtil.handleStreamResponse(agentStreamBeginHolder,url, response, sink, streamDataHandler,disposeEventHandler);
 					
                     return null;
 
@@ -719,45 +738,31 @@ public class AIAgentUtil {
 						HttpRequestProxy.sendJsonBody(clientConfiguration, (String) data, chatObject.getCompletionsUrl(), header, responseHandler);
 					}
 					catch (Throwable throwable) {
-						if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof List ){
-							List<LinkedMessageMap<String,Object>> compact = forceCompact(  chatObject.getAgent(),  (List<LinkedMessageMap<String,Object>>)message,   chatObject);
-							String tmp = SimpleStringUtil.object2json(compact);
-							HttpRequestProxy.sendJsonBody(clientConfiguration, tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+						Boolean streamBegin = agentStreamBeginHolder.getObject();
+						//流未开始才重试
+						if(streamBegin == null || !streamBegin) {
+							simpleRetryCall(throwable, message, chatObject, (Function<Object, Void>) o -> {
+								HttpRequestProxy.sendJsonBody(clientConfiguration, (String) o, chatObject.getCompletionsUrl(), header, responseHandler);
+								return null;
+							});
 						}
 						else{
 							throw throwable;
 						}
+						 
 					}
                 }
                 else{
                     final String _data = (String)data;
 					ObjectHolder<String> objectHolder = new ObjectHolder();
-					
-					RetryUtil.executeWithRetry("executeSink",retry, agentMessage.getRetryInterval(),new RetryCallback<Void>(){
-						public Void doRetry (Throwable throwable	,   int retryCount)  {
-							String tmp = objectHolder.getObject() == null?_data:objectHolder.getObject();
-							if(AIResponseUtil.isContextOverflowError(throwable) && message instanceof List ){
-								List<LinkedMessageMap<String,Object>> compact = forceCompact(  chatObject.getAgent(),  (List<LinkedMessageMap<String,Object>>)message,   chatObject);
-								tmp = SimpleStringUtil.object2json(compact);
-								objectHolder.setObject(tmp);
-							}
-							HttpRequestProxy.sendJsonBody(clientConfiguration,  tmp, chatObject.getCompletionsUrl(), header, responseHandler);
+					AgentLLMRetryCallback agentLLMRetryCallback = new AgentLLMRetryCallback(agentStreamBeginHolder,_data, objectHolder, message, chatObject, new Function<Object, Void>() {
+						@Override
+						public Void apply(Object o) {
+							HttpRequestProxy.sendJsonBody(clientConfiguration, (String)o, chatObject.getCompletionsUrl(), header, responseHandler);
 							return null;
 						}
-						
-						@Override
-						public boolean assertRetryException(Throwable throwable) {
-							Integer statusCode = ResponseUtil.getHttpReponseStatusCodeFromThrowable(throwable);
-							if(statusCode == null){
-								return true;
-							}
-							if (statusCode >= 400
-									&& statusCode < 500) {
-								return false; // 客户端错误，不重试
-							}
-							return true;
-						}
 					});
+					RetryUtil.executeWithRetry("executeSink",retry, agentMessage.getRetryInterval(),agentLLMRetryCallback);
                 }
 //                            if(baseStreamDataBuilder.)
             }
@@ -824,7 +829,7 @@ public class AIAgentUtil {
     }
 	
 	/**
-	 * Compacts the failed call's context, persists the result and retries once.
+	 * Compacts the failed call's context.
 	 *
 	 * <p>A failed call persists the state it accumulated, including this turn's input, and the
 	 * retry reloads the session from the state store. The compacted context is therefore persisted
@@ -832,13 +837,17 @@ public class AIAgentUtil {
 	 * the input is already in the context the retry continues from it with an empty input instead
 	 * of appending the input a second time.
 	 */
-	private static List<LinkedMessageMap<String,Object>> forceCompact(AIAgent agent, List<LinkedMessageMap<String,Object>> msgs, ChatObject chatObject) {
+	static List<LinkedMessageMap<String,Object>> forceCompact(AIAgent agent, List<LinkedMessageMap<String,Object>> msgs, ChatObject chatObject) {
 		 
 		// Decide before compaction, which may fold the input into the summary.
-	 
-	 
 		
-		CompactionConfig forceConfig = new CompactionConfig().setKeepMessages(1);
+		
+		CompactionConfig forceConfig = new CompactionConfig()
+				.setTriggerTokens(1)      // 强制触发
+				.setTriggerMessages(0)
+				.setKeepTokens(0)         // 必须为 0，否则 keepMessages 被覆盖
+				.setKeepMessages(1);
+//		CompactionConfig forceConfig = new CompactionConfig().setKeepMessages(1);
 		List<LinkedMessageMap<String,Object>> compacted = CompactionManager.compact(forceConfig, chatObject.getChatContext(), agent, msgs);	
 		return compacted;
 //		MemoryConfig memoryConfig = chatObject.getMemoryConfig();
@@ -1310,74 +1319,74 @@ public class AIAgentUtil {
 		
 	}
 	
-	public static  void stream(String poolName, String url, Object message , String method, DataCollector dataCollector) {
-		ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
-		
-		
-		String data = null;
-		 
-		try {
-			CommonStreamDataHandler<String> streamDataHandler = new BaseCommonStreamDataHandler<String>() {
-				/**
-				 * 处理异常，如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
-				 *
-				 * @param requestBody
-				 * @param throwable   异常
-				 * @param sink        数据行处理结果
-				 * @return
-				 */
-				@Override
-				public void handleException(Object requestBody, Throwable throwable, FluxSink<String> sink) {
-				}
-			};
-			if (message != null) {
-				if (message instanceof String) {
-					data = (String) message;
-				} else {
-					data = SimpleStringUtil.object2json(message);
-				}
-			}
-			
-			final String _data = data;
-			
-			BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
-				@Override
-				public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
-					streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
-					AIResponseUtil.handleStreamResponse(url, response, _data, dataCollector, streamDataHandler);
-					return null;
-					
-				}
-			};
-			
-			Map header = new LinkedHashMap();
-			
-			header.put("Accept", "text/event-stream");
-			header.put("Cache-Control", "no-cache");
-			header.put("Connection", "keep-alive");
-			if(method.equals(HttpMethodName.HTTP_GET)) {
-				HttpRequestProxy.httpGet(clientConfiguration, url, responseHandler);
-			}
-			else if(method.equals(HttpMethodName.HTTP_POST)) {
-				HttpRequestProxy.sendJsonBody(clientConfiguration,  data, url, header, responseHandler);
-			}
-
-//                        HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, url, header, responseHandler);
-			
-		} catch (ReactorCallException e) {
-//                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
-			 
-//                        sink.error(e);
-		} catch (Exception e) {
-			 
-//                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
-		}
-		catch (Throwable e) {
-		}
-		finally {
-		}
-		
-	}
+//	public static  void stream(String poolName, String url, Object message , String method, DataCollector dataCollector) {
+//		ClientConfiguration clientConfiguration = ClientConfiguration.getClientConfiguration(poolName);
+//		
+//		
+//		String data = null;
+//		 
+//		try {
+//			CommonStreamDataHandler<String> streamDataHandler = new BaseCommonStreamDataHandler<String>() {
+//				/**
+//				 * 处理异常，如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
+//				 *
+//				 * @param requestBody
+//				 * @param throwable   异常
+//				 * @param sink        数据行处理结果
+//				 * @return
+//				 */
+//				@Override
+//				public void handleException(Object requestBody, Throwable throwable, FluxSink<String> sink) {
+//				}
+//			};
+//			if (message != null) {
+//				if (message instanceof String) {
+//					data = (String) message;
+//				} else {
+//					data = SimpleStringUtil.object2json(message);
+//				}
+//			}
+//			
+//			final String _data = data;
+//			
+//			BaseURLResponseHandler responseHandler = new BaseURLResponseHandler<Void>() {
+//				@Override
+//				public Void handleResponse(ClassicHttpResponse response) throws IOException, ParseException {
+//					streamDataHandler.setHttpUriRequestBase(httpUriRequestBase);
+//					AIResponseUtil.handleStreamResponse(url, response, _data, dataCollector, streamDataHandler);
+//					return null;
+//					
+//				}
+//			};
+//			
+//			Map header = new LinkedHashMap();
+//			
+//			header.put("Accept", "text/event-stream");
+//			header.put("Cache-Control", "no-cache");
+//			header.put("Connection", "keep-alive");
+//			if(method.equals(HttpMethodName.HTTP_GET)) {
+//				HttpRequestProxy.httpGet(clientConfiguration, url, responseHandler);
+//			}
+//			else if(method.equals(HttpMethodName.HTTP_POST)) {
+//				HttpRequestProxy.sendJsonBody(clientConfiguration,  data, url, header, responseHandler);
+//			}
+//
+////                        HttpRequestProxy.sendJsonBody(clientConfiguration, (String)data, url, header, responseHandler);
+//			
+//		} catch (ReactorCallException e) {
+////                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
+//			 
+////                        sink.error(e);
+//		} catch (Exception e) {
+//			 
+////                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
+//		}
+//		catch (Throwable e) {
+//		}
+//		finally {
+//		}
+//		
+//	}
 
     /**
      * 创建流式调用的Flux,在指定的数据源上执行
@@ -1400,7 +1409,7 @@ public class AIAgentUtil {
             embedding = agentAdapter.embedding(  config,embeddingMessage,agent,params);
         }
         else{
-            embedding = RetryUtil.executeWithRetry("embedding",retry, embeddingMessage.getRetryInterval(), (throwable	,   retryCount) -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
+            embedding = RetryUtil.executeWithRetry("embedding",retry, embeddingMessage.getRetryInterval(), (throwable	,   retryCount,   retryContext) -> agentAdapter.embedding(  config,embeddingMessage,agent,params));
 
         }
         traceLLMOutput(embedding, agent,SessionMessage.MESSAGE_TYPE_EMBEDDING_OUTPUTMESSAGE_NAME);
@@ -1424,7 +1433,7 @@ public class AIAgentUtil {
             rerankedDocuments = agentAdapter.rerank(config, rerankMessage, agent, params);
         }
         else{
-            rerankedDocuments = RetryUtil.executeWithRetry("rerank",retry, rerankMessage.getRetryInterval(), (throwable	,   retryCount) -> agentAdapter.rerank(config, rerankMessage, agent, params));
+            rerankedDocuments = RetryUtil.executeWithRetry("rerank",retry, rerankMessage.getRetryInterval(), (throwable	,   retryCount,   retryContext) -> agentAdapter.rerank(config, rerankMessage, agent, params));
             
         }
          

@@ -33,7 +33,9 @@ import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.store.SessionMessage;
 import org.frameworkset.spi.reactor.*;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
+import org.frameworkset.spi.remote.http.ResponseUtil;
 import org.frameworkset.spi.remote.http.proxy.BBossEntityUtils;
+import org.frameworkset.util.beans.ObjectHolder;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.frameworkset.util.concurrent.NoSynBooleanWrapper;
 import reactor.core.publisher.FluxSink;
@@ -129,8 +131,9 @@ public class AIResponseUtil {
         if(logger.isWarnEnabled()) {
             logger.warn("服务端异常：", throwable);
         }
+		Throwable rootCause = ResponseUtil.getRealThrowableFromThrowable(throwable);
 		ChatObject chatObject = streamDataBuilder.getChatObject();
-		String error = SimpleStringUtil.exceptionToString(throwable);
+		String error = SimpleStringUtil.exceptionToString(rootCause);
         ServerEvent serverEvent = new ServerEvent();
 		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
         serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
@@ -863,17 +866,18 @@ public class AIResponseUtil {
             }
         }
     }
-    public static <T> void handleStreamResponse(String url, ClassicHttpResponse response,
-                                                FluxSink<T> sink, StreamDataHandler<T> streamDataHandler,DisposeEventHandler disposeEventHandler)
+    public static <T> void handleStreamResponse(ObjectHolder<Boolean> agentStreamBeginHolder,String url, ClassicHttpResponse response,
+												FluxSink<T> sink, StreamDataHandler<T> streamDataHandler, DisposeEventHandler disposeEventHandler)
             throws IOException, ParseException {
 
         int status = response.getCode();
 
         if (org.frameworkset.spi.remote.http.ResponseUtil.isHttpStatusOK( status)) {
-            processStreamResponse(response, sink,(BaseStreamDataHandler<T>) streamDataHandler,disposeEventHandler);
+			agentStreamBeginHolder.setObject(true);   // 只有流式才存在"已推送",此处必然是流式处理
+             processStreamResponse(response, sink,(BaseStreamDataHandler<T>) streamDataHandler,disposeEventHandler);
         } else {
             HttpEntity entity = response.getEntity();
-            String data = SimpleStringUtil.object2jsonPretty(streamDataHandler.getChatObject().getMessage());
+//            String data = SimpleStringUtil.object2jsonPretty(streamDataHandler.getChatObject().getMessage());
             if (entity != null ) {
                 if (logger.isDebugEnabled()) {
                     logger.debug(new StringBuilder().append("Request url:").append(url).append(",status:").append(status).toString());
@@ -881,14 +885,14 @@ public class AIResponseUtil {
                 throw new ReactorCallException(new StringBuilder().append("Request url:")
                         .append(url).append(",error,").append("status=")
                         .append(status).append(":")
-                        .append(EntityUtils.toString(entity))
-                        .append(",\r\n use message:").append( data).toString())
+                        .append(EntityUtils.toString(entity)).toString())
+//                        .append(",\r\n use message:").append( data).toString())
 						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",error,").append("status=").append(status).append(":").append(EntityUtils.toString(entity)).toString()));
             }
             else {
-                throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status)
-                        .append(",\r\n use message:").append( data).toString())
+                throw new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString())
+//                        .append(",\r\n use message:").append( data).toString())
 						.setErrorCode(status);
 //                sink.error(new ReactorCallException(new StringBuilder().append("Request url:").append(url).append(",Unexpected response status: ").append(status).toString()));
             }
@@ -1373,10 +1377,15 @@ public class AIResponseUtil {
 	 * @return
 	 */
 	public static boolean isContextOverflowError(Throwable error) {	
+ 
         if(error == null) {
             return false;
         }
-		String message = error.getMessage();
+		Integer status = ResponseUtil.getHttpReponseStatusCodeFromThrowable(error);
+		if(status != null && status == 413) 
+			return true;
+		String message = ResponseUtil.getMessageFromThrowable(  error);
+//		String message = error.getMessage();
 		if (message == null) return false;
 		String lower = message.toLowerCase(Locale.ROOT);
 		return lower.contains("context_length_exceeded")
@@ -1385,6 +1394,17 @@ public class AIResponseUtil {
 				|| lower.contains("token limit")
 				|| lower.contains("too many tokens")
 				|| lower.contains("exceeds the model's maximum")
+				|| lower.contains("input length exceeds the maximum")
+				|| lower.contains("parameter too long")
+				|| lower.contains("参数太长")
+				|| lower.contains("输入内容过长")
+				|| lower.contains("上下文长度")
+				|| lower.contains("超出最大")
+				|| lower.contains("长度超过")
+				|| lower.contains("超出限制")
+				|| lower.contains("长度超限")
+				|| lower.contains("code 1261")
+				|| lower.contains("Range of input length should be ")				
 				|| lower.contains("reduce the length");
 	}
 

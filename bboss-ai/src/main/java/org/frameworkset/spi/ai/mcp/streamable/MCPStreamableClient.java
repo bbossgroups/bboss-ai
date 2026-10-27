@@ -52,7 +52,7 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
 					MCPToolCallResponse.class);
 		}
 		else{
-			mcpToolCallResponse = RetryUtil.executeWithRetry("executeToolsCall",toolCallRetry, 100, (throwable,retryCount) -> {
+			mcpToolCallResponse = RetryUtil.executeWithRetry("executeToolsCall",toolCallRetry, 100, (throwable,retryCount,   retryContext) -> {
 				MCPToolCallResponse mcpToolCallResponse1 = HttpRequestProxy.sendJsonBody(getMcpServer(),
 						mcpToolCallRequest, headers, streamablePath,
 						MCPToolCallResponse.class);
@@ -98,7 +98,7 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
 					MCPListToolResponse.class);
 		}
 		else{
-			mcpListToolResponse = RetryUtil.executeWithRetry("executeListTools",toolCallRetry, 100, (throwable,retryCount) -> {
+			mcpListToolResponse = RetryUtil.executeWithRetry("executeListTools",toolCallRetry, 100, (throwable,retryCount,   retryContext) -> {
 				MCPListToolResponse mcpListToolResponse1 = HttpRequestProxy.sendJsonBody(getMcpServer(),
 						mcpToolRequest,headers,streamablePath,
 						MCPListToolResponse.class);
@@ -115,7 +115,7 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     protected String executeNotificationsInitialized(McpToolRequest notificationsInitialized) {
         Map headers = buildHeaders();
 		
-		String data = RetryUtil.executeWithRetry("executeInitialization",3, 100, (throwable,retryCount) -> {
+		String data = RetryUtil.executeWithRetry("executeInitialization",3, 100, (throwable,retryCount,   retryContext) -> {
 			String data1 = HttpRequestProxy.sendJsonBody(getMcpServer(),
 					notificationsInitialized,headers,streamablePath,
 					String.class);
@@ -134,7 +134,7 @@ public class MCPStreamableClient extends MCPBaseClient<MCPStreamableClient> {
     @Override
     protected MCPInitializedToolResponse executeInitialization(McpInitializedToolRequest mcpInitializedToolRequest) {
         Map headers = buildHeaders();
-		MCPInitializedToolResponse mcpInitializedToolResponse = RetryUtil.executeWithRetry("executeInitialization",3, 100, (throwable,retryCount) -> {
+		MCPInitializedToolResponse mcpInitializedToolResponse = RetryUtil.executeWithRetry("executeInitialization",3, 100, (throwable,retryCount,   retryContext) -> {
 			MCPInitializedToolResponse mcpInitializedToolResponse1 = HttpRequestProxy.sendJsonBody(getMcpServer(),
 					mcpInitializedToolRequest,headers,streamablePath,
 					MCPInitializedToolResponse.class);

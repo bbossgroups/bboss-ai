@@ -47,7 +47,7 @@ public class AgentMessage<T extends AgentMessage> {
     /**
      * 重试时间间隔
      */
-    private long retryInterval = 500L;
+    private long retryInterval = -1L;
 	
 	
 	/**

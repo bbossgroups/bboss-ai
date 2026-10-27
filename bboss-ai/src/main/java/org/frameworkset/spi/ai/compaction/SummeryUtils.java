@@ -18,10 +18,7 @@ package org.frameworkset.spi.ai.compaction;
 import com.frameworkset.util.JsonUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.context.ChatContext;
-import org.frameworkset.spi.ai.model.ChatAgentMessage;
-import org.frameworkset.spi.ai.model.LinkedMessageMap;
-import org.frameworkset.spi.ai.model.ModelInfo;
-import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.model.tool.PermissionRules;
 import org.frameworkset.spi.ai.model.tool.ToolCallState;
 import org.frameworkset.spi.ai.store.SessionMessage;
@@ -176,13 +173,13 @@ public class SummeryUtils {
 				sb.append(" (error)");
 			}
 			sb.append("] ");
-			if (!content.isEmpty()) {				
+			if (content != null && !content.isEmpty()) {				
 //				sb.append(content.length() > 500 ? content.substring(0, 500) + "..." : content);
 				sb.append(ConversationCompactor.buildPrunePreview(content, SUMMARY_PREVIEW_CHARS));
 			}
 		}
-		else if (content != null) {			
-			sb.append(content.trim());
+		else if (content != null && !content.isEmpty()) {			
+			sb.append(ConversationCompactor.buildPrunePreview(content, SUMMARY_PREVIEW_CHARS));
 		}
 //		
 //	} else if (block instanceof ToolUseBlock tu) {
@@ -332,31 +329,39 @@ public class SummeryUtils {
 			return "No previous conversation history.";
 		}
 		
-		String formatted = formatMessagesForSummary(prefix);
+		
+		try {
+			String formatted = formatMessagesForSummary(prefix);
 //        String prompt = config.getSummaryPrompt().replace("{messages}", formatted);
 
 //        List<LinkedMessageMap<String, Object>> summarizationInput = new ArrayList<>();
 //		summarizationInput.add( MessageBuilder.buildUserMessage(prompt) );
-		ModelInfo model = config.getCompactModel();
-		if(model == null)
-			model = chatContext.getModelInfo();
-		AIAgent agent = new AIAgent(config.getSummaryPrompt()).setAgentId("__summary__");
-		ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-		chatAgentMessage.setModel(model.getModel());
-		chatAgentMessage.setMaas(model.getMaas());
-		agent.addParam("messages",formatted);
-		try {
+			ModelInfo model = config.getCompactModel();
+			if(model == null)
+				model = chatContext.getModelInfo();
+			AIAgent agent = new AIAgent(config.getSummaryPrompt()).setAgentId("__summary__");
+			ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+			chatAgentMessage.setModel(model.getModel());
+			chatAgentMessage.setMaas(model.getMaas());
+			agent.addParam("messages",formatted);
 			ServerEvent serverEvent = agent.chat(chatAgentMessage);
 			String summary = serverEvent.getData();
 			if(summary != null && !summary.isEmpty()){
 				return summary;
 			}
 			else{
-				return "(Summary unavailable)";
+				throw new AIRuntimeException("(Summary unavailable)" ); 
 			}
-		} catch (Exception e) {
-			log.warn("Summarization LLM call failed: {}", e.getMessage(),e);
-			return "(Summarization failed: " + e.getMessage() + ")";
+		}
+		catch (AIRuntimeException e) {
+//			log.warn("Summarization LLM call failed: {}", e.getMessage(),e);
+			throw e;
+//			return "(Summarization failed: " + e.getMessage() + ")";
+		}
+		catch (Exception e) {
+//			log.warn("Summarization LLM call failed: {}", e.getMessage(),e);
+			throw new AIRuntimeException("Summarization LLM call failed", e);
+//			return "(Summarization failed: " + e.getMessage() + ")";
 		}
 //
 //        return model.stream(summarizationInput, null, null)

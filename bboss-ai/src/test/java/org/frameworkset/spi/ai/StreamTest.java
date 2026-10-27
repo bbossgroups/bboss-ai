@@ -580,7 +580,7 @@ public class StreamTest {
 	public static void streamChatWithMcpTools(String maas, String mcpServer,
 											  String model, String prompt,boolean thinking) throws InterruptedException {
 		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
-				.setPrompt(prompt,true)
+				.setPrompt(prompt).setSystemPrompt("你是一个助手小米，请根据用户的问题给出答案")
                 .setStoreContext(new StoreContext().setSessionMemory(new ArrayList<>()).setSessionSize(10))
 //                .setModel("deepseek-chat")
 				.setModel(model)

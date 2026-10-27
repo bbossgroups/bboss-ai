@@ -197,17 +197,21 @@ public class CompactionManager extends BaseCompactionManager {
                             config.getReserved(),
                             effectiveTrigger);
                 } else {
-                    log.debug(
-                            "Dynamic compaction trigger: contextWindow={} - reserved={} = {}",
-                            contextWindow,
-                            config.getReserved(),
-                            effectiveTrigger);
+					if(log.isDebugEnabled()) {
+						log.debug(
+								"Dynamic compaction trigger: contextWindow={} - reserved={} = {}",
+								contextWindow,
+								config.getReserved(),
+								effectiveTrigger);
+					}
                 }
             } else {
                 effectiveTrigger = CompactionConfig.FALLBACK_TRIGGER_TOKENS;
-                log.debug(
-                        "Model does not report context window, using fallback trigger: {}",
-                        effectiveTrigger);
+				if(log.isDebugEnabled()) {
+					log.debug(
+							"Model does not report context window, using fallback trigger: {}",
+							effectiveTrigger);
+				}
             }
         } else {
             effectiveTrigger = configTrigger;
