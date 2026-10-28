@@ -239,30 +239,50 @@ public class CompactionConfig {
      * context window. Used by {@code CompactionMiddleware} to resolve dynamic defaults.
      */
     public CompactionConfig withEffective(int effectiveTriggerTokens, int effectiveKeepTokens) {
-		CompactionConfig  compactionConfig = new CompactionConfig();
+		CompactionConfig  compactionConfig =   this.copy();;
 //        this.triggerTokens = effectiveTriggerTokens;
 //       
 //        this.keepTokens = effectiveKeepTokens;
 		
-		compactionConfig.setCompactionPolicy(this.compactionPolicy);
-		compactionConfig.setTriggerMessages(this.triggerMessages)	;
 		compactionConfig.setTriggerTokens(effectiveTriggerTokens);
-		compactionConfig.setReserved(this.reserved);
-		compactionConfig.setKeepMessages(this.keepMessages);
 		compactionConfig.setKeepTokens(effectiveKeepTokens);
-		compactionConfig.setKeepTokensMin(this.keepTokensMin);
-		compactionConfig.setKeepTokensMax(this.keepTokensMax);
-		compactionConfig.setKeepTokensRatio(this.keepTokensRatio);
-		compactionConfig.setSummaryPrompt(this.summaryPrompt);
-		compactionConfig.setFlushBeforeCompact(this.flushBeforeCompact);
-		compactionConfig.setTruncateArgs(this.truncateArgsConfig);
-		compactionConfig.setPruneConfig(this.pruneConfig);
-		compactionConfig.setCompactModel(this.compactModel);
 		
 		return compactionConfig;
         
     }
-
+	
+	
+	// CompactionConfig
+	public CompactionConfig copy() {
+		CompactionConfig cfg = new CompactionConfig();
+		cfg.compactionPolicy   = this.compactionPolicy;
+		cfg.triggerMessages    = this.triggerMessages;
+		cfg.triggerTokens      = this.triggerTokens;
+		cfg.reserved           = this.reserved;
+		cfg.keepMessages       = this.keepMessages;
+		cfg.keepTokens         = this.keepTokens;
+		cfg.keepTokensMin      = this.keepTokensMin;
+		cfg.keepTokensMax      = this.keepTokensMax;
+		cfg.keepTokensRatio    = this.keepTokensRatio;
+		cfg.summaryPrompt      = this.summaryPrompt;
+		cfg.flushBeforeCompact = this.flushBeforeCompact;
+		cfg.truncateArgsConfig = this.truncateArgsConfig;
+		cfg.pruneConfig        = this.pruneConfig;
+		cfg.compactModel       = this.compactModel;
+		return cfg;
+	}
+	
+	/**
+	 * 保留全部用户配置，仅强制打开触发开关：紧急压缩（溢出救援）使用。
+	 */
+	public CompactionConfig withForceTrigger() {
+		CompactionConfig cfg = this.copy();
+		cfg.triggerTokens  = 1;
+		cfg.triggerMessages = 0;
+		cfg.keepTokens     = 0;
+		cfg.keepMessages   = 1;
+		return cfg;
+	}
    
 
         /** Trigger compaction when conversation has at least this many messages (0 = disabled). */

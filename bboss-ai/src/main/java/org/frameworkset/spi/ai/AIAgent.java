@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.frameworkset.util.SimpleStringUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.frameworkset.spi.ai.callback.AgentOutput;
+import org.frameworkset.spi.ai.compaction.CompactionConfig;
 import org.frameworkset.spi.ai.compaction.CompactionManagerInf;
 import org.frameworkset.spi.ai.context.AgentRuntimeContext;
 import org.frameworkset.spi.ai.context.ChatContext;
@@ -404,7 +405,12 @@ public class AIAgent<T extends AIAgent> implements AgentInfoInf ,AutoCloseable{
 	public StoreContext getStoreContext() {
 		return storeContext;
 	}
-	
+	public CompactionConfig getCompactionConfig() {
+		if(storeContext == null){
+			return null;
+		}
+		return storeContext.getCompactionConfig();
+	}
 	public MemoryConfig getMemoryConfig() {
 		if(storeContext == null){
 			return null;

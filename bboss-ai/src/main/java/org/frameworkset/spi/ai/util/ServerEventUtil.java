@@ -29,6 +29,9 @@ import reactor.core.publisher.FluxSink;
  */
 public class ServerEventUtil {
 	public static void buildServerEventAgentInfo(ServerEvent serverEvent, AgentInfoInf agent) {
+		if(agent == null){
+			return;
+		}
 		serverEvent.setAgentId(agent.getAgentId());
 		serverEvent.setAgentName(agent.getAgentName());
 		serverEvent.setAgentNodeType(agent.getAgentNodeType());

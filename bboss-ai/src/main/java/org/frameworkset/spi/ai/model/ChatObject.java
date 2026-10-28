@@ -41,6 +41,10 @@ public class ChatObject extends StoreChatObject{
 	private boolean fromWorkflow;
 	
 	private static final String TYPED_DEFAULT_KEY = "";
+	
+
+	
+	private boolean llmCallOk;
 
 
     private AIAgent agent;
@@ -261,5 +265,13 @@ public class ChatObject extends StoreChatObject{
 	
 	public MemoryConfig getMemoryConfig() {
 		return this.agent.getMemoryConfig();
+	}
+	
+	public boolean isLlmCallOk() {
+		return llmCallOk;
+	}
+	
+	public void setLlmCallOk(boolean llmCallOk) {
+		this.llmCallOk = llmCallOk;
 	}
 }

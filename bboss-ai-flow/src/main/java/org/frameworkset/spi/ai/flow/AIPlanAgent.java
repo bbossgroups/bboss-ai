@@ -602,14 +602,14 @@ public class AIPlanAgent extends AIAgent<AIPlanAgent> implements AIContainerAgen
 
             } catch (ReactorCallException e) {
 //                        logger.error("流式请求失败：poolName["+poolName +"],url["+url +"],data:" + data);
-                AIResponseUtil.handleServerEventExceptionData(  e, sink,   null,new NoSynBooleanWrapper( true));
+                AIResponseUtil.handleServerEventExceptionData( AIPlanAgent.this, e, sink,   null,new NoSynBooleanWrapper( true));
 //                        sink.error(e);
             } catch (Exception e) {
-                AIResponseUtil.handleServerEventExceptionData(  e, sink,   null,    new NoSynBooleanWrapper( true));
+                AIResponseUtil.handleServerEventExceptionData( AIPlanAgent.this, e, sink,   null,    new NoSynBooleanWrapper( true));
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
             }
             catch (Throwable e) {
-                AIResponseUtil.handleServerEventExceptionData(  e, sink,   null,new NoSynBooleanWrapper( true));
+                AIResponseUtil.handleServerEventExceptionData( AIPlanAgent.this, e, sink,   null,new NoSynBooleanWrapper( true));
 //                        sink.error(new ReactorCallException("流式请求失败：poolName["+poolName +"],url["+url +"],", e));
             }
             finally {

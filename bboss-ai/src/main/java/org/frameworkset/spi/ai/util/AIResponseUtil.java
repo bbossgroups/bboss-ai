@@ -120,30 +120,32 @@ public class AIResponseUtil {
         if(firstEventTag.get()) {
             firstEventTag.set(false);
         }
-        String error = SimpleStringUtil.exceptionToString(throwable);
+		Throwable rootCause = ResponseUtil.getRealThrowableFromThrowable(throwable);
+        String error = SimpleStringUtil.exceptionToString(rootCause);
         sink.next(error);
 //        sink.complete();
         return true;
 
     }
 
-    public static boolean handleServerEventExceptionData(Throwable throwable,FluxSink<ServerEvent> sink, BaseStreamDataBuilder streamDataBuilder,BooleanWrapperInf firstEventTag){
+    public static boolean handleServerEventExceptionData(AIAgent agent,Throwable throwable,FluxSink<ServerEvent> sink, BaseStreamDataBuilder streamDataBuilder,BooleanWrapperInf firstEventTag){
         if(logger.isWarnEnabled()) {
             logger.warn("服务端异常：", throwable);
         }
 		Throwable rootCause = ResponseUtil.getRealThrowableFromThrowable(throwable);
-		ChatObject chatObject = streamDataBuilder.getChatObject();
+		ChatObject chatObject = streamDataBuilder != null?streamDataBuilder.getChatObject():null;
 		String error = SimpleStringUtil.exceptionToString(rootCause);
         ServerEvent serverEvent = new ServerEvent();
-		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
-        serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
-		AIAgent agent = chatObject.getAgent();
+		ServerEventUtil.buildServerEventAgentInfo(serverEvent,agent);
+		TokenMetrics tokenMetrics = streamDataBuilder != null?streamDataBuilder.getTokenMetrics():null;
+        serverEvent.setTokenMetrics(tokenMetrics);
+//		AIAgent agent = chatObject != null?chatObject.getAgent():null;
         serverEvent.setAgent(agent);
         if(firstEventTag.get()) {
             firstEventTag.set(false);
             serverEvent.setFirst(true);
         }
-        if(streamDataBuilder != null) {
+        if(chatObject != null) {
             serverEvent.setToolCallResponse(chatObject.isToolCall());
         }
         else{
@@ -163,10 +165,10 @@ public class AIResponseUtil {
 		agent.recordTraceMessage(traceMessage);
 
         serverEvent = new ServerEvent();
-		ServerEventUtil.buildServerEventAgentInfo(serverEvent,chatObject.getAgent());
-        serverEvent.setAgent(chatObject.getAgent());
+		ServerEventUtil.buildServerEventAgentInfo(serverEvent,agent);
+        serverEvent.setAgent(agent);
         serverEvent.setDone( true);
-        serverEvent.setTokenMetrics(streamDataBuilder.getTokenMetrics());
+        serverEvent.setTokenMetrics(tokenMetrics);
         sink.next(serverEvent);
 //        sink.complete();
         return true;
@@ -847,6 +849,7 @@ public class AIResponseUtil {
             if(line == null || line.equals("")){
                 return null;
             }
+			streamDataBuilder.getChatObject().setLlmCallOk(true);
             return handleServerEventData( agentAdapter, line,   streamDataBuilder);
         } else {
             HttpEntity entity = response.getEntity();
@@ -866,14 +869,14 @@ public class AIResponseUtil {
             }
         }
     }
-    public static <T> void handleStreamResponse(ObjectHolder<Boolean> agentStreamBeginHolder,String url, ClassicHttpResponse response,
+    public static <T> void handleStreamResponse( String url, ClassicHttpResponse response,
 												FluxSink<T> sink, StreamDataHandler<T> streamDataHandler, DisposeEventHandler disposeEventHandler)
             throws IOException, ParseException {
 
         int status = response.getCode();
 
         if (org.frameworkset.spi.remote.http.ResponseUtil.isHttpStatusOK( status)) {
-			agentStreamBeginHolder.setObject(true);   // 只有流式才存在"已推送",此处必然是流式处理
+			streamDataHandler.getChatObject().setLlmCallOk(true);   // 只有流式才存在"已推送",此处必然是流式处理
              processStreamResponse(response, sink,(BaseStreamDataHandler<T>) streamDataHandler,disposeEventHandler);
         } else {
             HttpEntity entity = response.getEntity();

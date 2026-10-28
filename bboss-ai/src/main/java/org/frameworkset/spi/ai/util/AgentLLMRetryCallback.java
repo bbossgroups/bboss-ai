@@ -18,7 +18,7 @@ package org.frameworkset.spi.ai.util;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.ChatObject;
 import org.frameworkset.spi.ai.model.LinkedMessageMap;
-import org.frameworkset.spi.remote.http.HttpRequestProxy;
+import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.remote.http.ResponseUtil;
 import org.frameworkset.util.RetryCallback;
 import org.frameworkset.util.RetryContext;
@@ -33,23 +33,22 @@ import java.util.function.Function;
  * @author biaoping.yin
  * @Date 2026/10/27
  */
-public class AgentLLMRetryCallback implements RetryCallback<Void> {
+public class AgentLLMRetryCallback implements RetryCallback<ServerEvent> {
 	private static org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(AgentLLMRetryCallback.class);
 	private ObjectHolder<String> objectHolder;
 	private String _data;
 	private Object message;
 	private ChatObject chatObject;
-	private Function<Object, Void> function;
-	private ObjectHolder<Boolean> agentStreamBeginHolder ;
-	public AgentLLMRetryCallback(ObjectHolder<Boolean> agentStreamBeginHolder ,String _data, ObjectHolder<String> objectHolder, Object message, ChatObject chatObject, Function<Object, Void> function ){
+	private Function<Object, ServerEvent> function;
+	public AgentLLMRetryCallback(  String _data, ObjectHolder<String> objectHolder, Object message, ChatObject chatObject, Function<Object, ServerEvent> function ){
 		this.objectHolder = objectHolder;
 		this._data = _data;
 		this.chatObject = chatObject;
 		this.message = message;
 		this.function = function;
-		this.agentStreamBeginHolder = agentStreamBeginHolder;
 	}
-	public Void doRetry (Throwable throwable	,   int retryCount, RetryContext retryContext)  {
+	public ServerEvent doRetry (Throwable throwable	,   int retryCount, RetryContext retryContext)  {
+		
 		String tmp = null;
 		boolean compacted = false;
 		if(objectHolder.getObject() == null){
@@ -96,8 +95,7 @@ public class AgentLLMRetryCallback implements RetryCallback<Void> {
 	
 	@Override
 	public boolean assertRetryException(Throwable throwable) {
-		Boolean streamBegin = agentStreamBeginHolder.getObject();
-		if(streamBegin != null && streamBegin){// 流式处理开始，不再重试
+		if(chatObject.isLlmCallOk()){
 			return false;
 		}
 		if(throwable == null || throwable instanceof NullPointerException){
