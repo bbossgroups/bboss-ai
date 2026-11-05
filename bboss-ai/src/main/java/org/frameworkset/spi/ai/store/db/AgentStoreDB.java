@@ -94,10 +94,14 @@ public class AgentStoreDB extends AgentStoreMemory<AgentStoreDB> {
         if(this.sessionId != null){
 
             try {
-                logger.info("Get session maxSeqNo of sessionId {} from table {}...", sessionId, agentSessionStoreDBConfig.getSessionMessageTableName());
+				if(logger.isDebugEnabled()) {
+					logger.debug("Get session maxSeqNo of sessionId {} from table {}...", sessionId, agentSessionStoreDBConfig.getSessionMessageTableName());
+				}
                 int maxSeqNo = SQLExecutor.queryObjectWithDBName(int.class, this.dataSource, agentSessionStoreDBConfig.getSelectMaxSeqNoBySessionIdSQL(), sessionId);
                 this.integerCount.setStartValue(maxSeqNo);
-                logger.info("Get session maxSeqNo of sessionId {} from table {} maxSeqNo:{}", sessionId, agentSessionStoreDBConfig.getSessionMessageTableName(), maxSeqNo);
+                if(logger.isDebugEnabled()) {
+					logger.debug("Get session maxSeqNo of sessionId {} from table {} maxSeqNo:{}", sessionId, agentSessionStoreDBConfig.getSessionMessageTableName(), maxSeqNo);
+				}
             } catch (SQLException e) {
                 throw new AIRuntimeException("Failed to Get session maxSeqNo of sessionId "+sessionId+" from table "+agentSessionStoreDBConfig.getSessionMessageTableName(), e);
             }
@@ -106,7 +110,9 @@ public class AgentStoreDB extends AgentStoreMemory<AgentStoreDB> {
         else{
             
             sessionId = SimpleStringUtil.getUUID32();
-            logger.info("SessionId is null and create new sessionId:{}",sessionId);
+            if(logger.isDebugEnabled()) {
+				logger.debug("SessionId is null and create new sessionId:{}",sessionId);
+			}
         }
         
         
